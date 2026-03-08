@@ -25,9 +25,9 @@ function TypeBadge({ type }) {
 function lrmScale(items, ingredients, intensityQty) {
     if (!intensityQty) return items.map(() => null);
     const targetByType = {
-        oil:     intensityQty.oil_quantity     ?? 0,
-        alcohol: intensityQty.alcohol_quantity ?? 0,
-        other:   intensityQty.other_quantity   ?? 0,
+        oil:     parseFloat(intensityQty.oil_quantity)     || 0,
+        alcohol: parseFloat(intensityQty.alcohol_quantity) || 0,
+        other:   parseFloat(intensityQty.other_quantity)   || 0,
     };
     const groups = {};
     items.forEach((item, idx) => {
@@ -84,10 +84,10 @@ function ScalingPreview({ items, ingredients, sizeQuantities }) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {sizes.map((sq, si) => {
                     const isCalibrated = sq.oil_quantity != null;
-                    const isBase       = (sq.size?.volume_ml) === 30;
+                    const isBase       = (parseFloat(sq.size?.volume_ml) || parseFloat(sq.total_volume)) === 30;
                     const scaledQtys   = isCalibrated
                         ? lrmScale(items, ingredients, sq)
-                        : fallbackScale(items, ingredients, sq.total_volume ?? sq.size?.volume_ml ?? 30);
+                        : fallbackScale(items, ingredients, parseFloat(sq.total_volume) || parseFloat(sq.size?.volume_ml) || 30);
                     const totalScaled = scaledQtys.reduce((s, q) => s + (q ?? 0), 0);
 
                     return (
@@ -96,7 +96,7 @@ function ScalingPreview({ items, ingredients, sizeQuantities }) {
                         }`}>
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
-                                    <span className="font-bold text-teal-600">{sq.size?.volume_ml}ml</span>
+                                    <span className="font-bold text-teal-600">{sq.size?.volume_ml ?? sq.total_volume}ml</span>
                                     {isBase && (
                                         <span className="text-xs bg-teal-100 text-teal-600 px-2 py-0.5 rounded-full font-semibold">Base</span>
                                     )}
@@ -108,13 +108,13 @@ function ScalingPreview({ items, ingredients, sizeQuantities }) {
 
                             {isCalibrated && (
                                 <div className="flex gap-1.5 mb-3 flex-wrap">
-                                    {sq.oil_quantity > 0 && (
+                                    {(parseFloat(sq.oil_quantity) || 0) > 0 && (
                                         <span className="text-xs bg-teal-50 text-teal-700 px-2 py-0.5 rounded-md border border-teal-100 font-medium">Oil {sq.oil_quantity}ml</span>
                                     )}
-                                    {sq.alcohol_quantity > 0 && (
+                                    {(parseFloat(sq.alcohol_quantity) || 0) > 0 && (
                                         <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-100 font-medium">Alc {sq.alcohol_quantity}ml</span>
                                     )}
-                                    {(sq.other_quantity ?? 0) > 0 && (
+                                    {(parseFloat(sq.other_quantity) || 0) > 0 && (
                                         <span className="text-xs bg-slate-50 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200 font-medium">Other {sq.other_quantity}ml</span>
                                     )}
                                 </div>
@@ -174,6 +174,33 @@ export default function Edit({
     const isVolumeValid = Math.abs(totalVolume - 30) <= 0.1;
     const volumePercent = Math.min((totalVolume / 30) * 100, 100);
     const volumeOver    = totalVolume > 30.1;
+
+    // ── Ambil data kalibrasi untuk 30ml ──────────────────────────────────────
+    // Prioritas: dari kalibrasi IntensitySizeQuantity 30ml (akurat)
+    // Fallback: dari ratio intensity (estimasi, bisa tidak akurat)
+    const baseSize30 = useMemo(() => {
+        return sizeQuantities.find(q => (parseFloat(q.size?.volume_ml) || parseFloat(q.total_volume)) === 30) ?? null;
+    }, [sizeQuantities]);
+
+    const oilTarget     = baseSize30
+        ? parseFloat(baseSize30.oil_quantity) || 0
+        : 30 * (parseFloat(intensity?.oil_ratio) || 0) / 100;
+    const alcoholTarget = baseSize30
+        ? parseFloat(baseSize30.alcohol_quantity) || 0
+        : 30 * (parseFloat(intensity?.alcohol_ratio) || 0) / 100;
+    const otherTarget   = baseSize30
+        ? parseFloat(baseSize30.other_quantity) || 0
+        : 0;
+
+    const volumeByType = useMemo(() => {
+        const result = { oil: 0, alcohol: 0, other: 0 };
+        data.items.forEach(item => {
+            const ing  = ingredients.find(i => String(i.id) === String(item.ingredient_id));
+            const type = ing?.category?.ingredient_type ?? "other";
+            result[type] += parseFloat(item.base_quantity) || 0;
+        });
+        return result;
+    }, [data.items, ingredients]);
 
     const addItem    = () => setData("items", [...data.items, { ingredient_id: "", base_quantity: "", unit: "ml", notes: "" }]);
     const removeItem = (idx) => { if (data.items.length <= 1) return; const n = [...data.items]; n.splice(idx, 1); setData("items", n); };
@@ -251,34 +278,72 @@ export default function Edit({
                                 <div className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3 text-slate-700 dark:text-slate-300 font-semibold text-sm">
                                     {intensity.name}{" "}
                                     <span className="text-slate-400 font-normal">({intensity.code})</span>
-                                    <span className="ml-2 text-xs text-slate-400">Oil {intensity.oil_ratio}% · Alc {intensity.alcohol_ratio}%</span>
+                                    {/* FIX: Tampilkan sebagai ratio tanpa %, format "Oil X : Alc Y" */}
+                                    <span className="ml-2 text-xs text-slate-400">
+                                        Oil {parseFloat(intensity.oil_ratio) || 0} : Alc {parseFloat(intensity.alcohol_ratio) || 0}
+                                    </span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Ratio guide */}
+                        {/* Panduan komposisi */}
                         <div className="mt-4 p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-200 dark:border-teal-900 rounded-xl">
                             <p className="text-xs font-semibold text-teal-900 dark:text-teal-300 mb-2">
                                 💡 Panduan Komposisi untuk {intensity.code} (30ml):
+                                {/* FIX: Tampilkan sumber data panduan */}
+                                {baseSize30
+                                    ? <span className="ml-2 text-emerald-600 font-normal">✓ dari kalibrasi IntensitySizeQuantity</span>
+                                    : <span className="ml-2 text-amber-500 font-normal">~ estimasi dari ratio</span>
+                                }
                             </p>
-                            <div className="grid grid-cols-3 gap-3 text-xs">
-                                <div className="text-center">
-                                    <div className="font-bold text-teal-700 dark:text-teal-400 text-sm">
-                                        {(30 * intensity.oil_ratio / 100).toFixed(2)} ml
+                            <div className="grid grid-cols-3 gap-3 text-xs mb-3">
+                                {/* FIX: Nilai diambil dari baseSize30 jika ada, fallback ke ratio */}
+                                <div className="text-center p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg border border-teal-200 dark:border-teal-800">
+                                    <div className="font-bold text-teal-700 dark:text-teal-400 text-base">
+                                        {oilTarget} ml
                                     </div>
-                                    <div className="text-teal-600 dark:text-teal-500">Fragrance Oil</div>
+                                    <div className="text-teal-600 dark:text-teal-500 mt-0.5">Fragrance Oil</div>
                                 </div>
-                                <div className="text-center">
-                                    <div className="font-bold text-blue-700 dark:text-blue-400 text-sm">
-                                        {(30 * intensity.alcohol_ratio / 100).toFixed(2)} ml
+                                <div className="text-center p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-100 dark:border-blue-900">
+                                    <div className="font-bold text-blue-700 dark:text-blue-400 text-base">
+                                        {alcoholTarget} ml
                                     </div>
-                                    <div className="text-blue-600 dark:text-blue-500">Alcohol</div>
+                                    <div className="text-blue-600 dark:text-blue-500 mt-0.5">Alcohol</div>
                                 </div>
-                                <div className="text-center">
-                                    <div className="font-bold text-slate-700 dark:text-slate-300 text-sm">30 ml</div>
-                                    <div className="text-slate-500">Total</div>
+                                <div className="text-center p-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                                    <div className="font-bold text-slate-700 dark:text-slate-300 text-base">
+                                        {baseSize30 ? baseSize30.total_volume : 30} ml
+                                    </div>
+                                    <div className="text-slate-500 mt-0.5">Total</div>
                                 </div>
                             </div>
+
+                            {/* Tampilkan other jika ada */}
+                            {baseSize30 && otherTarget > 0 && (
+                                <div className="mb-3 text-xs text-center p-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                                    <span className="font-bold text-slate-700 dark:text-slate-300">{otherTarget} ml</span>
+                                    <span className="text-slate-500 ml-1">Other</span>
+                                </div>
+                            )}
+
+                            {/* Progress komposisi aktual */}
+                            {(volumeByType.oil > 0 || volumeByType.alcohol > 0 || volumeByType.other > 0) && (
+                                <div className="grid grid-cols-3 gap-2 text-xs pt-3 border-t border-teal-200 dark:border-teal-800">
+                                    {[
+                                        { label: "Oil:",     val: volumeByType.oil,     target: oilTarget,     color: "text-teal-700 dark:text-teal-400" },
+                                        { label: "Alcohol:", val: volumeByType.alcohol, target: alcoholTarget, color: "text-blue-700 dark:text-blue-400" },
+                                        { label: "Other:",   val: volumeByType.other,   target: otherTarget > 0 ? otherTarget : null, color: "text-slate-600 dark:text-slate-400" },
+                                    ].map(({ label, val, target, color }) => (
+                                        <div key={label} className="flex justify-between items-center">
+                                            <span className="text-slate-500">{label}</span>
+                                            <span className={`font-bold ${target !== null && target > 0 && Math.abs(val - target) < 0.5 ? "text-emerald-700" : color}`}>
+                                                {val.toFixed(1)} ml
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                             {sizeQuantities.length > 0 ? (
                                 <div className="mt-3 text-xs text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-emerald-500" />

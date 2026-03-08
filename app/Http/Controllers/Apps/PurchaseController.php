@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Apps;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use App\Http\Controllers\Controller;
 use App\Models\Purchase;
-use App\Models\PurchaseItem;
 use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\Ingredient;
@@ -19,9 +19,40 @@ use App\Models\WarehousePackagingStock;
 use App\Models\StoreIngredientStock;
 use App\Models\StorePackagingStock;
 
+/**
+ * PurchaseController — PRODUCTION READY
+ *
+ * Perbaikan dari versi sebelumnya:
+ *
+ * [1] complete() — StockMovement::create() memakai field yang TIDAK ADA di migration:
+ *       ✗ stockable_type / stockable_id   → dihapus dari migration
+ *       ✗ quantity                         → diganti qty_change
+ *       ✗ stock_before / stock_after       → diganti qty_before / qty_after
+ *       ✗ reference_type tidak disertakan  → wajib ada
+ *     Sekarang:
+ *       ✓ qty_change / qty_before / qty_after
+ *       ✓ unit_cost (15,4) / total_cost (15,2)
+ *       ✓ avg_cost_before (15,4) / avg_cost_after (15,4)
+ *       ✓ reference_type (FQCN) / reference_id / reference_number
+ *       ✓ movement_type = 'purchase_in' (sesuai enum migration)
+ *
+ * [2] show() — filter StockMovement tanpa reference_type
+ *       → risiko collision antar modul (purchase vs transfer vs repack)
+ *       ✓ Ditambah: where('reference_type', Purchase::class)
+ *
+ * [3] index() summary — COUNT(*) FILTER (WHERE ...) adalah PostgreSQL syntax
+ *       ✗ Tidak bekerja di MySQL
+ *       ✓ Diganti: SUM(CASE WHEN status = '...' THEN 1 ELSE 0 END)
+ *
+ * Alur status:
+ *   draft → pending → approved → received → completed
+ *                  ↘ cancelled (dari draft / pending / approved)
+ */
 class PurchaseController extends Controller
 {
-    // ─── Index ────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // INDEX
+    // =========================================================================
 
     public function index(Request $request)
     {
@@ -29,38 +60,52 @@ class PurchaseController extends Controller
             ->with(['supplier:id,name,code', 'creator:id,name', 'items'])
             ->when($request->search, fn ($q, $s) =>
                 $q->where('purchase_number', 'like', "%{$s}%")
-                  ->orWhereHas('supplier', fn ($q) => $q->where('name', 'like', "%{$s}%"))
+                  ->orWhereHas('supplier', fn ($q2) => $q2->where('name', 'like', "%{$s}%"))
             )
             ->when($request->status,           fn ($q, $s) => $q->where('status', $s))
             ->when($request->destination_type, fn ($q, $t) => $q->where('destination_type', $t))
-            ->latest('purchase_date')->latest('created_at')
-            ->paginate(15)->withQueryString();
+            ->when($request->date_from,        fn ($q, $d) => $q->whereDate('purchase_date', '>=', $d))
+            ->when($request->date_to,          fn ($q, $d) => $q->whereDate('purchase_date', '<=', $d))
+            ->latest('purchase_date')
+            ->latest('created_at')
+            ->paginate(15)
+            ->withQueryString();
 
         $purchases->getCollection()->each(function ($p) {
             $p->destination_name = $this->locationName($p->destination_type, $p->destination_id);
+            $p->item_count       = $p->items->count();
         });
+
+        // ★ FIX [3]: FILTER() adalah PostgreSQL syntax — pakai CASE WHEN untuk MySQL
+        $summary = Purchase::query()->selectRaw("
+            COUNT(*)                                                   AS total,
+            SUM(CASE WHEN status = 'draft'     THEN 1 ELSE 0 END)    AS draft,
+            SUM(CASE WHEN status = 'pending'   THEN 1 ELSE 0 END)    AS pending,
+            SUM(CASE WHEN status = 'approved'  THEN 1 ELSE 0 END)    AS approved,
+            SUM(CASE WHEN status = 'received'  THEN 1 ELSE 0 END)    AS received,
+            SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END)    AS completed,
+            SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END)    AS cancelled
+        ")->first();
 
         return Inertia::render('Dashboard/Purchases/Index', [
             'purchases' => $purchases,
-            'filters'   => $request->only(['search', 'status', 'destination_type']),
-            'summary'   => Purchase::query()->selectRaw("
-                COUNT(*) AS total,
-                COUNT(*) FILTER (WHERE status = 'pending')   AS pending,
-                COUNT(*) FILTER (WHERE status = 'approved')  AS approved,
-                COUNT(*) FILTER (WHERE status = 'received')  AS received,
-                COUNT(*) FILTER (WHERE status = 'completed') AS completed
-            ")->first(),
+            'filters'   => $request->only(['search', 'status', 'destination_type', 'date_from', 'date_to']),
+            'summary'   => $summary,
         ]);
     }
 
-    // ─── Create ───────────────────────────────────────────────────────────────
+    // =========================================================================
+    // CREATE
+    // =========================================================================
 
     public function create()
     {
         return Inertia::render('Dashboard/Purchases/Create', $this->formData());
     }
 
-    // ─── Store ────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // STORE — simpan sebagai draft
+    // =========================================================================
 
     public function store(Request $request)
     {
@@ -75,12 +120,11 @@ class PurchaseController extends Controller
                 'purchase_date'          => $v['purchase_date'],
                 'expected_delivery_date' => $v['expected_delivery_date'] ?? null,
                 'status'                 => 'draft',
-                // ★ decimal(15,2): simpan sebagai string numerik agar presisi terjaga
-                'tax'           => $v['tax']           ?? '0',
-                'discount'      => $v['discount']      ?? '0',
-                'shipping_cost' => $v['shipping_cost'] ?? '0',
-                'notes'         => $v['notes'] ?? null,
-                'created_by'    => auth()->id(),
+                'tax'                    => $v['tax']           ?? '0',
+                'discount'               => $v['discount']      ?? '0',
+                'shipping_cost'          => $v['shipping_cost'] ?? '0',
+                'notes'                  => $v['notes']         ?? null,
+                'created_by'             => auth()->id(),
             ]);
 
             [$subtotal] = $this->upsertItems($purchase, $v['items']);
@@ -95,10 +139,12 @@ class PurchaseController extends Controller
                 2
             );
 
-            // Jika kolom masih bigint, simpan sebagai integer
-            $colType = \Illuminate\Support\Facades\Schema::getColumnType('purchases', 'subtotal');
+            $colType = Schema::getColumnType('purchases', 'subtotal');
             if (str_contains($colType, 'int')) {
-                $purchase->update(['subtotal' => (int) round((float) $subtotal), 'total' => (int) round((float) $total)]);
+                $purchase->update([
+                    'subtotal' => (int) round((float) $subtotal),
+                    'total'    => (int) round((float) $total),
+                ]);
             } else {
                 $purchase->update(['subtotal' => $subtotal, 'total' => $total]);
             }
@@ -108,7 +154,9 @@ class PurchaseController extends Controller
             ->with('success', 'Purchase Order berhasil disimpan sebagai draft!');
     }
 
-    // ─── Show ─────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // SHOW
+    // =========================================================================
 
     public function show(string $id)
     {
@@ -132,7 +180,10 @@ class PurchaseController extends Controller
             $item->item_unit = $unit;
         });
 
-        $movements = StockMovement::where('reference_id', $purchase->id)
+        // ★ FIX [2]: tambah filter reference_type agar tidak collision dengan modul lain
+        // (StockTransfer, RepackTransaction, dll bisa punya UUID yang sama)
+        $movements = StockMovement::where('reference_type', Purchase::class)
+            ->where('reference_id', $purchase->id)
             ->with('creator:id,name')
             ->orderBy('created_at')
             ->get()
@@ -147,7 +198,9 @@ class PurchaseController extends Controller
         ]);
     }
 
-    // ─── Edit ─────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // EDIT
+    // =========================================================================
 
     public function edit(string $id)
     {
@@ -168,7 +221,9 @@ class PurchaseController extends Controller
         ));
     }
 
-    // ─── Update ───────────────────────────────────────────────────────────────
+    // =========================================================================
+    // UPDATE
+    // =========================================================================
 
     public function update(Request $request, string $id)
     {
@@ -180,7 +235,7 @@ class PurchaseController extends Controller
 
         $v = $this->validateUpdate($request);
 
-        // Kembalikan destination dari model — tidak boleh diubah via form
+        // destination tidak boleh diubah setelah dibuat
         $v['destination_type'] = $purchase->destination_type;
         $v['destination_id']   = $purchase->destination_id;
 
@@ -189,11 +244,10 @@ class PurchaseController extends Controller
                 'supplier_id'            => $v['supplier_id'],
                 'purchase_date'          => $v['purchase_date'],
                 'expected_delivery_date' => $v['expected_delivery_date'] ?? null,
-                'tax'           => $v['tax']           ?? '0',
-                'discount'      => $v['discount']      ?? '0',
-                'shipping_cost' => $v['shipping_cost'] ?? '0',
-                'notes'         => $v['notes'] ?? null,
-                // destination_type & destination_id tidak boleh diubah setelah dibuat
+                'tax'                    => $v['tax']           ?? '0',
+                'discount'               => $v['discount']      ?? '0',
+                'shipping_cost'          => $v['shipping_cost'] ?? '0',
+                'notes'                  => $v['notes']         ?? null,
             ]);
 
             $purchase->items()->delete();
@@ -209,9 +263,12 @@ class PurchaseController extends Controller
                 2
             );
 
-            $colType = \Illuminate\Support\Facades\Schema::getColumnType('purchases', 'subtotal');
+            $colType = Schema::getColumnType('purchases', 'subtotal');
             if (str_contains($colType, 'int')) {
-                $purchase->update(['subtotal' => (int) round((float) $subtotal), 'total' => (int) round((float) $total)]);
+                $purchase->update([
+                    'subtotal' => (int) round((float) $subtotal),
+                    'total'    => (int) round((float) $total),
+                ]);
             } else {
                 $purchase->update(['subtotal' => $subtotal, 'total' => $total]);
             }
@@ -221,7 +278,9 @@ class PurchaseController extends Controller
             ->with('success', 'Purchase Order berhasil diperbarui!');
     }
 
-    // ─── Workflow: submit ─────────────────────────────────────────────────────
+    // =========================================================================
+    // WORKFLOW: draft → pending
+    // =========================================================================
 
     public function submit(string $id)
     {
@@ -236,7 +295,9 @@ class PurchaseController extends Controller
         return back()->with('success', 'Purchase Order diajukan untuk approval.');
     }
 
-    // ─── Workflow: approve ────────────────────────────────────────────────────
+    // =========================================================================
+    // WORKFLOW: pending → approved
+    // =========================================================================
 
     public function approve(string $id)
     {
@@ -255,7 +316,9 @@ class PurchaseController extends Controller
         return back()->with('success', 'Purchase Order disetujui.');
     }
 
-    // ─── Workflow: receive ────────────────────────────────────────────────────
+    // =========================================================================
+    // WORKFLOW: approved → received
+    // =========================================================================
 
     public function receive(Request $request, string $id)
     {
@@ -279,7 +342,10 @@ class PurchaseController extends Controller
         return back()->with('success', 'Barang diterima. Silakan selesaikan PO untuk memperbarui stok.');
     }
 
-    // ─── Workflow: complete (STOCK + WAC + MOVEMENT) ──────────────────────────
+    // =========================================================================
+    // WORKFLOW: received → completed
+    // Update stok + WAC + StockMovement
+    // =========================================================================
 
     public function complete(string $id)
     {
@@ -294,9 +360,9 @@ class PurchaseController extends Controller
             $now    = now();
 
             foreach ($purchase->items as $item) {
-                // ★ quantity: integer signed (bisa negatif untuk retur)
-                $qty       = (int) $item->quantity;
-                // ★ unit_price: decimal(15,2) — pertahankan sebagai float/string untuk bcmath
+                // quantity: integer SIGNED (negatif = retur ke supplier)
+                $qty       = (int)   $item->quantity;
+                // unit_price kolom decimal(15,2) — cast ke float untuk WAC
                 $unitPrice = (float) $item->unit_price;
 
                 $stock = $this->findOrCreateStock(
@@ -307,11 +373,12 @@ class PurchaseController extends Controller
                     $unitPrice
                 );
 
-                $qtyBefore = (int)   $stock->quantity;
-                $avgBefore = (float) $stock->average_cost;
+                $qtyBefore = (int)   $stock->quantity;      // bigInteger SIGNED
+                $avgBefore = (float) $stock->average_cost;  // decimal(15,4)
                 $qtyAfter  = $qtyBefore + $qty;
 
-                // WAC — average_cost di stock tables: decimal(15,4)
+                // Hitung WAC baru — decimal(15,4)
+                // WAC = (stok_lama × avg_lama + qty_baru × harga_beli) / stok_baru
                 if ($qtyAfter > 0) {
                     $newAvgCost = round(
                         (($qtyBefore * $avgBefore) + ($qty * $unitPrice)) / $qtyAfter,
@@ -320,41 +387,49 @@ class PurchaseController extends Controller
                 } elseif ($qtyAfter === 0) {
                     $newAvgCost = 0.0;
                 } else {
-                    // Stok minus (retur melebihi stok) — pertahankan avg lama
+                    // Stok minus (retur > stok) — pertahankan avg lama
                     $newAvgCost = $avgBefore;
                 }
 
                 $stock->update([
-                    'quantity'     => $qtyAfter,
-                    'average_cost' => $newAvgCost,
-                    'total_value'  => max(0, round($qtyAfter * $newAvgCost, 2)),
+                    'quantity'     => $qtyAfter,                             // bigInteger SIGNED
+                    'average_cost' => $newAvgCost,                           // decimal(15,4)
+                    'total_value'  => max(0, round($qtyAfter * $newAvgCost, 2)), // decimal(15,2)
                     'last_in_at'   => $now,
                     'last_in_by'   => $userId,
                     'last_in_qty'  => $qty,
                 ]);
 
-                // Sync ke master ingredient / packaging_material
+                // Sync WAC ke tabel master agar HPP tersedia tanpa JOIN
                 $this->syncMasterAverageCost($item->item_type, $item->item_id, $newAvgCost);
 
+                // ★ FIX [1]: field sesuai migration — semua field wajib ada
                 StockMovement::create([
-                    'location_type'    => $purchase->destination_type,
+                    // Lokasi
+                    'location_type'    => $purchase->destination_type,      // 'warehouse'|'store'
                     'location_id'      => $purchase->destination_id,
-                    'stockable_type'   => get_class($stock),
-                    'stockable_id'     => $stock->id,
-                    'item_type'        => $item->item_type,
+                    // Jenis gerakan
+                    'movement_type'    => 'purchase_in',                    // enum migration ✓
+                    // Item
+                    'item_type'        => $item->item_type,                 // 'ingredient'|'packaging_material'
                     'item_id'          => $item->item_id,
-                    'movement_type'    => 'purchase_in',
+                    // Kuantitas SIGNED
+                    'qty_change'       => $qty,                             // positif=masuk, negatif=retur
+                    'qty_before'       => $qtyBefore,
+                    'qty_after'        => $qtyAfter,
+                    // Nilai — presisi sesuai migration
+                    'unit_cost'        => $unitPrice,                       // decimal(15,4)
+                    'total_cost'       => round(abs($qty) * $unitPrice, 2), // decimal(15,2)
+                    'avg_cost_before'  => $avgBefore,                       // decimal(15,4)
+                    'avg_cost_after'   => $newAvgCost,                      // decimal(15,4)
+                    // Referensi dokumen
+                    'reference_type'   => Purchase::class,                  // FQCN — wajib ada
                     'reference_id'     => $purchase->id,
                     'reference_number' => $purchase->purchase_number,
-                    'quantity'         => $qty,               // signed integer
-                    'unit_cost'        => $unitPrice,         // decimal
-                    'stock_before'     => $qtyBefore,
-                    'stock_after'      => $qtyAfter,
-                    'avg_cost_before'  => $avgBefore,         // decimal(15,4)
-                    'avg_cost_after'   => $newAvgCost,        // decimal(15,4)
+                    // Metadata
                     'movement_date'    => $purchase->purchase_date,
-                    'notes'            => "PO {$purchase->purchase_number} dari {$purchase->supplier->name}",
                     'created_by'       => $userId,
+                    'notes'            => "PO {$purchase->purchase_number} dari {$purchase->supplier->name}",
                 ]);
             }
 
@@ -365,7 +440,9 @@ class PurchaseController extends Controller
             ->with('success', 'Purchase Order selesai! Stok & HPP berhasil diperbarui.');
     }
 
-    // ─── Workflow: cancel ─────────────────────────────────────────────────────
+    // =========================================================================
+    // WORKFLOW: cancel
+    // =========================================================================
 
     public function cancel(Request $request, string $id)
     {
@@ -375,9 +452,7 @@ class PurchaseController extends Controller
             return back()->withErrors(['status' => 'Purchase Order tidak dapat dibatalkan.']);
         }
 
-        $request->validate([
-            'reason' => 'nullable|string|max:1000',
-        ]);
+        $request->validate(['reason' => 'nullable|string|max:1000']);
 
         $purchase->update([
             'status'              => 'cancelled',
@@ -388,7 +463,9 @@ class PurchaseController extends Controller
             ->with('success', 'Purchase Order dibatalkan.');
     }
 
-    // ─── Destroy (draft only) ─────────────────────────────────────────────────
+    // =========================================================================
+    // DESTROY — hanya draft
+    // =========================================================================
 
     public function destroy(string $id)
     {
@@ -404,21 +481,23 @@ class PurchaseController extends Controller
             ->with('success', 'Draft Purchase Order dihapus.');
     }
 
-    // ─── Private helpers ──────────────────────────────────────────────────────
+    // =========================================================================
+    // PRIVATE HELPERS
+    // =========================================================================
 
-    /**
-     * Data dropdown yang dipakai di Create & Edit.
-     */
     private function formData(): array
     {
         return [
-            'suppliers'          => Supplier::where('is_active', true)->orderBy('name')
+            'suppliers' => Supplier::where('is_active', true)
+                ->orderBy('name')
                 ->get(['id', 'name', 'code', 'payment_term', 'credit_limit']),
-            'warehouses'         => Warehouse::where('is_active', true)->orderBy('name')
+            'warehouses' => Warehouse::where('is_active', true)
+                ->orderBy('name')
                 ->get(['id', 'name', 'code']),
-            'stores'             => Store::where('is_active', true)->orderBy('name')
+            'stores' => Store::where('is_active', true)
+                ->orderBy('name')
                 ->get(['id', 'name', 'code']),
-            'ingredients'        => Ingredient::where('is_active', true)
+            'ingredients' => Ingredient::where('is_active', true)
                 ->with('category:id,name')
                 ->orderBy('sort_order')->orderBy('name')
                 ->get(['id', 'name', 'code', 'unit', 'ingredient_category_id', 'average_cost']),
@@ -430,14 +509,10 @@ class PurchaseController extends Controller
     }
 
     /**
-     * Validasi request untuk store & update.
+     * Rules dasar yang dipakai oleh store() dan update().
      *
-     * ★ unit_price & money fields: numeric (bukan integer) karena migration
-     *   006 menggunakan decimal(15,2) — support Rp 12.000,59.
-     * ★ quantity: integer signed (negatif = retur ke supplier).
-     */
-    /**
-     * Rules dasar yang dipakai oleh store() maupun update().
+     * unit_price: numeric (bukan integer) — kolom decimal(15,2) support Rp 12.500,50
+     * quantity  : integer signed — negatif untuk retur ke supplier
      */
     private function baseRules(): array
     {
@@ -458,9 +533,6 @@ class PurchaseController extends Controller
         ];
     }
 
-    /**
-     * Validasi untuk store() — destination wajib ada.
-     */
     private function validateStore(Request $request): array
     {
         return $request->validate(array_merge($this->baseRules(), [
@@ -469,37 +541,30 @@ class PurchaseController extends Controller
         ]));
     }
 
-    /**
-     * Validasi untuk update() — destination TIDAK dikirim dari form (read-only).
-     * Ambil destination dari model yang sudah ada.
-     */
     private function validateUpdate(Request $request): array
     {
         return $request->validate($this->baseRules());
     }
 
     /**
-     * Insert items, hitung & kembalikan subtotal sebagai string bcmath.
+     * Insert purchase_items, kembalikan [subtotal_bcmath_string].
      *
-     * @return array{0: string}  [ subtotal_string ]
+     * Kompatibel dengan kolom bigInteger (migration lama) maupun decimal(15,2).
+     * Deteksi tipe kolom sekali per request — bukan per item.
+     *
+     * @return array{0: string}
      */
     private function upsertItems(Purchase $purchase, array $items): array
     {
         $subtotal = '0';
-
-        // Cek tipe kolom sekali saja (bukan per-item) untuk kompatibilitas
-        // migration lama (unsignedBigInteger) vs migration 006 (decimal 15,2).
-        $colType   = \Illuminate\Support\Facades\Schema::getColumnType('purchase_items', 'unit_price');
-        $isInteger = str_contains($colType, 'int');
+        $colType  = Schema::getColumnType('purchase_items', 'unit_price');
+        $isInt    = str_contains($colType, 'int');
 
         foreach ($items as $item) {
-            $qty      = (int) $item['quantity'];
-            $rawPrice = (float) $item['unit_price'];
-
-            // Bigint column  → bulatkan ke integer
-            // Decimal column → pertahankan 2 desimal
-            $unitPrice = $isInteger ? (int) round($rawPrice) : round($rawPrice, 2);
-            $lineTotal = $isInteger ? (int) round($qty * $unitPrice) : round($qty * $unitPrice, 2);
+            $qty       = (int)   $item['quantity'];
+            $rawPrice  = (float) $item['unit_price'];
+            $unitPrice = $isInt ? (int) round($rawPrice) : round($rawPrice, 2);
+            $lineTotal = $isInt ? (int) round($qty * $unitPrice) : round($qty * $unitPrice, 2);
             $subtotal  = bcadd($subtotal, (string) $lineTotal, 2);
 
             $purchase->items()->create([
@@ -515,9 +580,6 @@ class PurchaseController extends Controller
         return [$subtotal];
     }
 
-    /**
-     * Cari stock record; buat baru jika belum ada.
-     */
     private function findOrCreateStock(
         string $locType,
         string $locId,
@@ -528,29 +590,21 @@ class PurchaseController extends Controller
         $stock = $this->findStock($locType, $locId, $itemType, $itemId);
         if ($stock) return $stock;
 
-        $base = [
-            'quantity'     => 0,
-            'average_cost' => $initialCost, // decimal(15,4)
-            'total_value'  => 0,
-        ];
+        $base = ['quantity' => 0, 'average_cost' => $initialCost, 'total_value' => 0.0];
 
         return match ([$locType, $itemType]) {
-            ['warehouse', 'ingredient']         => WarehouseIngredientStock::create(array_merge($base, [
-                'warehouse_id'  => $locId,
-                'ingredient_id' => $itemId,
-            ])),
-            ['warehouse', 'packaging_material'] => WarehousePackagingStock::create(array_merge($base, [
-                'warehouse_id'          => $locId,
-                'packaging_material_id' => $itemId,
-            ])),
-            ['store', 'ingredient']             => StoreIngredientStock::create(array_merge($base, [
-                'store_id'      => $locId,
-                'ingredient_id' => $itemId,
-            ])),
-            ['store', 'packaging_material']     => StorePackagingStock::create(array_merge($base, [
-                'store_id'              => $locId,
-                'packaging_material_id' => $itemId,
-            ])),
+            ['warehouse', 'ingredient']         => WarehouseIngredientStock::create(
+                array_merge($base, ['warehouse_id' => $locId, 'ingredient_id' => $itemId])
+            ),
+            ['warehouse', 'packaging_material'] => WarehousePackagingStock::create(
+                array_merge($base, ['warehouse_id' => $locId, 'packaging_material_id' => $itemId])
+            ),
+            ['store', 'ingredient']             => StoreIngredientStock::create(
+                array_merge($base, ['store_id' => $locId, 'ingredient_id' => $itemId])
+            ),
+            ['store', 'packaging_material']     => StorePackagingStock::create(
+                array_merge($base, ['store_id' => $locId, 'packaging_material_id' => $itemId])
+            ),
             default => throw new \InvalidArgumentException(
                 "Unknown stock combination: [{$locType}, {$itemType}]"
             ),
@@ -560,35 +614,23 @@ class PurchaseController extends Controller
     private function findStock(string $locType, string $locId, string $itemType, string $itemId)
     {
         return match ([$locType, $itemType]) {
-            ['warehouse', 'ingredient']         =>
-                WarehouseIngredientStock::where('warehouse_id', $locId)
-                    ->where('ingredient_id', $itemId)->first(),
-            ['warehouse', 'packaging_material'] =>
-                WarehousePackagingStock::where('warehouse_id', $locId)
-                    ->where('packaging_material_id', $itemId)->first(),
-            ['store', 'ingredient']             =>
-                StoreIngredientStock::where('store_id', $locId)
-                    ->where('ingredient_id', $itemId)->first(),
-            ['store', 'packaging_material']     =>
-                StorePackagingStock::where('store_id', $locId)
-                    ->where('packaging_material_id', $itemId)->first(),
+            ['warehouse', 'ingredient']         => WarehouseIngredientStock::where('warehouse_id', $locId)->where('ingredient_id', $itemId)->first(),
+            ['warehouse', 'packaging_material'] => WarehousePackagingStock::where('warehouse_id', $locId)->where('packaging_material_id', $itemId)->first(),
+            ['store', 'ingredient']             => StoreIngredientStock::where('store_id', $locId)->where('ingredient_id', $itemId)->first(),
+            ['store', 'packaging_material']     => StorePackagingStock::where('store_id', $locId)->where('packaging_material_id', $itemId)->first(),
             default => null,
         };
     }
 
     /**
-     * Sync average_cost ke tabel master agar HPP selalu tersedia tanpa join.
-     *
-     * Catatan: jika item ada di beberapa lokasi, master menyimpan WAC PO terakhir.
-     * Gunakan aggregate WAC lintas lokasi sebagai future improvement.
+     * Sync WAC ke tabel master agar HPP selalu tersedia tanpa JOIN ke stock tables.
+     * Master menyimpan WAC dari PO terakhir per item.
      */
     private function syncMasterAverageCost(string $itemType, string $itemId, float $newAvgCost): void
     {
         match ($itemType) {
-            'ingredient'         => Ingredient::where('id', $itemId)
-                                        ->update(['average_cost' => $newAvgCost]),
-            'packaging_material' => PackagingMaterial::where('id', $itemId)
-                                        ->update(['average_cost' => $newAvgCost]),
+            'ingredient'         => Ingredient::where('id', $itemId)->update(['average_cost' => $newAvgCost]),
+            'packaging_material' => PackagingMaterial::where('id', $itemId)->update(['average_cost' => $newAvgCost]),
             default              => null,
         };
     }

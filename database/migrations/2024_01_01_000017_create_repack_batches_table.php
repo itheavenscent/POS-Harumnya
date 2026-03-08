@@ -176,68 +176,76 @@ return new class extends Migration
         Schema::create('stock_movements', function (Blueprint $table) {
             $table->uuid('id')->primary();
 
-            // Lokasi & item (polimorfik)
-            $table->string('location_type', 20)->comment('warehouse | store');
-            $table->uuid('location_id');
-            $table->string('item_type', 30)->comment('ingredient | packaging_material');
-            $table->uuid('item_id');
+            // ── Lokasi gerakan ────────────────────────────────────────────────
+            $table->enum('location_type', ['warehouse', 'store']);
+            $table->uuid('location_id')
+                  ->comment('warehouse_id atau store_id');
 
+            // ── Jenis gerakan ─────────────────────────────────────────────────
             $table->enum('movement_type', [
-                'purchase_in',       // Pembelian dari supplier
-                'transfer_in',       // Transfer masuk
-                'transfer_out',      // Transfer keluar
-                'repack_in',         // Output hasil repack masuk
-                'repack_out',        // Bahan dikonsumsi repack
-                'sale_out',          // Keluar karena penjualan POS
-                'adjustment_in',     // Koreksi masuk (stok opname surplus)
-                'adjustment_out',    // Koreksi keluar (stok opname kurang)
-                'return_in',         // Retur dari customer
-                'return_out',        // Retur ke supplier
-                'expired_out',       // Disposal kadaluarsa
-                'waste',             // Terbuang / rusak
+                'purchase_in',
+                'transfer_in',
+                'transfer_out',
+                'adjustment_in',
+                'adjustment_out',
+                'waste',
+                'sale_deduction',
+                'return_in',
+                'return_out',
+                'production_in',
+                'production_out',
             ]);
 
-            // ★ bigInteger SIGNED — qty bisa negatif
+            // ── Item yang bergerak ────────────────────────────────────────────
+            $table->enum('item_type', ['ingredient', 'packaging_material']);
+            $table->uuid('item_id')
+                  ->comment('ingredient_id atau packaging_material_id');
+
+            // ── Kuantitas (SIGNED integer, konsisten dengan stock tables) ─────
             $table->bigInteger('qty_change')
-                  ->comment('Perubahan qty: positif = masuk, negatif = keluar');
-            $table->bigInteger('qty_before')
-                  ->comment('Stok sebelum gerakan ini');
-            $table->bigInteger('qty_after')
-                  ->comment('Stok setelah = qty_before + qty_change');
+                  ->comment('SIGNED: negatif=keluar, positif=masuk');
+            $table->bigInteger('qty_before')->default(0)
+                  ->comment('Stok sebelum gerakan (snapshot)');
+            $table->bigInteger('qty_after')->default(0)
+                  ->comment('Stok setelah gerakan (snapshot)');
 
-            // ★ decimal(15,4) → WAC presisi untuk recalculation
+            // ── HPP / Nilai ───────────────────────────────────────────────────
             $table->decimal('unit_cost', 15, 4)->default(0)
-                  ->comment('Cost per unit saat gerakan ini');
-            // ★ decimal(15,2) → nilai rupiah
+                  ->comment('WAC per unit saat gerakan — decimal(15,4) konsisten dengan stock tables');
             $table->decimal('total_cost', 15, 2)->default(0)
-                  ->comment('|qty_change| × unit_cost (rupiah)');
+                  ->comment('|qty_change| × unit_cost — decimal(15,2)');
             $table->decimal('avg_cost_before', 15, 4)->default(0)
-                  ->comment('WAC sebelum gerakan (snapshot)');
+                  ->comment('WAC lokasi sebelum gerakan — snapshot');
             $table->decimal('avg_cost_after', 15, 4)->default(0)
-                  ->comment('WAC setelah gerakan (snapshot)');
+                  ->comment('WAC lokasi setelah gerakan — snapshot');
 
-            // Referensi ke dokumen sumber (polimorfik)
-            $table->string('reference_type', 100)->nullable()
-                  ->comment('App\\Models\\Sale, App\\Models\\Purchase, dll');
-            $table->uuid('reference_id')->nullable();
-            $table->string('reference_number', 100)->nullable()
-                  ->comment('Nomor dokumen untuk display');
+            // ── Referensi dokumen asal ────────────────────────────────────────
+            $table->string('reference_type', 100)
+                  ->comment('FQCN: App\\Models\\Sale, App\\Models\\Purchase, dll');
+            $table->uuid('reference_id');
+            $table->string('reference_number', 50)->nullable()
+                  ->comment('Human-readable: INV-..., PO-..., TRF-..., ADJ-...');
 
-            $table->date('movement_date');
+            // ── Metadata ──────────────────────────────────────────────────────
+            $table->date('movement_date')
+                  ->comment('Tanggal efektif (bisa berbeda dari created_at, misal backdate PO)');
+            $table->foreignId('created_by')->nullable()
+                  ->constrained('users')->nullOnDelete();
             $table->text('notes')->nullable();
-            $table->unsignedBigInteger('created_by')->nullable();
+
             $table->timestamps();
 
-            $table->foreign('created_by')->references('id')->on('users')->nullOnDelete();
-
-            // ★ Index utama: history per item per lokasi
-            $table->index(
-                ['location_type', 'location_id', 'item_type', 'item_id', 'movement_date'],
-                'idx_stmov_item_history'
-            );
-            $table->index(['movement_type', 'movement_date'], 'idx_stmov_type_date');
-            $table->index(['reference_type', 'reference_id'], 'idx_stmov_ref');
-            $table->index('movement_date');
+            // ── Index untuk query umum ────────────────────────────────────────
+            // 1. Cari semua movement dari 1 dokumen (Sale / PO / Transfer / Adj)
+            $table->index(['reference_type', 'reference_id'],                        'idx_sm_reference');
+            // 2. Laporan stok per lokasi berdasarkan tanggal
+            $table->index(['location_type', 'location_id', 'movement_date'],         'idx_sm_location_date');
+            // 3. Kartu stok per item (semua lokasi)
+            $table->index(['item_type', 'item_id', 'movement_date'],                 'idx_sm_item_date');
+            // 4. Filter by movement_type
+            $table->index(['movement_type', 'movement_date'],                        'idx_sm_type_date');
+            // 5. Kartu stok per item di 1 lokasi (query paling sering di detail stok)
+            $table->index(['location_type', 'location_id', 'item_type', 'item_id'], 'idx_sm_loc_item');
         });
 
         // ── REPACK TRANSACTIONS (Header) ──────────────────────────────────────

@@ -3,91 +3,121 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * StockMovement
+ *
+ * Satu model untuk semua pergerakan stok lintas modul.
+ *
+ * @property string      $id
+ * @property string      $location_type    warehouse|store
+ * @property string      $location_id
+ * @property string      $movement_type    purchase_in|transfer_in|transfer_out|adjustment_in|adjustment_out|waste|sale_deduction|...
+ * @property string      $item_type        ingredient|packaging_material
+ * @property string      $item_id
+ * @property int         $qty_change       SIGNED (negatif=keluar, positif=masuk)
+ * @property int         $qty_before
+ * @property int         $qty_after
+ * @property float       $unit_cost        decimal(15,4)
+ * @property float       $total_cost       decimal(15,2)
+ * @property float       $avg_cost_before  decimal(15,4)
+ * @property float       $avg_cost_after   decimal(15,4)
+ * @property string      $reference_type   FQCN (App\Models\Sale, dll)
+ * @property string      $reference_id
+ * @property string|null $reference_number
+ * @property \Carbon\Carbon $movement_date
+ * @property int|null    $created_by
+ * @property string|null $notes
+ */
 class StockMovement extends Model
 {
-    use HasUuids;
-
+        use HasUuids;
     protected $fillable = [
-        'location_type', 'location_id',
-        'item_type', 'item_id',
+        'location_type',
+        'location_id',
         'movement_type',
-        'reference_type', 'reference_id', 'reference_number',
-        // ★ Migration 007: qty_change / qty_before / qty_after (bukan quantity/stock_before/stock_after)
+        'item_type',
+        'item_id',
         'qty_change',
         'qty_before',
         'qty_after',
-        // ★ Migration 007: unit_cost decimal(15,4), total_cost decimal(15,2)
         'unit_cost',
         'total_cost',
-        // avg_cost tetap decimal(15,4)
         'avg_cost_before',
         'avg_cost_after',
-        'movement_date', 'notes', 'created_by',
+        'reference_type',
+        'reference_id',
+        'reference_number',
+        'movement_date',
+        'created_by',
+        'notes',
     ];
 
     protected $casts = [
-        // bigInteger SIGNED — qty bisa negatif (transfer_out, repack_out, dll)
         'qty_change'      => 'integer',
         'qty_before'      => 'integer',
         'qty_after'       => 'integer',
-        // decimal(15,4) — snapshot WAC per unit saat transaksi
-        'unit_cost'       => 'decimal:4',
-        // decimal(15,2) — abs(qty_change) × unit_cost
-        'total_cost'      => 'decimal:2',
-        // decimal(15,4) — weighted average cost sebelum/sesudah
-        'avg_cost_before' => 'decimal:4',
-        'avg_cost_after'  => 'decimal:4',
+        'unit_cost'       => 'float',
+        'total_cost'      => 'float',
+        'avg_cost_before' => 'float',
+        'avg_cost_after'  => 'float',
         'movement_date'   => 'date',
-        'created_by'      => 'integer',
     ];
 
-    // ─── Relationships ──────────────────────────────────────────────────────────
+    // ── Relations ─────────────────────────────────────────────────────────────
 
-    public function creator() { return $this->belongsTo(User::class, 'created_by'); }
-
-    // ─── Scopes ─────────────────────────────────────────────────────────────────
-
-    public function scopeByType($query, string $type)
+    /**
+     * Alias 'creator' agar kompatibel dengan with('creator:id,name')
+     * yang sudah dipakai di StockAdjustmentController & StockTransferController.
+     */
+    public function creator(): BelongsTo
     {
-        return $query->where('movement_type', $type);
+        return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function scopeByLocation($query, string $type, string $id)
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    // ── Scopes ────────────────────────────────────────────────────────────────
+
+    public function scopeForLocation(Builder $query, string $type, string $id): Builder
     {
         return $query->where('location_type', $type)->where('location_id', $id);
     }
 
-    public function scopeByDateRange($query, string $from, string $to)
+    public function scopeForStore(Builder $query, string $storeId): Builder
     {
-        return $query->whereBetween('movement_date', [$from, $to]);
+        return $query->where('location_type', 'store')->where('location_id', $storeId);
     }
 
-    // ─── Helpers ─────────────────────────────────────────────────────────────────
+    public function scopeForWarehouse(Builder $query, string $warehouseId): Builder
+    {
+        return $query->where('location_type', 'warehouse')->where('location_id', $warehouseId);
+    }
 
-    /** Masuk: qty_change positif */
-    public function isIn():  bool { return $this->qty_change > 0; }
-    /** Keluar: qty_change negatif */
+    public function scopeForItem(Builder $query, string $itemType, string $itemId): Builder
+    {
+        return $query->where('item_type', $itemType)->where('item_id', $itemId);
+    }
+
+    public function scopeForReference(Builder $query, string $referenceId): Builder
+    {
+        return $query->where('reference_id', $referenceId);
+    }
+
+    public function scopeSaleDeductions(Builder $query): Builder
+    {
+        return $query->where('movement_type', 'sale_deduction');
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
     public function isOut(): bool { return $this->qty_change < 0; }
-
-    public function getMovementTypeLabelAttribute(): string
-    {
-        return match ($this->movement_type) {
-            'purchase_in'    => 'Pembelian Masuk',
-            'transfer_in'    => 'Transfer Masuk',
-            'transfer_out'   => 'Transfer Keluar',
-            'repack_in'      => 'Repack Masuk',
-            'repack_out'     => 'Repack Keluar',
-            'production_in'  => 'Produksi Masuk',
-            'production_out' => 'Produksi Keluar',
-            'sales_out'      => 'Penjualan',
-            'adjustment_in'  => 'Penyesuaian (+)',
-            'adjustment_out' => 'Penyesuaian (-)',
-            'waste'          => 'Waste/Rusak',
-            'return_in'      => 'Retur Masuk',
-            'return_out'     => 'Retur Keluar',
-            default          => ucwords(str_replace('_', ' ', $this->movement_type)),
-        };
-    }
+    public function isIn(): bool  { return $this->qty_change > 0; }
+    public function absQty(): int { return abs($this->qty_change); }
 }

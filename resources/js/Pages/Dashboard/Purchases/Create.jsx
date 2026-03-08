@@ -9,21 +9,17 @@ import {
 import toast from "react-hot-toast";
 
 // ─── Money helpers ─────────────────────────────────────────────────────────────
-// Migration 006: decimal(15,2) → support sen / desimal
 const fmtRp = (n) =>
     new Intl.NumberFormat("id-ID", {
         style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2,
     }).format(parseFloat(n) || 0);
 
-// Parse string "12.000,59" → "12000.59"  (simpan sebagai string agar presisi)
 const parseDecimal = (str) => {
-    // Hapus titik ribuan, ganti koma desimal → titik
     const cleaned = String(str).replace(/\./g, "").replace(",", ".");
     const num = parseFloat(cleaned);
     return isNaN(num) ? "0" : num.toFixed(2);
 };
 
-// Format angka numerik ke tampilan "12.000,59"
 const displayDecimal = (val) => {
     if (val === "" || val === null || val === undefined) return "";
     const num = parseFloat(val);
@@ -95,7 +91,6 @@ function SearchSelect({ options, value, onChange, placeholder = "Cari...", rende
 }
 
 // ─── Decimal money input ───────────────────────────────────────────────────────
-// Menampilkan format ribuan, menyimpan string "12000.59" ke state
 function MoneyInput({ value, onChange, placeholder = "0", className = "" }) {
     const [display, setDisplay] = useState(displayDecimal(value));
 
@@ -104,7 +99,6 @@ function MoneyInput({ value, onChange, placeholder = "0", className = "" }) {
     }, [value]);
 
     const handleChange = (e) => {
-        // Izinkan karakter angka, titik (ribuan), koma (desimal)
         const raw = e.target.value.replace(/[^\d.,]/g, "");
         setDisplay(raw);
     };
@@ -158,10 +152,28 @@ export default function Create({ suppliers, warehouses, stores, ingredients, pac
     const usedItemIds = data.items.map((i) => i.item_id).filter(Boolean);
     const addItem     = () => setData("items", [...data.items, { item_type: "ingredient", item_id: "", quantity: "", unit_price: "0", notes: "" }]);
     const removeItem  = (idx) => setData("items", data.items.filter((_, i) => i !== idx));
-    const updateItem  = (idx, key, val) =>
+
+    // Update satu field saja
+    const updateItem = (idx, key, val) =>
         setData("items", data.items.map((item, i) => (i === idx ? { ...item, [key]: val } : item)));
 
-    // Hitung subtotal & total menggunakan parseFloat
+    // ✅ FIX: Update item_id + unit_price sekaligus dalam satu setData
+    // agar tidak terjadi race condition antar dua pemanggilan updateItem terpisah
+    const selectItem = (idx, itemId, allItemsList) => {
+        const found    = allItemsList.find((i) => i.id === itemId);
+        const refPrice = found?.average_cost ?? found?.purchase_price ?? "0";
+
+        setData("items", data.items.map((item, i) => {
+            if (i !== idx) return item;
+            return {
+                ...item,
+                item_id:    itemId,
+                // Auto-isi harga hanya jika belum ada harga sebelumnya
+                unit_price: parseFloat(item.unit_price) ? item.unit_price : String(parseFloat(refPrice) || "0"),
+            };
+        }));
+    };
+
     const subtotal = data.items.reduce((s, i) => {
         const qty   = parseInt(i.quantity) || 0;
         const price = parseFloat(i.unit_price) || 0;
@@ -264,10 +276,10 @@ export default function Create({ suppliers, warehouses, stores, ingredients, pac
 
                         <div className="space-y-3">
                             {data.items.map((item, idx) => {
-                                const qty      = parseInt(item.quantity) || 0;
-                                const price    = parseFloat(item.unit_price) || 0;
+                                const qty       = parseInt(item.quantity) || 0;
+                                const price     = parseFloat(item.unit_price) || 0;
                                 const lineTotal = qty * price;
-                                const filtered = allItems.filter((i) =>
+                                const filtered  = allItems.filter((i) =>
                                     i._type === item.item_type && (!usedItemIds.includes(i.id) || i.id === item.item_id)
                                 );
                                 const ing = allItems.find((i) => i._type === item.item_type && i.id === item.item_id);
@@ -291,15 +303,7 @@ export default function Create({ suppliers, warehouses, stores, ingredients, pac
                                                 <SearchSelect
                                                     options={filtered}
                                                     value={item.item_id}
-                                                    onChange={(v) => {
-                                                        const found = filtered.find((i) => i.id === v);
-                                                        const refPrice = found?.average_cost ?? found?.purchase_price ?? "0";
-                                                        updateItem(idx, "item_id", v);
-                                                        // Auto-isi harga referensi jika belum diisi
-                                                        if (!parseFloat(item.unit_price)) {
-                                                            updateItem(idx, "unit_price", String(parseFloat(refPrice) || "0"));
-                                                        }
-                                                    }}
+                                                    onChange={(v) => selectItem(idx, v, filtered)}
                                                     placeholder="Cari item..."
                                                     renderOption={(i) => `${i.name} (${i.code})`} />
                                                 {errors[`items.${idx}.item_id`] && (
@@ -311,7 +315,7 @@ export default function Create({ suppliers, warehouses, stores, ingredients, pac
                                                     </p>
                                                 )}
                                             </div>
-                                            {/* Qty — integer signed */}
+                                            {/* Qty */}
                                             <div className="col-span-2">
                                                 <label className="block text-xs font-bold text-slate-500 mb-1">
                                                     Qty{ing ? ` (${ing.unit ?? ing.size?.name ?? "pcs"})` : ""}
@@ -325,7 +329,7 @@ export default function Create({ suppliers, warehouses, stores, ingredients, pac
                                                     <p className="text-red-500 text-xs mt-1">{errors[`items.${idx}.quantity`]}</p>
                                                 )}
                                             </div>
-                                            {/* Harga — decimal */}
+                                            {/* Harga */}
                                             <div className="col-span-3">
                                                 <label className="block text-xs font-bold text-slate-500 mb-1">Harga/Unit (Rp)</label>
                                                 <MoneyInput

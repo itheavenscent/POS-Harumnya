@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\StockTransfer;
-use App\Models\StockTransferItem;
 use App\Models\StockMovement;
 use App\Models\Ingredient;
 use App\Models\PackagingMaterial;
@@ -18,22 +17,48 @@ use App\Models\WarehousePackagingStock;
 use App\Models\StoreIngredientStock;
 use App\Models\StorePackagingStock;
 
+/**
+ * StockTransferController — PRODUCTION READY
+ *
+ * Perbaikan dari versi sebelumnya:
+ *
+ * [1] show() — StockMovement query tanpa reference_type
+ *       ✗ where('reference_id', $transfer->id)
+ *         → risiko collision antar modul
+ *       ✓ ditambah: where('reference_type', StockTransfer::class)
+ *
+ * Semua StockMovement::create() di send() dan receive() sudah benar sejak awal:
+ *   ✓ qty_change (SIGNED: -sentQty untuk out, +rcvQty untuk in)
+ *   ✓ qty_before / qty_after
+ *   ✓ unit_cost (15,4) / total_cost (15,2)
+ *   ✓ avg_cost_before / avg_cost_after (15,4)
+ *   ✓ reference_type (FQCN) / reference_id / reference_number
+ *   ✓ movement_type: 'transfer_out' | 'transfer_in' (sesuai enum migration)
+ *
+ * Alur status:
+ *   draft → pending → approved → in_transit → completed
+ *                  ↘ cancelled (dari draft / pending / approved)
+ */
 class StockTransferController extends Controller
 {
-    // ─── Index ────────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // INDEX
+    // =========================================================================
 
     public function index(Request $request)
     {
         $transfers = StockTransfer::query()
             ->with(['creator:id,name', 'items'])
-            ->when($request->search, fn($q, $s) =>
+            ->when($request->search, fn ($q, $s) =>
                 $q->where('transfer_number', 'like', "%{$s}%")
                   ->orWhere('notes', 'like', "%{$s}%")
             )
-            ->when($request->status,    fn($q, $s) => $q->where('status', $s))
-            ->when($request->from_type, fn($q, $t) => $q->where('from_location_type', $t))
-            ->latest('transfer_date')->latest('created_at')
-            ->paginate(15)->withQueryString();
+            ->when($request->status,    fn ($q, $s) => $q->where('status', $s))
+            ->when($request->from_type, fn ($q, $t) => $q->where('from_location_type', $t))
+            ->latest('transfer_date')
+            ->latest('created_at')
+            ->paginate(15)
+            ->withQueryString();
 
         $transfers->getCollection()->each(function ($t) {
             $t->from_name = $this->locationName($t->from_location_type, $t->from_location_id);
@@ -52,7 +77,9 @@ class StockTransferController extends Controller
         ]);
     }
 
-    // ─── Create ───────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // CREATE
+    // =========================================================================
 
     public function create()
     {
@@ -63,7 +90,9 @@ class StockTransferController extends Controller
         ]);
     }
 
-    // ─── Store ────────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // STORE
+    // =========================================================================
 
     public function store(Request $request)
     {
@@ -86,7 +115,7 @@ class StockTransferController extends Controller
             return back()->withErrors(['to_location_id' => 'Lokasi asal dan tujuan tidak boleh sama.']);
         }
 
-        // Validasi: qty diminta tidak boleh melebihi stok tersedia
+        // Validasi stok tersedia sebelum menyimpan
         foreach ($v['items'] as $idx => $item) {
             $stock     = $this->findStock($v['from_location_type'], $v['from_location_id'], $item['item_type'], $item['item_id']);
             $available = $stock ? (int) $stock->quantity : 0;
@@ -112,8 +141,7 @@ class StockTransferController extends Controller
 
             foreach ($v['items'] as $item) {
                 $stock    = $this->findStock($v['from_location_type'], $v['from_location_id'], $item['item_type'], $item['item_id']);
-                // unit_cost → decimal(15,4): WAC snapshot
-                $unitCost = $stock ? (float) $stock->average_cost : 0.0;
+                $unitCost = $stock ? (float) $stock->average_cost : 0.0; // decimal(15,4) snapshot
                 $transfer->items()->create([
                     'item_type'          => $item['item_type'],
                     'item_id'            => $item['item_id'],
@@ -130,7 +158,9 @@ class StockTransferController extends Controller
             ->with('success', 'Transfer berhasil disimpan sebagai draft!');
     }
 
-    // ─── Show ─────────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // SHOW
+    // =========================================================================
 
     public function show(string $id)
     {
@@ -151,8 +181,9 @@ class StockTransferController extends Controller
             $item->source_stock = $stock ? (int) $stock->quantity : 0;
         });
 
-        // Movements — menggunakan field qty_change/qty_before/qty_after sesuai migration
-        $movements = StockMovement::where('reference_id', $transfer->id)
+        // ★ FIX [1]: tambah filter reference_type agar tidak collision dengan modul lain
+        $movements = StockMovement::where('reference_type', StockTransfer::class)
+            ->where('reference_id', $transfer->id)
             ->with('creator:id,name')
             ->orderBy('created_at')
             ->get()
@@ -167,7 +198,9 @@ class StockTransferController extends Controller
         ]);
     }
 
-    // ─── Edit ─────────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // EDIT
+    // =========================================================================
 
     public function edit(string $id)
     {
@@ -193,7 +226,9 @@ class StockTransferController extends Controller
         ]);
     }
 
-    // ─── Update ───────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // UPDATE
+    // =========================================================================
 
     public function update(Request $request, string $id)
     {
@@ -248,7 +283,9 @@ class StockTransferController extends Controller
             ->with('success', 'Transfer berhasil diperbarui!');
     }
 
-    // ─── Workflow: submit ─────────────────────────────────────────────────────────
+    // =========================================================================
+    // WORKFLOW: draft → pending
+    // =========================================================================
 
     public function submit(string $id)
     {
@@ -260,7 +297,9 @@ class StockTransferController extends Controller
         return back()->with('success', 'Transfer diajukan untuk approval.');
     }
 
-    // ─── Workflow: approve ────────────────────────────────────────────────────────
+    // =========================================================================
+    // WORKFLOW: pending → approved
+    // =========================================================================
 
     public function approve(string $id)
     {
@@ -276,7 +315,9 @@ class StockTransferController extends Controller
         return back()->with('success', 'Transfer disetujui.');
     }
 
-    // ─── Workflow: send (approved → in_transit) ───────────────────────────────────
+    // =========================================================================
+    // WORKFLOW: approved → in_transit (kurangi stok sumber + catat transfer_out)
+    // =========================================================================
 
     public function send(Request $request, string $id)
     {
@@ -309,12 +350,12 @@ class StockTransferController extends Controller
                     $item->item_type, $item->item_id
                 );
                 if (! $stock) {
-                    throw new \Exception("Stok {$item->item_name} tidak ditemukan di lokasi asal.");
+                    throw new \Exception("Stok {$item->item_type} tidak ditemukan di lokasi asal.");
                 }
 
                 $available = (int) $stock->quantity;
                 if ($sentQty > $available) {
-                    throw new \Exception("Stok {$item->item_name} tidak mencukupi. Tersedia: {$available}, diminta: {$sentQty}");
+                    throw new \Exception("Stok tidak mencukupi. Tersedia: {$available}, diminta: {$sentQty}");
                 }
 
                 $qtyBefore = (int)   $stock->quantity;       // bigInteger
@@ -322,34 +363,34 @@ class StockTransferController extends Controller
                 $qtyAfter  = $qtyBefore - $sentQty;
 
                 $stock->update([
-                    'quantity'     => $qtyAfter,                            // bigInteger SIGNED
-                    'total_value'  => round($qtyAfter * $avgCost, 2),       // decimal(15,2)
+                    'quantity'     => $qtyAfter,                         // bigInteger SIGNED
+                    'total_value'  => round($qtyAfter * $avgCost, 2),    // decimal(15,2)
                     'last_out_at'  => $now,
                     'last_out_by'  => $userId,
                     'last_out_qty' => $sentQty,
                 ]);
 
+                // Refresh WAC snapshot pada item saat dikirim
                 $item->update([
                     'quantity_sent' => $sentQty,
-                    'unit_cost'     => $avgCost,    // decimal(15,4): refresh WAC snapshot saat dikirim
+                    'unit_cost'     => $avgCost, // decimal(15,4)
                 ]);
 
-                // ★ Sesuai migration: qty_change / qty_before / qty_after
-                // unit_cost → decimal(15,4), total_cost → decimal(15,2)
+                // StockMovement — sesuai migration (sudah benar sejak awal)
                 StockMovement::create([
                     'location_type'    => $transfer->from_location_type,
                     'location_id'      => $transfer->from_location_id,
+                    'movement_type'    => 'transfer_out',
                     'item_type'        => $item->item_type,
                     'item_id'          => $item->item_id,
-                    'movement_type'    => 'transfer_out',
-                    'qty_change'       => -$sentQty,                        // bigInteger SIGNED, negatif = keluar
+                    'qty_change'       => -$sentQty,                         // SIGNED negatif = keluar
                     'qty_before'       => $qtyBefore,
                     'qty_after'        => $qtyAfter,
-                    'unit_cost'        => $avgCost,                         // decimal(15,4)
-                    'total_cost'       => round($sentQty * $avgCost, 2),    // decimal(15,2)
-                    'avg_cost_before'  => $avgCost,                         // decimal(15,4)
-                    'avg_cost_after'   => $avgCost,                         // tidak berubah saat out
-                    'reference_type'   => StockTransfer::class,
+                    'unit_cost'        => $avgCost,                          // decimal(15,4)
+                    'total_cost'       => round($sentQty * $avgCost, 2),     // decimal(15,2)
+                    'avg_cost_before'  => $avgCost,                          // decimal(15,4)
+                    'avg_cost_after'   => $avgCost,                          // tidak berubah saat out
+                    'reference_type'   => StockTransfer::class,              // FQCN ✓
                     'reference_id'     => $transfer->id,
                     'reference_number' => $transfer->transfer_number,
                     'movement_date'    => $transfer->transfer_date,
@@ -368,7 +409,9 @@ class StockTransferController extends Controller
         return back()->with('success', 'Transfer dikirim. Stok telah dikurangi dari lokasi asal.');
     }
 
-    // ─── Workflow: receive (in_transit → completed) ───────────────────────────────
+    // =========================================================================
+    // WORKFLOW: in_transit → completed (tambah stok tujuan + catat transfer_in)
+    // =========================================================================
 
     public function receive(Request $request, string $id)
     {
@@ -400,12 +443,12 @@ class StockTransferController extends Controller
                     $item->item_type, $item->item_id
                 );
 
-                $qtyBefore  = (int)   $destStock->quantity;        // bigInteger
-                $avgBefore  = (float) $destStock->average_cost;    // decimal(15,4)
-                $unitCost   = (float) $item->unit_cost;            // decimal(15,4): WAC dari sumber
+                $qtyBefore  = (int)   $destStock->quantity;       // bigInteger
+                $avgBefore  = (float) $destStock->average_cost;   // decimal(15,4)
+                $unitCost   = (float) $item->unit_cost;           // decimal(15,4) WAC dari sumber
                 $qtyAfter   = $qtyBefore + $rcvQty;
 
-                // Weighted average cost — decimal(15,4)
+                // WAC baru — decimal(15,4)
                 $newAvgCost = $qtyAfter > 0
                     ? round((($qtyBefore * $avgBefore) + ($rcvQty * $unitCost)) / $qtyAfter, 4)
                     : $unitCost;
@@ -419,13 +462,13 @@ class StockTransferController extends Controller
                     'last_in_qty'  => $rcvQty,
                 ]);
 
-                // ★ Sesuai migration: qty_change / qty_before / qty_after
+                // StockMovement — sesuai migration (sudah benar sejak awal)
                 StockMovement::create([
                     'location_type'    => $transfer->to_location_type,
                     'location_id'      => $transfer->to_location_id,
+                    'movement_type'    => 'transfer_in',
                     'item_type'        => $item->item_type,
                     'item_id'          => $item->item_id,
-                    'movement_type'    => 'transfer_in',
                     'qty_change'       => $rcvQty,                              // positif = masuk
                     'qty_before'       => $qtyBefore,
                     'qty_after'        => $qtyAfter,
@@ -433,7 +476,7 @@ class StockTransferController extends Controller
                     'total_cost'       => round($rcvQty * $unitCost, 2),        // decimal(15,2)
                     'avg_cost_before'  => $avgBefore,                           // decimal(15,4)
                     'avg_cost_after'   => $newAvgCost,                          // decimal(15,4)
-                    'reference_type'   => StockTransfer::class,
+                    'reference_type'   => StockTransfer::class,                 // FQCN ✓
                     'reference_id'     => $transfer->id,
                     'reference_number' => $transfer->transfer_number,
                     'movement_date'    => $transfer->transfer_date,
@@ -454,7 +497,9 @@ class StockTransferController extends Controller
             ->with('success', 'Transfer diterima. Stok berhasil masuk ke lokasi tujuan!');
     }
 
-    // ─── Workflow: cancel ─────────────────────────────────────────────────────────
+    // =========================================================================
+    // WORKFLOW: cancel
+    // =========================================================================
 
     public function cancel(Request $request, string $id)
     {
@@ -463,11 +508,15 @@ class StockTransferController extends Controller
             return back()->withErrors(['status' => 'Transfer tidak dapat dibatalkan.']);
         }
         $transfer->update([
-            'status'               => 'cancelled',
-            'cancellation_reason'  => $request->reason ?? null,
+            'status'              => 'cancelled',
+            'cancellation_reason' => $request->reason ?? null,
         ]);
         return to_route('stock-transfers.index')->with('success', 'Transfer dibatalkan.');
     }
+
+    // =========================================================================
+    // DESTROY — hanya draft
+    // =========================================================================
 
     public function destroy(string $id)
     {
@@ -479,23 +528,24 @@ class StockTransferController extends Controller
         return to_route('stock-transfers.index')->with('success', 'Transfer draft dihapus.');
     }
 
-    // ─── Helpers ─────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // PRIVATE HELPERS
+    // =========================================================================
 
     /**
-     * Build stockMap: { "warehouse:{id}:ingredient:{item_id}" => { qty, avg_cost, ... } }
-     * Digunakan frontend untuk filter item yang tersedia dan tampilkan qty stok.
+     * Build stockMap untuk frontend: { "warehouse:{id}:ingredient:{item_id}": { qty, avg_cost, ... } }
+     * Digunakan untuk filter item tersedia dan tampilkan qty stok saat ini.
      */
     private function buildStockMap(): array
     {
         $map = [];
 
-        // Warehouse ingredient stocks
         WarehouseIngredientStock::with('ingredient:id,name,code,unit')
             ->where('quantity', '>', 0)->get()
             ->each(function ($s) use (&$map) {
                 $map["warehouse:{$s->warehouse_id}:ingredient:{$s->ingredient_id}"] = [
-                    'qty'       => (int)   $s->quantity,        // bigInteger
-                    'avg_cost'  => (float) $s->average_cost,    // decimal(15,4)
+                    'qty'       => (int)   $s->quantity,
+                    'avg_cost'  => (float) $s->average_cost,
                     'item_id'   => $s->ingredient_id,
                     'item_type' => 'ingredient',
                     'name'      => $s->ingredient?->name ?? '-',
@@ -504,7 +554,6 @@ class StockTransferController extends Controller
                 ];
             });
 
-        // Warehouse packaging stocks
         WarehousePackagingStock::with(['packagingMaterial:id,name,code,size_id', 'packagingMaterial.size:id,name'])
             ->where('quantity', '>', 0)->get()
             ->each(function ($s) use (&$map) {
@@ -519,7 +568,6 @@ class StockTransferController extends Controller
                 ];
             });
 
-        // Store ingredient stocks
         StoreIngredientStock::with('ingredient:id,name,code,unit')
             ->where('quantity', '>', 0)->get()
             ->each(function ($s) use (&$map) {
@@ -534,7 +582,6 @@ class StockTransferController extends Controller
                 ];
             });
 
-        // Store packaging stocks
         StorePackagingStock::with(['packagingMaterial:id,name,code,size_id', 'packagingMaterial.size:id,name'])
             ->where('quantity', '>', 0)->get()
             ->each(function ($s) use (&$map) {
@@ -581,7 +628,7 @@ class StockTransferController extends Controller
     {
         return $type === 'warehouse'
             ? (Warehouse::find($id)?->name ?? '-')
-            : (Store::find($id)?->name ?? '-');
+            : (Store::find($id)?->name     ?? '-');
     }
 
     private function resolveItem(string $type, string $id): array
@@ -596,7 +643,8 @@ class StockTransferController extends Controller
 
     private function resolveItemName(string $type, string $id): string
     {
-        if ($type === 'ingredient') return Ingredient::find($id)?->name ?? '-';
-        return PackagingMaterial::find($id)?->name ?? '-';
+        return $type === 'ingredient'
+            ? (Ingredient::find($id)?->name        ?? '-')
+            : (PackagingMaterial::find($id)?->name ?? '-');
     }
 }

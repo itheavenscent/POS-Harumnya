@@ -1,11 +1,11 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import { Head, useForm, Link } from "@inertiajs/react";
 import Input from "@/Components/Dashboard/Input";
 import {
     IconArrowLeft, IconDeviceFloppy, IconAdjustments,
     IconPlus, IconTrash, IconLock, IconTrendingUp, IconTrendingDown,
-    IconRefresh, IconSearch, IconX, IconChevronDown,
+    IconRefresh, IconSearch, IconX, IconChevronDown, IconLoader2,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 
@@ -91,7 +91,6 @@ export default function Edit({ adjustment, warehouses, stores, ingredients, pack
         items: adjustment.items?.map((i) => ({
             item_type:         i.item_type,
             item_id:           i.item_id,
-            // cast to integer on load — matches schema
             system_quantity:   parseInt(i.system_quantity)   || 0,
             physical_quantity: parseInt(i.physical_quantity) || "",
             unit_cost:         parseFloat(i.unit_cost)       || 0.0,
@@ -99,7 +98,12 @@ export default function Edit({ adjustment, warehouses, stores, ingredients, pack
         })) ?? [],
     });
 
-    const [refreshing, setRefreshing] = useState({});
+    const [loadingIdx, setLoadingIdx] = useState(null);
+
+    // ─── dataRef: selalu tunjuk ke nilai data terkini ─────────────────────────
+    // Digunakan di fetchSystemQty (async) agar tidak membaca snapshot lama.
+    const dataRef = useRef(data);
+    useEffect(() => { dataRef.current = data; }, [data]);
 
     const allItems = useMemo(() => [
         ...ingredients.map((i)       => ({ ...i, _type: "ingredient" })),
@@ -108,7 +112,6 @@ export default function Edit({ adjustment, warehouses, stores, ingredients, pack
 
     const usedItemIds = data.items.map((i) => i.item_id).filter(Boolean);
 
-    // Integer difference
     const getDifference = (item) => (parseInt(item.physical_quantity) || 0) - (parseInt(item.system_quantity) || 0);
 
     const updateItem = (idx, key, value) =>
@@ -117,11 +120,22 @@ export default function Edit({ adjustment, warehouses, stores, ingredients, pack
     const addItem    = () => setData("items", [...data.items, { item_type: "ingredient", item_id: "", system_quantity: 0, physical_quantity: "", unit_cost: 0.0, notes: "" }]);
     const removeItem = (idx) => setData("items", data.items.filter((_, i) => i !== idx));
 
-    // Refresh system qty from AJAX (integer qty, float avg_cost)
-    const refreshSystemQty = useCallback(async (idx) => {
-        const item = data.items[idx];
-        if (!item.item_id) return;
-        setRefreshing((r) => ({ ...r, [idx]: true }));
+    // ─── fetchSystemQty ───────────────────────────────────────────────────────
+    // FIX: Tidak pakai useCallback dan TIDAK pakai functional updater.
+    //
+    // Root cause TypeError "data.items.map is not a function":
+    //   setData("items", (prevItems) => ...) — Inertia useForm TIDAK mendukung
+    //   functional updater. Inertia menyimpan fungsi itu sebagai value,
+    //   sehingga data.items menjadi Function, bukan Array → .map() crash.
+    //
+    // Fix:
+    //   1. Baca items terkini dari dataRef.current.items (selalu fresh via ref)
+    //   2. item_type & item_id diterima sebagai parameter eksplisit —
+    //      tidak bergantung pada state React yang belum flush
+    const fetchSystemQty = async (idx, itemType, itemId) => {
+        if (!itemId) return;
+
+        setLoadingIdx(idx);
         try {
             const res = await fetch(route("stock-adjustments.current-stock"), {
                 method: "POST",
@@ -132,25 +146,31 @@ export default function Edit({ adjustment, warehouses, stores, ingredients, pack
                 body: JSON.stringify({
                     location_type: adjustment.location_type,
                     location_id:   adjustment.location_id,
-                    item_type:     item.item_type,
-                    item_id:       item.item_id,
+                    item_type:     itemType,
+                    item_id:       itemId,
                 }),
             });
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const json = await res.json();
-            setData("items", data.items.map((it, i) =>
+
+            // Baca items terkini dari dataRef — BUKAN dari closure lama
+            const freshItems = dataRef.current.items;
+            setData("items", freshItems.map((it, i) =>
                 i === idx ? {
                     ...it,
                     system_quantity: parseInt(json.quantity)       || 0,
-                    unit_cost:       parseFloat(json.average_cost)  || 0.0,
+                    unit_cost:       parseFloat(json.average_cost) || 0.0,
                 } : it
             ));
             toast.success("Qty sistem diperbarui");
-        } catch {
+        } catch (err) {
+            console.error("fetchSystemQty:", err);
             toast.error("Gagal mengambil qty sistem");
         } finally {
-            setRefreshing((r) => ({ ...r, [idx]: false }));
+            setLoadingIdx(null);
         }
-    }, [data.items, adjustment]);
+    };
 
     const submit = (e) => {
         e.preventDefault();
@@ -212,49 +232,62 @@ export default function Edit({ adjustment, warehouses, stores, ingredients, pack
                         <div className="flex items-center justify-between border-b pb-2">
                             <div>
                                 <h3 className="font-bold text-slate-700 dark:text-slate-200 text-sm uppercase tracking-wide">Item Adjustment</h3>
-                                <p className="text-xs text-slate-400 mt-0.5">Klik <IconRefresh size={11} className="inline" /> untuk menyegarkan qty dari stok terkini</p>
+                                <p className="text-xs text-slate-400 mt-0.5">
+                                    Qty sistem otomatis diambil saat memilih item. Klik <IconRefresh size={11} className="inline" /> untuk menyegarkan manual.
+                                </p>
                             </div>
                             <button type="button" onClick={addItem}
-                                className="flex items-center gap-1.5 text-xs font-bold text-orange-600 px-3 py-1.5 bg-orange-50 rounded-lg border border-orange-200">
+                                className="flex items-center gap-1.5 text-xs font-bold text-orange-600 px-3 py-1.5 bg-orange-50 rounded-lg border border-orange-200 hover:bg-orange-100 transition-colors">
                                 <IconPlus size={14} /> Tambah Item
                             </button>
                         </div>
 
+                        {errors.items && <p className="text-red-500 text-xs">{errors.items}</p>}
+
                         <div className="space-y-3">
                             {data.items.map((item, idx) => {
-                                const diff    = getDifference(item);
-                                const valDiff = Math.round(Math.abs(diff) * (parseFloat(item.unit_cost) || 0));
-                                const ing     = allItems.find((i) => i._type === item.item_type && i.id === item.item_id);
+                                const diff      = getDifference(item);
+                                const valDiff   = Math.round(Math.abs(diff) * (parseFloat(item.unit_cost) || 0));
+                                const ing       = allItems.find((i) => i._type === item.item_type && i.id === item.item_id);
                                 const itemOptions = allItems.filter(
                                     (i) => i._type === item.item_type && (!usedItemIds.includes(i.id) || i.id === item.item_id)
                                 );
+                                const isLoading = loadingIdx === idx;
 
                                 return (
-                                    <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl space-y-3">
-                                        <div className="grid grid-cols-12 gap-3 items-start">
-                                            {/* Item type */}
-                                            <div className="col-span-2">
+                                    <div key={idx} className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl space-y-3 border border-slate-100 dark:border-slate-700/50">
+
+                                        {/* Row 1: Tipe + Item + Remove */}
+                                        <div className="flex items-start gap-2">
+                                            {/* Tipe */}
+                                            <div className="w-28 sm:w-32 shrink-0">
                                                 <label className="block text-xs font-bold text-slate-500 mb-1">Tipe</label>
-                                                <select value={item.item_type}
+                                                <select
+                                                    value={item.item_type}
                                                     onChange={(e) => setData("items", data.items.map((it, i) =>
                                                         i === idx ? { ...it, item_type: e.target.value, item_id: "", system_quantity: 0, physical_quantity: "", unit_cost: 0.0 } : it
                                                     ))}
-                                                    className="w-full rounded-xl border-slate-200 dark:bg-slate-900 text-xs">
+                                                    className="w-full rounded-xl border-slate-200 dark:bg-slate-900 text-xs py-2"
+                                                >
                                                     <option value="ingredient">Ingredient</option>
                                                     <option value="packaging_material">Packaging</option>
                                                 </select>
                                             </div>
 
-                                            {/* Item searchable */}
-                                            <div className="col-span-5">
+                                            {/* Item */}
+                                            <div className="flex-1 min-w-0">
                                                 <label className="block text-xs font-bold text-slate-500 mb-1">Item</label>
                                                 <SearchSelect
                                                     options={itemOptions}
                                                     value={item.item_id}
                                                     onChange={(v) => {
+                                                        // Reset state dulu
                                                         setData("items", data.items.map((it, i) =>
                                                             i === idx ? { ...it, item_id: v, system_quantity: 0, physical_quantity: "", unit_cost: 0.0 } : it
                                                         ));
+                                                        // Kirim item_type & item_id eksplisit sebagai parameter —
+                                                        // TIDAK membaca dari state karena setData() belum commit
+                                                        if (v) fetchSystemQty(idx, item.item_type, v);
                                                     }}
                                                     placeholder="Cari item..."
                                                     renderOption={(i) => `${i.name} (${i.code})`}
@@ -265,64 +298,82 @@ export default function Edit({ adjustment, warehouses, stores, ingredients, pack
                                                 {ing && <p className="text-xs text-slate-400 mt-0.5">{ing.unit}</p>}
                                             </div>
 
-                                            {/* System qty (read-only integer + refresh) */}
-                                            <div className="col-span-2">
+                                            {/* Remove */}
+                                            {data.items.length > 1 && (
+                                                <div className="pt-5 shrink-0">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeItem(idx)}
+                                                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    >
+                                                        <IconTrash size={15} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Row 2: Qty Sistem + Qty Fisik */}
+                                        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                                            <div>
                                                 <label className="block text-xs font-bold text-slate-500 mb-1 flex items-center justify-between">
-                                                    Qty Sistem
-                                                    <button type="button" onClick={() => refreshSystemQty(idx)}
-                                                        disabled={refreshing[idx]}
-                                                        className="text-orange-500 hover:text-orange-700 disabled:opacity-40">
-                                                        <IconRefresh size={11} className={refreshing[idx] ? "animate-spin" : ""} />
+                                                    <span>
+                                                        Qty Sistem
+                                                        {isLoading && <IconLoader2 size={10} className="inline ml-1 animate-spin text-orange-400" />}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => fetchSystemQty(idx, item.item_type, item.item_id)}
+                                                        disabled={isLoading || !item.item_id}
+                                                        className="text-orange-500 hover:text-orange-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                                        title="Segarkan qty dari stok terkini"
+                                                    >
+                                                        <IconRefresh size={11} className={isLoading ? "animate-spin" : ""} />
                                                     </button>
                                                 </label>
                                                 <div className="w-full rounded-xl border border-slate-200 bg-slate-100 dark:bg-slate-700 px-3 py-2 text-sm text-right text-slate-500 font-mono">
                                                     {fmtQty(item.system_quantity)}
                                                 </div>
                                             </div>
-
-                                            {/* Physical qty (integer) */}
-                                            <div className="col-span-2">
+                                            <div>
                                                 <label className="block text-xs font-bold text-slate-500 mb-1">Qty Fisik *</label>
-                                                <input type="number" step="1" min="0"
+                                                <input
+                                                    type="number"
+                                                    step="1"
+                                                    min="0"
                                                     value={item.physical_quantity}
                                                     onChange={(e) => updateItem(idx, "physical_quantity", e.target.value)}
                                                     className="w-full rounded-xl border-slate-200 dark:bg-slate-900 text-sm text-right"
-                                                    placeholder="0" />
+                                                    placeholder="0"
+                                                />
                                                 {errors[`items.${idx}.physical_quantity`] && (
                                                     <p className="text-red-500 text-xs mt-1">{errors[`items.${idx}.physical_quantity`]}</p>
                                                 )}
                                             </div>
-
-                                            {/* Remove */}
-                                            <div className="col-span-1 flex items-end pb-0.5 justify-center">
-                                                {data.items.length > 1 && (
-                                                    <button type="button" onClick={() => removeItem(idx)}
-                                                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
-                                                        <IconTrash size={14} />
-                                                    </button>
-                                                )}
-                                            </div>
                                         </div>
 
-                                        {/* Difference preview — integers */}
+                                        {/* Difference preview */}
                                         {item.physical_quantity !== "" && (
-                                            <div className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-bold border ${
+                                            <div className={`flex flex-col xs:flex-row items-start xs:items-center justify-between gap-1 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold border ${
                                                 diff > 0 ? "bg-success-50 border-success-200 text-success-700"
                                                 : diff < 0 ? "bg-red-50 border-red-200 text-red-700"
                                                 : "bg-slate-100 border-slate-200 text-slate-500"
                                             }`}>
-                                                <div className="flex items-center gap-2">
-                                                    {diff > 0 ? <IconTrendingUp size={16} /> : diff < 0 ? <IconTrendingDown size={16} /> : null}
+                                                <div className="flex items-center gap-1.5">
+                                                    {diff > 0 ? <IconTrendingUp size={14} /> : diff < 0 ? <IconTrendingDown size={14} /> : null}
                                                     <span>Selisih: {diff > 0 ? "+" : ""}{fmtQty(diff)} {ing?.unit ?? "unit"}</span>
                                                 </div>
-                                                <span>Nilai: {fmt(valDiff)}</span>
+                                                <span className="text-xs font-semibold opacity-80">Nilai: {fmt(valDiff)}</span>
                                             </div>
                                         )}
 
-                                        <input type="text" value={item.notes}
+                                        {/* Item notes */}
+                                        <input
+                                            type="text"
+                                            value={item.notes}
                                             onChange={(e) => updateItem(idx, "notes", e.target.value)}
                                             placeholder="Catatan item (opsional)..."
-                                            className="w-full rounded-xl border-slate-200 dark:bg-slate-900 text-xs" />
+                                            className="w-full rounded-xl border-slate-200 dark:bg-slate-900 text-xs"
+                                        />
                                     </div>
                                 );
                             })}
@@ -332,18 +383,26 @@ export default function Edit({ adjustment, warehouses, stores, ingredients, pack
                     {/* Notes */}
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl p-5">
                         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Catatan</label>
-                        <textarea value={data.notes} onChange={(e) => setData("notes", e.target.value)}
-                            rows={3} className="w-full rounded-xl border-slate-200 dark:bg-slate-950 text-sm resize-none"
-                            placeholder="Catatan atau keterangan tambahan..." />
+                        <textarea
+                            value={data.notes}
+                            onChange={(e) => setData("notes", e.target.value)}
+                            rows={3}
+                            className="w-full rounded-xl border-slate-200 dark:bg-slate-950 text-sm resize-none"
+                            placeholder="Catatan atau keterangan tambahan..."
+                        />
                     </div>
 
-                    <div className="flex justify-end gap-3">
+                    {/* Actions */}
+                    <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pb-4 sm:pb-0">
                         <Link href={route("stock-adjustments.show", adjustment.id)}
-                            className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm">
+                            className="w-full sm:w-auto text-center px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-colors">
                             Batal
                         </Link>
-                        <button type="submit" disabled={processing}
-                            className="px-7 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold flex items-center gap-2 disabled:opacity-50 text-sm">
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className="w-full sm:w-auto px-7 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-amber-500/30 text-sm transition-all"
+                        >
                             <IconDeviceFloppy size={18} />
                             {processing ? "Menyimpan..." : "Simpan Perubahan"}
                         </button>
@@ -353,4 +412,5 @@ export default function Edit({ adjustment, warehouses, stores, ingredients, pack
         </>
     );
 }
+
 Edit.layout = (page) => <DashboardLayout children={page} />;

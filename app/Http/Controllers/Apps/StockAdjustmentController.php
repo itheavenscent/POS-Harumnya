@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\StockAdjustment;
-use App\Models\StockAdjustmentItem;
 use App\Models\StockMovement;
 use App\Models\Ingredient;
 use App\Models\PackagingMaterial;
@@ -20,25 +19,29 @@ use App\Models\StorePackagingStock;
 
 class StockAdjustmentController extends Controller
 {
+    // =========================================================================
+    // INDEX
+    // =========================================================================
 
     public function index(Request $request)
     {
         $adjustments = StockAdjustment::query()
             ->with(['creator:id,name', 'items'])
-            ->when($request->search, fn($q, $s) =>
+            ->when($request->search, fn ($q, $s) =>
                 $q->where('adjustment_number', 'like', "%{$s}%")
                   ->orWhere('notes', 'like', "%{$s}%")
             )
-            ->when($request->status,        fn($q, $s) => $q->where('status', $s))
-            ->when($request->type,          fn($q, $t) => $q->where('type', $t))
-            ->when($request->location_type, fn($q, $t) => $q->where('location_type', $t))
-            ->latest('adjustment_date')->latest('created_at')
-            ->paginate(15)->withQueryString();
+            ->when($request->status,        fn ($q, $s) => $q->where('status', $s))
+            ->when($request->type,          fn ($q, $t) => $q->where('type', $t))
+            ->when($request->location_type, fn ($q, $t) => $q->where('location_type', $t))
+            ->latest('adjustment_date')
+            ->latest('created_at')
+            ->paginate(15)
+            ->withQueryString();
 
         $adjustments->getCollection()->each(function ($adj) {
-            $adj->location_name = $this->locationName($adj->location_type, $adj->location_id);
-            $adj->item_count    = $adj->items->count();
-            // value_difference → decimal(15,2): sum sebagai float
+            $adj->location_name  = $this->locationName($adj->location_type, $adj->location_id);
+            $adj->item_count     = $adj->items->count();
             $adj->total_surplus  = round((float) $adj->items->where('difference', '>', 0)->sum('value_difference'), 2);
             $adj->total_shortage = round((float) abs($adj->items->where('difference', '<', 0)->sum('value_difference')), 2);
         });
@@ -56,23 +59,30 @@ class StockAdjustmentController extends Controller
         ]);
     }
 
-    // ─── Create ───────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // CREATE
+    // =========================================================================
 
     public function create()
     {
         return Inertia::render('Dashboard/StockAdjustments/Create', [
             'warehouses'         => Warehouse::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
             'stores'             => Store::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
-            'ingredients'        => Ingredient::where('is_active', true)->with('category:id,name')
-                ->orderBy('name')->get(['id', 'name', 'code', 'unit', 'ingredient_category_id']),
+            'ingredients'        => Ingredient::where('is_active', true)
+                ->with('category:id,name')
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'unit', 'ingredient_category_id']),
             'packagingMaterials' => PackagingMaterial::where('is_active', true)
-                ->with(['category:id,name', 'size:id,name'])->orderBy('name')
+                ->with(['category:id,name', 'size:id,name'])
+                ->orderBy('name')
                 ->get(['id', 'name', 'code', 'packaging_category_id', 'size_id']),
             'typeOptions'        => $this->typeOptions(),
         ]);
     }
 
-    // ─── Store (save draft) ───────────────────────────────────────────────────────
+    // =========================================================================
+    // STORE — simpan draft
+    // =========================================================================
 
     public function store(Request $request)
     {
@@ -103,11 +113,10 @@ class StockAdjustmentController extends Controller
 
             foreach ($v['items'] as $item) {
                 $stock       = $this->findStock($v['location_type'], $v['location_id'], $item['item_type'], $item['item_id']);
-                $systemQty   = $stock ? (int)   $stock->quantity     : 0;  // bigInteger SIGNED
-                $unitCost    = $stock ? (float) $stock->average_cost : 0.0; // decimal(15,4)
-                $physicalQty = (int) $item['physical_quantity'];             // bigInteger SIGNED
-                $difference  = $physicalQty - $systemQty;                   // bigInteger SIGNED
-                // value_difference → decimal(15,2): |diff| × unit_cost
+                $systemQty   = $stock ? (int)   $stock->quantity     : 0;
+                $unitCost    = $stock ? (float) $stock->average_cost : 0.0;
+                $physicalQty = (int) $item['physical_quantity'];
+                $difference  = $physicalQty - $systemQty;
                 $valueDiff   = round(abs($difference) * $unitCost, 2);
 
                 $adj->items()->create([
@@ -116,8 +125,8 @@ class StockAdjustmentController extends Controller
                     'system_quantity'   => $systemQty,
                     'physical_quantity' => $physicalQty,
                     'difference'        => $difference,
-                    'unit_cost'         => $unitCost,       // decimal(15,4)
-                    'value_difference'  => $valueDiff,      // decimal(15,2)
+                    'unit_cost'         => $unitCost,
+                    'value_difference'  => $valueDiff,
                     'notes'             => $item['notes'] ?? null,
                 ]);
             }
@@ -127,7 +136,9 @@ class StockAdjustmentController extends Controller
             ->with('success', 'Adjustment berhasil disimpan sebagai draft!');
     }
 
-    // ─── Show ─────────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // SHOW
+    // =========================================================================
 
     public function show(string $id)
     {
@@ -136,6 +147,8 @@ class StockAdjustmentController extends Controller
         ])->findOrFail($id);
 
         $adj->location_name = $this->locationName($adj->location_type, $adj->location_id);
+        $adj->can_edit      = $adj->canEdit();
+        $adj->type_label    = collect($this->typeOptions())->firstWhere('value', $adj->type)['label'] ?? $adj->type;
 
         $adj->items->each(function ($item) {
             [$name, $code, $unit] = $this->resolveItem($item->item_type, $item->item_id);
@@ -144,8 +157,8 @@ class StockAdjustmentController extends Controller
             $item->item_unit = $unit;
         });
 
-        // Movements — field names sesuai migration 007
-        $movements = StockMovement::where('reference_id', $adj->id)
+        $movements = StockMovement::where('reference_type', StockAdjustment::class)
+            ->where('reference_id', $adj->id)
             ->with('creator:id,name')
             ->orderBy('created_at')
             ->get()
@@ -159,11 +172,14 @@ class StockAdjustmentController extends Controller
         ]);
     }
 
-    // ─── Edit ─────────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // EDIT
+    // =========================================================================
 
     public function edit(string $id)
     {
         $adj = StockAdjustment::with('items')->findOrFail($id);
+
         if (! $adj->canEdit()) {
             return back()->withErrors(['edit' => 'Adjustment yang sudah diproses tidak dapat diedit.']);
         }
@@ -174,20 +190,26 @@ class StockAdjustmentController extends Controller
             'adjustment'         => $adj,
             'warehouses'         => Warehouse::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
             'stores'             => Store::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
-            'ingredients'        => Ingredient::where('is_active', true)->with('category:id,name')
-                ->orderBy('name')->get(['id', 'name', 'code', 'unit', 'ingredient_category_id']),
+            'ingredients'        => Ingredient::where('is_active', true)
+                ->with('category:id,name')
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'unit', 'ingredient_category_id']),
             'packagingMaterials' => PackagingMaterial::where('is_active', true)
-                ->with(['category:id,name', 'size:id,name'])->orderBy('name')
+                ->with(['category:id,name', 'size:id,name'])
+                ->orderBy('name')
                 ->get(['id', 'name', 'code', 'packaging_category_id', 'size_id']),
             'typeOptions'        => $this->typeOptions(),
         ]);
     }
 
-    // ─── Update ───────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // UPDATE
+    // =========================================================================
 
     public function update(Request $request, string $id)
     {
         $adj = StockAdjustment::findOrFail($id);
+
         if (! $adj->canEdit()) {
             return back()->withErrors(['edit' => 'Adjustment yang sudah diproses tidak dapat diedit.']);
         }
@@ -218,7 +240,7 @@ class StockAdjustmentController extends Controller
                 $unitCost    = $stock ? (float) $stock->average_cost : 0.0;
                 $physicalQty = (int) $item['physical_quantity'];
                 $difference  = $physicalQty - $systemQty;
-                $valueDiff   = round(abs($difference) * $unitCost, 2); // decimal(15,2)
+                $valueDiff   = round(abs($difference) * $unitCost, 2);
 
                 $adj->items()->create([
                     'item_type'         => $item['item_type'],
@@ -237,39 +259,53 @@ class StockAdjustmentController extends Controller
             ->with('success', 'Adjustment berhasil diperbarui!');
     }
 
-    // ─── Workflow: draft → pending ────────────────────────────────────────────────
+    // =========================================================================
+    // WORKFLOW: draft → pending
+    // =========================================================================
 
     public function submit(string $id)
     {
         $adj = StockAdjustment::findOrFail($id);
+
         if ($adj->status !== 'draft') {
             return back()->withErrors(['status' => 'Hanya draft yang dapat diajukan.']);
         }
+
         $adj->update(['status' => 'pending']);
+
         return back()->with('success', 'Adjustment diajukan untuk approval.');
     }
 
-    // ─── Workflow: pending → approved ─────────────────────────────────────────────
+    // =========================================================================
+    // WORKFLOW: pending → approved
+    // =========================================================================
 
     public function approve(string $id)
     {
         $adj = StockAdjustment::findOrFail($id);
+
         if (! $adj->canApprove()) {
             return back()->withErrors(['status' => 'Adjustment tidak dapat disetujui dari status ini.']);
         }
+
         $adj->update([
             'status'      => 'approved',
             'approved_by' => auth()->id(),
             'approved_at' => now(),
         ]);
+
         return back()->with('success', 'Adjustment disetujui.');
     }
 
-    // ─── Workflow: approved → completed ───────────────────────────────────────────
+    // =========================================================================
+    // WORKFLOW: approved → completed
+    // Update stok + StockMovement
+    // =========================================================================
 
     public function complete(string $id)
     {
         $adj = StockAdjustment::with('items')->findOrFail($id);
+
         if (! $adj->canComplete()) {
             return back()->withErrors(['status' => 'Adjustment tidak dapat diselesaikan dari status ini.']);
         }
@@ -279,13 +315,14 @@ class StockAdjustmentController extends Controller
             $now    = now();
 
             foreach ($adj->items as $item) {
-                $diff = (int) $item->difference; // bigInteger SIGNED
+                $diff = (int) $item->difference;
                 if ($diff === 0) continue;
 
                 $stock = $this->findStock(
                     $adj->location_type, $adj->location_id,
                     $item->item_type,    $item->item_id
                 );
+
                 if (! $stock) {
                     $stock = $this->createStock(
                         $adj->location_type, $adj->location_id,
@@ -294,26 +331,27 @@ class StockAdjustmentController extends Controller
                     );
                 }
 
-                $qtyBefore = (int)   $stock->quantity;      // bigInteger SIGNED
-                $avgCost   = (float) $stock->average_cost;  // decimal(15,4)
-                $unitCost  = (float) $item->unit_cost;      // decimal(15,4) snapshot
+                $qtyBefore = (int)   $stock->quantity;
+                $avgCost   = (float) $stock->average_cost;
+                $unitCost  = (float) $item->unit_cost;
                 $qtyAfter  = $qtyBefore + $diff;
 
-                // Recalculate WAC on surplus (barang ditemukan / stock opname lebih)
+                // Recalculate WAC hanya pada surplus
                 $newAvgCost = $avgCost;
                 if ($diff > 0 && $qtyAfter > 0) {
                     $newAvgCost = round(
                         (($qtyBefore * $avgCost) + ($diff * $unitCost)) / $qtyAfter,
-                        4   // decimal(15,4)
+                        4
                     );
                 }
 
                 $stockUpdate = [
-                    'quantity'   => $qtyAfter,                              // bigInteger SIGNED
-                    'total_value' => round($qtyAfter * $newAvgCost, 2),     // decimal(15,2)
+                    'quantity'    => $qtyAfter,
+                    'total_value' => round($qtyAfter * $newAvgCost, 2),
                 ];
+
                 if ($diff > 0) {
-                    $stockUpdate['average_cost'] = $newAvgCost;             // decimal(15,4)
+                    $stockUpdate['average_cost'] = $newAvgCost;
                     $stockUpdate['last_in_at']   = $now;
                     $stockUpdate['last_in_by']   = $userId;
                     $stockUpdate['last_in_qty']  = $diff;
@@ -322,29 +360,27 @@ class StockAdjustmentController extends Controller
                     $stockUpdate['last_out_by']  = $userId;
                     $stockUpdate['last_out_qty'] = abs($diff);
                 }
+
                 $stock->update($stockUpdate);
 
-                // ★ Sesuai migration 007: qty_change / qty_before / qty_after
-                // unit_cost → decimal(15,4), total_cost → decimal(15,2)
-                // reference_type → FQCN, tidak ada stockable_type/stockable_id
                 StockMovement::create([
                     'location_type'    => $adj->location_type,
                     'location_id'      => $adj->location_id,
+                    'movement_type'    => $this->resolveMovementType($adj->type, $diff),
                     'item_type'        => $item->item_type,
                     'item_id'          => $item->item_id,
-                    'movement_type'    => $this->resolveMovementType($adj->type, $diff),
-                    'qty_change'       => $diff,                                    // bigInteger SIGNED
+                    'qty_change'       => $diff,
                     'qty_before'       => $qtyBefore,
                     'qty_after'        => $qtyAfter,
-                    'unit_cost'        => $unitCost,                                // decimal(15,4)
-                    'total_cost'       => round(abs($diff) * $unitCost, 2),         // decimal(15,2)
-                    'avg_cost_before'  => $avgCost,                                 // decimal(15,4)
-                    'avg_cost_after'   => $newAvgCost,                              // decimal(15,4)
+                    'unit_cost'        => $unitCost,
+                    'total_cost'       => round(abs($diff) * $unitCost, 2),
+                    'avg_cost_before'  => $avgCost,
+                    'avg_cost_after'   => $newAvgCost,
                     'reference_type'   => StockAdjustment::class,
                     'reference_id'     => $adj->id,
                     'reference_number' => $adj->adjustment_number,
                     'movement_date'    => $adj->adjustment_date,
-                    'notes'            => "[{$adj->type_label}] {$adj->adjustment_number}"
+                    'notes'            => "[{$adj->type}] {$adj->adjustment_number}"
                         . ($item->notes ? " — {$item->notes}" : ''),
                     'created_by'       => $userId,
                 ]);
@@ -357,34 +393,59 @@ class StockAdjustmentController extends Controller
             ->with('success', 'Adjustment selesai! Stok telah diperbarui.');
     }
 
-    // ─── Workflow: cancel ─────────────────────────────────────────────────────────
+    // =========================================================================
+    // WORKFLOW: cancel
+    // =========================================================================
 
     public function cancel(Request $request, string $id)
     {
         $adj = StockAdjustment::findOrFail($id);
+
         if (! $adj->canCancel()) {
             return back()->withErrors(['status' => 'Adjustment tidak dapat dibatalkan dari status ini.']);
         }
+
         $adj->update([
-            'status'               => 'cancelled',
-            'cancellation_reason'  => $request->reason ?? null,
+            'status'              => 'cancelled',
+            'cancellation_reason' => $request->reason ?? null,
         ]);
-        return to_route('stock-adjustments.index')->with('success', 'Adjustment dibatalkan.');
+
+        return to_route('stock-adjustments.index')
+            ->with('success', 'Adjustment dibatalkan.');
     }
 
-    // ─── Destroy ─────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // DESTROY — hanya draft
+    // =========================================================================
 
     public function destroy(string $id)
     {
         $adj = StockAdjustment::findOrFail($id);
+
         if ($adj->status !== 'draft') {
             return back()->withErrors(['delete' => 'Hanya draft yang dapat dihapus.']);
         }
+
         $adj->delete();
-        return to_route('stock-adjustments.index')->with('success', 'Draft adjustment dihapus.');
+
+        return to_route('stock-adjustments.index')
+            ->with('success', 'Draft adjustment dihapus.');
     }
 
-    // ─── AJAX: current stock ──────────────────────────────────────────────────────
+    // =========================================================================
+    // AJAX: getCurrentStock
+    // ─────────────────────────────────────────────────────────────────────────
+    // PENTING — Route harus didaftarkan SEBELUM Route::resource() di web.php:
+    //
+    //   Route::post('stock-adjustments/current-stock',
+    //       [StockAdjustmentController::class, 'getCurrentStock']
+    //   )->name('stock-adjustments.current-stock');
+    //
+    //   Route::resource('stock-adjustments', StockAdjustmentController::class);
+    //
+    // Jika urutan terbalik, resource() menangkap "current-stock" sebagai
+    // {stock_adjustment} → masuk ke show() → HTTP 404/500.
+    // =========================================================================
 
     public function getCurrentStock(Request $request)
     {
@@ -396,21 +457,29 @@ class StockAdjustmentController extends Controller
         ]);
 
         $stock = $this->findStock(
-            $request->location_type, $request->location_id,
-            $request->item_type,     $request->item_id
+            $request->location_type,
+            $request->location_id,
+            $request->item_type,
+            $request->item_id
         );
 
+        // Model cast 'decimal:4' mengembalikan STRING di Laravel —
+        // paksa ke tipe primitif agar JSON encode menghasilkan angka, bukan string.
         return response()->json([
-            'quantity'     => $stock ? (int)   $stock->quantity     : 0,    // bigInteger
-            'average_cost' => $stock ? (float) $stock->average_cost : 0.0,  // decimal(15,4)
+            'quantity'     => $stock ? (int)   $stock->quantity     : 0,
+            'average_cost' => $stock ? (float) $stock->average_cost : 0.0,
+            'found'        => (bool) $stock,
         ]);
     }
 
-    // ─── Private helpers ──────────────────────────────────────────────────────────
+    // =========================================================================
+    // PRIVATE HELPERS
+    // =========================================================================
 
     private function resolveMovementType(string $adjType, int $diff): string
     {
         if ($diff > 0) return 'adjustment_in';
+
         return match ($adjType) {
             'damage', 'expired' => 'waste',
             default             => 'adjustment_out',
@@ -422,8 +491,8 @@ class StockAdjustmentController extends Controller
         return match ([$locType, $itemType]) {
             ['warehouse', 'ingredient']         => WarehouseIngredientStock::where('warehouse_id', $locId)->where('ingredient_id', $itemId)->first(),
             ['warehouse', 'packaging_material'] => WarehousePackagingStock::where('warehouse_id', $locId)->where('packaging_material_id', $itemId)->first(),
-            ['store', 'ingredient']             => StoreIngredientStock::where('store_id', $locId)->where('ingredient_id', $itemId)->first(),
-            ['store', 'packaging_material']     => StorePackagingStock::where('store_id', $locId)->where('packaging_material_id', $itemId)->first(),
+            ['store',     'ingredient']         => StoreIngredientStock::where('store_id', $locId)->where('ingredient_id', $itemId)->first(),
+            ['store',     'packaging_material'] => StorePackagingStock::where('store_id', $locId)->where('packaging_material_id', $itemId)->first(),
             default => null,
         };
     }
@@ -431,11 +500,12 @@ class StockAdjustmentController extends Controller
     private function createStock(string $locType, string $locId, string $itemType, string $itemId, array $data)
     {
         $base = array_merge(['quantity' => 0, 'average_cost' => 0.0, 'total_value' => 0.0], $data);
+
         return match ([$locType, $itemType]) {
             ['warehouse', 'ingredient']         => WarehouseIngredientStock::create(array_merge($base, ['warehouse_id' => $locId, 'ingredient_id' => $itemId])),
             ['warehouse', 'packaging_material'] => WarehousePackagingStock::create(array_merge($base, ['warehouse_id' => $locId, 'packaging_material_id' => $itemId])),
-            ['store', 'ingredient']             => StoreIngredientStock::create(array_merge($base, ['store_id' => $locId, 'ingredient_id' => $itemId])),
-            ['store', 'packaging_material']     => StorePackagingStock::create(array_merge($base, ['store_id' => $locId, 'packaging_material_id' => $itemId])),
+            ['store',     'ingredient']         => StoreIngredientStock::create(array_merge($base, ['store_id' => $locId, 'ingredient_id' => $itemId])),
+            ['store',     'packaging_material'] => StorePackagingStock::create(array_merge($base, ['store_id' => $locId, 'packaging_material_id' => $itemId])),
         };
     }
 
@@ -443,7 +513,7 @@ class StockAdjustmentController extends Controller
     {
         return $type === 'warehouse'
             ? (Warehouse::find($id)?->name ?? '-')
-            : (Store::find($id)?->name ?? '-');
+            : (Store::find($id)?->name     ?? '-');
     }
 
     private function resolveItem(string $type, string $id): array
@@ -458,8 +528,9 @@ class StockAdjustmentController extends Controller
 
     private function resolveItemName(string $type, string $id): string
     {
-        if ($type === 'ingredient') return Ingredient::find($id)?->name ?? '-';
-        return PackagingMaterial::find($id)?->name ?? '-';
+        return $type === 'ingredient'
+            ? (Ingredient::find($id)?->name        ?? '-')
+            : (PackagingMaterial::find($id)?->name ?? '-');
     }
 
     private function typeOptions(): array
