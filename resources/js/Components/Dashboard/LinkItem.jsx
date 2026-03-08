@@ -5,7 +5,6 @@ export default function LinkItem({ href, icon, access, title, sidebarOpen, exact
     const { url } = usePage();
     const { auth } = usePage().props;
 
-    // Normalize href: Ziggy route() kadang return full URL, Inertia url selalu relative path
     const normHref = (() => {
         try {
             const u = new URL(href);
@@ -15,12 +14,6 @@ export default function LinkItem({ href, icon, access, title, sidebarOpen, exact
         }
     })();
 
-    // Exact match: hanya cocok jika URL persis sama (tanpa startsWith)
-    // Dipakai otomatis jika normHref tidak mengandung segmen unik (misal /dashboard)
-    // atau jika prop `exact` di-pass secara eksplisit.
-    //
-    // Aturan: jika path hanya 1 level dari root (/dashboard, /profile, dll)
-    // → paksa exact match agar tidak false-positive ke child routes
     const segments = normHref.replace(/^\//, "").split("/").filter(Boolean);
     const forceExact = exact || segments.length <= 1;
 
@@ -38,6 +31,7 @@ export default function LinkItem({ href, icon, access, title, sidebarOpen, exact
         return (
             <Link
                 href={href}
+                preserveScroll={true}
                 data-active={String(isActive)}
                 style={{
                     display: "flex",
@@ -113,6 +107,7 @@ export default function LinkItem({ href, icon, access, title, sidebarOpen, exact
         <Link
             href={href}
             title={title}
+            preserveScroll={true}
             data-active={String(isActive)}
             style={{
                 display: "flex",
