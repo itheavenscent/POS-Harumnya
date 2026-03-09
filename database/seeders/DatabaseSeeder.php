@@ -15,10 +15,11 @@ class DatabaseSeeder extends Seeder
             // 001 - Users & Roles
             RolePermissionSeeder::class,
             UserSeeder::class,
-            IntensitySeeder::class,
+
+            // 002 - Master Data
+            IntensitySeeder::class,        // ← hapus duplikat, tinggal satu
             IngredientSupplierSeeder::class,
             PackagingSeeder::class,
-            IntensitySeeder::class,
             VariantSeeder::class,
             StoreCategorySeeder::class,
             SalesPeopleSeeder::class,
