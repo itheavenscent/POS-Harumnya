@@ -15,29 +15,59 @@ class UserSeeder extends Seeder
     {
         $now = now();
 
-        // Ambil store & warehouse untuk default assignment
-        $warehouse = DB::table('warehouses')->where('code', 'WH001')->first();
-        $store1    = DB::table('stores')->where('code', 'STR001')->first();
-        $store2    = DB::table('stores')->where('code', 'STR002')->first();
+        // Clear existing users to prevent duplicates if running multiple times
+        DB::table('model_has_roles')->truncate();
+        DB::table('users')->truncate();
 
-        $whId = $warehouse?->id;
-        $s1Id = $store1?->id;
-        $s2Id = $store2?->id;
+        // Ambil store & warehouse untuk default assignment
+        // Menggunakan kode yang lebih spesifik untuk gudang yang baru
+        $warehousePusat = DB::table('warehouses')->where('code', 'WH001')->first();
+        $warehouseJatim = DB::table('warehouses')->where('code', 'WH002')->first();
+        $warehouseJateng = DB::table('warehouses')->where('code', 'WH003')->first();
+
+        // Menggunakan kode yang lebih spesifik untuk toko yang baru
+        $storeLamongan = DB::table('stores')->where('code', 'STR001')->first();
+        $storeGresik   = DB::table('stores')->where('code', 'STR002')->first();
+        $storeJombang  = DB::table('stores')->where('code', 'STR003')->first();
+
+        $whPusatId = $warehousePusat?->id;
+        $whJatimId = $warehouseJatim?->id;
+        $whJatengId = $warehouseJateng?->id;
+
+        $sLamonganId = $storeLamongan?->id;
+        $sGresikId   = $storeGresik?->id;
+        $sJombangId  = $storeJombang?->id;
 
         $users = [
             [
                 'name'                  => 'Super Admin',
                 'email'                 => 'superadmin@gmail.com',
                 'password'              => bcrypt('password'),
-                'default_warehouse_id'  => $whId,
+                'default_warehouse_id'  => $whPusatId, // Super Admin ke Gudang Pusat
                 'default_store_id'      => null,
                 'role'                  => 'super-admin',
             ],
             [
-                'name'                  => 'Admin',
-                'email'                 => 'admin@gmail.com',
+                'name'                  => 'Admin Pusat',
+                'email'                 => 'admin.pusat@gmail.com',
                 'password'              => bcrypt('password'),
-                'default_warehouse_id'  => $whId,
+                'default_warehouse_id'  => $whPusatId, // Admin ke Gudang Pusat
+                'default_store_id'      => null,
+                'role'                  => 'admin',
+            ],
+            [
+                'name'                  => 'Admin Jatim',
+                'email'                 => 'admin.jatim@gmail.com',
+                'password'              => bcrypt('password'),
+                'default_warehouse_id'  => $whJatimId, // Admin ke Gudang Jawa Timur
+                'default_store_id'      => null,
+                'role'                  => 'admin',
+            ],
+            [
+                'name'                  => 'Admin Jateng',
+                'email'                 => 'admin.jateng@gmail.com',
+                'password'              => bcrypt('password'),
+                'default_warehouse_id'  => $whJatengId, // Admin ke Gudang Jawa Tengah
                 'default_store_id'      => null,
                 'role'                  => 'admin',
             ],
@@ -46,7 +76,7 @@ class UserSeeder extends Seeder
                 'email'                 => 'manager.lamongan@gmail.com',
                 'password'              => bcrypt('password'),
                 'default_warehouse_id'  => null,
-                'default_store_id'      => $s1Id,
+                'default_store_id'      => $sLamonganId,
                 'role'                  => 'store-manager',
             ],
             [
@@ -54,7 +84,15 @@ class UserSeeder extends Seeder
                 'email'                 => 'manager.gresik@gmail.com',
                 'password'              => bcrypt('password'),
                 'default_warehouse_id'  => null,
-                'default_store_id'      => $s2Id,
+                'default_store_id'      => $sGresikId,
+                'role'                  => 'store-manager',
+            ],
+            [
+                'name'                  => 'Manager Jombang',
+                'email'                 => 'manager.jombang@gmail.com',
+                'password'              => bcrypt('password'),
+                'default_warehouse_id'  => null,
+                'default_store_id'      => $sJombangId,
                 'role'                  => 'store-manager',
             ],
             [
@@ -62,7 +100,7 @@ class UserSeeder extends Seeder
                 'email'                 => 'kasir.lamongan@gmail.com',
                 'password'              => bcrypt('password'),
                 'default_warehouse_id'  => null,
-                'default_store_id'      => $s1Id,
+                'default_store_id'      => $sLamonganId,
                 'role'                  => 'cashier',
             ],
             [
@@ -70,14 +108,38 @@ class UserSeeder extends Seeder
                 'email'                 => 'kasir.gresik@gmail.com',
                 'password'              => bcrypt('password'),
                 'default_warehouse_id'  => null,
-                'default_store_id'      => $s2Id,
+                'default_store_id'      => $sGresikId,
                 'role'                  => 'cashier',
             ],
             [
-                'name'                  => 'Staff Gudang',
-                'email'                 => 'gudang@gmail.com',
+                'name'                  => 'Kasir Jombang',
+                'email'                 => 'kasir.jombang@gmail.com',
                 'password'              => bcrypt('password'),
-                'default_warehouse_id'  => $whId,
+                'default_warehouse_id'  => null,
+                'default_store_id'      => $sJombangId,
+                'role'                  => 'cashier',
+            ],
+            [
+                'name'                  => 'Staff Gudang Pusat',
+                'email'                 => 'gudang.pusat@gmail.com',
+                'password'              => bcrypt('password'),
+                'default_warehouse_id'  => $whPusatId,
+                'default_store_id'      => null,
+                'role'                  => 'warehouse-staff',
+            ],
+            [
+                'name'                  => 'Staff Gudang Jatim',
+                'email'                 => 'gudang.jatim@gmail.com',
+                'password'              => bcrypt('password'),
+                'default_warehouse_id'  => $whJatimId,
+                'default_store_id'      => null,
+                'role'                  => 'warehouse-staff',
+            ],
+            [
+                'name'                  => 'Staff Gudang Jateng',
+                'email'                 => 'gudang.jateng@gmail.com',
+                'password'              => bcrypt('password'),
+                'default_warehouse_id'  => $whJatengId,
                 'default_store_id'      => null,
                 'role'                  => 'warehouse-staff',
             ],
@@ -95,6 +157,8 @@ class UserSeeder extends Seeder
             $role = Role::where('name', $u['role'])->first();
             if ($role) {
                 $user->assignRole($role);
+            } else {
+                $this->command->error("Role '{$u['role']}' not found for user '{$u['name']}'. Please ensure RoleSeeder runs first.");
             }
         }
 

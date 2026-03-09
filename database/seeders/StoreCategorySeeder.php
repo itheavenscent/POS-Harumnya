@@ -12,6 +12,11 @@ class StoreCategorySeeder extends Seeder
     {
         $now = now();
 
+        // Clear existing data to prevent duplicates if running multiple times
+        DB::table('store_categories')->truncate();
+        DB::table('store_category_variants')->truncate();
+        // Note: We don't truncate 'stores' table as it's seeded by WarehouseStoreSeeder
+
         // ── STORE CATEGORIES ───────────────────────────────────────────────────
         $categories = [
             [
@@ -55,16 +60,13 @@ class StoreCategorySeeder extends Seeder
         }
 
         // ── ASSIGN STORE CATEGORIES TO STORES ──────────────────────────────────
-        // Lamongan = Medium, Gresik = Large
-        $catL = $categories[0]['id'];
-        $catM = $categories[1]['id'];
-        $catS = $categories[2]['id'];
+        // Semua toko (Lamongan, Gresik, Jombang) = Medium
+        $catM = $categories[1]['id']; // Ambil ID kategori Medium
 
-        DB::table('stores')->where('code', 'STR001')
+        // Update semua toko agar memiliki store_category_id = $catM (Medium)
+        DB::table('stores')
+            ->whereIn('code', ['STR001', 'STR002', 'STR003']) // Sesuaikan dengan kode toko yang Anda gunakan
             ->update(['store_category_id' => $catM, 'updated_at' => $now]);
-
-        DB::table('stores')->where('code', 'STR002')
-            ->update(['store_category_id' => $catL, 'updated_at' => $now]);
 
         // ── STORE CATEGORY VARIANTS (whitelist untuk kategori M & S) ──────────
         // Kategori L allow_all_variants=true, tidak perlu whitelist
@@ -88,7 +90,7 @@ class StoreCategorySeeder extends Seeder
         foreach ($limitedVariants as $variant) {
             DB::table('store_category_variants')->insert([
                 'id'                 => Str::uuid(),
-                'store_category_id'  => $catS,
+                'store_category_id'  => $categories[2]['id'], // ID kategori Small
                 'variant_id'         => $variant->id,
                 'is_active'          => true,
                 'created_at'         => $now,
