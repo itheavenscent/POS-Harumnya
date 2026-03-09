@@ -27,7 +27,6 @@ const STATUS_LABELS = {
 // ═════════════════════════════════════════════════════════════════════════════
 class EscPos {
     constructor() { this.buf = []; }
-
     raw(bytes)    { this.buf.push(...bytes); return this; }
     lf(n=1)       { for(let i=0;i<n;i++) this.buf.push(0x0A); return this; }
     text(str) {
@@ -37,79 +36,68 @@ class EscPos {
         }
         return this;
     }
-
-    init()        { return this.raw([0x1B,0x40]); }
-    cut()         { return this.raw([0x1D,0x56,0x41,0x10]); }
-    bold(on)      { return this.raw([0x1B,0x45, on?1:0]); }
-    align(a)      { return this.raw([0x1B,0x61, a]); }   // 0=L 1=C 2=R
-    size(w,h)     { return this.raw([0x1D,0x21,(((w-1)&7)<<4)|((h-1)&7)]); }
-    lineSpacing(n){ return this.raw([0x1B,0x33,n]); }
+    init()          { return this.raw([0x1B,0x40]); }
+    cut()           { return this.raw([0x1D,0x56,0x41,0x10]); }
+    bold(on)        { return this.raw([0x1B,0x45, on?1:0]); }
+    align(a)        { return this.raw([0x1B,0x61, a]); }
+    size(w,h)       { return this.raw([0x1D,0x21,(((w-1)&7)<<4)|((h-1)&7)]); }
+    lineSpacing(n)  { return this.raw([0x1B,0x33,n]); }
     defaultSpacing(){ return this.raw([0x1B,0x32]); }
-
-    divider(w=32) { return this.text("=".repeat(w)); }
-    thinLine(w=32){ return this.text("-".repeat(w)); }
-
+    divider(w=32)   { return this.text("=".repeat(w)); }
+    thinLine(w=32)  { return this.text("-".repeat(w)); }
     center(str,w=32) {
         const s = String(str);
         const p = Math.max(0, Math.floor((w - s.length) / 2));
         return this.text(" ".repeat(p) + s);
     }
-
     row2(left, right, w=32) {
         const l = String(left);
         const r = String(right);
         const gap = Math.max(1, w - l.length - r.length);
         return this.text(l + " ".repeat(gap) + r);
     }
-
     toBuffer() { return new Uint8Array(this.buf).buffer; }
 }
 
-// ─── Build ESC/POS receipt (selalu 58mm = W32) ───────────────────────────────
+// ─── Build ESC/POS receipt ────────────────────────────────────────────────────
 function buildReceipt(sale, saleItems, payments, change) {
-    const W  = 32; // 58mm = 32 chars
+    const W  = 32;
     const ep = new EscPos();
 
     ep.init().lineSpacing(2);
 
-    // ══ BRAND ════════════════════════════════════════════════════════════
+    // ══ BRAND — size(2,1): lebar 2x, tinggi 1x → "HARUMNYA" = 8 chars × 2 = 16, muat di W=32 ══
     ep.align(1)
-      .bold(true).size(2,2)
-      .center("HARUMNYA", W).lf() // W=32, size2x = 16 chars effective → fits perfectly
+      .bold(true).size(2,1)
+      .text("HARUMNYA").lf()
       .size(1,1).bold(false)
       .lf(0);
 
-    // ══ INFO TOKO ════════════════════════════════════════════════════════
-    ep.bold(true)
-      .center(sale.store?.name ?? "PARFUM CUSTOM", W).lf()
-      .bold(false);
+    // ══ INFO TOKO ══
+    ep.bold(true).center(sale.store?.name ?? "PARFUM CUSTOM", W).lf().bold(false);
     if (sale.store?.address) {
         const addr = String(sale.store.address);
         for (let i=0; i<addr.length; i+=W) ep.center(addr.slice(i,i+W), W).lf();
     }
     if (sale.store?.phone) ep.center(String(sale.store.phone), W).lf();
 
-    ep.lf(0)
-      .divider(W).lf();
+    ep.lf(0).divider(W).lf();
 
-    // ══ INFO TRANSAKSI ═══════════════════════════════════════════════════
+    // ══ INFO TRANSAKSI ══
     ep.align(0)
       .row2(fmtDate(sale.sold_at), fmtTime(sale.sold_at), W).lf()
       .row2("No", sale.sale_number, W).lf()
       .row2("Kasir", sale.cashier?.name ?? sale.cashier_name ?? "-", W).lf();
-    if (sale.customer?.name || sale.customer_name) {
+    if (sale.customer?.name || sale.customer_name)
         ep.row2("Pelanggan", sale.customer?.name ?? sale.customer_name, W).lf();
-    }
-    if (sale.sales_person?.name) {
-        ep.align(1).bold(true)
-          .center("* Sales: " + sale.sales_person.name + " *", W).lf()
-          .bold(false).align(0);
-    }
+    const salesNameEsc = sale.sales_person?.name ?? sale.salesperson?.name ?? sale.sales_person_name ?? sale.salesperson_name ?? sale.staff?.name ?? null;
+    if (salesNameEsc)
+        ep.bold(true).row2("Sales", salesNameEsc, W).lf().bold(false);
 
     ep.thinLine(W).lf();
 
-    // ══ ITEMS ════════════════════════════════════════════════════════════
-    saleItems.forEach(item => {
+    // ══ ITEMS ══
+    saleItems.forEach((item, idx) => {
         const qty    = getQty(item);
         const isFree = Number(item.unit_price) === 0;
         const name   = String(item.product_name
@@ -117,66 +105,45 @@ function buildReceipt(sale, saleItems, payments, change) {
                 .filter(Boolean).join(" ")
             ?? "Item");
 
+        if (idx > 0) ep.lf(1); // jarak antar item
         ep.bold(true);
         for (let i=0; i<name.length; i+=W) ep.text(name.slice(i,i+W)).lf();
         ep.bold(false);
-
-        ep.row2(
-            `${qty}x @${isFree ? "GRATIS" : fmtN(item.unit_price)}`,
-            isFree ? "0" : fmtN(item.subtotal),
-            W
-        ).lf();
+        ep.row2(`${qty}x @${isFree ? "GRATIS" : fmtN(item.unit_price)}`, isFree ? "0" : fmtN(item.subtotal), W).lf();
 
         const pkgs = item.packagings ?? item.sale_item_packagings ?? [];
         pkgs.forEach(p => {
             const pqty  = getQty(p);
             const pFree = Number(p.unit_price) === 0;
             const pName = String(p.packaging_name ?? p.packaging_material?.name ?? "Kemasan");
-            ep.text("+ " + pName).lf();
-            ep.row2(
-                `${pqty}x @${pFree ? "GRATIS" : fmtN(p.unit_price)}`,
-                pFree ? "GRATIS" : fmtN(p.unit_price * pqty),
-                W
-            ).lf();
+            ep.text("  + " + pName).lf();
+            ep.row2(`  ${pqty}x @${pFree ? "GRATIS" : fmtN(p.unit_price)}`, pFree ? "GRATIS" : fmtN(p.unit_price * pqty), W).lf();
         });
     });
 
     ep.thinLine(W).lf();
 
-    // ══ SUMMARY ══════════════════════════════════════════════════════════
+    // ══ SUMMARY ══
     ep.row2("Subtotal", "Rp "+fmtN(sale.subtotal_perfume ?? 0), W).lf();
-    if (Number(sale.subtotal_packaging) > 0)
-        ep.row2("Kemasan", "Rp "+fmtN(sale.subtotal_packaging), W).lf();
-    if (Number(sale.discount_amount) > 0)
-        ep.row2("Diskon", "- Rp "+fmtN(sale.discount_amount), W).lf();
-    if (Number(sale.points_redemption_value) > 0)
-        ep.row2("Redeem Poin", "- Rp "+fmtN(sale.points_redemption_value), W).lf();
+    if (Number(sale.subtotal_packaging) > 0) ep.row2("Kemasan", "Rp "+fmtN(sale.subtotal_packaging), W).lf();
+    if (Number(sale.discount_amount) > 0)    ep.row2("Diskon", "- Rp "+fmtN(sale.discount_amount), W).lf();
+    if (Number(sale.points_redemption_value) > 0) ep.row2("Redeem Poin", "- Rp "+fmtN(sale.points_redemption_value), W).lf();
 
     ep.divider(W).lf();
-
-    ep.bold(true).size(1,2)
-      .row2("TOTAL", "Rp "+fmtN(sale.total), W).lf()
-      .size(1,1).bold(false);
-
+    ep.bold(true).size(1,2).row2("TOTAL", "Rp "+fmtN(sale.total), W).lf().size(1,1).bold(false);
     ep.thinLine(W).lf();
 
     payments.forEach(p => {
-        const mName = String(p.payment_method?.name ?? p.payment_method_name ?? "Cash");
-        ep.row2(mName, "Rp "+fmtN(p.amount), W).lf();
+        ep.row2(String(p.payment_method?.name ?? p.payment_method_name ?? "Cash"), "Rp "+fmtN(p.amount), W).lf();
     });
     if (change > 0) ep.bold(true).row2("Kembalian", "Rp "+fmtN(change), W).lf().bold(false);
-    if (Number(sale.points_earned) > 0)
-        ep.row2("Poin diperoleh", "+"+sale.points_earned+" poin", W).lf();
+    if (Number(sale.points_earned) > 0) ep.row2("Poin diperoleh", "+"+sale.points_earned+" poin", W).lf();
 
-    // ══ FOOTER ═══════════════════════════════════════════════════════════
-    ep.divider(W).lf()
-      .lf()
+    ep.divider(W).lf().lf()
       .align(1)
       .text("Terima kasih!").lf()
       .text("-- Harumnya --").lf()
-      .lf(4)
-      .defaultSpacing()
-      .cut();
+      .lf(4).defaultSpacing().cut();
 
     return ep.toBuffer();
 }
@@ -209,7 +176,6 @@ async function findWritableChar(server) {
             } catch(_) {}
         }
     } catch(_) {}
-
     for (const uuid of BT_SERVICES) {
         try {
             const svc   = await server.getPrimaryService(uuid);
@@ -229,10 +195,9 @@ function useBluetooth() {
     const [devName, setDevName] = useState(() => {
         try { return localStorage.getItem("bt_printer_name") || null; } catch(_) { return null; }
     });
-
-    const charRef    = useRef(null);
-    const deviceRef  = useRef(null);
-    const supported  = typeof navigator !== "undefined" && !!navigator.bluetooth;
+    const charRef   = useRef(null);
+    const deviceRef = useRef(null);
+    const supported = typeof navigator !== "undefined" && !!navigator.bluetooth;
 
     const connectGatt = useCallback(async (dev) => {
         if (dev.gatt.connected && charRef.current) return true;
@@ -241,10 +206,7 @@ function useBluetooth() {
         const char = await findWritableChar(server);
         if (!char) {
             let hint = "";
-            try {
-                const svcs = await server.getPrimaryServices();
-                hint = " | Services: " + svcs.map(s => s.uuid.slice(4,8)).join(", ");
-            } catch(_) {}
+            try { const svcs = await server.getPrimaryServices(); hint = " | Services: " + svcs.map(s => s.uuid.slice(4,8)).join(", "); } catch(_) {}
             throw new Error("Printer tidak merespon" + hint + ". Matikan & nyalakan printer, lalu coba lagi.");
         }
         charRef.current = char;
@@ -258,11 +220,7 @@ function useBluetooth() {
             let retries = 3;
             while (retries-- > 0) {
                 await new Promise(r => setTimeout(r, 1000));
-                try {
-                    await connectGatt(dev);
-                    setStatus("connected");
-                    return;
-                } catch(_) {}
+                try { await connectGatt(dev); setStatus("connected"); return; } catch(_) {}
             }
         }
         setStatus("idle"); setDevice(null); deviceRef.current = null;
@@ -272,19 +230,15 @@ function useBluetooth() {
         if (!supported) { setError("Butuh Chrome di Android/Desktop + HTTPS untuk Web Bluetooth."); setStatus("error"); return; }
         setStatus("connecting"); setError(null);
         try {
-            const dev = await navigator.bluetooth.requestDevice({
-                acceptAllDevices: true,
-                optionalServices: BT_SERVICES,
-            });
+            const dev = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: BT_SERVICES });
             dev.addEventListener("gattserverdisconnected", () => handleDisconnect(dev));
             await connectGatt(dev);
-            deviceRef.current = dev;
-            setDevice(dev);
+            deviceRef.current = dev; setDevice(dev);
             setDevName(dev.name || "Printer BT");
             try { localStorage.setItem("bt_printer_name", dev.name || "Printer BT"); } catch(_) {}
             setStatus("connected");
         } catch(err) {
-            if (err.name === "NotFoundError") { setStatus("idle"); }
+            if (err.name === "NotFoundError") setStatus("idle");
             else { setError(err.message); setStatus("error"); }
         }
     }, [supported, connectGatt, handleDisconnect]);
@@ -292,10 +246,8 @@ function useBluetooth() {
     const reconnect = useCallback(async () => {
         if (!deviceRef.current) { connect(); return; }
         setStatus("connecting"); setError(null);
-        try {
-            await connectGatt(deviceRef.current);
-            setStatus("connected");
-        } catch(err) { setError(err.message); setStatus("error"); }
+        try { await connectGatt(deviceRef.current); setStatus("connected"); }
+        catch(err) { setError(err.message); setStatus("error"); }
     }, [connect, connectGatt]);
 
     const disconnect = useCallback(() => {
@@ -306,8 +258,8 @@ function useBluetooth() {
 
     const printBuffer = useCallback(async (buffer) => {
         if (!charRef.current || !deviceRef.current?.gatt?.connected) {
-            if (deviceRef.current) { await connectGatt(deviceRef.current); }
-            else { throw new Error("Printer belum terhubung. Tap 'Hubungkan' dulu."); }
+            if (deviceRef.current) await connectGatt(deviceRef.current);
+            else throw new Error("Printer belum terhubung. Tap 'Hubungkan' dulu.");
         }
         const data  = new Uint8Array(buffer);
         const CHUNK = 512;
@@ -363,7 +315,7 @@ function useBluetooth() {
 // Main
 // ═════════════════════════════════════════════════════════════════════════════
 export default function Print({ sale, fromTransaction }) {
-    const [mode,        setMode]        = useState("thermal58"); // ← default 58mm
+    const [mode,        setMode]        = useState("thermal58");
     const [showSuccess, setShowSuccess] = useState(!!fromTransaction);
     const [printing,    setPrinting]    = useState(false);
     const [printMsg,    setPrintMsg]    = useState(null);
@@ -378,17 +330,16 @@ export default function Print({ sale, fromTransaction }) {
 
     if (!sale) return null;
 
-    const saleItems = sale.sale_items ?? sale.items ?? [];
-    const payments  = sale.sale_payments ?? sale.payments ?? [];
-    const totalPaid = payments.reduce((s,p) => s + Number(p.amount??0), 0);
-    const change    = Number(sale.change_amount??0) || Math.max(0, totalPaid - Number(sale.total??0));
-    const is58      = mode === "thermal58";
+    const saleItems  = sale.sale_items ?? sale.items ?? [];
+    const payments   = sale.sale_payments ?? sale.payments ?? [];
+    const totalPaid  = payments.reduce((s,p) => s + Number(p.amount??0), 0);
+    const change     = Number(sale.change_amount??0) || Math.max(0, totalPaid - Number(sale.total??0));
+    const is58       = mode === "thermal58";
     const statusInfo = STATUS_LABELS[sale.status] ?? { label:sale.status, cls:"bg-slate-100 text-slate-500" };
 
     const handleBtPrint = async () => {
         setPrinting(true); setPrintMsg(null);
         try {
-            // Always 58mm for BT print
             const buf = buildReceipt(sale, saleItems, payments, change);
             await bt.printBuffer(buf);
             setPrintMsg({ ok:true, text:"Berhasil dikirim ke printer!" });
@@ -398,15 +349,15 @@ export default function Print({ sale, fromTransaction }) {
     };
 
     const BT_UI = {
-        idle:         { icon:<IconBluetooth size={15}/>,                             label: bt.devName ? `Hubungkan Ulang (${bt.devName})` : "Hubungkan Printer BT", cls:"bg-blue-500 hover:bg-blue-600 text-white" },
-        connecting:   { icon:<IconLoader2 size={15} className="animate-spin"/>,      label:"Menghubungkan...",  cls:"bg-blue-400 text-white cursor-wait" },
-        reconnecting: { icon:<IconLoader2 size={15} className="animate-spin"/>,      label:"Menyambung ulang...", cls:"bg-amber-400 text-white cursor-wait" },
-        connected:    { icon:<IconBluetoothConnected size={15}/>,                    label: bt.device?.name ?? bt.devName ?? "Terhubung", cls:"bg-emerald-500 hover:bg-emerald-600 text-white" },
-        error:        { icon:<IconBluetoothOff size={15}/>,                          label:"Gagal — Coba Lagi", cls:"bg-red-500 hover:bg-red-600 text-white" },
+        idle:         { icon:<IconBluetooth size={15}/>,                          label: bt.devName ? `Hubungkan Ulang (${bt.devName})` : "Hubungkan Printer BT", cls:"bg-blue-500 hover:bg-blue-600 text-white" },
+        connecting:   { icon:<IconLoader2 size={15} className="animate-spin"/>,   label:"Menghubungkan...",    cls:"bg-blue-400 text-white cursor-wait" },
+        reconnecting: { icon:<IconLoader2 size={15} className="animate-spin"/>,   label:"Menyambung ulang...", cls:"bg-amber-400 text-white cursor-wait" },
+        connected:    { icon:<IconBluetoothConnected size={15}/>,                 label: bt.device?.name ?? bt.devName ?? "Terhubung", cls:"bg-emerald-500 hover:bg-emerald-600 text-white" },
+        error:        { icon:<IconBluetoothOff size={15}/>,                       label:"Gagal — Coba Lagi",   cls:"bg-red-500 hover:bg-red-600 text-white" },
     }[bt.status] ?? { icon:<IconBluetooth size={15}/>, label:"Hubungkan", cls:"bg-blue-500 hover:bg-blue-600 text-white" };
 
-    const btOnClick = bt.status === "connected"            ? bt.disconnect
-                    : bt.status === "idle" && bt.devName   ? bt.reconnect
+    const btOnClick = bt.status === "connected"          ? bt.disconnect
+                    : bt.status === "idle" && bt.devName ? bt.reconnect
                     : bt.connect;
 
     return (
@@ -426,7 +377,6 @@ export default function Print({ sale, fromTransaction }) {
                 {/* ── Sticky Top Bar ── */}
                 <div className="no-print sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm">
                     <div className="max-w-2xl mx-auto px-4 py-3 space-y-2.5">
-
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                                 {fromTransaction && (
@@ -455,18 +405,15 @@ export default function Print({ sale, fromTransaction }) {
                                         </button>
                                     ))}
                                 </div>
-                                <button onClick={() => window.print()}
-                                    title="Cetak via browser"
+                                <button onClick={() => window.print()} title="Cetak via browser"
                                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-600 hover:bg-slate-50">
                                     <IconPrinter size={15}/>
                                 </button>
                             </div>
                         </div>
 
-                        {/* Bluetooth bar — hanya thermal */}
                         {(mode === "thermal80" || mode === "thermal58") && (
                             <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-
                                 {bt.status !== "connected" && bt.supported && (
                                     <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
                                         <span className="text-base leading-none mt-0.5">📋</span>
@@ -479,15 +426,12 @@ export default function Print({ sale, fromTransaction }) {
                                         </div>
                                     </div>
                                 )}
-
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <button
-                                        onClick={btOnClick}
+                                    <button onClick={btOnClick}
                                         disabled={bt.status === "connecting" || bt.status === "reconnecting"}
                                         className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${BT_UI.cls}`}>
                                         {BT_UI.icon} {BT_UI.label}
                                     </button>
-
                                     {bt.status === "connected" && (
                                         <button onClick={handleBtPrint} disabled={printing}
                                             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm font-semibold text-white disabled:opacity-60">
@@ -496,7 +440,6 @@ export default function Print({ sale, fromTransaction }) {
                                                 : <><IconPrinter size={14}/> Cetak Bluetooth</>}
                                         </button>
                                     )}
-
                                     {bt.error && (
                                         <div className="flex flex-col gap-1 w-full">
                                             <span className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-3 py-1.5 rounded-lg">
@@ -560,11 +503,8 @@ export default function Print({ sale, fromTransaction }) {
                     )}
                     {(mode === "thermal80" || mode === "thermal58") && (
                         <div className="flex justify-center py-2">
-                            {/* Container lebar tetap sesuai ukuran kertas */}
-                            <div
-                                className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200"
-                                style={{ width: is58 ? 216 : 302 }} // 58mm ≈ 216px, 80mm ≈ 302px pada 96dpi
-                            >
+                            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200"
+                                style={{ width: is58 ? 216 : 302 }}>
                                 <ReceiptPreview sale={sale} saleItems={saleItems}
                                     payments={payments} change={change} is58={is58}/>
                             </div>
@@ -577,10 +517,9 @@ export default function Print({ sale, fromTransaction }) {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// Receipt Preview — tampilan preview struk di layar
+// Receipt Preview
 // ═════════════════════════════════════════════════════════════════════════════
 function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
-    // Ukuran font disesuaikan proporsi kertas
     const fs   = is58 ? 10 : 12;
     const fsSM = is58 ?  9 : 10;
     const font = "'Courier New', Courier, monospace";
@@ -588,65 +527,63 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
     const base = { fontFamily:font, fontSize:fs,   lineHeight:1.75, color:"#111" };
     const dim  = { fontFamily:font, fontSize:fsSM, lineHeight:1.6,  color:"#666" };
 
-    // Row 2 kolom: flex, tidak pakai karakter spasi buatan
     const Row2 = ({ left, right, bold=false, xl=false }) => (
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline",
+        <div style={{
+            display:"flex", justifyContent:"space-between", alignItems:"baseline",
             fontFamily:font, fontSize: xl ? fs+3 : fs,
             fontWeight: bold ? "bold" : "normal", color:"#111",
-            lineHeight: xl ? 2.2 : 1.75 }}>
+            lineHeight: xl ? 2.2 : 1.75,
+        }}>
             <span style={{ flex:1, paddingRight:4 }}>{left}</span>
             <span style={{ flexShrink:0, textAlign:"right" }}>{right}</span>
         </div>
     );
 
     const Divider = ({ dashed=false }) => (
-        <div style={{ borderTop: dashed ? "1px dashed #bbb" : "1px solid #888", margin:"6px 0" }}/>
+        <div style={{ borderTop: dashed ? "1px dashed #ccc" : "1px solid #888", margin:"6px 0" }}/>
     );
 
     const Spacer = ({h=8}) => <div style={{height:h}}/>;
 
-    return (
-        <div style={{ padding: is58 ? "18px 14px" : "22px 18px", ...base, background:"#fff" }}>
+    const pad = is58 ? "18px 14px" : "22px 18px";
+    const negMx = is58 ? { margin:"8px -14px", padding:"8px 14px" } : { margin:"8px -18px", padding:"8px 18px" };
 
-            {/* ══ BRAND — fix: pakai flexbox center, bukan text yang overflow ══ */}
-            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:0, marginBottom:6 }}>
-                {/* Tanda dekoratif */}
-                <div style={{ ...dim, letterSpacing:4, marginBottom:2 }}>✦ ✦ ✦</div>
-                {/* HARUMNYA — pakai width 100% agar tidak overflow */}
+    return (
+        <div style={{ padding:pad, ...base, background:"#fff" }}>
+
+            {/* ══ BRAND ══
+                FIX: Hapus overflow:hidden & letterSpacing besar yang menyebabkan "HARU\nMNYA"
+                Gunakan fontSize lebih kecil + letterSpacing aman agar muat dalam container
+            ══ */}
+            <div style={{ textAlign:"center", marginBottom:8 }}>
+                <div style={{ ...dim, letterSpacing:3, marginBottom:4 }}>· · · · · · · · ·</div>
                 <div style={{
-                    fontFamily: font,
-                    fontWeight: "900",
-                    letterSpacing: is58 ? 6 : 8,
-                    fontSize: is58 ? 20 : 26,
-                    lineHeight: 1.3,
-                    color: "#111",
-                    textAlign: "center",
-                    width: "100%",              // ← kunci: tidak overflow container
-                    wordBreak: "keep-all",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "clip",
+                    fontFamily:     font,
+                    fontWeight:     "900",
+                    fontSize:       is58 ? 18 : 24,   // ← lebih kecil dari sebelumnya (20/26)
+                    letterSpacing:  is58 ?  2 :  3,   // ← jauh lebih kecil dari 6/8 yang menyebabkan bug
+                    lineHeight:     1.3,
+                    color:          "#111",
+                    textAlign:      "center",
+                    // TIDAK ada overflow:hidden / whiteSpace:nowrap / textOverflow
+                    // Biarkan browser menampilkan penuh
                 }}>
                     HARUMNYA
                 </div>
-                <div style={{ ...dim, letterSpacing:4, marginTop:2 }}>✦ ✦ ✦</div>
+                <div style={{ ...dim, letterSpacing:3, marginTop:4 }}>· · · · · · · · ·</div>
             </div>
 
-            <Divider/>
-
             {/* ══ INFO TOKO ══ */}
-            <div style={{ textAlign:"center", marginBottom:4 }}>
+            <div style={{ textAlign:"center", marginBottom:6 }}>
                 <div style={{ fontWeight:"bold", fontFamily:font, fontSize:fs }}>
                     {sale.store?.name ?? "PARFUM CUSTOM"}
                 </div>
                 {sale.store?.address && (
-                    <div style={{ ...dim, marginTop:1, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>
+                    <div style={{ ...dim, marginTop:2, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>
                         {sale.store.address}
                     </div>
                 )}
-                {sale.store?.phone && (
-                    <div style={dim}>{sale.store.phone}</div>
-                )}
+                {sale.store?.phone && <div style={{ ...dim, marginTop:1 }}>{sale.store.phone}</div>}
             </div>
 
             <Divider/>
@@ -655,22 +592,38 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
             {/* ══ INFO TRANSAKSI ══ */}
             <Row2 left={fmtDate(sale.sold_at)} right={fmtTime(sale.sold_at)}/>
             <Divider dashed/>
-            <Row2 left="No. Struk"    right={sale.sale_number}/>
-            <Row2 left="Kasir"        right={sale.cashier?.name ?? sale.cashier_name ?? "-"}/>
+            <Row2 left="No. Struk" right={sale.sale_number}/>
+            <Row2 left="Kasir"     right={sale.cashier?.name ?? sale.cashier_name ?? "-"}/>
             {(sale.customer?.name || sale.customer_name) && (
                 <Row2 left="Pelanggan" right={sale.customer?.name ?? sale.customer_name}/>
             )}
-            {sale.sales_person?.name && (
-                <div style={{ textAlign:"center", fontWeight:"bold", fontFamily:font, fontSize:fsSM,
-                              background:"#f5f5f5", padding:"3px 6px", borderRadius:3, marginTop:4 }}>
-                    Sales: {sale.sales_person.name}
-                </div>
-            )}
+            {/* Sales — handle semua kemungkinan nama field */}
+            {(() => {
+                const salesName = sale.sales_person?.name
+                    ?? sale.salesperson?.name
+                    ?? sale.sales_person_name
+                    ?? sale.salesperson_name
+                    ?? sale.staff?.name
+                    ?? null;
+                return salesName ? (
+                    <div style={{
+                        display:"flex", justifyContent:"space-between", alignItems:"center",
+                        fontFamily:font, fontSize:fs, lineHeight:1.75,
+                        background:"#f0f0f0", borderRadius:3,
+                        padding:"3px 5px", marginTop:4,
+                        borderLeft:"3px solid #888",
+                    }}>
+                        <span style={{ fontWeight:"bold" }}>Sales</span>
+                        <span style={{ fontWeight:"bold", textAlign:"right" }}>{salesName}</span>
+                    </div>
+                ) : null;
+            })()}
 
-            <Spacer h={6}/>
+            <Spacer h={8}/>
             <Divider/>
+            <Spacer h={4}/>
 
-            {/* ══ ITEMS ══ */}
+            {/* ══ ITEMS — setiap item diberi padding & separator ══ */}
             {saleItems.map((item, i) => {
                 const qty    = getQty(item);
                 const isFree = Number(item.unit_price) === 0;
@@ -681,23 +634,39 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                     ?? "Item");
 
                 return (
-                    <div key={i} style={{ marginBottom:8 }}>
+                    <div key={i} style={{
+                        marginBottom: 10,
+                        paddingBottom: 8,
+                        // Garis pemisah tipis antar item (kecuali item terakhir)
+                        borderBottom: i < saleItems.length - 1 ? "1px dashed #e0e0e0" : "none",
+                    }}>
                         {/* Nama produk */}
-                        <div style={{ fontWeight:"bold", fontFamily:font, fontSize:fs,
-                                      lineHeight:1.4, wordBreak:"break-word", color:"#111" }}>
+                        <div style={{
+                            fontWeight:"bold", fontFamily:font, fontSize:fs,
+                            lineHeight:1.5, wordBreak:"break-word", color:"#111",
+                            marginBottom:3,
+                        }}>
                             {name}
                         </div>
                         <Row2
                             left={`${qty}x @${isFree ? "GRATIS" : fmtN(item.unit_price)}`}
                             right={isFree ? "GRATIS" : fmtN(item.subtotal)}
                         />
+
+                        {/* Kemasan */}
                         {pkgs.map((p, j) => {
                             const pqty  = getQty(p);
                             const pFree = Number(p.unit_price) === 0;
                             const pName = String(p.packaging_name ?? p.packaging_material?.name ?? "Kemasan");
                             return (
-                                <div key={j} style={{ marginLeft:6, marginTop:2, borderLeft:"2px solid #ddd", paddingLeft:6 }}>
-                                    <div style={{ ...dim, fontWeight:"bold" }}>+ {pName}</div>
+                                <div key={j} style={{
+                                    marginLeft:8, marginTop:4,
+                                    paddingLeft:7,
+                                    borderLeft:"2px solid #ddd",
+                                }}>
+                                    <div style={{ ...dim, fontWeight:"bold", marginBottom:2 }}>
+                                        + {pName}
+                                    </div>
                                     <Row2
                                         left={`${pqty}x @${pFree ? "GRATIS" : fmtN(p.unit_price)}`}
                                         right={pFree ? "GRATIS" : fmtN(p.unit_price * pqty)}
@@ -709,9 +678,11 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                 );
             })}
 
+            <Spacer h={2}/>
             <Divider/>
 
             {/* ══ SUMMARY ══ */}
+            <Spacer h={4}/>
             <Row2 left="Subtotal" right={"Rp " + fmtN(sale.subtotal_perfume ?? 0)}/>
             {Number(sale.subtotal_packaging) > 0 && (
                 <Row2 left="Kemasan" right={"Rp " + fmtN(sale.subtotal_packaging)}/>
@@ -723,38 +694,44 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                 <Row2 left="Redeem Poin" right={"- Rp " + fmtN(sale.points_redemption_value)}/>
             )}
 
-            {/* ══ TOTAL — highlight beda background ══ */}
-            <div style={{ background:"#111", color:"#fff", margin:"8px -14px", padding:"7px 14px",
-                          ...(is58 ? {} : { margin:"8px -18px", padding:"7px 18px" }) }}>
+            {/* ══ TOTAL ══ */}
+            <div style={{ background:"#111", color:"#fff", borderRadius:4, ...negMx }}>
                 <Row2 left="TOTAL" right={"Rp " + fmtN(sale.total)} bold xl/>
             </div>
 
-            <Spacer h={4}/>
+            <Spacer h={6}/>
 
             {/* ══ PEMBAYARAN ══ */}
-            {payments.map((p, i) => {
-                const mName = String(p.payment_method?.name ?? p.payment_method_name ?? "Cash");
-                return <Row2 key={i} left={mName} right={"Rp " + fmtN(p.amount)}/>;
-            })}
+            {payments.map((p, i) => (
+                <Row2 key={i}
+                    left={String(p.payment_method?.name ?? p.payment_method_name ?? "Cash")}
+                    right={"Rp " + fmtN(p.amount)}
+                />
+            ))}
             {change > 0 && (
-                <div style={{ fontWeight:"bold", color:"#166534" }}>
+                <div style={{ fontWeight:"bold", color:"#166534", marginTop:2 }}>
                     <Row2 left="Kembalian" right={"Rp " + fmtN(change)} bold/>
                 </div>
             )}
             {Number(sale.points_earned) > 0 && (
-                <div style={{ background:"#fffbeb", padding:"3px 6px", borderRadius:3, marginTop:4,
-                              fontFamily:font, fontSize:fsSM, color:"#92400e", textAlign:"center" }}>
+                <div style={{
+                    background:"#fffbeb", padding:"4px 8px", borderRadius:4, marginTop:6,
+                    fontFamily:font, fontSize:fsSM, color:"#92400e", textAlign:"center",
+                    border:"1px dashed #fcd34d",
+                }}>
                     ⭐ Poin diperoleh: +{sale.points_earned} poin
                 </div>
             )}
 
-            <Spacer h={8}/>
+            <Spacer h={10}/>
             <Divider/>
 
             {/* ══ FOOTER ══ */}
-            <div style={{ textAlign:"center", fontFamily:font, fontSize:fsSM, color:"#555", lineHeight:2 }}>
+            <div style={{ textAlign:"center", fontFamily:font, fontSize:fsSM, color:"#555", lineHeight:2.2, marginTop:4 }}>
                 <div>Terima kasih sudah berbelanja!</div>
-                <div style={{ fontWeight:"bold", fontSize:fs, color:"#111", letterSpacing:2 }}>HARUMNYA</div>
+                <div style={{ fontWeight:"bold", fontSize:fs, color:"#111", letterSpacing:1 }}>
+                    — HARUMNYA —
+                </div>
             </div>
 
             <Spacer h={6}/>
@@ -792,12 +769,15 @@ function InvoiceView({ sale, saleItems, payments, totalPaid, change, statusInfo 
                     <p className="font-medium">{sale.customer?.name ?? sale.customer_name ?? "Umum"}</p>
                     {sale.customer?.phone && <p className="text-xs text-slate-400">{sale.customer.phone}</p>}
                 </div>
-                {sale.sales_person?.name && (
-                    <div>
-                        <p className="text-xs text-slate-400 mb-0.5">Sales</p>
-                        <p className="font-medium">{sale.sales_person.name}</p>
-                    </div>
-                )}
+                {(() => {
+                    const sn = sale.sales_person?.name ?? sale.salesperson?.name ?? sale.sales_person_name ?? sale.salesperson_name ?? sale.staff?.name ?? null;
+                    return sn ? (
+                        <div>
+                            <p className="text-xs text-slate-400 mb-0.5">Sales</p>
+                            <p className="font-medium">{sn}</p>
+                        </div>
+                    ) : null;
+                })()}
             </div>
             <div className="px-6 py-4 space-y-3">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Item Pembelian</p>
@@ -860,7 +840,7 @@ function InvoiceView({ sale, saleItems, payments, totalPaid, change, statusInfo 
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Internal — HPP</p>
                     {Number(sale.cogs_perfume)  > 0 && <IRow label="HPP Parfum"  val={fmt(sale.cogs_perfume)}/>}
                     {Number(sale.cogs_packaging)> 0 && <IRow label="HPP Kemasan" val={fmt(sale.cogs_packaging)}/>}
-                    <IRow label="Total HPP"   val={fmt(sale.cogs_total)}    cls="font-semibold text-slate-500 border-t border-slate-200 pt-1"/>
+                    <IRow label="Total HPP"    val={fmt(sale.cogs_total)}   cls="font-semibold text-slate-500 border-t border-slate-200 pt-1"/>
                     <IRow label="Gross Profit" val={`${fmt(sale.gross_profit)} (${parseFloat(sale.gross_margin_pct??0).toFixed(1)}%)`}
                         cls={`font-bold ${Number(sale.gross_profit)>=0?"text-emerald-600":"text-red-500"}`}/>
                 </div>
