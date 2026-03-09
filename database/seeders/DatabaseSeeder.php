@@ -14,7 +14,7 @@ class DatabaseSeeder extends Seeder
 
             // 001 - Users & Roles
             RolePermissionSeeder::class,
-            UserSeeder::class,
+            // UserSeeder::class,
             IntensitySeeder::class,
             IngredientSupplierSeeder::class,
             PackagingSeeder::class,
