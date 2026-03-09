@@ -66,33 +66,41 @@ function buildReceipt(sale, saleItems, payments, change) {
 
     ep.init().lineSpacing(2);
 
-    // ══ BRAND — size(2,1): lebar 2x, tinggi 1x → "HARUMNYA" = 8 chars × 2 = 16, muat di W=32 ══
-    ep.align(1)
-      .bold(true).size(2,1)
-      .text("HARUMNYA").lf()
-      .size(1,1).bold(false)
-      .lf(0);
+    // ══ BRAND ══
+    // FIX: Jangan pakai size(2,x) untuk center karena printer budget sering salah hitung padding.
+    // Gunakan size(1,1) normal + padding manual agar benar-benar center.
+    // "HARUMNYA" = 8 char, padding = (32-8)/2 = 12 spasi di kiri
+    ep.align(1).bold(true)
+      .text("- HARUMNYA -").lf()   // 12 char, center otomatis via align(1)
+      .bold(false);
 
     // ══ INFO TOKO ══
-    ep.bold(true).center(sale.store?.name ?? "PARFUM CUSTOM", W).lf().bold(false);
+    // align(1) sudah aktif, pakai langsung text() agar printer handle centering
+    ep.bold(true).text(sale.store?.name ?? "PARFUM CUSTOM").lf().bold(false);
     if (sale.store?.address) {
+        // Pecah per W karakter, align(1) tetap aktif → printer center sendiri
         const addr = String(sale.store.address);
-        for (let i=0; i<addr.length; i+=W) ep.center(addr.slice(i,i+W), W).lf();
+        for (let i = 0; i < addr.length; i += W) ep.text(addr.slice(i, i + W)).lf();
     }
-    if (sale.store?.phone) ep.center(String(sale.store.phone), W).lf();
+    if (sale.store?.phone) ep.text(String(sale.store.phone)).lf();
 
-    ep.lf(0).divider(W).lf();
+    // Reset ke left setelah selesai center block
+    ep.align(0).divider(W).lf();
 
     // ══ INFO TRANSAKSI ══
-    ep.align(0)
-      .row2(fmtDate(sale.sold_at), fmtTime(sale.sold_at), W).lf()
+    ep.row2(fmtDate(sale.sold_at), fmtTime(sale.sold_at), W).lf()
       .row2("No", sale.sale_number, W).lf()
       .row2("Kasir", sale.cashier?.name ?? sale.cashier_name ?? "-", W).lf();
     if (sale.customer?.name || sale.customer_name)
         ep.row2("Pelanggan", sale.customer?.name ?? sale.customer_name, W).lf();
-    const salesNameEsc = sale.sales_person?.name ?? sale.salesperson?.name ?? sale.sales_person_name ?? sale.salesperson_name ?? sale.staff?.name ?? null;
-    if (salesNameEsc)
-        ep.bold(true).row2("Sales", salesNameEsc, W).lf().bold(false);
+
+    // Sales — center & bold, bukan row2
+    const salesNameEsc = sale.sales_person?.name ?? sale.salesperson?.name
+        ?? sale.sales_person_name ?? sale.salesperson_name ?? sale.staff?.name ?? null;
+    if (salesNameEsc) {
+        const label = "** Sales: " + salesNameEsc + " **";
+        ep.align(1).bold(true).text(label).lf().bold(false).align(0);
+    }
 
     ep.thinLine(W).lf();
 
@@ -105,9 +113,9 @@ function buildReceipt(sale, saleItems, payments, change) {
                 .filter(Boolean).join(" ")
             ?? "Item");
 
-        if (idx > 0) ep.lf(1); // jarak antar item
+        if (idx > 0) { ep.thinLine(W).lf(); } // garis tipis pemisah antar item
         ep.bold(true);
-        for (let i=0; i<name.length; i+=W) ep.text(name.slice(i,i+W)).lf();
+        for (let i = 0; i < name.length; i += W) ep.text(name.slice(i, i + W)).lf();
         ep.bold(false);
         ep.row2(`${qty}x @${isFree ? "GRATIS" : fmtN(item.unit_price)}`, isFree ? "0" : fmtN(item.subtotal), W).lf();
 
@@ -551,24 +559,21 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
     return (
         <div style={{ padding:pad, ...base, background:"#fff" }}>
 
-            {/* ══ BRAND ══
-                FIX: Hapus overflow:hidden & letterSpacing besar yang menyebabkan "HARU\nMNYA"
-                Gunakan fontSize lebih kecil + letterSpacing aman agar muat dalam container
-            ══ */}
+            {/* ══ BRAND ══ */}
             <div style={{ textAlign:"center", marginBottom:8 }}>
                 <div style={{ ...dim, letterSpacing:3, marginBottom:4 }}>· · · · · · · · ·</div>
                 <div style={{
-                    fontFamily:     font,
-                    fontWeight:     "900",
-                    fontSize:       is58 ? 18 : 24,   // ← lebih kecil dari sebelumnya (20/26)
-                    letterSpacing:  is58 ?  2 :  3,   // ← jauh lebih kecil dari 6/8 yang menyebabkan bug
-                    lineHeight:     1.3,
-                    color:          "#111",
-                    textAlign:      "center",
-                    // TIDAK ada overflow:hidden / whiteSpace:nowrap / textOverflow
-                    // Biarkan browser menampilkan penuh
+                    fontFamily:    font,
+                    fontWeight:    "900",
+                    fontSize:      is58 ? 17 : 22,
+                    letterSpacing: 1,
+                    lineHeight:    1.3,
+                    color:         "#111",
+                    textAlign:     "center",
+                    display:       "block",
+                    width:         "100%",
                 }}>
-                    HARUMNYA
+                    — HARUMNYA —
                 </div>
                 <div style={{ ...dim, letterSpacing:3, marginTop:4 }}>· · · · · · · · ·</div>
             </div>
@@ -579,7 +584,13 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                     {sale.store?.name ?? "PARFUM CUSTOM"}
                 </div>
                 {sale.store?.address && (
-                    <div style={{ ...dim, marginTop:2, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>
+                    // FIX: whiteSpace:normal + wordBreak:break-word agar wrap dan tetap center
+                    <div style={{
+                        ...dim, marginTop:2,
+                        whiteSpace: "normal",
+                        wordBreak:  "break-word",
+                        textAlign:  "center",
+                    }}>
                         {sale.store.address}
                     </div>
                 )}
@@ -597,7 +608,7 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
             {(sale.customer?.name || sale.customer_name) && (
                 <Row2 left="Pelanggan" right={sale.customer?.name ?? sale.customer_name}/>
             )}
-            {/* Sales — handle semua kemungkinan nama field */}
+            {/* Sales — CENTER & BOLD, menonjol */}
             {(() => {
                 const salesName = sale.sales_person?.name
                     ?? sale.salesperson?.name
@@ -607,23 +618,28 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                     ?? null;
                 return salesName ? (
                     <div style={{
-                        display:"flex", justifyContent:"space-between", alignItems:"center",
-                        fontFamily:font, fontSize:fs, lineHeight:1.75,
-                        background:"#f0f0f0", borderRadius:3,
-                        padding:"3px 5px", marginTop:4,
-                        borderLeft:"3px solid #888",
+                        textAlign:   "center",
+                        fontWeight:  "bold",
+                        fontFamily:  font,
+                        fontSize:    fs,
+                        lineHeight:  1.9,
+                        marginTop:   5,
+                        marginBottom:2,
+                        background:  "#f0f0f0",
+                        borderRadius:3,
+                        padding:     "3px 0",
+                        letterSpacing:0.5,
                     }}>
-                        <span style={{ fontWeight:"bold" }}>Sales</span>
-                        <span style={{ fontWeight:"bold", textAlign:"right" }}>{salesName}</span>
+                        ★ Sales: {salesName} ★
                     </div>
                 ) : null;
             })()}
 
             <Spacer h={8}/>
             <Divider/>
-            <Spacer h={4}/>
+            <Spacer h={6}/>
 
-            {/* ══ ITEMS — setiap item diberi padding & separator ══ */}
+            {/* ══ ITEMS ══ */}
             {saleItems.map((item, i) => {
                 const qty    = getQty(item);
                 const isFree = Number(item.unit_price) === 0;
@@ -635,12 +651,11 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
 
                 return (
                     <div key={i} style={{
-                        marginBottom: 10,
+                        paddingTop:    i === 0 ? 0 : 8,
                         paddingBottom: 8,
-                        // Garis pemisah tipis antar item (kecuali item terakhir)
-                        borderBottom: i < saleItems.length - 1 ? "1px dashed #e0e0e0" : "none",
+                        borderBottom:  i < saleItems.length - 1 ? "1px dashed #d0d0d0" : "none",
+                        marginBottom:  i < saleItems.length - 1 ? 0 : 2,
                     }}>
-                        {/* Nama produk */}
                         <div style={{
                             fontWeight:"bold", fontFamily:font, fontSize:fs,
                             lineHeight:1.5, wordBreak:"break-word", color:"#111",
@@ -652,8 +667,6 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                             left={`${qty}x @${isFree ? "GRATIS" : fmtN(item.unit_price)}`}
                             right={isFree ? "GRATIS" : fmtN(item.subtotal)}
                         />
-
-                        {/* Kemasan */}
                         {pkgs.map((p, j) => {
                             const pqty  = getQty(p);
                             const pFree = Number(p.unit_price) === 0;
@@ -661,12 +674,9 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                             return (
                                 <div key={j} style={{
                                     marginLeft:8, marginTop:4,
-                                    paddingLeft:7,
-                                    borderLeft:"2px solid #ddd",
+                                    paddingLeft:7, borderLeft:"2px solid #ddd",
                                 }}>
-                                    <div style={{ ...dim, fontWeight:"bold", marginBottom:2 }}>
-                                        + {pName}
-                                    </div>
+                                    <div style={{ ...dim, fontWeight:"bold", marginBottom:2 }}>+ {pName}</div>
                                     <Row2
                                         left={`${pqty}x @${pFree ? "GRATIS" : fmtN(p.unit_price)}`}
                                         right={pFree ? "GRATIS" : fmtN(p.unit_price * pqty)}
