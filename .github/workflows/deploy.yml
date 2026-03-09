@@ -9,46 +9,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Node
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      # 3️⃣ Install NPM Dependencies & Build Vite
       - name: Install & Build Assets
         run: |
           npm ci
           npm run build
 
-      # 4️⃣ Fix permission & pull latest code di VPS
-      - name: Pull latest code on VPS
+      # MODIFIKASI: Gabungkan langkah SSH agar lebih cepat dan kurangi resiko timeout koneksi berulang
+      - name: Deploy and Sync Code
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # Gunakan timeout yang lebih lama jika koneksi internet VPS agak lambat
+          command_timeout: 30m
           script: |
             set -e
             cd /var/www/POS-Harumnya
 
-            # FIX UTAMA: Ubah kepemilikan SELURUH direktori ke user SSH (misal: ubuntu/deployer)
-            # Ini agar folder .git/ bisa ditulisi saat 'git fetch'
-            sudo chown -R $USER:$USER .
-
-            # Beritahu Git bahwa direktori ini aman (mencegah error 'dubious ownership')
+            # Pastikan direktori aman bagi Git
             git config --global --add safe.directory /var/www/POS-Harumnya
 
+            # Ambil update terbaru
             git fetch origin main
             git reset --hard origin/main
 
-      # 5️⃣ Upload build folder to VPS
-      - name: Upload build folder to VPS
+            # Install dependencies (Lakukan di sini agar vendor folder tetap sinkron)
+            composer install --no-dev --optimize-autoloader
+
+      - name: Upload Build Folder (Vite)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -58,8 +56,7 @@ jobs:
           target: "/var/www/POS-Harumnya"
           overwrite: true
 
-      # 6️⃣ Finalize deployment
-      - name: Install Composer & Optimize
+      - name: Finalize & Permissions
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -69,19 +66,17 @@ jobs:
             set -e
             cd /var/www/POS-Harumnya
 
-            # Install composer production
-            composer install --no-dev --optimize-autoloader
-
-            # Clear & rebuild cache
+            # Optimasi Laravel
             php artisan optimize:clear
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
 
-            # KEMBALIKAN PERMISSION: Web server (www-data) butuh akses tulis ke folder tertentu
-            sudo chown -R www-data:www-data storage bootstrap/cache public/build
+            # FIX PERMISSION: Gunakan sudo agar tidak gagal saat mengubah milik www-data
+            # Berikan akses ke group agar user SSH dan web server sama-sama bisa baca/tulis
+            sudo chown -R $USER:www-data .
             sudo chmod -R 775 storage bootstrap/cache public/build
 
-            # Restart services (Gunakan reload agar tidak ada downtime)
+            # Restart Services (Pastikan versi PHP sesuai dengan yang terinstall di VPS)
             sudo systemctl restart php8.4-fpm
             sudo systemctl reload nginx
