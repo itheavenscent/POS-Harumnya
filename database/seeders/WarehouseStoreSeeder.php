@@ -2,9 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 class WarehouseStoreSeeder extends Seeder
 {
@@ -64,7 +66,7 @@ class WarehouseStoreSeeder extends Seeder
         $this->command->info('Warehouses & Stores seeded.');
 
         // =========================================================
-        // 3. USERS  (ID warehouse/store langsung dari variabel atas)
+        // 3. USERS
         // =========================================================
         $users = [
             // ---------- Super Admin ----------
