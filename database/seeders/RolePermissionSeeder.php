@@ -25,6 +25,7 @@ class RolePermissionSeeder extends Seeder
             'transactions-create',
             'transactions-void',
             'transactions-refund',
+            'transactions-all',         // lihat semua transaksi (bukan milik kasir sendiri)
 
             // ── Products & Catalog ───────────────────────────────────────────
             'products-access',
@@ -194,6 +195,7 @@ class RolePermissionSeeder extends Seeder
             'transactions-create',
             'transactions-void',
             'transactions-refund',
+            'transactions-all',         // bisa lihat semua transaksi toko
 
             // Produk & Katalog (read only)
             'products-access',
@@ -235,6 +237,7 @@ class RolePermissionSeeder extends Seeder
         ]);
 
         // ── Kasir — hanya POS & pelanggan ────────────────────────────────────
+        // Kasir TIDAK mendapat transactions-all → hanya bisa lihat transaksi miliknya sendiri
         $cashier = Role::firstOrCreate(['name' => 'cashier']);
         $cashier->syncPermissions([
             'dashboard-access',
@@ -296,14 +299,17 @@ class RolePermissionSeeder extends Seeder
         $finance->syncPermissions([
             'dashboard-access',
 
+            // Transaksi (read only, semua)
+            'transactions-access',
+            'transactions-all',         // bisa lihat semua transaksi untuk keperluan laporan
+
             // Laporan Penjualan & Keuangan
             'reports-access',
             'reports-sales',
             'reports-finance',
             'profits-access',
 
-            // Bisa lihat customer & transaksi (read only)
-            'transactions-access',
+            // Bisa lihat customer & diskon (read only)
             'customers-access',
             'discounts-access',
 

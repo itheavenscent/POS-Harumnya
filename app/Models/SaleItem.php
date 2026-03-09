@@ -16,6 +16,10 @@ class SaleItem extends Model
         'sale_id', 'product_id',
         'product_name', 'product_sku',
         'variant_name', 'intensity_code', 'size_ml',
+        // Snapshot ID — dibutuhkan oleh StockDeductionService
+        'variant_id_snapshot',
+        'intensity_id_snapshot',
+        'size_id_snapshot',
         'qty', 'unit_price', 'item_discount', 'subtotal',
         'cogs_per_unit', 'cogs_total',
         'line_gross_profit', 'line_gross_margin_pct',
