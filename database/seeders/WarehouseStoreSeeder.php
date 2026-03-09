@@ -67,33 +67,31 @@ class WarehouseStoreSeeder extends Seeder
 
         // =========================================================
         // 3. USERS
+        // ⚠ Model User pakai cast 'hashed' pada password
+        //   → JANGAN pakai bcrypt(), tulis plain text saja
+        //   → Laravel akan auto-hash saat User::create()
         // =========================================================
         $users = [
-            // ---------- Super Admin ----------
             [
                 'name'                 => 'Super Admin',
                 'email'                => 'superadmin@gmail.com',
-                'password'             => bcrypt('password'),
+                'password'             => 'password',
                 'default_warehouse_id' => $warehouseId,
                 'default_store_id'     => null,
                 'role'                 => 'super-admin',
             ],
-
-            // ---------- Admin ----------
             [
                 'name'                 => 'Admin',
                 'email'                => 'admin@gmail.com',
-                'password'             => bcrypt('password'),
+                'password'             => 'password',
                 'default_warehouse_id' => $warehouseId,
                 'default_store_id'     => null,
                 'role'                 => 'admin',
             ],
-
-            // ---------- Store Manager ----------
             [
                 'name'                 => 'Manager Lamongan',
                 'email'                => 'manager.lamongan@gmail.com',
-                'password'             => bcrypt('password'),
+                'password'             => 'password',
                 'default_warehouse_id' => null,
                 'default_store_id'     => $store1Id,
                 'role'                 => 'store-manager',
@@ -101,17 +99,15 @@ class WarehouseStoreSeeder extends Seeder
             [
                 'name'                 => 'Manager Gresik',
                 'email'                => 'manager.gresik@gmail.com',
-                'password'             => bcrypt('password'),
+                'password'             => 'password',
                 'default_warehouse_id' => null,
                 'default_store_id'     => $store2Id,
                 'role'                 => 'store-manager',
             ],
-
-            // ---------- Cashier ----------
             [
                 'name'                 => 'Kasir Lamongan',
                 'email'                => 'kasir.lamongan@gmail.com',
-                'password'             => bcrypt('password'),
+                'password'             => 'password',
                 'default_warehouse_id' => null,
                 'default_store_id'     => $store1Id,
                 'role'                 => 'cashier',
@@ -119,17 +115,15 @@ class WarehouseStoreSeeder extends Seeder
             [
                 'name'                 => 'Kasir Gresik',
                 'email'                => 'kasir.gresik@gmail.com',
-                'password'             => bcrypt('password'),
+                'password'             => 'password',
                 'default_warehouse_id' => null,
                 'default_store_id'     => $store2Id,
                 'role'                 => 'cashier',
             ],
-
-            // ---------- Warehouse Staff ----------
             [
                 'name'                 => 'Staff Gudang',
                 'email'                => 'gudang@gmail.com',
-                'password'             => bcrypt('password'),
+                'password'             => 'password',
                 'default_warehouse_id' => $warehouseId,
                 'default_store_id'     => null,
                 'role'                 => 'warehouse-staff',
