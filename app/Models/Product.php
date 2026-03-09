@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Log;
 
 class Product extends Model
 {
@@ -33,7 +34,9 @@ class Product extends Model
         'selling_price'           => 'integer',
         'production_cost'         => 'integer',
         'gross_profit'            => 'integer',
-        'gross_margin_percentage' => 'decimal:2',
+        // FIX: gunakan 'float' agar nilai hasil kalkulasi PHP tidak ditruncate
+        // sebelum di-clamp. Kolom DB sudah diperlebar ke DECIMAL(10,2) via migrasi.
+        'gross_margin_percentage' => 'float',
         'is_active'               => 'boolean',
     ];
 
@@ -68,16 +71,37 @@ class Product extends Model
     /**
      * Hitung HPP dari ingredient cost saja.
      * Packaging tidak dihitung — bersifat add-on di POS.
+     *
+     * FIX: gross_margin_percentage di-clamp agar tidak overflow kolom DB.
+     *      Sebelumnya kolom DECIMAL(5,2) hanya menampung -999.99 s/d 999.99.
+     *      Setelah migrasi ke DECIMAL(10,2), batas aman menjadi jauh lebih besar.
      */
     public function calculateProductionCost(): void
     {
         $totalCost = (int) $this->recipes()->sum('total_cost');
 
-        $this->production_cost         = $totalCost;
-        $this->gross_profit            = $this->selling_price - $totalCost;
-        $this->gross_margin_percentage = $this->selling_price > 0
+        $this->production_cost = $totalCost;
+        $this->gross_profit    = $this->selling_price - $totalCost;
+
+        $rawMargin = $this->selling_price > 0
             ? ($this->gross_profit / $this->selling_price) * 100
             : 0;
+
+        // ── LOG WARNING jika margin sangat tidak wajar ─────────────────────────
+        // Indikasi: average_cost bahan salah satuan (misal per-kg diinput sebagai per-ml)
+        if (abs($rawMargin) > 1000) {
+            Log::warning('[Product] gross_margin_percentage sangat tidak wajar — periksa average_cost ingredient.', [
+                'product_id'      => $this->id,
+                'sku'             => $this->sku,
+                'selling_price'   => $this->selling_price,
+                'production_cost' => $totalCost,
+                'gross_profit'    => $this->gross_profit,
+                'raw_margin_pct'  => round($rawMargin, 2),
+            ]);
+        }
+
+        // ── CLAMP: pastikan tidak melewati batas kolom DECIMAL(10,2) ──────────
+        $this->gross_margin_percentage = $this->clampMargin($rawMargin);
 
         $this->save();
     }
@@ -180,5 +204,16 @@ class Product extends Model
     public function getFormattedGrossProfitAttribute(): string
     {
         return 'Rp ' . number_format($this->gross_profit, 0, ',', '.');
+    }
+
+    // ── Private Helpers ────────────────────────────────────────────────────────
+
+    /**
+     * Clamp nilai margin agar tidak melebihi batas kolom DECIMAL(10,2).
+     * Rentang aman: -99.999.999,99 s/d 99.999.999,99
+     */
+    private function clampMargin(float $value): float
+    {
+        return max(-99_999_999.99, min(99_999_999.99, round($value, 2)));
     }
 }
