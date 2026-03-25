@@ -7,13 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-/**
- * Cart — keranjang belanja aktif (atau di-hold) kasir.
- *
- * Aturan 1 kasir per toko:
- *   - hold_id IS NULL  = cart aktif (hanya 1 per kasir per toko, enforced di app)
- *   - hold_id NOT NULL = cart di-hold/parkir (boleh banyak)
- */
 class Cart extends Model
 {
     use HasUuids;
@@ -23,8 +16,8 @@ class Cart extends Model
         'cashier_id',
         'store_id',
         'variant_id',
-        'intensity_id',
-        'size_id',
+        'intensity_id',       // nullable untuk custom order
+        'size_id',            // nullable untuk custom order
         'product_id',
         'unit_price',
         'qty',
@@ -34,17 +27,32 @@ class Cart extends Model
         'hold_label',
         'held_at',
         'cart_expires_at',
+        // ── Custom order ──────────────────────────────────────────────────
+        'is_custom_order',
+        'custom_oil_qty',
+        'custom_alcohol_qty',
+        'custom_other_qty',
+        'custom_total_volume',
+        'custom_unit_price',
+        'alcohol_cost_snapshot',
+        // ─────────────────────────────────────────────────────────────────
         'notes',
     ];
 
     protected $casts = [
-        'unit_price'      => 'integer',
-        'qty'             => 'integer',
-        'held_at'         => 'datetime',
-        'cart_expires_at' => 'datetime',
+        'unit_price'             => 'decimal:2',
+        'qty'                    => 'integer',
+        'held_at'                => 'datetime',
+        'cart_expires_at'        => 'datetime',
+        // Custom order
+        'is_custom_order'        => 'boolean',
+        'custom_oil_qty'         => 'integer',
+        'custom_alcohol_qty'     => 'integer',
+        'custom_other_qty'       => 'integer',
+        'custom_total_volume'    => 'integer',
+        'custom_unit_price'      => 'decimal:2',
+        'alcohol_cost_snapshot'  => 'decimal:4',
     ];
-
-    // ── Relations ──────────────────────────────────────────────────────────────
 
     public function cashier(): BelongsTo
     {
@@ -81,37 +89,8 @@ class Cart extends Model
         return $this->belongsTo(Customer::class, 'customer_id');
     }
 
-    public function salesPerson(): BelongsTo
-    {
-        return $this->belongsTo(SalesPerson::class, 'sales_person_id');
-    }
-
-    /** Packaging add-ons untuk item ini (bisa lebih dari 1). */
     public function packagings(): HasMany
     {
         return $this->hasMany(CartPackaging::class, 'cart_id');
-    }
-
-    // ── Scopes ─────────────────────────────────────────────────────────────────
-
-    /** Cart aktif (tidak di-hold). */
-    public function scopeActive($query)
-    {
-        return $query->whereNull('hold_id');
-    }
-
-    /** Cart yang di-hold. */
-    public function scopeHeld($query)
-    {
-        return $query->whereNotNull('hold_id');
-    }
-
-    // ── Helpers ─────────────────────────────────────────────────────────────────
-
-    /** Harga total item ini (parfum + semua packaging × qty). */
-    public function getTotalAttribute(): int
-    {
-        $pkgTotal = $this->packagings->sum(fn ($p) => ($p->unit_price ?? 0) * ($p->qty ?? 1));
-        return ($this->unit_price * $this->qty) + $pkgTotal;
     }
 }

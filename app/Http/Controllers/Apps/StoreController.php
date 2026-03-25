@@ -25,10 +25,10 @@ class StoreController extends Controller
             ->select([
                 'id', 'code', 'name', 'address', 'phone',
                 'manager_name', 'email', 'is_active',
-                'store_category_id',   // ← tambahan
+                'store_category_id',
                 'created_at',
             ])
-            ->with(['storeCategory:id,code,name,allow_all_variants'])  // ← eager load
+            ->with(['storeCategory:id,code,name,allow_all_variants'])
             ->when($request->filled('search'),
                 fn ($q) => $q->search($request->search)
             )
@@ -37,7 +37,7 @@ class StoreController extends Controller
                 fn ($q) => $q->where('is_active', $request->boolean('is_active'))
             )
             ->when(
-                $request->filled('store_category_id'),                  // ← filter baru
+                $request->filled('store_category_id'),
                 fn ($q) => $q->where('store_category_id', $request->store_category_id)
             )
             ->ordered()
@@ -53,7 +53,6 @@ class StoreController extends Controller
                 'email'             => $s->email,
                 'is_active'         => $s->is_active,
                 'created_at'        => $s->created_at->format('d M Y'),
-                // Kategori
                 'store_category_id' => $s->store_category_id,
                 'store_category'    => $s->storeCategory ? [
                     'id'                 => $s->storeCategory->id,
@@ -63,7 +62,6 @@ class StoreController extends Controller
                 ] : null,
             ]);
 
-        // Kirim daftar kategori untuk filter & dropdown form
         $categories = StoreCategory::active()
             ->ordered()
             ->get(['id', 'code', 'name', 'allow_all_variants']);
@@ -97,16 +95,13 @@ class StoreController extends Controller
     public function store(StoreStoreRequest $request): RedirectResponse
     {
         try {
-            DB::beginTransaction();
             Store::create($request->validated());
-            DB::commit();
 
             return redirect()
                 ->route('stores.index')
                 ->with('success', 'Toko berhasil ditambahkan! 🏪');
 
         } catch (\Throwable $e) {
-            DB::rollBack();
             report($e);
 
             return back()
@@ -135,7 +130,7 @@ class StoreController extends Controller
                 'manager_name'      => $store->manager_name ?? '',
                 'email'             => $store->email        ?? '',
                 'is_active'         => $store->is_active,
-                'store_category_id' => $store->store_category_id ?? '',   // ← tambahan
+                'store_category_id' => $store->store_category_id ?? '',
             ],
             'categories' => $categories,
         ]);
@@ -148,16 +143,13 @@ class StoreController extends Controller
     public function update(UpdateStoreRequest $request, Store $store): RedirectResponse
     {
         try {
-            DB::beginTransaction();
             $store->update($request->validated());
-            DB::commit();
 
             return redirect()
                 ->route('stores.index')
                 ->with('success', 'Data toko diperbarui! ✨');
 
         } catch (\Throwable $e) {
-            DB::rollBack();
             report($e);
 
             return back()
@@ -173,16 +165,13 @@ class StoreController extends Controller
     public function destroy(Store $store): RedirectResponse
     {
         try {
-            DB::beginTransaction();
             $store->delete();
-            DB::commit();
 
             return redirect()
                 ->route('stores.index')
                 ->with('success', 'Toko berhasil dihapus! 🗑️');
 
         } catch (\Throwable $e) {
-            DB::rollBack();
             report($e);
 
             return back()

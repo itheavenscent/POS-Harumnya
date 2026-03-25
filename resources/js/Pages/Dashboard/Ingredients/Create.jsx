@@ -4,14 +4,14 @@ import { Head, useForm, Link } from "@inertiajs/react";
 import Input from "@/Components/Dashboard/Input";
 import {
     IconArrowLeft, IconDeviceFloppy, IconFlask,
-    IconPhoto, IconInfoCircle, IconX,
+    IconPhoto, IconInfoCircle, IconX, IconCurrencyDollar,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 
 const TYPE_CFG = {
-    oil:     { label: "Fragrance Oil", desc: "Bibit parfum, essential oil, dll" },
-    alcohol: { label: "Alkohol",       desc: "Ethanol, isopropyl alcohol, dll" },
-    other:   { label: "Lainnya",       desc: "Air suling, fixative, dll" },
+    oil:     { label: "Fragrance Oil" },
+    alcohol: { label: "Alkohol" },
+    other:   { label: "Lainnya" },
 };
 
 const UNITS = [
@@ -22,7 +22,18 @@ const UNITS = [
     { value: "pcs",   label: "pcs — pieces" },
 ];
 
-// Custom select tanpa double arrow
+// Prevent mouse-wheel from changing number input values
+const noScroll = (e) => e.target.blur();
+
+// Rupiah formatting helpers
+const toRupiahDisplay = (val) => {
+    if (val === "" || val === null || val === undefined) return "";
+    const num = parseFloat(String(val).replace(/\./g, "").replace(",", "."));
+    if (isNaN(num)) return "";
+    return num.toLocaleString("id-ID");
+};
+const parseRupiah = (str) => str.replace(/\./g, "").replace(",", ".");
+
 function Select({ label, required, value, onChange, errors, children }) {
     return (
         <div>
@@ -64,11 +75,11 @@ export default function Create({ categories }) {
         sort_order:             0,
         description:            "",
         image:                  null,
+        selling_price:          "",
         is_active:              true,
     });
 
-    // Tipe scaling otomatis dari kategori yang dipilih
-    const selectedCategory = categories.find(c => c.id === data.ingredient_category_id);
+    const selectedCategory = categories.find(c => String(c.id) === String(data.ingredient_category_id));
 
     const handleImage = (e) => {
         const file = e.target.files[0];
@@ -81,6 +92,8 @@ export default function Create({ categories }) {
         e.stopPropagation();
         setData("image", null);
         setPreview(null);
+        // Reset input value agar bisa pilih file yang sama lagi
+        document.getElementById("image-upload").value = "";
     };
 
     const submit = (e) => {
@@ -96,6 +109,7 @@ export default function Create({ categories }) {
         <>
             <Head title="Tambah Bahan Baku" />
             <div className="max-w-5xl mx-auto px-4 py-6">
+
                 <Link
                     href={route("ingredients.index")}
                     className="flex items-center gap-2 text-sm text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 mb-5 font-medium transition-colors"
@@ -116,8 +130,10 @@ export default function Create({ categories }) {
                 <form onSubmit={submit} encType="multipart/form-data">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                        {/* ── Kolom Kiri ──────────────────────────────────── */}
+                        {/* ── Kolom Kiri ── */}
                         <div className="lg:col-span-2 space-y-6">
+
+                            {/* Informasi Utama */}
                             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
                                 <h2 className="text-base font-bold mb-5 flex items-center gap-2 text-slate-800 dark:text-white">
                                     <IconFlask size={18} className="text-teal-600" />
@@ -139,6 +155,7 @@ export default function Create({ categories }) {
                                         label="Urutan Tampil"
                                         value={data.sort_order}
                                         onChange={e => setData("sort_order", Number(e.target.value))}
+                                        onWheel={noScroll}
                                         errors={errors.sort_order}
                                         placeholder="0"
                                         hint="Urutan di dropdown resep"
@@ -172,16 +189,13 @@ export default function Create({ categories }) {
                                                 </option>
                                             ))}
                                         </Select>
-                                        {/* Tipe scaling otomatis dari kategori */}
                                         {selectedCategory && (
                                             <div className="mt-1.5 flex items-center gap-1.5 text-[10px] text-slate-500">
                                                 <span>Tipe scaling:</span>
                                                 <span className="font-bold text-teal-600">
                                                     {TYPE_CFG[selectedCategory.ingredient_type]?.label ?? "—"}
                                                 </span>
-                                                <span className="text-slate-400">
-                                                    (otomatis dari kategori)
-                                                </span>
+                                                <span className="text-slate-400">(otomatis dari kategori)</span>
                                             </div>
                                         )}
                                     </div>
@@ -216,6 +230,42 @@ export default function Create({ categories }) {
                                 </div>
                             </div>
 
+                            {/* Harga Jual */}
+                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+                                <h2 className="text-base font-bold mb-1 flex items-center gap-2 text-slate-800 dark:text-white">
+                                    <IconCurrencyDollar size={18} className="text-teal-600" />
+                                    Harga Jual
+                                    <span className="text-xs font-normal text-slate-400">(opsional)</span>
+                                </h2>
+                                <p className="text-xs text-slate-400 mb-4">
+                                    Harga jual per unit ke customer. Kosongkan jika bahan tidak dijual langsung.
+                                </p>
+                                <div className="relative max-w-xs">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-medium select-none pointer-events-none">
+                                        Rp
+                                    </span>
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={toRupiahDisplay(data.selling_price)}
+                                        onChange={e => {
+                                            const raw = parseRupiah(e.target.value.replace(/[^0-9,.]/g, ""));
+                                            setData("selling_price", raw);
+                                        }}
+                                        placeholder="0"
+                                        className={`w-full h-10 pl-9 pr-14 rounded-xl border text-sm bg-white dark:bg-slate-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all ${
+                                            errors.selling_price ? "border-red-400" : "border-slate-300 dark:border-slate-700"
+                                        }`}
+                                    />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-mono select-none pointer-events-none">
+                                        /{data.unit}
+                                    </span>
+                                </div>
+                                {errors.selling_price && (
+                                    <p className="text-red-500 text-xs mt-1">{errors.selling_price}</p>
+                                )}
+                            </div>
+
                             {/* Info HPP */}
                             <div className="bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900 rounded-xl p-4 flex items-start gap-3">
                                 <IconInfoCircle size={18} className="text-teal-500 flex-shrink-0 mt-0.5" />
@@ -224,22 +274,23 @@ export default function Create({ categories }) {
                                         HPP / Biaya Rata-rata (WAC)
                                     </p>
                                     <p className="text-xs text-teal-700 dark:text-teal-400">
-                                        Harga Pokok Produksi otomatis terisi via metode
-                                        <strong> Weighted Average Cost (WAC)</strong> setiap
-                                        kali Purchase Order diterima. Tidak perlu dan tidak bisa diisi manual.
+                                        Harga Pokok Produksi otomatis terisi via metode{" "}
+                                        <strong>Weighted Average Cost (WAC)</strong> setiap kali Purchase Order
+                                        diterima. Tidak perlu dan tidak bisa diisi manual.
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        {/* ── Kolom Kanan ─────────────────────────────────── */}
+                        {/* ── Kolom Kanan ── */}
                         <div className="space-y-5">
+
                             {/* Upload Foto */}
                             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
                                 <h3 className="font-bold mb-3 text-sm dark:text-white">Foto Bahan</h3>
                                 <div
                                     className="w-full aspect-square rounded-xl bg-slate-50 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center relative overflow-hidden cursor-pointer hover:border-teal-400 transition-colors group"
-                                    onClick={() => document.getElementById('image-upload').click()}
+                                    onClick={() => document.getElementById("image-upload").click()}
                                 >
                                     {preview ? (
                                         <>
@@ -247,7 +298,7 @@ export default function Create({ categories }) {
                                             <button
                                                 type="button"
                                                 onClick={removeImage}
-                                                className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                             >
                                                 <IconX size={12} />
                                             </button>

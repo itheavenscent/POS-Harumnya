@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import { Head, Link, router } from "@inertiajs/react";
 import {
@@ -16,20 +16,23 @@ import {
     IconBuildingStore,
     IconCalendar,
     IconInfinity,
+    IconAlertTriangle,
 } from "@tabler/icons-react";
 import Search from "@/Components/Dashboard/Search";
 import Pagination from "@/Components/Dashboard/Pagination";
-import Button from "@/Components/Dashboard/Button";
+import toast from "react-hot-toast";
 
-// ─── Type config ──────────────────────────────────────────────────────────────
+// =============================================================================
+// Type config
+// =============================================================================
 
 const TYPE_CONFIG = {
-    percentage: { icon: (s) => <IconPercentage size={s} />, label: "Persentase" },
+    percentage:   { icon: (s) => <IconPercentage size={s} />,    label: "Persentase" },
     fixed_amount: { icon: (s) => <IconCurrencyDollar size={s} />, label: "Nominal" },
-    buy_x_get_y: { icon: (s) => <IconGift size={s} />, label: "Buy X Get Y" },
-    free_product: { icon: (s) => <IconGift size={s} />, label: "Gratis Produk" },
-    game_reward: { icon: (s) => <IconDeviceGamepad2 size={s} />, label: "Game Reward" },
-    bundle: { icon: (s) => <IconTag size={s} />, label: "Bundle" },
+    buy_x_get_y:  { icon: (s) => <IconGift size={s} />,           label: "Buy X Get Y" },
+    free_product: { icon: (s) => <IconGift size={s} />,           label: "Gratis Produk" },
+    game_reward:  { icon: (s) => <IconDeviceGamepad2 size={s} />, label: "Game Reward" },
+    bundle:       { icon: (s) => <IconTag size={s} />,            label: "Bundle" },
 };
 
 function TypeBadge({ type }) {
@@ -42,7 +45,9 @@ function TypeBadge({ type }) {
     );
 }
 
-// ─── Value cell ───────────────────────────────────────────────────────────────
+// =============================================================================
+// Value cell
+// =============================================================================
 
 function ValueCell({ item }) {
     if (item.type === "percentage") {
@@ -76,7 +81,9 @@ function ValueCell({ item }) {
     return <span className="text-slate-400 dark:text-slate-600">—</span>;
 }
 
-// ─── Date format ──────────────────────────────────────────────────────────────
+// =============================================================================
+// Period cell
+// =============================================================================
 
 const fmtDate = (d) =>
     d
@@ -114,14 +121,82 @@ function PeriodCell({ start, end }) {
     );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// =============================================================================
+// Delete Modal (state-driven)
+// =============================================================================
+
+function DeleteModal({ show, item, onConfirm, onClose, loading }) {
+    if (!show) return null;
+    return (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-xl border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
+                        <IconAlertTriangle size={20} className="text-red-500" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                            Hapus Promo "{item?.name}"?
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                            Tindakan ini tidak dapat dibatalkan.
+                        </p>
+                    </div>
+                </div>
+                <div className="flex gap-2 justify-end mt-6">
+                    <button
+                        onClick={onClose}
+                        disabled={loading}
+                        className="px-4 py-2 text-sm font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={loading}
+                        className="px-4 py-2 text-sm font-bold rounded-xl bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-60 flex items-center gap-2"
+                    >
+                        {loading && (
+                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        )}
+                        Hapus
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// =============================================================================
+// Index Page
+// =============================================================================
 
 export default function Index({ discounts, filters }) {
+    const [deleteModal, setDeleteModal] = useState({ show: false, item: null, loading: false });
+
+    // ── Single Delete ─────────────────────────────────────────────────────────
+    const confirmDelete = (discount) => setDeleteModal({ show: true, item: discount, loading: false });
+    const closeDelete   = ()         => setDeleteModal({ show: false, item: null, loading: false });
+
+    const handleDelete = () => {
+        setDeleteModal(prev => ({ ...prev, loading: true }));
+        router.delete(route("discounts.destroy", deleteModal.item.id), {
+            onSuccess: () => {
+                closeDelete();
+                toast.success("Promo berhasil dihapus! 🗑️");
+            },
+            onError: () => {
+                closeDelete();
+                toast.error("Gagal menghapus promo, coba lagi.");
+            },
+        });
+    };
+
     return (
         <>
             <Head title="Promo & Diskon" />
 
-            {/* Header */}
+            {/* ── Header ── */}
             <div className="mb-6 flex items-start justify-between">
                 <div>
                     <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
@@ -143,13 +218,10 @@ export default function Index({ discounts, filters }) {
                 </Link>
             </div>
 
-            {/* Toolbar */}
+            {/* ── Toolbar ── */}
             <div className="mb-4 flex gap-2">
                 <div className="flex-1 max-w-xs">
-                    <Search
-                        url={route("discounts.index")}
-                        placeholder="Cari kode atau nama…"
-                    />
+                    <Search url={route("discounts.index")} placeholder="Cari kode atau nama…" />
                 </div>
                 <button
                     type="button"
@@ -161,7 +233,7 @@ export default function Index({ discounts, filters }) {
                 </button>
             </div>
 
-            {/* Table */}
+            {/* ── Table ── */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
                 {discounts.data.length === 0 ? (
                     <div className="py-24 text-center">
@@ -178,25 +250,11 @@ export default function Index({ discounts, filters }) {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-slate-100 dark:border-slate-800">
-                                    <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-600">
-                                        Promo
-                                    </th>
-                                    <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-600">
-                                        Tipe
-                                    </th>
-                                    <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-600">
-                                        Nilai
-                                    </th>
-                                    <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-600">
-                                        Toko
-                                    </th>
-                                    <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-600">
-                                        Periode
-                                    </th>
-                                    <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-600">
-                                        Status
-                                    </th>
-                                    <th className="px-5 py-3" />
+                                    {["Promo", "Tipe", "Nilai", "Toko", "Periode", "Status", ""].map(h => (
+                                        <th key={h} className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-600">
+                                            {h}
+                                        </th>
+                                    ))}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -223,18 +281,14 @@ export default function Index({ discounts, filters }) {
                                         {/* Nilai */}
                                         <td className="px-5 py-4">
                                             <ValueCell item={item} />
-                                            {(item.min_purchase_quantity > 0 ||
-                                                item.min_purchase_amount > 0) && (
+                                            {(item.min_purchase_quantity > 0 || item.min_purchase_amount > 0) && (
                                                 <div className="text-[11px] text-slate-400 dark:text-slate-600 mt-1 space-y-0.5">
                                                     {item.min_purchase_quantity > 0 && (
                                                         <div>Min {item.min_purchase_quantity} pcs</div>
                                                     )}
                                                     {item.min_purchase_amount > 0 && (
                                                         <div>
-                                                            Min Rp{" "}
-                                                            {Number(
-                                                                item.min_purchase_amount
-                                                            ).toLocaleString("id-ID")}
+                                                            Min Rp {Number(item.min_purchase_amount).toLocaleString("id-ID")}
                                                         </div>
                                                     )}
                                                 </div>
@@ -269,10 +323,7 @@ export default function Index({ discounts, filters }) {
 
                                         {/* Periode */}
                                         <td className="px-5 py-4">
-                                            <PeriodCell
-                                                start={item.start_date}
-                                                end={item.end_date}
-                                            />
+                                            <PeriodCell start={item.start_date} end={item.end_date} />
                                         </td>
 
                                         {/* Status */}
@@ -298,12 +349,13 @@ export default function Index({ discounts, filters }) {
                                                 >
                                                     <IconPencil size={14} />
                                                 </Link>
-                                                <Button
-                                                    type="delete"
-                                                    url={route("discounts.destroy", item.id)}
+                                                <button
+                                                    onClick={() => confirmDelete(item)}
                                                     className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all"
-                                                    icon={<IconTrash size={14} />}
-                                                />
+                                                    title="Hapus"
+                                                >
+                                                    <IconTrash size={14} />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -317,6 +369,14 @@ export default function Index({ discounts, filters }) {
             <div className="mt-4">
                 <Pagination links={discounts.links} />
             </div>
+
+            <DeleteModal
+                show={deleteModal.show}
+                item={deleteModal.item}
+                loading={deleteModal.loading}
+                onConfirm={handleDelete}
+                onClose={closeDelete}
+            />
         </>
     );
 }

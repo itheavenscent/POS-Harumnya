@@ -2,16 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 class Ingredient extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'ingredient_category_id',
@@ -21,110 +20,57 @@ class Ingredient extends Model
         'description',
         'image',
         'average_cost',
+        'selling_price',
         'is_active',
         'sort_order',
     ];
 
     protected $casts = [
-        'is_active'    => 'boolean',
-        'average_cost' => 'decimal:4',
-        'sort_order'   => 'integer',
+        'average_cost'  => 'decimal:4',
+        'selling_price' => 'decimal:2',
+        'is_active'     => 'boolean',
+        'sort_order'    => 'integer',
     ];
 
-    protected $appends = ['image_url'];
+    // ─── Relationships ────────────────────────────────────────────────────
 
-    // ─── Accessors ───────────────────────────────────────────────────────
-
-    public function getImageUrlAttribute(): ?string
-    {
-        return $this->image ? Storage::url($this->image) : null;
-    }
-
-    /**
-     * Shortcut ke ingredient_type dari kategori.
-     * Pastikan relasi category sudah di-eager load sebelum mengakses ini.
-     *
-     * Contoh: Ingredient::with('category')->get()
-     *         lalu $ingredient->ingredient_type → 'oil' | 'alcohol' | 'other'
-     *
-     * @return 'oil'|'alcohol'|'other'|null
-     */
-    public function getIngredientTypeAttribute(): ?string
-    {
-        return $this->category?->ingredient_type;
-    }
-
-    // ─── Relations ───────────────────────────────────────────────────────
-
-    public function category(): BelongsTo
+    public function category()
     {
         return $this->belongsTo(IngredientCategory::class, 'ingredient_category_id');
     }
 
-    public function warehouseStocks(): HasMany
+    public function variantRecipes()
     {
-        return $this->hasMany(WarehouseIngredientStock::class, 'ingredient_id');
+        return $this->hasMany(\App\Models\VariantRecipe::class);
     }
 
-    public function storeStocks(): HasMany
+    public function productRecipes()
     {
-        return $this->hasMany(StoreIngredientStock::class, 'ingredient_id');
+        return $this->hasMany(\App\Models\ProductRecipe::class);
     }
 
-    public function variantRecipes(): HasMany
+    // ─── Accessors ────────────────────────────────────────────────────────
+
+    public function getImageUrlAttribute(): ?string
     {
-        return $this->hasMany(VariantRecipe::class, 'ingredient_id');
+        return $this->image ? Storage::disk('public')->url($this->image) : null;
     }
 
-    public function productRecipes(): HasMany
-    {
-        return $this->hasMany(ProductRecipe::class, 'ingredient_id');
-    }
+    // ─── Scopes ───────────────────────────────────────────────────────────
 
-    // ─── Scopes ──────────────────────────────────────────────────────────
+    public function scopeSearch($query, string $term)
+    {
+        $lower = mb_strtolower($term);
+
+        return $query->where(function ($q) use ($lower) {
+            $q->whereRaw('LOWER(name) LIKE ?', ["%{$lower}%"])
+            ->orWhereRaw('LOWER(code) LIKE ?', ["%{$lower}%"]);
+        });
+    }
 
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
-    }
-
-    public function scopeSearch($query, string $search)
-    {
-        return $query->where(fn($q) =>
-            $q->where('name', 'like', "%{$search}%")
-              ->orWhere('code', 'like', "%{$search}%")
-        );
-    }
-
-    /**
-     * Filter ingredient berdasarkan ingredient_type dari kategorinya.
-     *
-     * Contoh:
-     *   Ingredient::byType('oil')->get()
-     *   Ingredient::byType('alcohol')->active()->get()
-     */
-    public function scopeByType($query, string $type)
-    {
-        return $query->whereHas('category', fn($q) =>
-            $q->where('ingredient_type', $type)
-        );
-    }
-
-    // ─── Helpers ─────────────────────────────────────────────────────────
-
-    public function isOil(): bool
-    {
-        return $this->ingredient_type === 'oil';
-    }
-
-    public function isAlcohol(): bool
-    {
-        return $this->ingredient_type === 'alcohol';
-    }
-
-    public function isOther(): bool
-    {
-        return $this->ingredient_type === 'other';
     }
 
     // ─── WAC Update ──────────────────────────────────────────────────────

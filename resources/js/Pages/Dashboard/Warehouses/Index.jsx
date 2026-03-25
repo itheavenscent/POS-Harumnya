@@ -28,18 +28,67 @@ function StatusBadge({ isActive }) {
 }
 
 // ---------------------------------------------------------------------------
+// Delete Modal (state-driven)
+// ---------------------------------------------------------------------------
+function DeleteModal({ show, item, onConfirm, onClose, loading }) {
+    if (!show) return null;
+    return (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-xl border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
+                        <IconAlertTriangle size={20} className="text-red-500" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                            Hapus Gudang "{item?.name}"?
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                            Tindakan ini tidak dapat dibatalkan.
+                        </p>
+                    </div>
+                </div>
+                <div className="flex gap-2 justify-end mt-6">
+                    <button
+                        onClick={onClose}
+                        disabled={loading}
+                        className="px-4 py-2 text-sm font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={loading}
+                        className="px-4 py-2 text-sm font-bold rounded-xl bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-60 flex items-center gap-2"
+                    >
+                        {loading && (
+                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        )}
+                        Hapus
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ---------------------------------------------------------------------------
 // Warehouse Card (Grid Mode)
 // ---------------------------------------------------------------------------
-function WarehouseCard({ warehouse, selected, onSelect }) {
+function WarehouseCard({ warehouse, selected, onSelect, onDelete }) {
     return (
         <div className={`bg-white dark:bg-slate-900 rounded-2xl border transition-all hover:shadow-lg group ${
-            selected ? "border-primary-400 dark:border-primary-600 ring-2 ring-primary-200 dark:ring-primary-800" : "border-slate-200 dark:border-slate-800"
+            selected
+                ? "border-primary-400 dark:border-primary-600 ring-2 ring-primary-200 dark:ring-primary-800"
+                : "border-slate-200 dark:border-slate-800"
         }`}>
-            {/* Card Header */}
             <div className="p-5">
                 <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-2">
-                        <input type="checkbox" checked={selected} onChange={e => onSelect(warehouse.id, e.target.checked)}
+                        <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={e => onSelect(warehouse.id, e.target.checked)}
                             className="w-4 h-4 rounded border-2 border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-500"
                         />
                         <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/40 flex items-center justify-center">
@@ -80,18 +129,19 @@ function WarehouseCard({ warehouse, selected, onSelect }) {
                 </div>
             </div>
 
-            {/* Card Footer */}
             <div className="px-5 pb-4 flex gap-2">
-                <Link href={route("warehouses.edit", warehouse.id)}
+                <Link
+                    href={route("warehouses.edit", warehouse.id)}
                     className="flex-1 text-center py-2 rounded-xl bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs font-bold hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
                 >
                     <IconPencilCog size={14} className="inline mr-1" />Edit
                 </Link>
-                <Button type="delete" url={route("warehouses.destroy", warehouse.id)}
+                <button
+                    onClick={() => onDelete(warehouse)}
                     className="flex-1 text-center py-2 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                    icon={<IconTrash size={14} className="inline mr-1" />}
-                    label="Hapus"
-                />
+                >
+                    <IconTrash size={14} className="inline mr-1" />Hapus
+                </button>
             </div>
         </div>
     );
@@ -131,7 +181,11 @@ function FilterModal({ show, onClose, filters, onApply }) {
                 <div className="p-6 space-y-4">
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Status</label>
-                        <select value={temp.is_active} onChange={e => setTemp({ ...temp, is_active: e.target.value })} className={selectCls}>
+                        <select
+                            value={temp.is_active}
+                            onChange={e => setTemp({ ...temp, is_active: e.target.value })}
+                            className={selectCls}
+                        >
                             <option value="">Semua Status</option>
                             <option value="1">✅ Aktif</option>
                             <option value="0">❌ Non-Aktif</option>
@@ -139,7 +193,11 @@ function FilterModal({ show, onClose, filters, onApply }) {
                     </div>
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Per Halaman</label>
-                        <select value={temp.per_page} onChange={e => setTemp({ ...temp, per_page: e.target.value })} className={selectCls}>
+                        <select
+                            value={temp.per_page}
+                            onChange={e => setTemp({ ...temp, per_page: e.target.value })}
+                            className={selectCls}
+                        >
                             {["8", "12", "24", "48"].map(v => <option key={v} value={v}>{v}</option>)}
                         </select>
                     </div>
@@ -182,38 +240,65 @@ function BulkDeleteModal({ show, onClose, onConfirm, count }) {
 // Index Page
 // ---------------------------------------------------------------------------
 export default function Index({ warehouses, filters }) {
-    const [viewMode, setViewMode]                   = useState("list");
-    const [selectedIds, setSelectedIds]             = useState([]);
-    const [showFilter, setShowFilter]               = useState(false);
-    const [showBulkDelete, setShowBulkDelete]       = useState(false);
-    const [currentFilters, setCurrentFilters]       = useState({
+    const [viewMode, setViewMode]             = useState("list");
+    const [selectedIds, setSelectedIds]       = useState([]);
+    const [showFilter, setShowFilter]         = useState(false);
+    const [showBulkDelete, setShowBulkDelete] = useState(false);
+    const [deleteModal, setDeleteModal]       = useState({ show: false, item: null, loading: false });
+
+    const [currentFilters, setCurrentFilters] = useState({
         is_active: filters?.is_active ?? "",
         per_page:  filters?.per_page  || 12,
     });
 
+    // ── Selection ─────────────────────────────────────────────────────────────
     const handleSelect    = (id, checked) => setSelectedIds(prev => checked ? [...prev, id] : prev.filter(s => s !== id));
     const handleSelectAll = (checked)     => setSelectedIds(checked ? warehouses.data.map(w => w.id) : []);
     const allSelected     = warehouses.data.length > 0 && selectedIds.length === warehouses.data.length;
 
+    // ── Single Delete ─────────────────────────────────────────────────────────
+    const confirmDelete = (warehouse) => setDeleteModal({ show: true, item: warehouse, loading: false });
+    const closeDelete   = ()          => setDeleteModal({ show: false, item: null, loading: false });
+
+    const handleDelete = () => {
+        setDeleteModal(prev => ({ ...prev, loading: true }));
+        router.delete(route("warehouses.destroy", deleteModal.item.id), {
+            onSuccess: () => {
+                closeDelete();
+                toast.success("Gudang berhasil dihapus! 🗑️");
+            },
+            onError: () => {
+                closeDelete();
+                toast.error("Gagal menghapus gudang, coba lagi.");
+            },
+        });
+    };
+
+    // ── Bulk Delete ───────────────────────────────────────────────────────────
+    const handleBulkDelete = () => {
+        router.post(route("warehouses.bulk-delete"), { ids: selectedIds }, {
+            onSuccess: () => {
+                setSelectedIds([]);
+                setShowBulkDelete(false);
+                toast.success(`${selectedIds.length} gudang berhasil dihapus!`);
+            },
+            onError: () => toast.error("Gagal menghapus, coba lagi"),
+        });
+    };
+
+    // ── Filters ───────────────────────────────────────────────────────────────
     const handleApplyFilters = (newFilters) => {
         setCurrentFilters(newFilters);
         const clean = {};
-        if (filters?.search)          clean.search    = filters.search;
+        if (filters?.search)             clean.search    = filters.search;
         if (newFilters.is_active !== "") clean.is_active = newFilters.is_active;
-        if (newFilters.per_page)      clean.per_page  = newFilters.per_page;
+        if (newFilters.per_page)         clean.per_page  = newFilters.per_page;
         router.get(route("warehouses.index"), clean, { preserveState: false, replace: true });
-    };
-
-    const handleBulkDelete = () => {
-        router.post(route("warehouses.bulk-delete"), { ids: selectedIds }, {
-            onSuccess: () => { setSelectedIds([]); setShowBulkDelete(false); toast.success(`${selectedIds.length} gudang berhasil dihapus!`); },
-            onError:   () => toast.error("Gagal menghapus, coba lagi"),
-        });
     };
 
     const handleRefresh = () => { router.reload({ only: ["warehouses"] }); toast.success("Data diperbarui!"); };
 
-    const hasActiveFilters = !!(currentFilters.is_active !== "");
+    const hasActiveFilters = currentFilters.is_active !== "";
 
     return (
         <>
@@ -239,7 +324,9 @@ export default function Index({ warehouses, filters }) {
                         )}
                     </p>
                 </div>
-                <Button type="link" href={route("warehouses.create")}
+                <Button
+                    type="link"
+                    href={route("warehouses.create")}
                     icon={<IconCirclePlus size={20} strokeWidth={2} />}
                     className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-primary-500/40"
                     label="Tambah Gudang"
@@ -254,29 +341,39 @@ export default function Index({ warehouses, filters }) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {/* Refresh */}
-                        <button onClick={handleRefresh} className="p-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Refresh">
+                        <button
+                            onClick={handleRefresh}
+                            className="p-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            title="Refresh"
+                        >
                             <IconRefresh size={20} strokeWidth={2} />
                         </button>
 
-                        {/* Filter */}
-                        <button onClick={() => setShowFilter(true)}
-                            className={`p-2.5 rounded-xl transition-colors relative ${hasActiveFilters ? "bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400" : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"}`}
+                        <button
+                            onClick={() => setShowFilter(true)}
+                            className={`p-2.5 rounded-xl transition-colors relative ${
+                                hasActiveFilters
+                                    ? "bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400"
+                                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                            }`}
                             title="Filter"
                         >
                             <IconFilter size={20} strokeWidth={2} />
-                            {hasActiveFilters && <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary-600 rounded-full border-2 border-white dark:border-slate-900" />}
+                            {hasActiveFilters && (
+                                <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary-600 rounded-full border-2 border-white dark:border-slate-900" />
+                            )}
                         </button>
 
-                        {/* View Toggle */}
                         <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                            <button onClick={() => setViewMode("list")}
+                            <button
+                                onClick={() => setViewMode("list")}
                                 className={`p-1.5 rounded-lg transition-all ${viewMode === "list" ? "bg-white dark:bg-slate-700 shadow text-primary-600 dark:text-primary-400" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"}`}
                                 title="List View"
                             >
                                 <IconList size={18} />
                             </button>
-                            <button onClick={() => setViewMode("grid")}
+                            <button
+                                onClick={() => setViewMode("grid")}
                                 className={`p-1.5 rounded-lg transition-all ${viewMode === "grid" ? "bg-white dark:bg-slate-700 shadow text-primary-600 dark:text-primary-400" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"}`}
                                 title="Grid View"
                             >
@@ -322,14 +419,16 @@ export default function Index({ warehouses, filters }) {
             {/* ── Content ── */}
             {warehouses.data.length > 0 ? (
                 viewMode === "list" ? (
-                    // ── List View ──
                     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
                                     <tr>
                                         <th className="px-4 py-4 w-10">
-                                            <input type="checkbox" checked={allSelected} onChange={e => handleSelectAll(e.target.checked)}
+                                            <input
+                                                type="checkbox"
+                                                checked={allSelected}
+                                                onChange={e => handleSelectAll(e.target.checked)}
                                                 className="w-4 h-4 rounded border-2 border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-500"
                                             />
                                         </th>
@@ -344,7 +443,10 @@ export default function Index({ warehouses, filters }) {
                                     {warehouses.data.map(item => (
                                         <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                             <td className="px-4 py-4">
-                                                <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={e => handleSelect(item.id, e.target.checked)}
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedIds.includes(item.id)}
+                                                    onChange={e => handleSelect(item.id, e.target.checked)}
                                                     className="w-4 h-4 rounded border-2 border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-500"
                                                 />
                                             </td>
@@ -377,16 +479,20 @@ export default function Index({ warehouses, filters }) {
                                             </td>
                                             <td className="px-4 py-4">
                                                 <div className="flex justify-end gap-2">
-                                                    <Link href={route("warehouses.edit", item.id)}
+                                                    <Link
+                                                        href={route("warehouses.edit", item.id)}
                                                         className="p-2 rounded-lg bg-warning-100 border border-warning-200 text-warning-600 hover:bg-warning-200 dark:bg-warning-900/50 dark:border-warning-800 dark:text-warning-400 dark:hover:bg-warning-900/70 transition-all"
                                                         title="Edit"
                                                     >
                                                         <IconPencilCog size={16} strokeWidth={2} />
                                                     </Link>
-                                                    <Button type="delete" url={route("warehouses.destroy", item.id)}
-                                                        icon={<IconTrash size={16} strokeWidth={2} />}
+                                                    <button
+                                                        onClick={() => confirmDelete(item)}
                                                         className="p-2 rounded-lg bg-danger-100 border border-danger-200 text-danger-600 hover:bg-danger-200 dark:bg-danger-900/50 dark:border-danger-800 dark:text-danger-400 dark:hover:bg-danger-900/70 transition-all"
-                                                    />
+                                                        title="Hapus"
+                                                    >
+                                                        <IconTrash size={16} strokeWidth={2} />
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -396,15 +502,19 @@ export default function Index({ warehouses, filters }) {
                         </div>
                     </div>
                 ) : (
-                    // ── Grid View ──
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                         {warehouses.data.map(item => (
-                            <WarehouseCard key={item.id} warehouse={item} selected={selectedIds.includes(item.id)} onSelect={handleSelect} />
+                            <WarehouseCard
+                                key={item.id}
+                                warehouse={item}
+                                selected={selectedIds.includes(item.id)}
+                                onSelect={handleSelect}
+                                onDelete={confirmDelete}
+                            />
                         ))}
                     </div>
                 )
             ) : (
-                // ── Empty State ──
                 <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-slate-900 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700">
                     <div className="w-20 h-20 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center mb-5">
                         <IconDatabaseOff size={38} className="text-slate-400 dark:text-slate-600" strokeWidth={1.5} />
@@ -419,7 +529,9 @@ export default function Index({ warehouses, filters }) {
                         }
                     </p>
                     {!filters?.search && (
-                        <Button type="link" href={route("warehouses.create")}
+                        <Button
+                            type="link"
+                            href={route("warehouses.create")}
                             icon={<IconCirclePlus size={20} strokeWidth={2} />}
                             className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold shadow-lg shadow-primary-500/40"
                             label="Tambah Gudang Sekarang"
@@ -428,16 +540,33 @@ export default function Index({ warehouses, filters }) {
                 </div>
             )}
 
-            {/* Pagination */}
             {warehouses.last_page > 1 && (
                 <div className="mt-6">
                     <Pagination links={warehouses.links} />
                 </div>
             )}
 
-            {/* Modals */}
-            <FilterModal show={showFilter} onClose={() => setShowFilter(false)} filters={currentFilters} onApply={handleApplyFilters} />
-            <BulkDeleteModal show={showBulkDelete} onClose={() => setShowBulkDelete(false)} onConfirm={handleBulkDelete} count={selectedIds.length} />
+            <FilterModal
+                show={showFilter}
+                onClose={() => setShowFilter(false)}
+                filters={currentFilters}
+                onApply={handleApplyFilters}
+            />
+
+            <BulkDeleteModal
+                show={showBulkDelete}
+                onClose={() => setShowBulkDelete(false)}
+                onConfirm={handleBulkDelete}
+                count={selectedIds.length}
+            />
+
+            <DeleteModal
+                show={deleteModal.show}
+                item={deleteModal.item}
+                loading={deleteModal.loading}
+                onConfirm={handleDelete}
+                onClose={closeDelete}
+            />
         </>
     );
 }

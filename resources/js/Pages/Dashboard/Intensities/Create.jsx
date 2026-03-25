@@ -26,10 +26,6 @@ const RATIO_PRESETS = [
     { label: "Extrait",   oil: 2, alcohol: 1, display: "2 : 1" },
 ];
 
-/**
- * Hitung qty default berdasarkan ratio & volume (integer, no decimal).
- * Contoh: oil=1, alcohol=2, volume=30 → oil=10, alcohol=20
- */
 function calcDefaultQty(oilParts, alcoholParts, volumeMl) {
     const total = oilParts + alcoholParts;
     if (total === 0) return { oil: 0, alcohol: volumeMl };
@@ -45,6 +41,7 @@ function getPresetFromRatio(oil, alcohol) {
 // ---------------------------------------------------------------------------
 // SizeQuantityRow
 // ---------------------------------------------------------------------------
+
 function SizeQuantityRow({ item, oilParts, alcoholParts, onChange }) {
     const isValid = (item.oil_quantity + item.alcohol_quantity) === item.total_volume;
     const sum     = item.oil_quantity + item.alcohol_quantity;
@@ -146,7 +143,7 @@ function SizeQuantityRow({ item, oilParts, alcoholParts, onChange }) {
                 </div>
             </div>
 
-            {/* Visual bar — hanya angka ml, zero persentase */}
+            {/* Visual bar */}
             {isValid && item.total_volume > 0 && (
                 <div className="mt-3">
                     <div className="h-2 w-full rounded-full overflow-hidden flex">
@@ -169,16 +166,8 @@ function SizeQuantityRow({ item, oilParts, alcoholParts, onChange }) {
 // ---------------------------------------------------------------------------
 // IntensityForm (shared by Create & Edit)
 // ---------------------------------------------------------------------------
-export function IntensityForm({ mode = "create", intensity = null, sizes = [], sizeQuantities = [] }) {
 
-    /**
-     * oil_ratio & alcohol_ratio disimpan di DB sebagai angka string:
-     *   oil_ratio = "1", alcohol_ratio = "2"  (untuk EDT)
-     *   oil_ratio = "2", alcohol_ratio = "1"  (untuk Extrait)
-     *
-     * Dikirim ke server HANYA angka parts-nya:
-     *   { oil_ratio: "1", alcohol_ratio: "2" }
-     */
+export function IntensityForm({ mode = "create", intensity = null, sizes = [], sizeQuantities = [] }) {
     const initOil     = intensity ? (parseInt(intensity.oil_ratio)     || 1) : 1;
     const initAlcohol = intensity ? (parseInt(intensity.alcohol_ratio)  || 2) : 2;
 
@@ -186,8 +175,8 @@ export function IntensityForm({ mode = "create", intensity = null, sizes = [], s
         const existing = sizeQuantities.find(q => q.size_id === size.id);
         return {
             size_id:          size.id,
-            size_name:        size.name,      // hanya untuk display, tidak dikirim ke server
-            volume_ml:        size.volume_ml, // hanya untuk display
+            size_name:        size.name,
+            volume_ml:        size.volume_ml,
             oil_quantity:     existing?.oil_quantity     ?? 0,
             alcohol_quantity: existing?.alcohol_quantity ?? 0,
             total_volume:     existing?.total_volume     ?? size.volume_ml,
@@ -199,17 +188,16 @@ export function IntensityForm({ mode = "create", intensity = null, sizes = [], s
 
     const { data, setData, post, processing, errors, reset } = useForm({
         ...(mode === "edit" ? { _method: "PUT" } : {}),
-        code:            intensity?.code     ?? "",
-        name:            intensity?.name     ?? "",
-        // Simpan sebagai angka string saja: "1", "2", bukan "1 : 2"
+        code:            intensity?.code  ?? "",
+        name:            intensity?.name  ?? "",
         oil_ratio:       String(initOil),
         alcohol_ratio:   String(initAlcohol),
-        sort_order:      intensity?.sort_order ?? 0,
-        is_active:       intensity?.is_active  ?? true,
+        is_active:       intensity?.is_active ?? true,
         size_quantities: buildInitSizeQty(),
     });
 
-    // Apply ratio — update state lokal + form
+    // ── Ratio ─────────────────────────────────────────────────────────────────
+
     const applyRatio = useCallback((oil, alcohol) => {
         setOilParts(oil);
         setAlcoholParts(alcohol);
@@ -227,7 +215,8 @@ export function IntensityForm({ mode = "create", intensity = null, sizes = [], s
         applyRatio(newOil, newAlcohol);
     };
 
-    // Gunakan functional setData agar tidak stale closure
+    // ── Size Qty ──────────────────────────────────────────────────────────────
+
     const updateSizeQty = useCallback((sizeId, updated) => {
         setData(prev => ({
             ...prev,
@@ -248,16 +237,12 @@ export function IntensityForm({ mode = "create", intensity = null, sizes = [], s
         toast.success("Semua ukuran telah diisi otomatis");
     };
 
-    const allValid = data.size_quantities.every(q =>
-        (q.oil_quantity + q.alcohol_quantity) === q.total_volume
-    );
+    const allValid     = data.size_quantities.every(q => (q.oil_quantity + q.alcohol_quantity) === q.total_volume);
+    const activePreset = getPresetFromRatio(oilParts, alcoholParts);
+    const barOilWidth  = oilParts + alcoholParts > 0 ? (oilParts / (oilParts + alcoholParts)) * 100 : 0;
+    const routeName    = mode === "create" ? "intensities.store" : "intensities.update";
 
-    const activePreset  = getPresetFromRatio(oilParts, alcoholParts);
-    const barOilWidth   = oilParts + alcoholParts > 0
-        ? (oilParts / (oilParts + alcoholParts)) * 100
-        : 0;
-
-    const routeName = mode === "create" ? "intensities.store" : "intensities.update";
+    // ── Submit ────────────────────────────────────────────────────────────────
 
     const submit = (e) => {
         e.preventDefault();
@@ -357,7 +342,7 @@ export function IntensityForm({ mode = "create", intensity = null, sizes = [], s
                             </div>
                         </div>
 
-                        {/* Visual bar — angka parts, bukan % */}
+                        {/* Visual bar */}
                         <div className="h-2.5 w-full rounded-full overflow-hidden flex mb-2">
                             <div className="h-full bg-teal-500 transition-all duration-300" style={{ width: `${barOilWidth}%` }} />
                             <div className="h-full bg-cyan-300 dark:bg-cyan-600 flex-1" />
@@ -427,7 +412,7 @@ export function IntensityForm({ mode = "create", intensity = null, sizes = [], s
                             />
                         </div>
 
-                        {/* Ratio display cards — satu card saja menampilkan "bibit : alkohol" */}
+                        {/* Ratio summary card */}
                         <div className="mt-5">
                             <div className="p-4 rounded-xl bg-teal-50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800">
                                 <div className="flex items-center gap-3">
@@ -446,19 +431,6 @@ export function IntensityForm({ mode = "create", intensity = null, sizes = [], s
                                     )}
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="mt-5">
-                            <Input
-                                type="number"
-                                label="Urutan Tampilan"
-                                value={data.sort_order}
-                                onChange={e => setData("sort_order", parseInt(e.target.value) || 0)}
-                                errors={errors.sort_order}
-                                placeholder="0"
-                                required
-                                helperText="Urutan tampil dari kecil ke besar"
-                            />
                         </div>
                     </div>
 
@@ -571,6 +543,7 @@ export function IntensityForm({ mode = "create", intensity = null, sizes = [], s
 // ---------------------------------------------------------------------------
 // Create Page
 // ---------------------------------------------------------------------------
+
 export default function Create({ sizes }) {
     return (
         <>

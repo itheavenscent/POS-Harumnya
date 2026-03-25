@@ -64,16 +64,13 @@ class WarehouseController extends Controller
     public function store(StoreWarehouseRequest $request): RedirectResponse
     {
         try {
-            DB::beginTransaction();
             Warehouse::create($request->validated());
-            DB::commit();
 
             return redirect()
                 ->route('warehouses.index')
                 ->with('success', 'Gudang berhasil ditambahkan! 🏭');
 
         } catch (\Throwable $e) {
-            DB::rollBack();
             report($e);
 
             return back()
@@ -93,10 +90,10 @@ class WarehouseController extends Controller
                 'id'           => $warehouse->id,
                 'code'         => $warehouse->code,
                 'name'         => $warehouse->name,
-                'address'      => $warehouse->address  ?? '',
-                'phone'        => $warehouse->phone    ?? '',
+                'address'      => $warehouse->address      ?? '',
+                'phone'        => $warehouse->phone        ?? '',
                 'manager_name' => $warehouse->manager_name ?? '',
-                'email'        => $warehouse->email    ?? '',
+                'email'        => $warehouse->email        ?? '',
                 'is_active'    => $warehouse->is_active,
             ],
         ]);
@@ -109,16 +106,13 @@ class WarehouseController extends Controller
     public function update(UpdateWarehouseRequest $request, Warehouse $warehouse): RedirectResponse
     {
         try {
-            DB::beginTransaction();
             $warehouse->update($request->validated());
-            DB::commit();
 
             return redirect()
                 ->route('warehouses.index')
                 ->with('success', 'Data gudang diperbarui! ✨');
 
         } catch (\Throwable $e) {
-            DB::rollBack();
             report($e);
 
             return back()
@@ -134,22 +128,20 @@ class WarehouseController extends Controller
     public function destroy(Warehouse $warehouse): RedirectResponse
     {
         try {
-            DB::beginTransaction();
             $warehouse->delete();
-            DB::commit();
 
             return redirect()
                 ->route('warehouses.index')
                 ->with('success', 'Gudang berhasil dihapus! 🗑️');
 
         } catch (\Throwable $e) {
-            DB::rollBack();
             report($e);
 
             return back()
                 ->with('error', 'Terjadi kesalahan sistem. Silakan coba lagi.');
         }
     }
+
     // -------------------------------------------------------------------------
     // Bulk Delete
     // -------------------------------------------------------------------------

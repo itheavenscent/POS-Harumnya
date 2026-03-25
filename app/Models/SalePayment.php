@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -13,20 +12,20 @@ class SalePayment extends Model
     protected $fillable = [
         'sale_id',
         'payment_method_id',
-        'payment_method_name',   // ← tambahkan ini
-        'payment_method_type',   // ← tambahkan ini
+        'payment_method_name',
+        'payment_method_type',
         'amount',
-        'admin_fee',             // ← tambahkan ini
-        'payment_status',        // ← tambahkan ini
+        'admin_fee',
         'reference_number',
-        'settled_at',            // ← tambahkan ini
+        'payment_status',
+        'settled_at',
         'notes',
     ];
 
     protected $casts = [
-        'amount'    => 'decimal:2',
-        'admin_fee' => 'decimal:2',
-        'settled_at'=> 'datetime',
+        'amount'     => 'decimal:2',
+        'admin_fee'  => 'decimal:2',
+        'settled_at' => 'datetime',
     ];
 
     public function sale(): BelongsTo

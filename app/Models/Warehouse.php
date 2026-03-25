@@ -3,13 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Warehouse extends Model
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    use HasFactory, HasUuids;
 
     protected $fillable = [
         'code',
@@ -25,7 +24,6 @@ class Warehouse extends Model
         'is_active'  => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
     ];
 
     // -------------------------------------------------------------------------
@@ -58,11 +56,11 @@ class Warehouse extends Model
         $term = strtolower($search);
 
         return $query->where(function ($q) use ($term) {
-            $q->whereRaw('LOWER(name) LIKE ?',         ["%{$term}%"])
-              ->orWhereRaw('LOWER(code) LIKE ?',        ["%{$term}%"])
+            $q->whereRaw('LOWER(name) LIKE ?',          ["%{$term}%"])
+              ->orWhereRaw('LOWER(code) LIKE ?',         ["%{$term}%"])
               ->orWhereRaw('LOWER(manager_name) LIKE ?', ["%{$term}%"])
-              ->orWhereRaw('LOWER(email) LIKE ?',       ["%{$term}%"])
-              ->orWhereRaw('LOWER(phone) LIKE ?',       ["%{$term}%"]);
+              ->orWhereRaw('LOWER(email) LIKE ?',        ["%{$term}%"])
+              ->orWhereRaw('LOWER(phone) LIKE ?',        ["%{$term}%"]);
         });
     }
 

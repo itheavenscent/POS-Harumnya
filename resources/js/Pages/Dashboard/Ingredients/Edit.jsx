@@ -4,14 +4,14 @@ import { Head, useForm, Link } from "@inertiajs/react";
 import Input from "@/Components/Dashboard/Input";
 import {
     IconArrowLeft, IconDeviceFloppy, IconPhoto,
-    IconLock, IconInfoCircle, IconX,
+    IconLock, IconInfoCircle, IconX, IconCurrencyDollar,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 
 const TYPE_CFG = {
-    oil:     { label: "Fragrance Oil", desc: "Bibit parfum, essential oil, dll" },
-    alcohol: { label: "Alkohol",       desc: "Ethanol, isopropyl alcohol, dll" },
-    other:   { label: "Lainnya",       desc: "Air suling, fixative, dll" },
+    oil:     { label: "Fragrance Oil" },
+    alcohol: { label: "Alkohol" },
+    other:   { label: "Lainnya" },
 };
 
 const UNITS = [
@@ -23,6 +23,18 @@ const UNITS = [
 ];
 
 const fmt = (v = 0) => Number(v || 0).toLocaleString("id-ID");
+
+// Prevent mouse-wheel from changing number input values
+const noScroll = (e) => e.target.blur();
+
+// Rupiah formatting helpers
+const toRupiahDisplay = (val) => {
+    if (val === "" || val === null || val === undefined) return "";
+    const num = parseFloat(String(val).replace(/\./g, "").replace(",", "."));
+    if (isNaN(num)) return "";
+    return num.toLocaleString("id-ID");
+};
+const parseRupiah = (str) => str.replace(/\./g, "").replace(",", ".");
 
 function Select({ label, required, value, onChange, errors, children }) {
     return (
@@ -55,40 +67,38 @@ function Select({ label, required, value, onChange, errors, children }) {
 }
 
 export default function Edit({ ingredient, categories }) {
-    // Track apakah user ingin hapus foto yang sudah ada
-    const [removeExisting, setRemoveExisting] = useState(false);
-    const [preview, setPreview] = useState(
-        removeExisting ? null : (ingredient.image_url ?? null)
-    );
+    const [preview, setPreview] = useState(ingredient.image_url ?? null);
 
     const { data, setData, post, processing, errors } = useForm({
         _method:                "PUT",
         ingredient_category_id: ingredient.ingredient_category_id || "",
-        code:                   ingredient.code        || "",
-        name:                   ingredient.name        || "",
-        unit:                   ingredient.unit        || "ml",
-        sort_order:             ingredient.sort_order  ?? 0,
-        description:            ingredient.description || "",
-        image:                  null,   // null = tidak ada file baru, foto lama tetap
+        code:                   ingredient.code                   || "",
+        name:                   ingredient.name                   || "",
+        unit:                   ingredient.unit                   || "ml",
+        sort_order:             ingredient.sort_order             ?? 0,
+        description:            ingredient.description            || "",
+        image:                  null,
+        remove_image:           false,  // ← dikirim ke backend saat user hapus foto
+        selling_price:          ingredient.selling_price ?? "",
         is_active:              !!ingredient.is_active,
     });
 
-    const selectedCategory = categories.find(c => c.id === data.ingredient_category_id);
+    const selectedCategory = categories.find(c => String(c.id) === String(data.ingredient_category_id));
     const avgCost = parseFloat(ingredient.average_cost || 0);
 
     const handleImage = (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        setData("image", file);
+        setData(prev => ({ ...prev, image: file, remove_image: false }));
         setPreview(URL.createObjectURL(file));
-        setRemoveExisting(false);
     };
 
     const removeImage = (e) => {
         e.stopPropagation();
-        setData("image", null);
+        setData(prev => ({ ...prev, image: null, remove_image: true }));
         setPreview(null);
-        setRemoveExisting(true);
+        // Reset input agar bisa pilih file yang sama lagi
+        document.getElementById("image-upload-edit").value = "";
     };
 
     const submit = (e) => {
@@ -104,6 +114,7 @@ export default function Edit({ ingredient, categories }) {
         <>
             <Head title={`Edit — ${ingredient.name}`} />
             <div className="max-w-5xl mx-auto px-4 py-6">
+
                 <Link
                     href={route("ingredients.index")}
                     className="flex items-center gap-2 text-sm text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 mb-5 font-medium transition-colors"
@@ -128,8 +139,10 @@ export default function Edit({ ingredient, categories }) {
                 <form onSubmit={submit} encType="multipart/form-data">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                        {/* ── Kolom Kiri ──────────────────────────────────── */}
+                        {/* ── Kolom Kiri ── */}
                         <div className="lg:col-span-2 space-y-6">
+
+                            {/* Data Utama */}
                             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
                                 <h2 className="text-base font-bold mb-5 text-slate-800 dark:text-white">
                                     Ubah Data Bahan Baku
@@ -148,6 +161,7 @@ export default function Edit({ ingredient, categories }) {
                                         label="Urutan Tampil"
                                         value={data.sort_order}
                                         onChange={e => setData("sort_order", Number(e.target.value))}
+                                        onWheel={noScroll}
                                         errors={errors.sort_order}
                                     />
                                 </div>
@@ -219,6 +233,42 @@ export default function Edit({ ingredient, categories }) {
                                 </div>
                             </div>
 
+                            {/* Harga Jual */}
+                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+                                <h2 className="text-base font-bold mb-1 flex items-center gap-2 text-slate-800 dark:text-white">
+                                    <IconCurrencyDollar size={18} className="text-teal-600" />
+                                    Harga Jual
+                                    <span className="text-xs font-normal text-slate-400">(opsional)</span>
+                                </h2>
+                                <p className="text-xs text-slate-400 mb-4">
+                                    Harga jual per unit ke customer. Kosongkan jika bahan tidak dijual langsung.
+                                </p>
+                                <div className="relative max-w-xs">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-medium select-none pointer-events-none">
+                                        Rp
+                                    </span>
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={toRupiahDisplay(data.selling_price)}
+                                        onChange={e => {
+                                            const raw = parseRupiah(e.target.value.replace(/[^0-9,.]/g, ""));
+                                            setData("selling_price", raw);
+                                        }}
+                                        placeholder="Kosongkan jika tidak dijual"
+                                        className={`w-full h-10 pl-9 pr-14 rounded-xl border text-sm bg-white dark:bg-slate-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all ${
+                                            errors.selling_price ? "border-red-400" : "border-slate-300 dark:border-slate-700"
+                                        }`}
+                                    />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-mono select-none pointer-events-none">
+                                        /{data.unit}
+                                    </span>
+                                </div>
+                                {errors.selling_price && (
+                                    <p className="text-red-500 text-xs mt-1">{errors.selling_price}</p>
+                                )}
+                            </div>
+
                             {/* HPP WAC — Readonly */}
                             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
                                 <div className="flex items-center justify-between mb-3">
@@ -245,14 +295,15 @@ export default function Edit({ ingredient, categories }) {
                             </div>
                         </div>
 
-                        {/* ── Kolom Kanan ─────────────────────────────────── */}
+                        {/* ── Kolom Kanan ── */}
                         <div className="space-y-5">
+
                             {/* Upload Foto */}
                             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
                                 <h3 className="font-bold mb-3 text-sm dark:text-white">Foto Bahan</h3>
                                 <div
                                     className="w-full aspect-square rounded-xl bg-slate-50 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center relative overflow-hidden cursor-pointer hover:border-teal-400 transition-colors group"
-                                    onClick={() => document.getElementById('image-upload-edit').click()}
+                                    onClick={() => document.getElementById("image-upload-edit").click()}
                                 >
                                     {preview ? (
                                         <>

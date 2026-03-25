@@ -6,21 +6,85 @@ import Table from "@/Components/Dashboard/Table";
 import Pagination from "@/Components/Dashboard/Pagination";
 import {
     IconCirclePlus, IconDatabaseOff, IconEye, IconPencilCog, IconTrash,
-    IconCheck, IconX, IconFlask, IconClock, IconChartBar,
+    IconCheck, IconX, IconFlask, IconClock, IconChartBar, IconAlertTriangle,
 } from "@tabler/icons-react";
+import toast from "react-hot-toast";
+
+// =============================================================================
+// Config
+// =============================================================================
 
 const STATUS_CFG = {
-    draft: { label: "Draft", cls: "bg-slate-100 text-slate-600 border-slate-300" },
-    pending: { label: "Pending", cls: "bg-yellow-100 text-yellow-700 border-yellow-300" },
-    approved: { label: "Disetujui", cls: "bg-blue-100 text-blue-700 border-blue-300" },
-    completed: { label: "Selesai", cls: "bg-success-100 text-success-700 border-success-300" },
-    cancelled: { label: "Batal", cls: "bg-red-100 text-red-700 border-red-300" },
+    draft:     { label: "Draft",     cls: "bg-slate-100 text-slate-600 border-slate-300"         },
+    pending:   { label: "Pending",   cls: "bg-yellow-100 text-yellow-700 border-yellow-300"       },
+    approved:  { label: "Disetujui", cls: "bg-blue-100 text-blue-700 border-blue-300"             },
+    completed: { label: "Selesai",   cls: "bg-success-100 text-success-700 border-success-300"    },
+    cancelled: { label: "Batal",     cls: "bg-red-100 text-red-700 border-red-300"                },
 };
 
-export default function Index({ repacks, filters = {}, summary = {} }) {
-    const [search, setSearch] = useState(filters.search || "");
-    const [status, setStatus] = useState(filters.status || "");
+// =============================================================================
+// Delete Modal (state-driven)
+// =============================================================================
 
+function DeleteModal({ show, item, onConfirm, onClose, loading }) {
+    if (!show) return null;
+    return (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-xl border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
+                        <IconAlertTriangle size={20} className="text-red-500" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                            Hapus Repack "{item?.repack_number}"?
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                            Tindakan ini tidak dapat dibatalkan.
+                        </p>
+                    </div>
+                </div>
+                <div className="flex gap-2 justify-end mt-6">
+                    <button
+                        onClick={onClose}
+                        disabled={loading}
+                        className="px-4 py-2 text-sm font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={loading}
+                        className="px-4 py-2 text-sm font-bold rounded-xl bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-60 flex items-center gap-2"
+                    >
+                        {loading && (
+                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        )}
+                        Hapus
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// =============================================================================
+// Index Page
+// =============================================================================
+
+export default function Index({ repacks, filters = {}, summary = {} }) {
+    const [search, setSearch]       = useState(filters.search || "");
+    const [status, setStatus]       = useState(filters.status || "");
+    const [deleteModal, setDeleteModal] = useState({ show: false, item: null, loading: false });
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    const fmt = (n) =>
+        new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(parseFloat(n) || 0);
+    const fmtQty  = (n) => parseInt(n || 0).toLocaleString("id-ID");
+    const fmtDate = (d) =>
+        d ? new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+
+    // ── Filters ───────────────────────────────────────────────────────────────
     React.useEffect(() => {
         const t = setTimeout(() => {
             if (search !== filters.search) handleFilter("search", search);
@@ -28,30 +92,35 @@ export default function Index({ repacks, filters = {}, summary = {} }) {
         return () => clearTimeout(t);
     }, [search]);
 
-    // total_cost adalah decimal(15,2) → parseFloat untuk format rupiah
-    const fmt = (n) =>
-        new Intl.NumberFormat("id-ID", {
-            style: "currency", currency: "IDR", minimumFractionDigits: 0,
-        }).format(parseFloat(n) || 0);
-
-    // output_quantity & qty item adalah bigInteger → parseInt
-    const fmtQty = (n) => parseInt(n || 0).toLocaleString("id-ID");
-
-    const fmtDate = (d) =>
-        d ? new Date(d).toLocaleDateString("id-ID", {
-            day: "2-digit", month: "short", year: "numeric",
-        }) : "-";
-
     const handleFilter = (key, value) => {
         const f = { ...filters, [key]: value };
         Object.keys(f).forEach((k) => { if (!f[k]) delete f[k]; });
         router.get(route("repacks.index"), f, { preserveState: true, replace: true });
     };
 
+    // ── Single Delete ─────────────────────────────────────────────────────────
+    const confirmDelete = (repack) => setDeleteModal({ show: true, item: repack, loading: false });
+    const closeDelete   = ()       => setDeleteModal({ show: false, item: null, loading: false });
+
+    const handleDelete = () => {
+        setDeleteModal(prev => ({ ...prev, loading: true }));
+        router.delete(route("repacks.destroy", deleteModal.item.id), {
+            onSuccess: () => {
+                closeDelete();
+                toast.success("Repack berhasil dihapus! 🗑️");
+            },
+            onError: () => {
+                closeDelete();
+                toast.error("Gagal menghapus repack, coba lagi.");
+            },
+        });
+    };
+
     return (
         <>
             <Head title="Repack Ingredient" />
 
+            {/* ── Header ── */}
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -68,14 +137,14 @@ export default function Index({ repacks, filters = {}, summary = {} }) {
                 />
             </div>
 
-            {/* Summary cards */}
+            {/* ── Summary cards ── */}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
                 {[
-                    { label: "Total", value: summary.total, icon: <IconChartBar size={20} />, color: "blue" },
-                    { label: "Draft", value: summary.draft, icon: <IconClock size={20} />, color: "slate" },
-                    { label: "Pending", value: summary.pending, icon: <IconClock size={20} />, color: "yellow" },
-                    { label: "Selesai", value: summary.completed, icon: <IconCheck size={20} />, color: "success" },
-                    { label: "Batal", value: summary.cancelled, icon: <IconX size={20} />, color: "red" },
+                    { label: "Total",   value: summary.total,     icon: <IconChartBar size={20} />, color: "blue"    },
+                    { label: "Draft",   value: summary.draft,     icon: <IconClock size={20} />,    color: "slate"   },
+                    { label: "Pending", value: summary.pending,   icon: <IconClock size={20} />,    color: "yellow"  },
+                    { label: "Selesai", value: summary.completed, icon: <IconCheck size={20} />,    color: "success" },
+                    { label: "Batal",   value: summary.cancelled, icon: <IconX size={20} />,        color: "red"     },
                 ].map(({ label, value, icon, color }) => (
                     <div key={label} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 p-4 shadow-sm">
                         <div className="flex items-center justify-between">
@@ -89,7 +158,7 @@ export default function Index({ repacks, filters = {}, summary = {} }) {
                 ))}
             </div>
 
-            {/* Filters */}
+            {/* ── Filters ── */}
             <div className="mb-4 flex flex-col md:flex-row gap-3">
                 <input
                     type="text"
@@ -110,6 +179,7 @@ export default function Index({ repacks, filters = {}, summary = {} }) {
                 </select>
             </div>
 
+            {/* ── Table ── */}
             {repacks?.data?.length > 0 ? (
                 <Table.Card title="Daftar Repack">
                     <Table>
@@ -151,27 +221,16 @@ export default function Index({ repacks, filters = {}, summary = {} }) {
                                             </div>
                                         </Table.Td>
                                         <Table.Td>
-                                            <div className="text-sm text-slate-700 dark:text-slate-300">
-                                                {r.location_name}
-                                            </div>
+                                            <div className="text-sm text-slate-700 dark:text-slate-300">{r.location_name}</div>
                                             <div className="text-xs text-slate-400 capitalize">{r.location_type}</div>
                                         </Table.Td>
                                         <Table.Td className="text-right">
-                                            {/* output_quantity → bigInteger → parseInt */}
-                                            <div className="font-bold text-primary-600">
-                                                {fmtQty(r.output_quantity)}
-                                            </div>
+                                            <div className="font-bold text-primary-600">{fmtQty(r.output_quantity)}</div>
                                             <div className="text-xs text-slate-400">{r.repack_ingredient?.unit}</div>
                                         </Table.Td>
                                         <Table.Td className="text-right">
-                                            {/* total_input_cost → float (sum of decimal(15,2)) */}
-                                            <div className="font-bold text-slate-700 dark:text-slate-200">
-                                                {fmt(r.total_input_cost)}
-                                            </div>
-                                            {/* output_cost → decimal(15,4) */}
-                                            <div className="text-xs text-slate-400">
-                                                @ {fmt(r.output_cost)}/unit
-                                            </div>
+                                            <div className="font-bold text-slate-700 dark:text-slate-200">{fmt(r.total_input_cost)}</div>
+                                            <div className="text-xs text-slate-400">@ {fmt(r.output_cost)}/unit</div>
                                         </Table.Td>
                                         <Table.Td className="text-sm text-slate-600 dark:text-slate-400">
                                             {fmtDate(r.repack_date)}
@@ -198,12 +257,13 @@ export default function Index({ repacks, filters = {}, summary = {} }) {
                                                     />
                                                 )}
                                                 {r.status === "draft" && (
-                                                    <Button
-                                                        type="delete"
-                                                        icon={<IconTrash size={14} />}
-                                                        className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200"
-                                                        url={route("repacks.destroy", r.id)}
-                                                    />
+                                                    <button
+                                                        onClick={() => confirmDelete(r)}
+                                                        className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors"
+                                                        title="Hapus"
+                                                    >
+                                                        <IconTrash size={14} />
+                                                    </button>
                                                 )}
                                             </div>
                                         </Table.Td>
@@ -229,6 +289,14 @@ export default function Index({ repacks, filters = {}, summary = {} }) {
             <div className="mt-4">
                 <Pagination links={repacks?.links || []} />
             </div>
+
+            <DeleteModal
+                show={deleteModal.show}
+                item={deleteModal.item}
+                loading={deleteModal.loading}
+                onConfirm={handleDelete}
+                onClose={closeDelete}
+            />
         </>
     );
 }

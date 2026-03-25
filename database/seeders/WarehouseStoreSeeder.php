@@ -6,82 +6,93 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
+/**
+ * Store codes yang dipakai konsisten di semua seeder:
+ *   WH-PUSAT   → Gudang Pusat (Gresik)
+ *   WH-JATIM   → Gudang Jawa Timur
+ *   WH-JATENG  → Gudang Jawa Tengah
+ *   WH-JABAR   → Gudang Jawa Barat
+ *
+ *   STR-JATIM  → Toko Jawa Timur (Surabaya)
+ *   STR-JATENG → Toko Jawa Tengah (Semarang)
+ *   STR-JABAR  → Toko Jawa Barat (Bandung)
+ */
 class WarehouseStoreSeeder extends Seeder
 {
     public function run(): void
     {
-        // ── Warehouses ───────────────────────────────────────────────────────
+        $now = now();
+
         $warehouses = [
             [
-                'code'         => 'WH001',
+                'code'         => 'WH-PUSAT',
                 'name'         => 'Gudang Pusat',
-                'address'      => 'Jl. Gatot Subroto No. 1, Jakarta Selatan',
-                'phone'        => '021-1234567',
+                'address'      => 'Jl. Industri Raya No. 1, Gresik',
+                'phone'        => '031-3987000',
                 'manager_name' => 'Budi Santoso',
-                'email'        => 'gudang.pusat@example.com',
+                'email'        => 'gudang.pusat@harumnya.com',
             ],
             [
-                'code'         => 'WH002',
+                'code'         => 'WH-JATIM',
                 'name'         => 'Gudang Jawa Timur',
                 'address'      => 'Jl. Raya Waru No. 10, Sidoarjo',
-                'phone'        => '031-2345678',
+                'phone'        => '031-8912345',
                 'manager_name' => 'Agus Prasetyo',
-                'email'        => 'gudang.jatim@example.com',
+                'email'        => 'gudang.jatim@harumnya.com',
             ],
             [
-                'code'         => 'WH003',
+                'code'         => 'WH-JATENG',
                 'name'         => 'Gudang Jawa Tengah',
                 'address'      => 'Jl. Industri No. 5, Semarang',
-                'phone'        => '024-3456789',
+                'phone'        => '024-7601234',
                 'manager_name' => 'Eko Widodo',
-                'email'        => 'gudang.jateng@example.com',
+                'email'        => 'gudang.jateng@harumnya.com',
             ],
             [
-                'code'         => 'WH004',
+                'code'         => 'WH-JABAR',
                 'name'         => 'Gudang Jawa Barat',
                 'address'      => 'Jl. Soekarno-Hatta No. 8, Bandung',
-                'phone'        => '022-4567890',
+                'phone'        => '022-6031234',
                 'manager_name' => 'Dedi Kurniawan',
-                'email'        => 'gudang.jabar@example.com',
+                'email'        => 'gudang.jabar@harumnya.com',
             ],
         ];
 
-        foreach ($warehouses as $warehouse) {
-            if (! DB::table('warehouses')->where('code', $warehouse['code'])->exists()) {
-                DB::table('warehouses')->insert(array_merge($warehouse, [
+        foreach ($warehouses as $wh) {
+            if (! DB::table('warehouses')->where('code', $wh['code'])->exists()) {
+                DB::table('warehouses')->insert(array_merge($wh, [
                     'id'         => Str::uuid(),
                     'is_active'  => true,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ]));
             }
         }
 
-        // ── Stores (1 per provinsi) ──────────────────────────────────────────
         $stores = [
             [
                 'code'         => 'STR-JATIM',
                 'name'         => 'Toko Jawa Timur',
-                'address'      => 'Jl. Tunjungan No. 1, Surabaya',
-                'phone'        => '031-1111001',
+                'address'      => 'Jl. Tunjungan Plaza No. 1, Surabaya',
+                'phone'        => '031-5310001',
                 'manager_name' => 'Siti Aminah',
-                'email'        => 'toko.jatim@example.com',
+                'email'        => 'toko.jatim@harumnya.com',
             ],
             [
                 'code'         => 'STR-JATENG',
                 'name'         => 'Toko Jawa Tengah',
                 'address'      => 'Jl. Pemuda No. 10, Semarang',
-                'phone'        => '024-2222001',
+                'phone'        => '024-3512001',
                 'manager_name' => 'Hendra Wijaya',
-                'email'        => 'toko.jateng@example.com',
+                'email'        => 'toko.jateng@harumnya.com',
             ],
             [
                 'code'         => 'STR-JABAR',
                 'name'         => 'Toko Jawa Barat',
                 'address'      => 'Jl. Dago No. 20, Bandung',
-                'phone'        => '022-3333001',
+                'phone'        => '022-2501001',
                 'manager_name' => 'Fitri Handayani',
-                'email'        => 'toko.jabar@example.com',
+                'email'        => 'toko.jabar@harumnya.com',
             ],
         ];
 
@@ -90,23 +101,23 @@ class WarehouseStoreSeeder extends Seeder
                 DB::table('stores')->insert(array_merge($store, [
                     'id'         => Str::uuid(),
                     'is_active'  => true,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ]));
             }
         }
 
-        $this->command->info('✓ Warehouses & Stores seeded successfully.');
+        $this->command->info('✓ Warehouses & Stores seeded.');
         $this->command->table(
-            ['Code', 'Name', 'Tipe'],
+            ['Code', 'Name', 'Type'],
             [
-                ['WH001',      'Gudang Pusat',       'Warehouse'],
-                ['WH002',      'Gudang Jawa Timur',  'Warehouse'],
-                ['WH003',      'Gudang Jawa Tengah', 'Warehouse'],
-                ['WH004',      'Gudang Jawa Barat',  'Warehouse'],
-                ['STR-JATIM',  'Toko Jawa Timur',    'Store'],
-                ['STR-JATENG', 'Toko Jawa Tengah',   'Store'],
-                ['STR-JABAR',  'Toko Jawa Barat',    'Store'],
+                ['WH-PUSAT',  'Gudang Pusat',        'Warehouse'],
+                ['WH-JATIM',  'Gudang Jawa Timur',   'Warehouse'],
+                ['WH-JATENG', 'Gudang Jawa Tengah',  'Warehouse'],
+                ['WH-JABAR',  'Gudang Jawa Barat',   'Warehouse'],
+                ['STR-JATIM', 'Toko Jawa Timur',     'Store'],
+                ['STR-JATENG','Toko Jawa Tengah',    'Store'],
+                ['STR-JABAR', 'Toko Jawa Barat',     'Store'],
             ]
         );
     }

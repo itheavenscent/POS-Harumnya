@@ -8,108 +8,92 @@ use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
+/**
+ * User accounts yang dibuat:
+ *   admin@harumnya.com       → super-admin  (WH-PUSAT)
+ *   kasir.jatim@harumnya.com → cashier      (STR-JATIM / WH-JATIM)
+ *   kasir.jateng@harumnya.com → cashier     (STR-JATENG / WH-JATENG)
+ *   kasir.jabar@harumnya.com → cashier      (STR-JABAR / WH-JABAR)
+ *
+ * Default password semua user: password
+ */
 class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // ── Cek Role tersedia ─────────────────────────────────────────────────
         $superAdminRole = Role::where('name', 'super-admin')->first();
         $cashierRole    = Role::where('name', 'cashier')->first();
 
         if (! $superAdminRole || ! $cashierRole) {
-            $this->command->error('❌ Role tidak ditemukan. Pastikan RolePermissionSeeder sudah jalan.');
+            $this->command->error('❌ Roles tidak ditemukan. Jalankan RolePermissionSeeder terlebih dahulu.');
             return;
         }
 
-        // ── Ambil Gudang Pusat ────────────────────────────────────────────────
-        $warehousePusat = DB::table('warehouses')->where('code', 'WH001')->first();
-
-        if (! $warehousePusat) {
-            $this->command->error('❌ Gudang Pusat (WH001) tidak ditemukan. Pastikan WarehouseStoreSeeder sudah jalan.');
+        $whPusat = DB::table('warehouses')->where('code', 'WH-PUSAT')->first();
+        if (! $whPusat) {
+            $this->command->error('❌ Gudang Pusat (WH-PUSAT) tidak ditemukan. Jalankan WarehouseStoreSeeder terlebih dahulu.');
             return;
         }
 
-        $userRows = [];
+        $rows = [];
 
-        // ── Admin Pusat (1 user, akses semua) ────────────────────────────────
-        $storeJatim = DB::table('stores')->where('code', 'STR-JATIM')->first();
-
+        // ── Admin Pusat ───────────────────────────────────────────────────────
         $admin = User::firstOrCreate(
-            ['email' => 'admin@gmail.com'],
+            ['email' => 'admin@harumnya.com'],
             [
                 'name'                 => 'Admin Pusat',
                 'password'             => bcrypt('password'),
-                'default_warehouse_id' => $warehousePusat->id,
-                'default_store_id'     => $storeJatim?->id,
+                'default_warehouse_id' => $whPusat->id,
+                'default_store_id'     => null,
             ]
         );
-
         if (! $admin->wasRecentlyCreated) {
-            $admin->update([
-                'default_warehouse_id' => $warehousePusat->id,
-                'default_store_id'     => $storeJatim?->id,
-            ]);
+            $admin->update(['default_warehouse_id' => $whPusat->id]);
         }
-
         $admin->syncRoles([$superAdminRole]);
         $admin->syncPermissions(Permission::all());
-
-        $userRows[] = ['Admin Pusat', 'admin@gmail.com', 'super-admin', 'Gudang Pusat', '-'];
+        $rows[] = ['Admin Pusat', 'admin@gmail.com', 'super-admin', 'WH-PUSAT', '-'];
 
         // ── Kasir per Toko ────────────────────────────────────────────────────
-        // [store_code, nama_kasir, email_kasir, warehouse_code]
         $cashierMap = [
-            ['STR-JATIM',  'Kasir Jawa Timur',  'kasir.jatim@gmail.com',  'WH002'],
-            ['STR-JATENG', 'Kasir Jawa Tengah', 'kasir.jateng@gmail.com', 'WH003'],
-            ['STR-JABAR',  'Kasir Jawa Barat',  'kasir.jabar@gmail.com',  'WH004'],
+            ['STR-JATIM',  'WH-JATIM',  'Kasir Jawa Timur',  'kasir.jatim@harumnya.com'],
+            ['STR-JATENG', 'WH-JATENG', 'Kasir Jawa Tengah', 'kasir.jateng@harumnya.com'],
+            ['STR-JABAR',  'WH-JABAR',  'Kasir Jawa Barat',  'kasir.jabar@harumnya.com'],
         ];
 
-        foreach ($cashierMap as [$storeCode, $nama, $email, $whCode]) {
-            $store     = DB::table('stores')->where('code', $storeCode)->first();
-            $warehouse = DB::table('warehouses')->where('code', $whCode)->first();
+        foreach ($cashierMap as [$storeCode, $whCode, $nama, $email]) {
+            $store = DB::table('stores')->where('code', $storeCode)->first();
+            $wh    = DB::table('warehouses')->where('code', $whCode)->first();
 
-            if (! $store || ! $warehouse) {
-                $this->command->warn("⚠️  Store {$storeCode} atau Warehouse {$whCode} tidak ditemukan, skip.");
+            if (! $store || ! $wh) {
+                $this->command->warn("⚠ Store {$storeCode} atau Warehouse {$whCode} tidak ditemukan, skip.");
                 continue;
             }
 
-            $cashier = User::firstOrCreate(
+            $user = User::firstOrCreate(
                 ['email' => $email],
                 [
                     'name'                 => $nama,
                     'password'             => bcrypt('password'),
-                    'default_warehouse_id' => $warehouse->id,
+                    'default_warehouse_id' => $wh->id,
                     'default_store_id'     => $store->id,
+
                 ]
             );
-
-            if (! $cashier->wasRecentlyCreated) {
-                $cashier->update([
-                    'default_warehouse_id' => $warehouse->id,
+            if (! $user->wasRecentlyCreated) {
+                $user->update([
+                    'default_warehouse_id' => $wh->id,
                     'default_store_id'     => $store->id,
                 ]);
             }
-
-            $cashier->syncRoles([$cashierRole]);
-            $cashier->syncPermissions([
-                'dashboard-access',
-                'transactions-access',
-                'transactions-create',
-            ]);
-
-            $userRows[] = [$nama, $email, 'cashier', $warehouse->name, $store->name];
+            $user->syncRoles([$cashierRole]);
+            $rows[] = [$nama, $email, 'cashier', $whCode, $storeCode];
         }
 
-        // ── Output ────────────────────────────────────────────────────────────
-        $this->command->info('✓ Users seeded successfully.');
-        $this->command->table(
-            ['Name', 'Email', 'Role', 'Warehouse', 'Store'],
-            $userRows
-        );
-        $this->command->newLine();
-        $this->command->info('💡 Default password semua user: password');
+        $this->command->info('✓ Users seeded.');
+        $this->command->table(['Name', 'Email', 'Role', 'Warehouse', 'Store'], $rows);
+        $this->command->info('💡 Default password: password');
     }
 }

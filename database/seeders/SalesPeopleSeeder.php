@@ -12,66 +12,44 @@ class SalesPeopleSeeder extends Seeder
     {
         $now = now();
 
-        $store1 = DB::table('stores')->where('code', 'STR001')->first();
-        $store2 = DB::table('stores')->where('code', 'STR002')->first();
+        // FIX: gunakan kode toko yang konsisten dengan WarehouseStoreSeeder
+        $storeJatim  = DB::table('stores')->where('code', 'STR-JATIM')->first();
+        $storeJateng = DB::table('stores')->where('code', 'STR-JATENG')->first();
+        $storeJabar  = DB::table('stores')->where('code', 'STR-JABAR')->first();
 
-        if (! $store1 || ! $store2) {
+        if (! $storeJatim || ! $storeJateng || ! $storeJabar) {
             $this->command->error('Stores belum ada. Jalankan WarehouseStoreSeeder terlebih dahulu.');
             return;
         }
 
         $salesPeople = [
-            // Toko Lamongan
-            [
-                'store_id'   => $store1->id,
-                'code'       => 'SP-LAM-001',
-                'name'       => 'Dewi Rahayu',
-                'phone'      => '08111234561',
-                'email'      => 'dewi.rahayu@parfum.com',
-                'join_date'  => '2023-01-15',
-            ],
-            [
-                'store_id'   => $store1->id,
-                'code'       => 'SP-LAM-002',
-                'name'       => 'Rina Susanti',
-                'phone'      => '08111234562',
-                'email'      => 'rina.susanti@parfum.com',
-                'join_date'  => '2023-03-01',
-            ],
-            [
-                'store_id'   => $store1->id,
-                'code'       => 'SP-LAM-003',
-                'name'       => 'Agus Prasetyo',
-                'phone'      => '08111234563',
-                'email'      => 'agus.prasetyo@parfum.com',
-                'join_date'  => '2023-06-10',
-            ],
+            // ── Toko Jawa Timur ───────────────────────────────────────────────
+            ['store_id' => $storeJatim->id,  'code' => 'SP-JATIM-001', 'name' => 'Dewi Rahayu',      'phone' => '08111234561', 'email' => 'dewi.rahayu@harumnya.com',      'join_date' => '2023-01-15'],
+            ['store_id' => $storeJatim->id,  'code' => 'SP-JATIM-002', 'name' => 'Rina Susanti',      'phone' => '08111234562', 'email' => 'rina.susanti@harumnya.com',      'join_date' => '2023-03-01'],
+            ['store_id' => $storeJatim->id,  'code' => 'SP-JATIM-003', 'name' => 'Agus Prasetyo',     'phone' => '08111234563', 'email' => 'agus.prasetyo@harumnya.com',     'join_date' => '2023-06-10'],
 
-            // Toko Gresik
-            [
-                'store_id'   => $store2->id,
-                'code'       => 'SP-GRE-001',
-                'name'       => 'Fitria Handayani',
-                'phone'      => '08111234564',
-                'email'      => 'fitria.handayani@parfum.com',
-                'join_date'  => '2023-02-01',
-            ],
-            [
-                'store_id'   => $store2->id,
-                'code'       => 'SP-GRE-002',
-                'name'       => 'Budi Kurniawan',
-                'phone'      => '08111234565',
-                'email'      => 'budi.kurniawan@parfum.com',
-                'join_date'  => '2023-04-15',
-            ],
-            [
-                'store_id'   => $store2->id,
-                'code'       => 'SP-GRE-003',
-                'name'       => 'Lestari Wulandari',
-                'phone'      => '08111234566',
-                'email'      => 'lestari.wulandari@parfum.com',
-                'join_date'  => '2023-07-01',
-            ],
+            // ── Toko Jawa Tengah ──────────────────────────────────────────────
+            ['store_id' => $storeJateng->id, 'code' => 'SP-JATENG-001','name' => 'Fitria Handayani',  'phone' => '08111234564', 'email' => 'fitria.handayani@harumnya.com',  'join_date' => '2023-02-01'],
+            ['store_id' => $storeJateng->id, 'code' => 'SP-JATENG-002','name' => 'Budi Kurniawan',    'phone' => '08111234565', 'email' => 'budi.kurniawan@harumnya.com',    'join_date' => '2023-04-15'],
+
+            // ── Toko Jawa Barat ───────────────────────────────────────────────
+            ['store_id' => $storeJabar->id,  'code' => 'SP-JABAR-001', 'name' => 'Lestari Wulandari', 'phone' => '08111234566', 'email' => 'lestari.wulandari@harumnya.com', 'join_date' => '2023-07-01'],
+            ['store_id' => $storeJabar->id,  'code' => 'SP-JABAR-002', 'name' => 'Rudi Hartono',      'phone' => '08111234567', 'email' => 'rudi.hartono@harumnya.com',      'join_date' => '2023-08-01'],
+        ];
+
+        $monthlyTargets = [
+            ['month' =>  1, 'amount' =>  8000000, 'qty' =>  80],
+            ['month' =>  2, 'amount' =>  8500000, 'qty' =>  85],
+            ['month' =>  3, 'amount' =>  9000000, 'qty' =>  90],
+            ['month' =>  4, 'amount' =>  9000000, 'qty' =>  90],
+            ['month' =>  5, 'amount' => 10000000, 'qty' => 100],
+            ['month' =>  6, 'amount' => 12000000, 'qty' => 120],
+            ['month' =>  7, 'amount' => 10000000, 'qty' => 100],
+            ['month' =>  8, 'amount' => 10000000, 'qty' => 100],
+            ['month' =>  9, 'amount' =>  9000000, 'qty' =>  90],
+            ['month' => 10, 'amount' =>  9000000, 'qty' =>  90],
+            ['month' => 11, 'amount' => 11000000, 'qty' => 110],
+            ['month' => 12, 'amount' => 15000000, 'qty' => 150],
         ];
 
         foreach ($salesPeople as $sp) {
@@ -90,23 +68,7 @@ class SalesPeopleSeeder extends Seeder
                 'updated_at' => $now,
             ]);
 
-            // Sales targets per bulan (tahun 2025)
-            $targets = [
-                ['month' => 1,  'amount' => 8000000,  'qty' => 80],
-                ['month' => 2,  'amount' => 8500000,  'qty' => 85],
-                ['month' => 3,  'amount' => 9000000,  'qty' => 90],
-                ['month' => 4,  'amount' => 9000000,  'qty' => 90],
-                ['month' => 5,  'amount' => 10000000, 'qty' => 100],
-                ['month' => 6,  'amount' => 12000000, 'qty' => 120],
-                ['month' => 7,  'amount' => 10000000, 'qty' => 100],
-                ['month' => 8,  'amount' => 10000000, 'qty' => 100],
-                ['month' => 9,  'amount' => 9000000,  'qty' => 90],
-                ['month' => 10, 'amount' => 9000000,  'qty' => 90],
-                ['month' => 11, 'amount' => 11000000, 'qty' => 110],
-                ['month' => 12, 'amount' => 15000000, 'qty' => 150],
-            ];
-
-            foreach ($targets as $t) {
+            foreach ($monthlyTargets as $t) {
                 DB::table('sales_targets')->insert([
                     'id'              => Str::uuid(),
                     'sales_person_id' => $spId,
@@ -120,6 +82,6 @@ class SalesPeopleSeeder extends Seeder
             }
         }
 
-        $this->command->info('Sales people & targets seeded (' . count($salesPeople) . ' people).');
+        $this->command->info('✓ Sales people & targets seeded (' . count($salesPeople) . ' people).');
     }
 }

@@ -30,30 +30,28 @@ class StoreVariantRequest extends FormRequest
                 'regex:/^[A-Z0-9\-]+$/',
                 Rule::unique('variants', 'code')->whereNull('deleted_at'),
             ],
-            'name' => 'required|string|max:255',
-            'gender' => ['required', Rule::in(['male', 'female', 'unisex'])],
+            'name'        => 'required|string|max:255',
+            'gender'      => ['required', Rule::in(['male', 'female', 'unisex'])],
             'description' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096', // 4MB max
-            'is_active' => 'boolean',
-            'sort_order' => 'nullable|integer|min:0',
+            'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'is_active'   => 'boolean',
         ];
     }
 
     /**
-     * Get custom attributes for validator errors.
+     * Get custom attribute names for validator errors.
      *
      * @return array<string, string>
      */
     public function attributes(): array
     {
         return [
-            'code' => 'kode varian',
-            'name' => 'nama varian',
-            'gender' => 'gender',
+            'code'        => 'kode varian',
+            'name'        => 'nama varian',
+            'gender'      => 'gender',
             'description' => 'deskripsi',
-            'image' => 'gambar',
-            'is_active' => 'status aktif',
-            'sort_order' => 'urutan',
+            'image'       => 'gambar',
+            'is_active'   => 'status aktif',
         ];
     }
 
@@ -66,15 +64,14 @@ class StoreVariantRequest extends FormRequest
     {
         return [
             'code.required' => 'Kode varian wajib diisi',
-            'code.unique' => 'Kode varian sudah digunakan',
-            'code.regex' => 'Kode varian hanya boleh mengandung huruf kapital, angka, dan tanda strip (-)',
+            'code.unique'   => 'Kode varian sudah digunakan',
+            'code.regex'    => 'Kode varian hanya boleh mengandung huruf kapital, angka, dan tanda strip (-)',
             'name.required' => 'Nama varian wajib diisi',
             'gender.required' => 'Gender wajib dipilih',
-            'gender.in' => 'Gender yang dipilih tidak valid',
-            'image.required' => 'Gambar varian wajib diupload',
-            'image.image' => 'File harus berupa gambar',
-            'image.mimes' => 'Format gambar harus JPG, JPEG, PNG, atau WEBP',
-            'image.max' => 'Ukuran gambar maksimal 4MB',
+            'gender.in'       => 'Gender yang dipilih tidak valid',
+            'image.image'     => 'File harus berupa gambar',
+            'image.mimes'     => 'Format gambar harus JPG, JPEG, PNG, atau WEBP',
+            'image.max'       => 'Ukuran gambar maksimal 4MB',
         ];
     }
 
@@ -83,17 +80,14 @@ class StoreVariantRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        // Auto-uppercase code
         if ($this->has('code')) {
             $this->merge([
                 'code' => strtoupper($this->code),
             ]);
         }
 
-        // Set default values
         $this->merge([
             'is_active' => $this->boolean('is_active', true),
-            'sort_order' => $this->input('sort_order', 0),
         ]);
     }
 }

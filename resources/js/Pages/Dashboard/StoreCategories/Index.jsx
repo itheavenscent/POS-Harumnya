@@ -5,11 +5,10 @@ import {
     IconCirclePlus, IconDatabaseOff, IconPencilCog, IconTrash,
     IconFilter, IconRefresh, IconX, IconTag, IconBuildingStore,
     IconCircleCheck, IconCircleX, IconListCheck, IconLayoutGrid,
-    IconList, IconToggleRight, IconToggleLeft,
+    IconList, IconToggleRight, IconToggleLeft, IconAlertTriangle,
 } from "@tabler/icons-react";
 import Search from "@/Components/Dashboard/Search";
 import Pagination from "@/Components/Dashboard/Pagination";
-import Button from "@/Components/Dashboard/Button";
 import toast from "react-hot-toast";
 
 // =============================================================================
@@ -41,10 +40,56 @@ function ModeBadge({ allowAll }) {
 }
 
 // =============================================================================
+// Delete Modal (state-driven)
+// =============================================================================
+
+function DeleteModal({ show, item, onConfirm, onClose, loading }) {
+    if (!show) return null;
+    return (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-xl border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
+                        <IconAlertTriangle size={20} className="text-red-500" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                            Hapus Kategori "{item?.name}"?
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                            Kategori yang memiliki toko aktif tidak dapat dihapus.
+                        </p>
+                    </div>
+                </div>
+                <div className="flex gap-2 justify-end mt-6">
+                    <button
+                        onClick={onClose}
+                        disabled={loading}
+                        className="px-4 py-2 text-sm font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={loading}
+                        className="px-4 py-2 text-sm font-bold rounded-xl bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-60 flex items-center gap-2"
+                    >
+                        {loading && (
+                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        )}
+                        Hapus
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// =============================================================================
 // Category Card — Grid Mode
 // =============================================================================
 
-function CategoryCard({ category, onToggle }) {
+function CategoryCard({ category, onToggle, onDelete }) {
     return (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:shadow-lg transition-all flex flex-col">
             <div className="p-5 flex-1">
@@ -87,15 +132,6 @@ function CategoryCard({ category, onToggle }) {
                             Toko
                         </p>
                     </div>
-                    <div className="w-px h-10 bg-slate-200 dark:bg-slate-700" />
-                    <div className="text-center flex-1">
-                        <p className="text-2xl font-black text-slate-500 dark:text-slate-400">
-                            {category.sort_order}
-                        </p>
-                        <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wide">
-                            Urutan
-                        </p>
-                    </div>
                 </div>
             </div>
 
@@ -122,12 +158,13 @@ function CategoryCard({ category, onToggle }) {
                         : <IconToggleLeft size={16} className="text-slate-400" />
                     }
                 </button>
-                <Button
-                    type="delete"
-                    url={route("store-categories.destroy", category.id)}
-                    icon={<IconTrash size={14} />}
+                <button
+                    onClick={() => onDelete(category)}
                     className="px-3 py-2 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                />
+                    title="Hapus"
+                >
+                    <IconTrash size={14} />
+                </button>
             </div>
         </div>
     );
@@ -225,8 +262,9 @@ function FilterModal({ show, onClose, filters, onApply }) {
 // =============================================================================
 
 export default function Index({ categories, filters }) {
-    const [viewMode, setViewMode]     = useState("grid");
-    const [showFilter, setShowFilter] = useState(false);
+    const [viewMode, setViewMode]       = useState("grid");
+    const [showFilter, setShowFilter]   = useState(false);
+    const [deleteModal, setDeleteModal] = useState({ show: false, item: null, loading: false });
     const [currentFilters, setCurrentFilters] = useState({
         is_active: filters?.is_active ?? "",
         per_page:  filters?.per_page  ?? 12,
@@ -234,6 +272,7 @@ export default function Index({ categories, filters }) {
 
     const hasActiveFilters = currentFilters.is_active !== "";
 
+    // ── Filters ───────────────────────────────────────────────────────────────
     const applyFilters = (newFilters) => {
         setCurrentFilters(newFilters);
         const params = {};
@@ -246,6 +285,7 @@ export default function Index({ categories, filters }) {
         });
     };
 
+    // ── Toggle ────────────────────────────────────────────────────────────────
     const handleToggle = (category) => {
         router.patch(route("store-categories.toggle", category.id), {}, {
             onSuccess: () =>
@@ -254,6 +294,24 @@ export default function Index({ categories, filters }) {
                 ),
             onError: () => toast.error("Gagal mengubah status"),
             preserveScroll: true,
+        });
+    };
+
+    // ── Single Delete ─────────────────────────────────────────────────────────
+    const confirmDelete = (category) => setDeleteModal({ show: true, item: category, loading: false });
+    const closeDelete   = ()         => setDeleteModal({ show: false, item: null, loading: false });
+
+    const handleDelete = () => {
+        setDeleteModal(prev => ({ ...prev, loading: true }));
+        router.delete(route("store-categories.destroy", deleteModal.item.id), {
+            onSuccess: () => {
+                closeDelete();
+                toast.success("Kategori berhasil dihapus! 🗑️");
+            },
+            onError: () => {
+                closeDelete();
+                toast.error("Kategori masih memiliki toko aktif, tidak dapat dihapus.");
+            },
         });
     };
 
@@ -361,7 +419,12 @@ export default function Index({ categories, filters }) {
                 viewMode === "grid" ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                         {categories.data.map(cat => (
-                            <CategoryCard key={cat.id} category={cat} onToggle={handleToggle} />
+                            <CategoryCard
+                                key={cat.id}
+                                category={cat}
+                                onToggle={handleToggle}
+                                onDelete={confirmDelete}
+                            />
                         ))}
                     </div>
                 ) : (
@@ -387,14 +450,9 @@ export default function Index({ categories, filters }) {
                                                             {cat.code}
                                                         </span>
                                                     </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                                                            {cat.name}
-                                                        </p>
-                                                        <p className="text-[10px] text-slate-400 font-mono">
-                                                            Urutan: {cat.sort_order}
-                                                        </p>
-                                                    </div>
+                                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                                        {cat.name}
+                                                    </p>
                                                 </div>
                                             </td>
                                             <td className="px-4 py-4 max-w-[180px]">
@@ -447,12 +505,13 @@ export default function Index({ categories, filters }) {
                                                     >
                                                         <IconPencilCog size={16} strokeWidth={2} />
                                                     </Link>
-                                                    <Button
-                                                        type="delete"
-                                                        url={route("store-categories.destroy", cat.id)}
-                                                        icon={<IconTrash size={16} strokeWidth={2} />}
+                                                    <button
+                                                        onClick={() => confirmDelete(cat)}
                                                         className="p-2 rounded-lg bg-danger-50 dark:bg-danger-900/30 text-danger-600 dark:text-danger-400 hover:bg-danger-100 dark:hover:bg-danger-900/50 transition-all"
-                                                    />
+                                                        title="Hapus"
+                                                    >
+                                                        <IconTrash size={16} strokeWidth={2} />
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -473,7 +532,8 @@ export default function Index({ categories, filters }) {
                     <p className="text-sm text-slate-400 mb-6 text-center max-w-sm">
                         {filters?.search
                             ? `Tidak ditemukan kategori dengan kata kunci "${filters.search}"`
-                            : "Mulai dengan membuat kategori toko seperti L, M, atau S"}
+                            : "Mulai dengan membuat kategori toko seperti L, M, atau S"
+                        }
                     </p>
                     {!filters?.search && (
                         <Link
@@ -498,6 +558,14 @@ export default function Index({ categories, filters }) {
                 onClose={() => setShowFilter(false)}
                 filters={currentFilters}
                 onApply={applyFilters}
+            />
+
+            <DeleteModal
+                show={deleteModal.show}
+                item={deleteModal.item}
+                loading={deleteModal.loading}
+                onConfirm={handleDelete}
+                onClose={closeDelete}
             />
         </>
     );

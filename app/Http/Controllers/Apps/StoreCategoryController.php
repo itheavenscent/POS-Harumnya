@@ -47,7 +47,6 @@ class StoreCategoryController extends Controller
                 'name'               => $c->name,
                 'description'        => $c->description,
                 'allow_all_variants' => (bool) $c->allow_all_variants,
-                'sort_order'         => (int) $c->sort_order,
                 'is_active'          => (bool) $c->is_active,
                 'stores_count'       => (int) $c->stores_count,
                 'variant_count'      => (int) $c->variant_count,
@@ -79,7 +78,6 @@ class StoreCategoryController extends Controller
             'code'        => 'required|string|max:20|unique:store_categories,code',
             'name'        => 'required|string|max:100',
             'description' => 'nullable|string|max:500',
-            'sort_order'  => 'nullable|integer|min:0|max:9999',
         ], [
             'code.required' => 'Kode kategori wajib diisi.',
             'code.unique'   => 'Kode kategori sudah digunakan.',
@@ -97,7 +95,6 @@ class StoreCategoryController extends Controller
                 'description'        => $request->input('description') ? trim($request->input('description')) : null,
                 // $request->boolean() handles: true, false, 1, 0, "1", "0", "true", "false"
                 'allow_all_variants' => $request->boolean('allow_all_variants', true),
-                'sort_order'         => (int) $request->input('sort_order', 0),
                 'is_active'          => $request->boolean('is_active', true),
             ]);
 
@@ -129,7 +126,6 @@ class StoreCategoryController extends Controller
                 'name'               => $storeCategory->name,
                 'description'        => $storeCategory->description ?? '',
                 'allow_all_variants' => (bool) $storeCategory->allow_all_variants,
-                'sort_order'         => (int) $storeCategory->sort_order,
                 'is_active'          => (bool) $storeCategory->is_active,
             ],
         ]);
@@ -145,7 +141,6 @@ class StoreCategoryController extends Controller
             'code'        => 'required|string|max:20|unique:store_categories,code,' . $storeCategory->id,
             'name'        => 'required|string|max:100',
             'description' => 'nullable|string|max:500',
-            'sort_order'  => 'nullable|integer|min:0|max:9999',
         ], [
             'code.required' => 'Kode kategori wajib diisi.',
             'code.unique'   => 'Kode kategori sudah digunakan.',
@@ -162,7 +157,6 @@ class StoreCategoryController extends Controller
                 'name'               => trim($request->input('name')),
                 'description'        => $request->input('description') ? trim($request->input('description')) : null,
                 'allow_all_variants' => $request->boolean('allow_all_variants', true),
-                'sort_order'         => (int) $request->input('sort_order', 0),
                 'is_active'          => $request->boolean('is_active', true),
             ]);
 

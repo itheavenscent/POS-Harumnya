@@ -17,15 +17,11 @@ class VariantController extends Controller
 {
     /**
      * The variant service instance.
-     *
-     * @var VariantService
      */
-    protected $variantService;
+    protected VariantService $variantService;
 
     /**
      * Create a new controller instance.
-     *
-     * @param VariantService $variantService
      */
     public function __construct(VariantService $variantService)
     {
@@ -34,15 +30,12 @@ class VariantController extends Controller
 
     /**
      * Display a listing of variants.
-     *
-     * @param Request $request
-     * @return Response
      */
     public function index(Request $request): Response
     {
         $filters = [
-            'search' => $request->input('search'),
-            'gender' => $request->input('gender'),
+            'search'   => $request->input('search'),
+            'gender'   => $request->input('gender'),
             'is_active' => $request->input('is_active'),
             'per_page' => $request->input('per_page', 20),
         ];
@@ -53,14 +46,12 @@ class VariantController extends Controller
 
         return Inertia::render('Dashboard/Variants/Index', [
             'variants' => $variants,
-            'filters' => $filters,
+            'filters'  => $filters,
         ]);
     }
 
     /**
      * Show the form for creating a new variant.
-     *
-     * @return Response
      */
     public function create(): Response
     {
@@ -69,9 +60,6 @@ class VariantController extends Controller
 
     /**
      * Store a newly created variant in storage.
-     *
-     * @param StoreVariantRequest $request
-     * @return RedirectResponse
      */
     public function store(StoreVariantRequest $request): RedirectResponse
     {
@@ -90,33 +78,25 @@ class VariantController extends Controller
 
     /**
      * Show the form for editing the specified variant.
-     *
-     * @param Variant $variant
-     * @return Response
      */
     public function edit(Variant $variant): Response
     {
         return Inertia::render('Dashboard/Variants/Edit', [
             'variant' => [
-                'id' => $variant->id,
-                'code' => $variant->code,
-                'name' => $variant->name,
-                'image_url' => $variant->image_url,
-                'image' => $variant->image,
-                'gender' => $variant->gender,
+                'id'          => $variant->id,
+                'code'        => $variant->code,
+                'name'        => $variant->name,
+                'image_url'   => $variant->image_url,
+                'image'       => $variant->image,
+                'gender'      => $variant->gender,
                 'description' => $variant->description,
-                'is_active' => $variant->is_active,
-                'sort_order' => $variant->sort_order,
-            ]
+                'is_active'   => $variant->is_active,
+            ],
         ]);
     }
 
     /**
      * Update the specified variant in storage.
-     *
-     * @param UpdateVariantRequest $request
-     * @param Variant $variant
-     * @return RedirectResponse
      */
     public function update(UpdateVariantRequest $request, Variant $variant): RedirectResponse
     {
@@ -135,9 +115,6 @@ class VariantController extends Controller
 
     /**
      * Remove the specified variant from storage.
-     *
-     * @param Variant $variant
-     * @return RedirectResponse
      */
     public function destroy(Variant $variant): RedirectResponse
     {
@@ -155,19 +132,16 @@ class VariantController extends Controller
 
     /**
      * Bulk delete variants.
-     *
-     * @param Request $request
-     * @return RedirectResponse
      */
     public function bulkDelete(Request $request): RedirectResponse
     {
         $validator = Validator::make($request->all(), [
-            'ids' => 'required|array|min:1',
-            'ids.*' => 'exists:variants,id'
+            'ids'    => 'required|array|min:1',
+            'ids.*'  => 'exists:variants,id',
         ], [
             'ids.required' => 'Pilih minimal 1 varian untuk dihapus',
-            'ids.min' => 'Pilih minimal 1 varian untuk dihapus',
-            'ids.*.exists' => 'Varian tidak ditemukan'
+            'ids.min'      => 'Pilih minimal 1 varian untuk dihapus',
+            'ids.*.exists' => 'Varian tidak ditemukan',
         ]);
 
         if ($validator->fails()) {

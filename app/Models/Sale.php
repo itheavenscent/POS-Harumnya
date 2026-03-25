@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -23,7 +22,9 @@ class Sale extends Model
         'subtotal_perfume',  'subtotal_packaging',  'subtotal',
         'discount_amount',   'tax_amount',           'total',
         'amount_paid',       'change_amount',
-        'cogs_perfume',      'cogs_packaging',       'cogs_total',
+        'cogs_perfume',      'cogs_packaging',
+        'cogs_alcohol',      // ← BARU: HPP alkohol custom order
+        'cogs_total',
         'gross_profit',      'gross_margin_pct',
         'points_earned',     'points_redeemed',      'points_redemption_value',
         'status', 'notes',
@@ -34,6 +35,7 @@ class Sale extends Model
         'sold_at'          => 'datetime',
         'cancelled_at'     => 'datetime',
         'gross_margin_pct' => 'decimal:2',
+        'cogs_alcohol'     => 'decimal:2',
     ];
 
     public function store(): BelongsTo        { return $this->belongsTo(Store::class,       'store_id'); }

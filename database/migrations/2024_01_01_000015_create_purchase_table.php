@@ -5,53 +5,50 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * MIGRATION 006 — PURCHASES (Pembelian dari Supplier)
- * Membutuhkan: suppliers (002), ingredients (002), packaging (003),
- *              warehouses (000), stores (000)
+ * MIGRATION 12 — PURCHASES (Pembelian dari Supplier)
+ * Membutuhkan: suppliers (06), ingredients (06), packaging (07),
+ *              warehouses, stores (01), users (02)
  *
- * PERUBAHAN DARI VERSI LAMA:
- *   purchases.subtotal / tax / discount / shipping_cost / total :
- *     unsignedBigInteger → decimal(15,2) → support Rp 12.000,59
- *   purchase_items.unit_price / subtotal :
- *     unsignedBigInteger → decimal(15,2)
- *   purchase_items.quantity :
- *     unsignedBigInteger → bigInteger SIGNED
- *     (retur ke supplier bisa negatif)
+ * CATATAN quantity di purchase_items:
+ *   bigInteger SIGNED → retur ke supplier bisa negatif.
+ *   Retur = purchase item dengan qty negatif, bukan dokumen terpisah.
+ *
+ * CATATAN destination polimorfik:
+ *   destination_type = 'warehouse' | 'store'
+ *   destination_id   = ID warehouse atau store
+ *   Pembelian bisa langsung masuk ke toko atau melalui gudang dulu.
  */
 return new class extends Migration
 {
     public function up(): void
     {
-        // ── PURCHASES (Header) ────────────────────────────────────────────────
         Schema::create('purchases', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('purchase_number', 100)->unique();
             $table->uuid('supplier_id');
 
             // Polimorfik destination: warehouse | store
-            $table->string('destination_type', 20)->comment('warehouse | store');
+            $table->string('destination_type', 20)
+                  ->comment('warehouse | store');
             $table->uuid('destination_id');
 
             $table->date('purchase_date');
             $table->date('expected_delivery_date')->nullable();
             $table->date('actual_delivery_date')->nullable();
 
-            $table->enum('status', [
-                'draft', 'pending', 'approved',
-                'received', 'completed', 'cancelled',
-            ])->default('draft');
+            $table->enum('status', ['draft', 'pending', 'approved', 'received', 'completed', 'cancelled'])
+                  ->default('draft');
 
-            // ★ decimal(15,2) → support Rp 12.000,59
             $table->decimal('subtotal', 15, 2)->default(0);
             $table->decimal('tax', 15, 2)->default(0);
             $table->decimal('discount', 15, 2)->default(0);
-            $table->decimal('shipping_cost', 15, 2)->default(0);
+            $table->decimal('shipping_cost', 15, 2)->default(0)
+                  ->comment('Ongkos kirim dari supplier; masuk ke HPP via WAC');
             $table->decimal('total', 15, 2)->default(0);
 
             $table->text('notes')->nullable();
             $table->text('cancellation_reason')->nullable();
 
-            // FK ke users.id (bigint)
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('approved_by')->nullable();
             $table->timestamp('approved_at')->nullable();
@@ -72,26 +69,24 @@ return new class extends Migration
 
             $table->index('supplier_id');
             $table->index(['destination_type', 'destination_id'], 'idx_pur_destination');
-            $table->index(['purchase_date', 'status'], 'idx_pur_date_status');
+            $table->index(['purchase_date', 'status'],            'idx_pur_date_status');
             $table->index('status');
         });
 
-        // ── PURCHASE ITEMS ────────────────────────────────────────────────────
         Schema::create('purchase_items', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('purchase_id');
 
             // Polimorfik: ingredient | packaging_material
-            $table->string('item_type', 30)->comment('ingredient | packaging_material');
+            $table->string('item_type', 30)
+                  ->comment('ingredient | packaging_material');
             $table->uuid('item_id');
 
-            // ★ bigInteger SIGNED — retur ke supplier bisa negatif
+            // SIGNED: negatif untuk retur ke supplier
             $table->bigInteger('quantity')
-                  ->comment('Qty (SIGNED: negatif untuk retur ke supplier)');
-
-            // ★ decimal(15,2) → support Rp 12.000,59
+                  ->comment('Qty; SIGNED: negatif = retur ke supplier');
             $table->decimal('unit_price', 15, 2)
-                  ->comment('Harga beli per unit (rupiah, 2 desimal)');
+                  ->comment('Harga beli per unit');
             $table->decimal('subtotal', 15, 2)
                   ->comment('quantity × unit_price');
 

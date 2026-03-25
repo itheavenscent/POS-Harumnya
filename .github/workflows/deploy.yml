@@ -23,14 +23,15 @@ jobs:
           npm ci
           npm run build
 
-      # MODIFIKASI: Gabungkan langkah SSH agar lebih cepat dan kurangi resiko timeout koneksi berulang
+      # Langkah 1: Update Source Code & Dependencies via SSH
       - name: Deploy and Sync Code
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # Gunakan timeout yang lebih lama jika koneksi internet VPS agak lambat
+          port: 22
+          debug: true # Membantu melihat log jika koneksi terputus
           command_timeout: 30m
           script: |
             set -e
@@ -39,44 +40,52 @@ jobs:
             # Pastikan direktori aman bagi Git
             git config --global --add safe.directory /var/www/POS-Harumnya
 
-            # Ambil update terbaru
+            # Ambil update terbaru dari branch main
             git fetch origin main
             git reset --hard origin/main
 
-            # Install dependencies (Lakukan di sini agar vendor folder tetap sinkron)
+            # Install dependencies PHP
             composer install --no-dev --optimize-autoloader
 
+      # Langkah 2: Upload hasil build Vite (folder public/build)
       - name: Upload Build Folder (Vite)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          debug: true
           source: "public/build"
           target: "/var/www/POS-Harumnya"
           overwrite: true
 
+      # Langkah 3: Optimasi Laravel & Reset Permissions
       - name: Finalize & Permissions
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          debug: true
           script: |
             set -e
             cd /var/www/POS-Harumnya
 
-            # Optimasi Laravel
+            # Optimasi Laravel Cache
             php artisan optimize:clear
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
 
-            # FIX PERMISSION: Gunakan sudo agar tidak gagal saat mengubah milik www-data
-            # Berikan akses ke group agar user SSH dan web server sama-sama bisa baca/tulis
-            sudo chown -R $USER:www-data .
+            # Jalankan migrasi database (opsional, hapus jika tidak perlu otomatis)
+            # php artisan migrate --force
+
+            # Perbaikan Permission (Menggunakan sudo NOPASSWD)
+            sudo chown -R ${{ secrets.SSH_USERNAME }}:www-data .
             sudo chmod -R 775 storage bootstrap/cache public/build
 
-            # Restart Services (Pastikan versi PHP sesuai dengan yang terinstall di VPS)
+            # Restart Service (Sesuaikan versi PHP Anda, misal 8.4)
             sudo systemctl restart php8.4-fpm
             sudo systemctl reload nginx

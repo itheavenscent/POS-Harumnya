@@ -411,34 +411,38 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     //   3. Route dengan parameter (/cart/{id}, /resume/{holdId}, dll)
     //   4. POST /store — TERAKHIR (kata "store" bisa bentrok jika ada /{id})
     //
+Route::prefix('transactions')->name('transactions.')->group(function () {
 
-    Route::prefix('transactions')->name('transactions.')->group(function () {
+    // 1. Halaman
+    Route::get('/',                   [TransactionController::class, 'index'])->name('index');
+    Route::get('/history',            [TransactionController::class, 'history'])->name('history');
+    Route::get('/print/{saleNumber}', [TransactionController::class, 'print'])
+        ->where('saleNumber', '[A-Za-z0-9\-]+')
+        ->name('print');
 
-        // 1. Halaman
-        Route::get('/',                   [TransactionController::class, 'index'])->name('index');
-        Route::get('/history',            [TransactionController::class, 'history'])->name('history');
-        Route::get('/print/{saleNumber}', [TransactionController::class, 'print'])
-            ->where('saleNumber', '[A-Za-z0-9\-]+')
-            ->name('print');
+    // 2. API — Product Selection (flow: Intensity → Variant → Size)
+    Route::get('/get-variants',        [TransactionController::class, 'getVariantsForIntensity'])->name('get-variants');
+    Route::get('/get-sizes',           [TransactionController::class, 'getAvailableSizes'])->name('get-sizes');
+    Route::post('/get-perfume-price',  [TransactionController::class, 'getPerfumePrice'])->name('get-perfume-price');
 
-        // 2. API — Product Selection (flow: Intensity → Variant → Size)
-        Route::get('/get-variants',       [TransactionController::class, 'getVariantsForIntensity'])->name('get-variants');
-        Route::get('/get-sizes',          [TransactionController::class, 'getAvailableSizes'])->name('get-sizes');
-        Route::post('/get-perfume-price', [TransactionController::class, 'getPerfumePrice'])->name('get-perfume-price');
+    // 2b. API — Custom Order
+    Route::get('/get-variants-custom', [TransactionController::class, 'getVariantsForCustom'])->name('get-variants-custom');
+    Route::get('/get-custom-price',    [TransactionController::class, 'getCustomPrice'])->name('get-custom-price');
 
-        // 3. Cart
-        Route::post('/add-to-cart',       [TransactionController::class, 'addToCart'])->name('add-to-cart');
-        Route::patch('/cart/{id}',        [TransactionController::class, 'updateCart'])->name('update-cart');
-        Route::delete('/cart/{id}',       [TransactionController::class, 'destroyCart'])->name('destroy-cart');
+    // 3. Cart
+    Route::post('/add-to-cart',        [TransactionController::class, 'addToCart'])->name('add-to-cart');
+    Route::post('/add-custom-to-cart', [TransactionController::class, 'addCustomToCart'])->name('add-custom-to-cart');
+    Route::patch('/cart/{id}',         [TransactionController::class, 'updateCart'])->name('update-cart');
+    Route::delete('/cart/{id}',        [TransactionController::class, 'destroyCart'])->name('destroy-cart');
 
-        // 4. Hold / Resume
-        Route::post('/hold',              [TransactionController::class, 'holdCart'])->name('hold');
-        Route::post('/resume/{holdId}',   [TransactionController::class, 'resumeHeldCart'])->name('resume');
-        Route::delete('/held/{holdId}',   [TransactionController::class, 'deleteHeldCart'])->name('delete-held');
+    // 4. Hold / Resume
+    Route::post('/hold',              [TransactionController::class, 'holdCart'])->name('hold');
+    Route::post('/resume/{holdId}',   [TransactionController::class, 'resumeHeldCart'])->name('resume');
+    Route::delete('/held/{holdId}',   [TransactionController::class, 'deleteHeldCart'])->name('delete-held');
 
-        // 5. Checkout — paling bawah
-        Route::post('/store',             [TransactionController::class, 'store'])->name('store');
-    });
+    // 5. Checkout — paling bawah
+    Route::post('/store',             [TransactionController::class, 'store'])->name('store');
+});
 
     // ─────────────────────────────────────────────────────────────────────────
     // Pembayaran

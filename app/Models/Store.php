@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Store extends Model
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    use HasFactory, HasUuids;
 
     protected $fillable = [
         'code',
@@ -21,14 +20,13 @@ class Store extends Model
         'manager_name',
         'email',
         'is_active',
-        'store_category_id',   // ← tambahan migration 011
+        'store_category_id',
     ];
 
     protected $casts = [
         'is_active'  => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
     ];
 
     // -------------------------------------------------------------------------
@@ -165,19 +163,16 @@ class Store extends Model
      */
     public function getAllowedVariants()
     {
-        // Tidak ada kategori → semua variant
         if (! $this->store_category_id) {
             return Variant::where('is_active', true)->ordered()->get();
         }
 
         $category = $this->storeCategory;
 
-        // Kategori allow_all → semua variant
         if ($category->allow_all_variants) {
             return Variant::where('is_active', true)->ordered()->get();
         }
 
-        // Whitelist: hanya variant yang ada di store_category_variants
         return Variant::where('is_active', true)
             ->whereHas('storeCategories', fn ($q) =>
                 $q->where('store_category_id', $this->store_category_id)

@@ -27,16 +27,17 @@ class IngredientController extends Controller
             ->paginate(15)
             ->withQueryString()
             ->through(fn($item) => [
-                'id'                     => $item->id,
-                'code'                   => $item->code,
-                'name'                   => $item->name,
-                'unit'                   => $item->unit,
-                'description'            => $item->description,
-                'image_url'              => $item->image_url,
-                'average_cost'           => $item->average_cost,
-                'is_active'              => $item->is_active,
-                'sort_order'             => $item->sort_order,
-                'category'               => $item->category ? [
+                'id'            => $item->id,
+                'code'          => $item->code,
+                'name'          => $item->name,
+                'unit'          => $item->unit,
+                'description'   => $item->description,
+                'image_url'     => $item->image_url,
+                'average_cost'  => $item->average_cost,
+                'selling_price' => $item->selling_price,
+                'is_active'     => $item->is_active,
+                'sort_order'    => $item->sort_order,
+                'category'      => $item->category ? [
                     'id'              => $item->category->id,
                     'name'            => $item->category->name,
                     'ingredient_type' => $item->category->ingredient_type,
@@ -72,8 +73,12 @@ class IngredientController extends Controller
             $data['image'] = $request->file('image')->store('ingredients', 'public');
         }
 
-        $data['average_cost'] = 0;
-        $data['sort_order']   = $data['sort_order'] ?? 0;
+        // Normalise nullable numerics
+        $data['average_cost']  = 0;
+        $data['selling_price'] = isset($data['selling_price']) && $data['selling_price'] !== ''
+            ? $data['selling_price']
+            : null;
+        $data['sort_order'] = $data['sort_order'] ?? 0;
 
         Ingredient::create($data);
 
@@ -92,6 +97,7 @@ class IngredientController extends Controller
                 'description'            => $ingredient->description,
                 'image_url'              => $ingredient->image_url,
                 'average_cost'           => $ingredient->average_cost,
+                'selling_price'          => $ingredient->selling_price,
                 'is_active'              => $ingredient->is_active,
                 'sort_order'             => $ingredient->sort_order,
                 'ingredient_category_id' => $ingredient->ingredient_category_id,
@@ -106,17 +112,33 @@ class IngredientController extends Controller
     {
         $data = $request->validated();
 
+        // ── Penanganan foto ────────────────────────────────────────────────
         if ($request->hasFile('image')) {
-            // Hapus foto lama sebelum simpan baru
+            // Ada file baru → hapus lama lalu simpan baru
             if ($ingredient->image) {
                 Storage::disk('public')->delete($ingredient->image);
             }
             $data['image'] = $request->file('image')->store('ingredients', 'public');
+
+        } elseif ($request->boolean('remove_image')) {
+            // User eksplisit hapus foto tanpa upload pengganti
+            if ($ingredient->image) {
+                Storage::disk('public')->delete($ingredient->image);
+            }
+            $data['image'] = null;
+
         } else {
-            // Tidak ada file baru → buang key 'image' agar foto lama tidak ter-overwrite
+            // Tidak ada perubahan foto → buang key agar tidak ter-overwrite null
             unset($data['image']);
         }
 
+        // Buang remove_image dari data sebelum update (bukan kolom DB)
+        unset($data['remove_image']);
+
+        // Normalise nullable numerics
+        $data['selling_price'] = array_key_exists('selling_price', $data) && $data['selling_price'] !== ''
+            ? $data['selling_price']
+            : null;
         $data['sort_order'] = $data['sort_order'] ?? $ingredient->sort_order;
 
         $ingredient->update($data);
@@ -135,10 +157,8 @@ class IngredientController extends Controller
             return back()->with('error', 'Gagal: Bahan masih digunakan di resep produk.');
         }
 
-        if ($ingredient->image) {
-            Storage::disk('public')->delete($ingredient->image);
-        }
-
+        // Soft delete: foto TIDAK dihapus dari disk supaya bisa di-restore.
+        // Hapus file fisik hanya saat forceDelete via scheduled cleanup job.
         $ingredient->delete();
 
         return back()->with('success', 'Bahan Baku berhasil dihapus!');

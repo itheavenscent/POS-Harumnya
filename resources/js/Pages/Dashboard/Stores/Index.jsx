@@ -43,17 +43,67 @@ function CategoryBadge({ category }) {
 }
 
 // ---------------------------------------------------------------------------
+// Delete Modal (state-driven, same pattern as Ingredient)
+// ---------------------------------------------------------------------------
+function DeleteModal({ show, item, onConfirm, onClose, loading }) {
+    if (!show) return null;
+    return (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-xl border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
+                        <IconAlertTriangle size={20} className="text-red-500" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                            Hapus Toko "{item?.name}"?
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                            Tindakan ini tidak dapat dibatalkan.
+                        </p>
+                    </div>
+                </div>
+                <div className="flex gap-2 justify-end mt-6">
+                    <button
+                        onClick={onClose}
+                        disabled={loading}
+                        className="px-4 py-2 text-sm font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={loading}
+                        className="px-4 py-2 text-sm font-bold rounded-xl bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-60 flex items-center gap-2"
+                    >
+                        {loading && (
+                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        )}
+                        Hapus
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ---------------------------------------------------------------------------
 // Store Card (Grid Mode)
 // ---------------------------------------------------------------------------
-function StoreCard({ store, selected, onSelect }) {
+function StoreCard({ store, selected, onSelect, onDelete }) {
     return (
         <div className={`bg-white dark:bg-slate-900 rounded-2xl border transition-all hover:shadow-lg ${
-            selected ? "border-primary-400 dark:border-primary-600 ring-2 ring-primary-200 dark:ring-primary-800" : "border-slate-200 dark:border-slate-800"
+            selected
+                ? "border-primary-400 dark:border-primary-600 ring-2 ring-primary-200 dark:ring-primary-800"
+                : "border-slate-200 dark:border-slate-800"
         }`}>
             <div className="p-5">
                 <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-2">
-                        <input type="checkbox" checked={selected} onChange={e => onSelect(store.id, e.target.checked)}
+                        <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={e => onSelect(store.id, e.target.checked)}
                             className="w-4 h-4 rounded border-2 border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-500"
                         />
                         <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/40 flex items-center justify-center">
@@ -98,16 +148,18 @@ function StoreCard({ store, selected, onSelect }) {
             </div>
 
             <div className="px-5 pb-4 flex gap-2">
-                <Link href={route("stores.edit", store.id)}
+                <Link
+                    href={route("stores.edit", store.id)}
                     className="flex-1 text-center py-2 rounded-xl bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs font-bold hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
                 >
                     <IconPencilCog size={14} className="inline mr-1" />Edit
                 </Link>
-                <Button type="delete" url={route("stores.destroy", store.id)}
+                <button
+                    onClick={() => onDelete(store)}
                     className="flex-1 text-center py-2 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                    icon={<IconTrash size={14} className="inline mr-1" />}
-                    label="Hapus"
-                />
+                >
+                    <IconTrash size={14} className="inline mr-1" />Hapus
+                </button>
             </div>
         </div>
     );
@@ -145,10 +197,13 @@ function FilterModal({ show, onClose, filters, onApply, categories }) {
                 </div>
 
                 <div className="p-6 space-y-4">
-                    {/* Filter Kategori — BARU */}
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Kategori Toko</label>
-                        <select value={temp.store_category_id ?? ""} onChange={e => setTemp({ ...temp, store_category_id: e.target.value })} className={selectCls}>
+                        <select
+                            value={temp.store_category_id ?? ""}
+                            onChange={e => setTemp({ ...temp, store_category_id: e.target.value })}
+                            className={selectCls}
+                        >
                             <option value="">Semua Kategori</option>
                             <option value="none">— Tanpa Kategori</option>
                             {categories.map(cat => (
@@ -159,7 +214,11 @@ function FilterModal({ show, onClose, filters, onApply, categories }) {
 
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Status</label>
-                        <select value={temp.is_active} onChange={e => setTemp({ ...temp, is_active: e.target.value })} className={selectCls}>
+                        <select
+                            value={temp.is_active}
+                            onChange={e => setTemp({ ...temp, is_active: e.target.value })}
+                            className={selectCls}
+                        >
                             <option value="">Semua Status</option>
                             <option value="1">✅ Aktif</option>
                             <option value="0">❌ Non-Aktif</option>
@@ -168,7 +227,11 @@ function FilterModal({ show, onClose, filters, onApply, categories }) {
 
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Per Halaman</label>
-                        <select value={temp.per_page} onChange={e => setTemp({ ...temp, per_page: e.target.value })} className={selectCls}>
+                        <select
+                            value={temp.per_page}
+                            onChange={e => setTemp({ ...temp, per_page: e.target.value })}
+                            className={selectCls}
+                        >
                             {["8", "12", "24", "48"].map(v => <option key={v} value={v}>{v}</option>)}
                         </select>
                     </div>
@@ -215,39 +278,64 @@ export default function Index({ stores, filters, categories }) {
     const [selectedIds, setSelectedIds]       = useState([]);
     const [showFilter, setShowFilter]         = useState(false);
     const [showBulkDelete, setShowBulkDelete] = useState(false);
+    const [deleteModal, setDeleteModal]       = useState({ show: false, item: null, loading: false });
+
     const [currentFilters, setCurrentFilters] = useState({
-        is_active:          filters?.is_active          ?? "",
-        store_category_id:  filters?.store_category_id  ?? "",
-        per_page:           filters?.per_page            || 12,
+        is_active:         filters?.is_active         ?? "",
+        store_category_id: filters?.store_category_id ?? "",
+        per_page:          filters?.per_page           || 12,
     });
 
+    // ── Selection ────────────────────────────────────────────────────────────
     const handleSelect    = (id, checked) => setSelectedIds(prev => checked ? [...prev, id] : prev.filter(s => s !== id));
     const handleSelectAll = (checked)     => setSelectedIds(checked ? stores.data.map(s => s.id) : []);
     const allSelected     = stores.data.length > 0 && selectedIds.length === stores.data.length;
 
+    // ── Single Delete ─────────────────────────────────────────────────────────
+    const confirmDelete = (store) => setDeleteModal({ show: true, item: store, loading: false });
+    const closeDelete   = ()      => setDeleteModal({ show: false, item: null, loading: false });
+
+    const handleDelete = () => {
+        setDeleteModal(prev => ({ ...prev, loading: true }));
+        router.delete(route("stores.destroy", deleteModal.item.id), {
+            onSuccess: () => {
+                closeDelete();
+                toast.success("Toko berhasil dihapus! 🗑️");
+            },
+            onError: () => {
+                closeDelete();
+                toast.error("Gagal menghapus toko, coba lagi.");
+            },
+        });
+    };
+
+    // ── Bulk Delete ───────────────────────────────────────────────────────────
+    const handleBulkDelete = () => {
+        router.post(route("stores.bulk-delete"), { ids: selectedIds }, {
+            onSuccess: () => {
+                setSelectedIds([]);
+                setShowBulkDelete(false);
+                toast.success(`${selectedIds.length} toko berhasil dihapus!`);
+            },
+            onError: () => toast.error("Gagal menghapus, coba lagi"),
+        });
+    };
+
+    // ── Filters ───────────────────────────────────────────────────────────────
     const handleApplyFilters = (newFilters) => {
         setCurrentFilters(newFilters);
         const clean = {};
-        if (filters?.search)                           clean.search             = filters.search;
-        if (newFilters.is_active !== "")               clean.is_active          = newFilters.is_active;
-        if (newFilters.store_category_id)              clean.store_category_id  = newFilters.store_category_id;
-        if (newFilters.per_page)                       clean.per_page           = newFilters.per_page;
+        if (filters?.search)                  clean.search            = filters.search;
+        if (newFilters.is_active !== "")       clean.is_active         = newFilters.is_active;
+        if (newFilters.store_category_id)      clean.store_category_id = newFilters.store_category_id;
+        if (newFilters.per_page)               clean.per_page          = newFilters.per_page;
         router.get(route("stores.index"), clean, { preserveState: false, replace: true });
-    };
-
-    const handleBulkDelete = () => {
-        router.post(route("stores.bulk-delete"), { ids: selectedIds }, {
-            onSuccess: () => { setSelectedIds([]); setShowBulkDelete(false); toast.success(`${selectedIds.length} toko berhasil dihapus!`); },
-            onError:   () => toast.error("Gagal menghapus, coba lagi"),
-        });
     };
 
     const handleRefresh = () => { router.reload({ only: ["stores"] }); toast.success("Data diperbarui!"); };
 
-    const hasActiveFilters = currentFilters.is_active !== "" || currentFilters.store_category_id !== "";
-
-    // Label kategori untuk filter tag
-    const categoryFilterLabel = (() => {
+    const hasActiveFilters     = currentFilters.is_active !== "" || currentFilters.store_category_id !== "";
+    const categoryFilterLabel  = (() => {
         if (!currentFilters.store_category_id) return null;
         if (currentFilters.store_category_id === "none") return "Tanpa Kategori";
         const cat = categories.find(c => c.id === currentFilters.store_category_id);
@@ -278,7 +366,9 @@ export default function Index({ stores, filters, categories }) {
                         )}
                     </p>
                 </div>
-                <Button type="link" href={route("stores.create")}
+                <Button
+                    type="link"
+                    href={route("stores.create")}
                     icon={<IconCirclePlus size={20} strokeWidth={2} />}
                     className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-primary-500/40"
                     label="Tambah Toko"
@@ -293,29 +383,39 @@ export default function Index({ stores, filters, categories }) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button onClick={handleRefresh}
+                        <button
+                            onClick={handleRefresh}
                             className="p-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                             title="Refresh"
                         >
                             <IconRefresh size={20} strokeWidth={2} />
                         </button>
 
-                        <button onClick={() => setShowFilter(true)}
-                            className={`p-2.5 rounded-xl transition-colors relative ${hasActiveFilters ? "bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400" : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"}`}
+                        <button
+                            onClick={() => setShowFilter(true)}
+                            className={`p-2.5 rounded-xl transition-colors relative ${
+                                hasActiveFilters
+                                    ? "bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400"
+                                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                            }`}
                             title="Filter"
                         >
                             <IconFilter size={20} strokeWidth={2} />
-                            {hasActiveFilters && <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary-600 rounded-full border-2 border-white dark:border-slate-900" />}
+                            {hasActiveFilters && (
+                                <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary-600 rounded-full border-2 border-white dark:border-slate-900" />
+                            )}
                         </button>
 
                         <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                            <button onClick={() => setViewMode("list")}
+                            <button
+                                onClick={() => setViewMode("list")}
                                 className={`p-1.5 rounded-lg transition-all ${viewMode === "list" ? "bg-white dark:bg-slate-700 shadow text-primary-600 dark:text-primary-400" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"}`}
                                 title="List View"
                             >
                                 <IconList size={18} />
                             </button>
-                            <button onClick={() => setViewMode("grid")}
+                            <button
+                                onClick={() => setViewMode("grid")}
                                 className={`p-1.5 rounded-lg transition-all ${viewMode === "grid" ? "bg-white dark:bg-slate-700 shadow text-primary-600 dark:text-primary-400" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"}`}
                                 title="Grid View"
                             >
@@ -378,7 +478,10 @@ export default function Index({ stores, filters, categories }) {
                                 <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
                                     <tr>
                                         <th className="px-4 py-4 w-10">
-                                            <input type="checkbox" checked={allSelected} onChange={e => handleSelectAll(e.target.checked)}
+                                            <input
+                                                type="checkbox"
+                                                checked={allSelected}
+                                                onChange={e => handleSelectAll(e.target.checked)}
                                                 className="w-4 h-4 rounded border-2 border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-500"
                                             />
                                         </th>
@@ -391,7 +494,10 @@ export default function Index({ stores, filters, categories }) {
                                     {stores.data.map(item => (
                                         <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                             <td className="px-4 py-4">
-                                                <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={e => handleSelect(item.id, e.target.checked)}
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedIds.includes(item.id)}
+                                                    onChange={e => handleSelect(item.id, e.target.checked)}
                                                     className="w-4 h-4 rounded border-2 border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-500"
                                                 />
                                             </td>
@@ -406,8 +512,6 @@ export default function Index({ stores, filters, categories }) {
                                                     </div>
                                                 </div>
                                             </td>
-
-                                            {/* Kolom Kategori — BARU */}
                                             <td className="px-4 py-4">
                                                 <CategoryBadge category={item.store_category} />
                                                 {item.store_category && (
@@ -416,7 +520,6 @@ export default function Index({ stores, filters, categories }) {
                                                     </p>
                                                 )}
                                             </td>
-
                                             <td className="px-4 py-4">
                                                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{item.manager_name || "—"}</p>
                                                 <p className="text-xs text-slate-500 dark:text-slate-400">{item.email || item.phone || "—"}</p>
@@ -435,16 +538,20 @@ export default function Index({ stores, filters, categories }) {
                                             </td>
                                             <td className="px-4 py-4">
                                                 <div className="flex justify-end gap-2">
-                                                    <Link href={route("stores.edit", item.id)}
+                                                    <Link
+                                                        href={route("stores.edit", item.id)}
                                                         className="p-2 rounded-lg bg-warning-100 border border-warning-200 text-warning-600 hover:bg-warning-200 dark:bg-warning-900/50 dark:border-warning-800 dark:text-warning-400 dark:hover:bg-warning-900/70 transition-all"
                                                         title="Edit"
                                                     >
                                                         <IconPencilCog size={16} strokeWidth={2} />
                                                     </Link>
-                                                    <Button type="delete" url={route("stores.destroy", item.id)}
-                                                        icon={<IconTrash size={16} strokeWidth={2} />}
+                                                    <button
+                                                        onClick={() => confirmDelete(item)}
                                                         className="p-2 rounded-lg bg-danger-100 border border-danger-200 text-danger-600 hover:bg-danger-200 dark:bg-danger-900/50 dark:border-danger-800 dark:text-danger-400 dark:hover:bg-danger-900/70 transition-all"
-                                                    />
+                                                        title="Hapus"
+                                                    >
+                                                        <IconTrash size={16} strokeWidth={2} />
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -456,7 +563,13 @@ export default function Index({ stores, filters, categories }) {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                         {stores.data.map(item => (
-                            <StoreCard key={item.id} store={item} selected={selectedIds.includes(item.id)} onSelect={handleSelect} />
+                            <StoreCard
+                                key={item.id}
+                                store={item}
+                                selected={selectedIds.includes(item.id)}
+                                onSelect={handleSelect}
+                                onDelete={confirmDelete}
+                            />
                         ))}
                     </div>
                 )
@@ -475,7 +588,9 @@ export default function Index({ stores, filters, categories }) {
                         }
                     </p>
                     {!filters?.search && (
-                        <Button type="link" href={route("stores.create")}
+                        <Button
+                            type="link"
+                            href={route("stores.create")}
                             icon={<IconCirclePlus size={20} strokeWidth={2} />}
                             className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold shadow-lg shadow-primary-500/40"
                             label="Tambah Toko Sekarang"
@@ -495,7 +610,21 @@ export default function Index({ stores, filters, categories }) {
                 onApply={handleApplyFilters}
                 categories={categories}
             />
-            <BulkDeleteModal show={showBulkDelete} onClose={() => setShowBulkDelete(false)} onConfirm={handleBulkDelete} count={selectedIds.length} />
+
+            <BulkDeleteModal
+                show={showBulkDelete}
+                onClose={() => setShowBulkDelete(false)}
+                onConfirm={handleBulkDelete}
+                count={selectedIds.length}
+            />
+
+            <DeleteModal
+                show={deleteModal.show}
+                item={deleteModal.item}
+                loading={deleteModal.loading}
+                onConfirm={handleDelete}
+                onClose={closeDelete}
+            />
         </>
     );
 }

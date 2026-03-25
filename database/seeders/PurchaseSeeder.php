@@ -7,9 +7,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * PURCHASE SEEDER
- * Seeds purchase orders dari supplier ke warehouse & store.
- * Juga meng-insert stock_movements sebagai audit trail.
+ * FIX dari versi lama:
+ *   - Store code STR001/STR002 → STR-JATIM/STR-JATENG (konsisten dengan WarehouseStoreSeeder)
+ *   - Warehouse code WH001 → WH-PUSAT
+ *   - movement_type 'purchase_in' sudah benar (ada di migration)
  */
 class PurchaseSeeder extends Seeder
 {
@@ -17,16 +18,16 @@ class PurchaseSeeder extends Seeder
     {
         $now = now();
 
-        $warehouse  = DB::table('warehouses')->where('code', 'WH001')->first();
-        $store1     = DB::table('stores')->where('code', 'STR001')->first();
-        $store2     = DB::table('stores')->where('code', 'STR002')->first();
-        $supplier1  = DB::table('suppliers')->where('code', 'SUP-001')->first();
-        $supplier2  = DB::table('suppliers')->where('code', 'SUP-002')->first();
-        $supplier3  = DB::table('suppliers')->where('code', 'SUP-003')->first();
-        $adminUser  = DB::table('users')->where('email', 'admin@gmail.com')->first();
+        $warehouse = DB::table('warehouses')->where('code', 'WH-PUSAT')->first();
+        $store1    = DB::table('stores')->where('code', 'STR-JATIM')->first();
+        $store2    = DB::table('stores')->where('code', 'STR-JATENG')->first();
+        $supplier1 = DB::table('suppliers')->where('code', 'SUP-001')->first();
+        $supplier2 = DB::table('suppliers')->where('code', 'SUP-002')->first();
+        $supplier3 = DB::table('suppliers')->where('code', 'SUP-003')->first();
+        $adminUser = DB::table('users')->where('email', 'admin@harumnya.com')->first();
 
         if (! $warehouse || ! $supplier1) {
-            $this->command->error('Master data belum ada.');
+            $this->command->error('Master data belum ada (warehouse atau supplier).');
             return;
         }
 
@@ -34,160 +35,157 @@ class PurchaseSeeder extends Seeder
         $packagings  = DB::table('packaging_materials')->get()->keyBy('code');
         $adminId     = $adminUser?->id;
 
-        // ── PURCHASE 1: Pembelian bahan baku ke Gudang (Completed) ────────────
+        // ── PO 1: Bahan baku ke Gudang Pusat (Completed) ─────────────────────
         $this->createPurchase([
-            'purchase_number'       => 'PO/2025/01/001',
-            'supplier_id'           => $supplier1->id,
-            'destination_type'      => 'warehouse',
-            'destination_id'        => $warehouse->id,
-            'purchase_date'         => '2025-01-05',
-            'expected_delivery_date'=> '2025-01-10',
-            'actual_delivery_date'  => '2025-01-09',
-            'status'                => 'completed',
-            'shipping_cost'         => 50000.00,
-            'tax'                   => 0.00,
-            'discount'              => 0.00,
-            'notes'                 => 'Pembelian bahan baku awal tahun 2025',
-            'created_by'            => $adminId,
-            'approved_by'           => $adminId,
-            'approved_at'           => '2025-01-06 08:00:00',
-            'received_by'           => $adminId,
-            'received_at'           => '2025-01-09 10:00:00',
+            'purchase_number'        => 'PO/2025/01/001',
+            'supplier_id'            => $supplier1->id,
+            'destination_type'       => 'warehouse',
+            'destination_id'         => $warehouse->id,
+            'purchase_date'          => '2025-01-05',
+            'expected_delivery_date' => '2025-01-10',
+            'actual_delivery_date'   => '2025-01-09',
+            'status'                 => 'completed',
+            'shipping_cost'          => 50000.00,
+            'tax'                    => 0.00,
+            'discount'               => 0.00,
+            'notes'                  => 'Pembelian bahan baku awal tahun 2025',
+            'created_by'             => $adminId,
+            'approved_by'            => $adminId,
+            'approved_at'            => '2025-01-06 08:00:00',
+            'received_by'            => $adminId,
+            'received_at'            => '2025-01-09 10:00:00',
         ], [
-            ['type' => 'ingredient', 'code' => 'ING-EO-001', 'qty' => 3000,  'price' => 1500.00],
-            ['type' => 'ingredient', 'code' => 'ING-EO-002', 'qty' => 1000,  'price' => 5000.00],
-            ['type' => 'ingredient', 'code' => 'ING-EO-003', 'qty' => 1500,  'price' => 4500.00],
-            ['type' => 'ingredient', 'code' => 'ING-FO-001', 'qty' => 5000,  'price' => 800.00],
-            ['type' => 'ingredient', 'code' => 'ING-FO-002', 'qty' => 3000,  'price' => 1200.00],
+            ['type' => 'ingredient', 'code' => 'ING-EO-001', 'qty' => 3000, 'price' => 1500.00],
+            ['type' => 'ingredient', 'code' => 'ING-EO-002', 'qty' => 1000, 'price' => 5000.00],
+            ['type' => 'ingredient', 'code' => 'ING-EO-003', 'qty' => 1500, 'price' => 4500.00],
+            ['type' => 'ingredient', 'code' => 'ING-BO-001', 'qty' => 5000, 'price' =>  500.00],
+            ['type' => 'ingredient', 'code' => 'ING-BO-002', 'qty' => 5000, 'price' =>  400.00],
         ], $ingredients, $packagings, $warehouse->id, 'warehouse', $now);
 
-        // ── PURCHASE 2: Pembelian Alkohol ke Gudang (Completed) ───────────────
+        // ── PO 2: Alkohol ke Gudang Pusat (Completed) ────────────────────────
         $this->createPurchase([
-            'purchase_number'       => 'PO/2025/01/002',
-            'supplier_id'           => $supplier3->id,
-            'destination_type'      => 'warehouse',
-            'destination_id'        => $warehouse->id,
-            'purchase_date'         => '2025-01-08',
-            'expected_delivery_date'=> '2025-01-12',
-            'actual_delivery_date'  => '2025-01-11',
-            'status'                => 'completed',
-            'shipping_cost'         => 25000.00,
-            'tax'                   => 0.00,
-            'discount'              => 0.00,
-            'notes'                 => 'Pembelian alkohol & additive',
-            'created_by'            => $adminId,
-            'approved_by'           => $adminId,
-            'approved_at'           => '2025-01-09 08:00:00',
-            'received_by'           => $adminId,
-            'received_at'           => '2025-01-11 14:00:00',
+            'purchase_number'        => 'PO/2025/01/002',
+            'supplier_id'            => $supplier3->id,
+            'destination_type'       => 'warehouse',
+            'destination_id'         => $warehouse->id,
+            'purchase_date'          => '2025-01-08',
+            'expected_delivery_date' => '2025-01-12',
+            'actual_delivery_date'   => '2025-01-11',
+            'status'                 => 'completed',
+            'shipping_cost'          => 25000.00,
+            'tax'                    => 0.00,
+            'discount'               => 0.00,
+            'notes'                  => 'Pembelian alkohol & additive',
+            'created_by'             => $adminId,
+            'approved_by'            => $adminId,
+            'approved_at'            => '2025-01-09 08:00:00',
+            'received_by'            => $adminId,
+            'received_at'            => '2025-01-11 14:00:00',
         ], [
-            ['type' => 'ingredient', 'code' => 'ING-AL-001',  'qty' => 30000, 'price' => 50.00],
-            ['type' => 'ingredient', 'code' => 'ING-AL-002',  'qty' => 10000, 'price' => 150.00],
-            ['type' => 'ingredient', 'code' => 'ING-BO-001',  'qty' => 8000,  'price' => 500.00],
-            ['type' => 'ingredient', 'code' => 'ING-BO-002',  'qty' => 8000,  'price' => 400.00],
-            ['type' => 'ingredient', 'code' => 'ING-ADD-001', 'qty' => 2000,  'price' => 2000.00],
-            ['type' => 'ingredient', 'code' => 'ING-ADD-002', 'qty' => 3000,  'price' => 300.00],
+            ['type' => 'ingredient', 'code' => 'ING-AL-001',  'qty' => 30000, 'price' =>   50.00],
+            ['type' => 'ingredient', 'code' => 'ING-AL-002',  'qty' => 10000, 'price' =>  150.00],
+            ['type' => 'ingredient', 'code' => 'ING-ADD-001', 'qty' =>  2000, 'price' => 2000.00],
+            ['type' => 'ingredient', 'code' => 'ING-ADD-002', 'qty' =>  3000, 'price' =>  300.00],
         ], $ingredients, $packagings, $warehouse->id, 'warehouse', $now);
 
-        // ── PURCHASE 3: Pembelian Packaging ke Gudang (Completed) ────────────
+        // ── PO 3: Packaging ke Gudang Pusat (Completed) ──────────────────────
         $this->createPurchase([
-            'purchase_number'       => 'PO/2025/01/003',
-            'supplier_id'           => $supplier2->id,
-            'destination_type'      => 'warehouse',
-            'destination_id'        => $warehouse->id,
-            'purchase_date'         => '2025-01-10',
-            'expected_delivery_date'=> '2025-01-15',
-            'actual_delivery_date'  => '2025-01-14',
-            'status'                => 'completed',
-            'shipping_cost'         => 35000.00,
-            'tax'                   => 0.00,
-            'discount'              => 0.00,
-            'notes'                 => 'Pembelian packaging awal tahun',
-            'created_by'            => $adminId,
-            'approved_by'           => $adminId,
-            'approved_at'           => '2025-01-11 08:00:00',
-            'received_by'           => $adminId,
-            'received_at'           => '2025-01-14 11:00:00',
+            'purchase_number'        => 'PO/2025/01/003',
+            'supplier_id'            => $supplier2->id,
+            'destination_type'       => 'warehouse',
+            'destination_id'         => $warehouse->id,
+            'purchase_date'          => '2025-01-10',
+            'expected_delivery_date' => '2025-01-15',
+            'actual_delivery_date'   => '2025-01-14',
+            'status'                 => 'completed',
+            'shipping_cost'          => 35000.00,
+            'tax'                    => 0.00,
+            'discount'               => 0.00,
+            'notes'                  => 'Pembelian packaging awal tahun',
+            'created_by'             => $adminId,
+            'approved_by'            => $adminId,
+            'approved_at'            => '2025-01-11 08:00:00',
+            'received_by'            => $adminId,
+            'received_at'            => '2025-01-14 11:00:00',
         ], [
-            ['type' => 'packaging', 'code' => 'PKG-BOT-30',  'qty' => 300,  'price' => 8000.00],
-            ['type' => 'packaging', 'code' => 'PKG-BOT-50',  'qty' => 500,  'price' => 10000.00],
-            ['type' => 'packaging', 'code' => 'PKG-BOT-100', 'qty' => 200,  'price' => 15000.00],
-            ['type' => 'packaging', 'code' => 'PKG-TTP-30',  'qty' => 400,  'price' => 2000.00],
-            ['type' => 'packaging', 'code' => 'PKG-TTP-50',  'qty' => 600,  'price' => 2500.00],
-            ['type' => 'packaging', 'code' => 'PKG-PB-S',    'qty' => 300,  'price' => 3000.00],
-            ['type' => 'packaging', 'code' => 'PKG-PB-M',    'qty' => 200,  'price' => 5000.00],
-            ['type' => 'packaging', 'code' => 'PKG-GC-STD',  'qty' => 400,  'price' => 2000.00],
-            ['type' => 'packaging', 'code' => 'PKG-GC-PRM',  'qty' => 150,  'price' => 5000.00],
+            ['type' => 'packaging', 'code' => 'PKG-BOT-30',  'qty' => 300, 'price' =>  8000.00],
+            ['type' => 'packaging', 'code' => 'PKG-BOT-50',  'qty' => 500, 'price' => 10000.00],
+            ['type' => 'packaging', 'code' => 'PKG-BOT-100', 'qty' => 200, 'price' => 15000.00],
+            ['type' => 'packaging', 'code' => 'PKG-TTP-30',  'qty' => 400, 'price' =>  2000.00],
+            ['type' => 'packaging', 'code' => 'PKG-TTP-50',  'qty' => 600, 'price' =>  2500.00],
+            ['type' => 'packaging', 'code' => 'PKG-PB-S',    'qty' => 300, 'price' =>  3000.00],
+            ['type' => 'packaging', 'code' => 'PKG-PB-M',    'qty' => 200, 'price' =>  5000.00],
+            ['type' => 'packaging', 'code' => 'PKG-GC-STD',  'qty' => 400, 'price' =>  2000.00],
+            ['type' => 'packaging', 'code' => 'PKG-GC-PRM',  'qty' => 150, 'price' =>  5000.00],
         ], $ingredients, $packagings, $warehouse->id, 'warehouse', $now);
 
-        // ── PURCHASE 4: Pembelian langsung ke Toko Lamongan (Completed) ───────
-        $this->createPurchase([
-            'purchase_number'       => 'PO/2025/02/001',
-            'supplier_id'           => $supplier1->id,
-            'destination_type'      => 'store',
-            'destination_id'        => $store1->id,
-            'purchase_date'         => '2025-02-01',
-            'expected_delivery_date'=> '2025-02-05',
-            'actual_delivery_date'  => '2025-02-04',
-            'status'                => 'completed',
-            'shipping_cost'         => 20000.00,
-            'tax'                   => 0.00,
-            'discount'              => 100000.00,
-            'notes'                 => 'Pembelian tambahan untuk Toko Lamongan',
-            'created_by'            => $adminId,
-            'approved_by'           => $adminId,
-            'approved_at'           => '2025-02-02 08:00:00',
-            'received_by'           => $adminId,
-            'received_at'           => '2025-02-04 09:00:00',
-        ], [
-            ['type' => 'ingredient', 'code' => 'ING-FO-001', 'qty' => 2000, 'price' => 800.00],
-            ['type' => 'ingredient', 'code' => 'ING-FO-002', 'qty' => 1500, 'price' => 1200.00],
-            ['type' => 'ingredient', 'code' => 'ING-AL-001', 'qty' => 8000, 'price' => 50.00],
-        ], $ingredients, $packagings, $store1->id, 'store', $now);
+        // ── PO 4: Langsung ke Toko Jatim (Completed) ─────────────────────────
+        if ($store1) {
+            $this->createPurchase([
+                'purchase_number'        => 'PO/2025/02/001',
+                'supplier_id'            => $supplier1->id,
+                'destination_type'       => 'store',
+                'destination_id'         => $store1->id,
+                'purchase_date'          => '2025-02-01',
+                'expected_delivery_date' => '2025-02-05',
+                'actual_delivery_date'   => '2025-02-04',
+                'status'                 => 'completed',
+                'shipping_cost'          => 20000.00,
+                'tax'                    => 0.00,
+                'discount'               => 100000.00,
+                'notes'                  => 'Pembelian tambahan untuk Toko Jawa Timur',
+                'created_by'             => $adminId,
+                'approved_by'            => $adminId,
+                'approved_at'            => '2025-02-02 08:00:00',
+                'received_by'            => $adminId,
+                'received_at'            => '2025-02-04 09:00:00',
+            ], [
+                ['type' => 'ingredient', 'code' => 'ING-BO-001', 'qty' => 2000, 'price' =>  500.00],
+                ['type' => 'ingredient', 'code' => 'ING-BO-002', 'qty' => 1500, 'price' =>  400.00],
+                ['type' => 'ingredient', 'code' => 'ING-AL-001', 'qty' => 8000, 'price' =>   50.00],
+            ], $ingredients, $packagings, $store1->id, 'store', $now);
+        }
 
-        // ── PURCHASE 5: Draft / Pending (belum selesai) ───────────────────────
+        // ── PO 5: Packaging PO approved, belum diterima ───────────────────────
         $this->createPurchase([
-            'purchase_number'       => 'PO/2025/03/001',
-            'supplier_id'           => $supplier2->id,
-            'destination_type'      => 'warehouse',
-            'destination_id'        => $warehouse->id,
-            'purchase_date'         => '2025-03-01',
-            'expected_delivery_date'=> '2025-03-10',
-            'actual_delivery_date'  => null,
-            'status'                => 'approved',
-            'shipping_cost'         => 0.00,
-            'tax'                   => 0.00,
-            'discount'              => 0.00,
-            'notes'                 => 'PO packaging Q1 2025',
-            'created_by'            => $adminId,
-            'approved_by'           => $adminId,
-            'approved_at'           => '2025-03-02 09:00:00',
-            'received_by'           => null,
-            'received_at'           => null,
+            'purchase_number'        => 'PO/2025/03/001',
+            'supplier_id'            => $supplier2->id,
+            'destination_type'       => 'warehouse',
+            'destination_id'         => $warehouse->id,
+            'purchase_date'          => '2025-03-01',
+            'expected_delivery_date' => '2025-03-10',
+            'actual_delivery_date'   => null,
+            'status'                 => 'approved',
+            'shipping_cost'          => 0.00,
+            'tax'                    => 0.00,
+            'discount'               => 0.00,
+            'notes'                  => 'PO packaging Q1 2025 — menunggu pengiriman',
+            'created_by'             => $adminId,
+            'approved_by'            => $adminId,
+            'approved_at'            => '2025-03-02 09:00:00',
+            'received_by'            => null,
+            'received_at'            => null,
         ], [
-            ['type' => 'packaging', 'code' => 'PKG-BOT-50',  'qty' => 300,  'price' => 10000.00],
-            ['type' => 'packaging', 'code' => 'PKG-BOT-100', 'qty' => 150,  'price' => 15000.00],
-            ['type' => 'packaging', 'code' => 'PKG-PB-M',    'qty' => 200,  'price' => 5000.00],
-        ], $ingredients, $packagings, $warehouse->id, 'warehouse', $now, false); // false = jangan buat stock movement
+            ['type' => 'packaging', 'code' => 'PKG-BOT-50',  'qty' => 300, 'price' => 10000.00],
+            ['type' => 'packaging', 'code' => 'PKG-BOT-100', 'qty' => 150, 'price' => 15000.00],
+            ['type' => 'packaging', 'code' => 'PKG-PB-M',    'qty' => 200, 'price' =>  5000.00],
+        ], $ingredients, $packagings, $warehouse->id, 'warehouse', $now, false); // false = jangan buat stock movements
 
-        $this->command->info('Purchases seeded (4 completed + 1 approved).');
+        $this->command->info('✓ Purchases seeded (4 completed + 1 approved).');
     }
 
-    // ── Helper ────────────────────────────────────────────────────────────────
-
     private function createPurchase(
-        array $header,
-        array $items,
-        $ingredients,
-        $packagings,
+        array  $header,
+        array  $items,
+        object $ingredients,
+        object $packagings,
         string $locationId,
         string $locationType,
-        $now,
-        bool $createMovements = true
+        mixed  $now,
+        bool   $createMovements = true
     ): void {
         $purchaseId = Str::uuid()->toString();
 
-        // Hitung subtotal dari items
         $subtotal = 0;
         foreach ($items as $item) {
             $subtotal += $item['qty'] * $item['price'];
@@ -195,7 +193,7 @@ class PurchaseSeeder extends Seeder
 
         $total = $subtotal
                - ($header['discount'] ?? 0)
-               + ($header['tax'] ?? 0)
+               + ($header['tax']      ?? 0)
                + ($header['shipping_cost'] ?? 0);
 
         DB::table('purchases')->insert([
@@ -209,9 +207,9 @@ class PurchaseSeeder extends Seeder
             'actual_delivery_date'   => $header['actual_delivery_date'] ?? null,
             'status'                 => $header['status'],
             'subtotal'               => $subtotal,
-            'tax'                    => $header['tax'] ?? 0.00,
-            'discount'               => $header['discount'] ?? 0.00,
-            'shipping_cost'          => $header['shipping_cost'] ?? 0.00,
+            'tax'                    => $header['tax'] ?? 0,
+            'discount'               => $header['discount'] ?? 0,
+            'shipping_cost'          => $header['shipping_cost'] ?? 0,
             'total'                  => $total,
             'notes'                  => $header['notes'] ?? null,
             'cancellation_reason'    => null,
@@ -230,7 +228,10 @@ class PurchaseSeeder extends Seeder
                 ? ($ingredients[$item['code']] ?? null)
                 : ($packagings[$item['code']] ?? null);
 
-            if (! $masterItem) continue;
+            if (! $masterItem) {
+                $this->command->warn("Item '{$item['code']}' tidak ditemukan, skip.");
+                continue;
+            }
 
             $itemSubtotal = $item['qty'] * $item['price'];
 
@@ -247,11 +248,7 @@ class PurchaseSeeder extends Seeder
                 'updated_at'  => $now,
             ]);
 
-            // Stock movement audit trail (hanya jika status completed/received)
             if ($createMovements) {
-                $costPerUnit = (float) $item['price'];
-                $qtyChange   = (int) $item['qty'];
-
                 DB::table('stock_movements')->insert([
                     'id'               => Str::uuid(),
                     'location_type'    => $locationType,
@@ -259,19 +256,19 @@ class PurchaseSeeder extends Seeder
                     'item_type'        => $isIngredient ? 'ingredient' : 'packaging_material',
                     'item_id'          => $masterItem->id,
                     'movement_type'    => 'purchase_in',
-                    'qty_change'       => $qtyChange,
+                    'qty_change'       => $item['qty'],
                     'qty_before'       => 0,
-                    'qty_after'        => $qtyChange,
-                    'unit_cost'        => $costPerUnit,
-                    'total_cost'       => round($qtyChange * $costPerUnit, 2),
+                    'qty_after'        => $item['qty'],
+                    'unit_cost'        => $item['price'],
+                    'total_cost'       => round($item['qty'] * $item['price'], 2),
                     'avg_cost_before'  => 0.0000,
-                    'avg_cost_after'   => $costPerUnit,
+                    'avg_cost_after'   => $item['price'],
                     'reference_type'   => 'App\\Models\\Purchase',
                     'reference_id'     => $purchaseId,
                     'reference_number' => $header['purchase_number'],
                     'movement_date'    => $header['purchase_date'],
-                    'notes'            => 'Pembelian dari supplier',
                     'created_by'       => $header['created_by'] ?? null,
+                    'notes'            => 'Pembelian dari supplier',
                     'created_at'       => $now,
                     'updated_at'       => $now,
                 ]);

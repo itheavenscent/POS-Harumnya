@@ -12,12 +12,10 @@ class StoreCategorySeeder extends Seeder
     {
         $now = now();
 
-        // Clear existing data to prevent duplicates if running multiple times
-        DB::table('store_categories')->truncate();
-        DB::table('store_category_variants')->truncate();
-        // Note: We don't truncate 'stores' table as it's seeded by WarehouseStoreSeeder
+        // FIX: truncate() gagal karena ada FK dari stores.store_category_id.
+        // Harus lepas FK dulu, atau pakai delete() dengan urutan yang benar.
+        // Paling aman: pakai updateOrInsert agar idempotent tanpa truncate.
 
-        // ── STORE CATEGORIES ───────────────────────────────────────────────────
         $categories = [
             [
                 'id'                 => Str::uuid()->toString(),
@@ -45,59 +43,78 @@ class StoreCategorySeeder extends Seeder
             ],
         ];
 
+        // Resolve actual IDs (pakai updateOrInsert agar idempotent)
+        $resolvedIds = [];
         foreach ($categories as $cat) {
-            DB::table('store_categories')->insert([
-                'id'                 => $cat['id'],
-                'code'               => $cat['code'],
-                'name'               => $cat['name'],
-                'description'        => $cat['description'],
-                'allow_all_variants' => $cat['allow_all_variants'],
-                'sort_order'         => $cat['sort_order'],
-                'is_active'          => true,
-                'created_at'         => $now,
-                'updated_at'         => $now,
-            ]);
+            $existing = DB::table('store_categories')->where('code', $cat['code'])->first();
+            $id = $existing ? $existing->id : $cat['id'];
+
+            DB::table('store_categories')->updateOrInsert(
+                ['code' => $cat['code']],
+                [
+                    'id'                 => $id,
+                    'name'               => $cat['name'],
+                    'description'        => $cat['description'],
+                    'allow_all_variants' => $cat['allow_all_variants'],
+                    'sort_order'         => $cat['sort_order'],
+                    'is_active'          => true,
+                    'created_at'         => $now,
+                    'updated_at'         => $now,
+                ]
+            );
+
+            $resolvedIds[$cat['code']] = DB::table('store_categories')->where('code', $cat['code'])->value('id');
         }
 
-        // ── ASSIGN STORE CATEGORIES TO STORES ──────────────────────────────────
-        // Semua toko (Lamongan, Gresik, Jombang) = Medium
-        $catM = $categories[1]['id']; // Ambil ID kategori Medium
+        $catL = $resolvedIds['L'];
+        $catM = $resolvedIds['M'];
+        $catS = $resolvedIds['S'];
 
-        // Update semua toko agar memiliki store_category_id = $catM (Medium)
+        // ── Assign semua toko ke kategori M (default) ─────────────────────────
         DB::table('stores')
-            ->whereIn('code', ['STR001', 'STR002', 'STR003']) // Sesuaikan dengan kode toko yang Anda gunakan
+            ->whereIn('code', ['STR-JATIM', 'STR-JATENG', 'STR-JABAR'])
             ->update(['store_category_id' => $catM, 'updated_at' => $now]);
 
-        // ── STORE CATEGORY VARIANTS (whitelist untuk kategori M & S) ──────────
-        // Kategori L allow_all_variants=true, tidak perlu whitelist
-        // Kategori M: whitelist semua variant yang ada (sebagai contoh)
+        // ── Store Category Variants ───────────────────────────────────────────
         $variants = DB::table('variants')->where('is_active', true)->get();
 
+        if ($variants->isEmpty()) {
+            $this->command->warn('Variants belum ada. Store category variants tidak di-seed.');
+            return;
+        }
+
         foreach ($variants as $variant) {
-            // Medium: semua variant aktif (contoh whitelist lengkap)
-            DB::table('store_category_variants')->insert([
-                'id'                 => Str::uuid(),
-                'store_category_id'  => $catM,
-                'variant_id'         => $variant->id,
-                'is_active'          => true,
-                'created_at'         => $now,
-                'updated_at'         => $now,
-            ]);
+            // Kategori M: semua variant aktif
+            DB::table('store_category_variants')->updateOrInsert(
+                ['store_category_id' => $catM, 'variant_id' => $variant->id],
+                [
+                    'id'                => Str::uuid(),
+                    'store_category_id' => $catM,
+                    'variant_id'        => $variant->id,
+                    'is_active'         => true,
+                    'created_at'        => $now,
+                    'updated_at'        => $now,
+                ]
+            );
         }
 
-        // Small: hanya 4 variant pertama
-        $limitedVariants = DB::table('variants')->where('is_active', true)->limit(4)->get();
+        // Kategori S: hanya 4 variant pertama
+        $limitedVariants = DB::table('variants')->where('is_active', true)->orderBy('created_at')->limit(4)->get();
         foreach ($limitedVariants as $variant) {
-            DB::table('store_category_variants')->insert([
-                'id'                 => Str::uuid(),
-                'store_category_id'  => $categories[2]['id'], // ID kategori Small
-                'variant_id'         => $variant->id,
-                'is_active'          => true,
-                'created_at'         => $now,
-                'updated_at'         => $now,
-            ]);
+            DB::table('store_category_variants')->updateOrInsert(
+                ['store_category_id' => $catS, 'variant_id' => $variant->id],
+                [
+                    'id'                => Str::uuid(),
+                    'store_category_id' => $catS,
+                    'variant_id'        => $variant->id,
+                    'is_active'         => true,
+                    'created_at'        => $now,
+                    'updated_at'        => $now,
+                ]
+            );
         }
 
-        $this->command->info('Store categories seeded.');
+        // Kategori L: allow_all_variants=true, tidak perlu whitelist
+        $this->command->info('✓ Store categories seeded (L/M/S). Semua toko → kategori M.');
     }
 }

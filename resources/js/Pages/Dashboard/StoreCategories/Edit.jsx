@@ -88,7 +88,6 @@ export default function Edit({ category }) {
         name:               category.name               ?? "",
         description:        category.description        ?? "",
         allow_all_variants: category.allow_all_variants ?? true,
-        sort_order:         category.sort_order          ?? 0,
         is_active:          category.is_active           ?? true,
     });
 
@@ -98,7 +97,6 @@ export default function Edit({ category }) {
         code:               d.code.toUpperCase().trim(),
         allow_all_variants: d.allow_all_variants ? 1 : 0,
         is_active:          d.is_active          ? 1 : 0,
-        sort_order:         parseInt(d.sort_order, 10) || 0,
     }));
 
     const submit = (e) => {
@@ -189,7 +187,7 @@ export default function Edit({ category }) {
                             </div>
 
                             {/* Deskripsi */}
-                            <div className="mb-5">
+                            <div>
                                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                                     Deskripsi{" "}
                                     <span className="text-slate-400 font-normal">(opsional)</span>
@@ -206,21 +204,6 @@ export default function Edit({ category }) {
                                 {errors.description && (
                                     <p className="mt-1 text-xs text-red-600 font-medium">{errors.description}</p>
                                 )}
-                            </div>
-
-                            {/* Urutan */}
-                            <div>
-                                <Input
-                                    type="number"
-                                    label="Urutan Tampil"
-                                    value={data.sort_order}
-                                    onChange={e => setData("sort_order", e.target.value)}
-                                    errors={errors.sort_order}
-                                    placeholder="0"
-                                />
-                                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-                                    Angka lebih kecil tampil lebih awal
-                                </p>
                             </div>
                         </div>
 

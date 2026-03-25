@@ -4,101 +4,82 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * MIGRATION 06 — INGREDIENTS & SUPPLIERS
+ * Membutuhkan: — (tidak ada dependency bisnis)
+ *
+ * CATATAN ingredient_type:
+ *   Digunakan untuk mapping scaling ke intensity_size_quantities:
+ *     oil     → oil_quantity      (fragrance oil / bibit parfum)
+ *     alcohol → alcohol_quantity  (ethanol / isopropyl)
+ *     other   → other_quantity    (air suling, fixative, dll)
+ *
+ * CATATAN selling_price:
+ *   Harga jual global per unit ingredient — basis kalkulasi harga custom order.
+ *   Override per-toko ada di store_ingredient_prices (migration 16).
+ *   Nullable: tidak semua ingredient dijual langsung ke customer.
+ *
+ * CATATAN average_cost:
+ *   Weighted Average Cost per unit; diperbarui otomatis setiap pembelian masuk.
+ *   DECIMAL(15,4): presisi hingga Rp 0,0001 per ml — cukup untuk WAC minyak mahal.
+ */
 return new class extends Migration
 {
-    /**
-     * MIGRATION 002: INGREDIENTS & SUPPLIERS
-     *
-     * Perubahan dari versi sebelumnya:
-     *   - ingredient_categories: tambah kolom `ingredient_type` (oil | alcohol | other)
-     *     → digunakan untuk mapping scaling ke intensity_size_quantities
-     */
     public function up(): void
     {
-        /*
-        |--------------------------------------------------------------------------
-        | INGREDIENT CATEGORIES
-        |--------------------------------------------------------------------------
-        */
+        // ── INGREDIENT CATEGORIES ─────────────────────────────────────────────
         Schema::create('ingredient_categories', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('code', 50)->unique();
             $table->string('name', 100);
             $table->text('description')->nullable();
-
-            /**
-             * ingredient_type digunakan untuk mapping ke intensity_size_quantities:
-             *
-             *   oil      → oil_quantity      (fragrance oil, bibit parfum, dll)
-             *   alcohol  → alcohol_quantity  (ethanol, isopropyl, dll)
-             *   other    → other_quantity    (air suling, fixative, dll)
-             *
-             * Scaling di RecipeController::calculateSizePreview() dan
-             * autoGenerateProducts() menggunakan field ini untuk menentukan
-             * target volume per bahan berdasarkan IntensitySizeQuantity.
-             */
             $table->enum('ingredient_type', ['oil', 'alcohol', 'other'])
                   ->default('other')
-                  ->comment('Tipe bahan untuk mapping scaling: oil, alcohol, atau other');
-
+                  ->comment('Mapping scaling: oil=fragrance oil, alcohol=ethanol/isopropyl, other=air suling/fixative');
             $table->boolean('is_active')->default(true);
-            $table->integer('sort_order')->default(0);
+            $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestamps();
 
-            $table->index(['is_active', 'sort_order']);
             $table->index('ingredient_type');
+            $table->index(['is_active', 'sort_order'], 'idx_ingcat_active_sort');
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | SUPPLIERS
-        |--------------------------------------------------------------------------
-        */
+        // ── SUPPLIERS ─────────────────────────────────────────────────────────
         Schema::create('suppliers', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('code', 50)->unique();
             $table->string('name', 255);
-            $table->string('contact_person')->nullable();
+            $table->string('contact_person', 255)->nullable();
             $table->string('phone', 50)->nullable();
-            $table->string('email')->nullable();
+            $table->string('email', 255)->nullable();
             $table->text('address')->nullable();
-
-            $table->enum('payment_term', [
-                'cash',
-                'credit_7',
-                'credit_14',
-                'credit_30',
-                'credit_60',
-            ])->default('cash');
-
-            // ★ decimal(15,2) → support Rp 5.000.000,50
+            $table->enum('payment_term', ['cash', 'credit_7', 'credit_14', 'credit_30', 'credit_60'])
+                  ->default('cash');
             $table->decimal('credit_limit', 15, 2)->default(0)
-                  ->comment('Batas kredit (rupiah, 2 desimal)');
+                  ->comment('Batas kredit (rupiah)');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['code', 'is_active']);
+            $table->index(['code', 'is_active'], 'idx_sup_code_active');
+            $table->index('is_active');
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | INGREDIENTS
-        |--------------------------------------------------------------------------
-        */
+        // ── INGREDIENTS ───────────────────────────────────────────────────────
         Schema::create('ingredients', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('ingredient_category_id');
             $table->string('code', 100)->unique();
             $table->string('name', 255);
             $table->string('unit', 50)->default('ml')
-                  ->comment('ml, gr, kg, liter, pcs');
+                  ->comment('Satuan: ml, gr, kg, liter, pcs');
             $table->text('description')->nullable();
-            $table->string('image')->nullable();
+            $table->string('image', 500)->nullable();
 
-            // HPP — Weighted Average Cost, diperbarui otomatis via Purchase
             $table->decimal('average_cost', 15, 4)->default(0)
-                  ->comment('Weighted Average Cost per unit, auto-update tiap pembelian');
+                  ->comment('WAC per unit; auto-update tiap pembelian masuk');
+            $table->decimal('selling_price', 15, 2)->nullable()
+                  ->comment('Harga jual per unit (rupiah). Basis kalkulasi custom order: oil_qty × selling_price. Null = tidak dijual langsung.');
 
             $table->boolean('is_active')->default(true);
             $table->integer('sort_order')->default(0);

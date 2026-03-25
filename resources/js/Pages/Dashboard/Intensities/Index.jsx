@@ -12,9 +12,10 @@ import Pagination from "@/Components/Dashboard/Pagination";
 import Button from "@/Components/Dashboard/Button";
 import toast from "react-hot-toast";
 
-// ---------------------------------------------------------------------------
+// =============================================================================
 // Helpers
-// ---------------------------------------------------------------------------
+// =============================================================================
+
 function StatusBadge({ isActive }) {
     return isActive ? (
         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-success-100 text-success-700 dark:bg-success-900/50 dark:text-success-400 shadow-sm">
@@ -29,10 +30,10 @@ function StatusBadge({ isActive }) {
 
 function ConcentrationBadge({ level }) {
     const configs = {
-        extreme:  { bg: "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400",       label: "Extrait",   ratio: "2:1" },
-        strong:   { bg: "bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400", label: "EDP",  ratio: "1:1" },
-        moderate: { bg: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400",    label: "EDT",       ratio: "1:2" },
-        light:    { bg: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400",   label: "Body Mist", ratio: "1:4" },
+        extreme:  { bg: "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400",             label: "Extrait",   ratio: "2:1" },
+        strong:   { bg: "bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400", label: "EDP",       ratio: "1:1" },
+        moderate: { bg: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400",          label: "EDT",       ratio: "1:2" },
+        light:    { bg: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400",         label: "Body Mist", ratio: "1:4" },
     };
     const cfg = configs[level] ?? configs.light;
     return (
@@ -43,9 +44,10 @@ function ConcentrationBadge({ level }) {
     );
 }
 
-// ---------------------------------------------------------------------------
-// SizeQuantityMiniTable — Preview tabel volume per ukuran di dalam card
-// ---------------------------------------------------------------------------
+// =============================================================================
+// SizeQuantityMiniTable
+// =============================================================================
+
 function SizeQuantityMiniTable({ sizeQuantities }) {
     if (!sizeQuantities || sizeQuantities.length === 0) {
         return (
@@ -57,7 +59,6 @@ function SizeQuantityMiniTable({ sizeQuantities }) {
             </div>
         );
     }
-
     return (
         <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
             <table className="w-full text-xs">
@@ -65,14 +66,10 @@ function SizeQuantityMiniTable({ sizeQuantities }) {
                     <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                         <th className="px-2 py-1.5 text-left font-bold text-slate-500 dark:text-slate-400">Ukuran</th>
                         <th className="px-2 py-1.5 text-center font-bold text-primary-600">
-                            <span className="flex items-center justify-center gap-1">
-                                <IconFlask size={11} /> Bibit
-                            </span>
+                            <span className="flex items-center justify-center gap-1"><IconFlask size={11} /> Bibit</span>
                         </th>
                         <th className="px-2 py-1.5 text-center font-bold text-blue-600">
-                            <span className="flex items-center justify-center gap-1">
-                                <IconBottle size={11} /> Alkohol
-                            </span>
+                            <span className="flex items-center justify-center gap-1"><IconBottle size={11} /> Alkohol</span>
                         </th>
                     </tr>
                 </thead>
@@ -98,10 +95,57 @@ function SizeQuantityMiniTable({ sizeQuantities }) {
     );
 }
 
-// ---------------------------------------------------------------------------
-// IntensityCard
-// ---------------------------------------------------------------------------
-function IntensityCard({ intensity, isSelected, onSelect }) {
+// =============================================================================
+// Delete Modal
+// =============================================================================
+
+function DeleteModal({ show, item, onConfirm, onClose, loading }) {
+    if (!show) return null;
+    return (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-xl border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
+                        <IconAlertTriangle size={20} className="text-red-500" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                            Hapus Level "{item?.name}"?
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                            Data volume per ukuran juga akan terhapus.
+                        </p>
+                    </div>
+                </div>
+                <div className="flex gap-2 justify-end mt-6">
+                    <button
+                        onClick={onClose}
+                        disabled={loading}
+                        className="px-4 py-2 text-sm font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={loading}
+                        className="px-4 py-2 text-sm font-bold rounded-xl bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-60 flex items-center gap-2"
+                    >
+                        {loading && (
+                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        )}
+                        Hapus
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// =============================================================================
+// Intensity Card
+// =============================================================================
+
+function IntensityCard({ intensity, isSelected, onSelect, onDelete }) {
     const [showQty, setShowQty] = useState(false);
     const hasQty = intensity.size_quantities && intensity.size_quantities.length > 0;
 
@@ -123,9 +167,6 @@ function IntensityCard({ intensity, isSelected, onSelect }) {
             <div className="p-5 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-start justify-between mb-4">
                     <StatusBadge isActive={intensity.is_active} />
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-mono font-semibold text-slate-600 dark:text-slate-400">
-                        #{intensity.sort_order}
-                    </span>
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center text-primary-600 dark:text-primary-400 group-hover:scale-110 transition-transform">
@@ -144,7 +185,10 @@ function IntensityCard({ intensity, isSelected, onSelect }) {
                 <div className="mb-4">
                     <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">Komposisi Ratio</p>
                     <div className="h-2.5 w-full rounded-full overflow-hidden flex mb-2">
-                        <div className="h-full bg-primary-500" style={{ width: `${intensity.oil_ratio}%` }} />
+                        <div
+                            className="h-full bg-primary-500"
+                            style={{ width: `${(parseInt(intensity.oil_ratio) / (parseInt(intensity.oil_ratio) + parseInt(intensity.alcohol_ratio))) * 100}%` }}
+                        />
                         <div className="h-full bg-blue-400 flex-1" />
                     </div>
                     <div className="space-y-1.5">
@@ -153,14 +197,14 @@ function IntensityCard({ intensity, isSelected, onSelect }) {
                                 <IconFlask size={13} className="text-primary-600 dark:text-primary-400" />
                                 <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Bibit</span>
                             </div>
-                            <span className="text-sm font-bold text-primary-600 dark:text-primary-400">{intensity.oil_ratio}%</span>
+                            <span className="text-sm font-bold text-primary-600 dark:text-primary-400">{intensity.oil_ratio}</span>
                         </div>
                         <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                             <div className="flex items-center gap-2">
                                 <IconBottle size={13} className="text-blue-600 dark:text-blue-400" />
                                 <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Alkohol</span>
                             </div>
-                            <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{intensity.alcohol_ratio}%</span>
+                            <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{intensity.alcohol_ratio}</span>
                         </div>
                     </div>
                     <div className="mt-2 text-center">
@@ -184,8 +228,7 @@ function IntensityCard({ intensity, isSelected, onSelect }) {
                         className="w-full flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors mb-2"
                     >
                         <span className="flex items-center gap-1.5">
-                            <IconRuler size={13} />
-                            Volume per Ukuran
+                            <IconRuler size={13} /> Volume per Ukuran
                         </span>
                         <span className="flex items-center gap-1">
                             {hasQty ? (
@@ -200,37 +243,38 @@ function IntensityCard({ intensity, isSelected, onSelect }) {
                             <span className="text-slate-400">{showQty ? "▲" : "▼"}</span>
                         </span>
                     </button>
-
-                    {showQty && (
-                        <SizeQuantityMiniTable sizeQuantities={intensity.size_quantities} />
-                    )}
+                    {showQty && <SizeQuantityMiniTable sizeQuantities={intensity.size_quantities} />}
                 </div>
 
                 {/* Actions */}
                 <div className="flex gap-2 mt-4">
-                    <Link href={route("intensities.edit", intensity.id)}
+                    <Link
+                        href={route("intensities.edit", intensity.id)}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-warning-100 text-warning-700 hover:bg-warning-200 dark:bg-warning-900/50 dark:text-warning-400 dark:hover:bg-warning-900/70 transition-all font-semibold text-sm"
                     >
                         <IconPencilCog size={16} strokeWidth={2} /> Edit
                     </Link>
-                    <Button
-                        type="delete"
-                        icon={<IconTrash size={16} strokeWidth={2} />}
-                        className="px-3 py-2 rounded-lg bg-danger-100 text-danger-700 hover:bg-danger-200 dark:bg-danger-900/50 dark:text-danger-400 dark:hover:bg-danger-900/70 transition-all font-semibold text-sm"
-                        url={route("intensities.destroy", intensity.id)}
-                    />
+                    <button
+                        onClick={() => onDelete(intensity)}
+                        className="px-3 py-2 rounded-lg bg-danger-100 text-danger-700 hover:bg-danger-200 dark:bg-danger-900/50 dark:text-danger-400 dark:hover:bg-danger-900/70 transition-all"
+                    >
+                        <IconTrash size={16} strokeWidth={2} />
+                    </button>
                 </div>
             </div>
         </div>
     );
 }
 
-// ---------------------------------------------------------------------------
-// FilterModal
-// ---------------------------------------------------------------------------
+// =============================================================================
+// Filter Modal
+// =============================================================================
+
 function FilterModal({ show, onClose, filters, onApply }) {
     const [tempFilters, setTempFilters] = useState(filters);
     if (!show) return null;
+
+    const selectCls = "w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary-500 transition-all";
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -249,9 +293,10 @@ function FilterModal({ show, onClose, filters, onApply }) {
                 <div className="p-6 space-y-5">
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Status</label>
-                        <select value={tempFilters.is_active}
+                        <select
+                            value={tempFilters.is_active}
                             onChange={(e) => setTempFilters({ ...tempFilters, is_active: e.target.value })}
-                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary-500 transition-all"
+                            className={selectCls}
                         >
                             <option value="">Semua Status</option>
                             <option value="1">✅ Aktif</option>
@@ -260,97 +305,111 @@ function FilterModal({ show, onClose, filters, onApply }) {
                     </div>
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Tampilkan per halaman</label>
-                        <select value={tempFilters.per_page}
+                        <select
+                            value={tempFilters.per_page}
                             onChange={(e) => setTempFilters({ ...tempFilters, per_page: e.target.value })}
-                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary-500 transition-all"
+                            className={selectCls}
                         >
                             {[12, 24, 48, 100].map(n => <option key={n} value={n}>{n}</option>)}
                         </select>
                     </div>
                 </div>
                 <div className="flex items-center gap-3 p-6 border-t border-slate-200 dark:border-slate-800">
-                    <button onClick={() => { const r = { is_active: "", per_page: 12 }; setTempFilters(r); onApply(r); onClose(); }}
+                    <button
+                        onClick={() => { const r = { is_active: "", per_page: 12 }; setTempFilters(r); onApply(r); onClose(); }}
                         className="flex-1 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
-                    >Reset</button>
-                    <button onClick={() => { onApply(tempFilters); onClose(); }}
+                    >
+                        Reset
+                    </button>
+                    <button
+                        onClick={() => { onApply(tempFilters); onClose(); }}
                         className="flex-1 px-4 py-2.5 rounded-xl bg-primary-600 text-white font-semibold hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/30"
-                    >Terapkan</button>
+                    >
+                        Terapkan
+                    </button>
                 </div>
             </div>
         </div>
     );
 }
 
-// ---------------------------------------------------------------------------
-// BulkDeleteModal
-// ---------------------------------------------------------------------------
+// =============================================================================
+// Bulk Delete Modal
+// =============================================================================
+
 function BulkDeleteModal({ show, onClose, onConfirm, count }) {
     if (!show) return null;
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-800">
-                <div className="p-6">
-                    <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center mx-auto mb-4">
-                        <IconAlertTriangle size={24} className="text-red-600 dark:text-red-400" />
-                    </div>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Hapus {count} Intensitas?</h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 text-center mb-6">
-                        Tindakan ini tidak dapat dibatalkan. Data volume per ukuran juga akan terhapus.
-                    </p>
-                    <div className="flex gap-3">
-                        <button onClick={onClose}
-                            className="flex-1 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
-                        >Batal</button>
-                        <button onClick={onConfirm}
-                            className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all shadow-lg shadow-red-500/30"
-                        >Hapus Sekarang</button>
-                    </div>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-800 p-6">
+                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center mx-auto mb-4">
+                    <IconAlertTriangle size={24} className="text-red-600 dark:text-red-400" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Hapus {count} Intensitas?</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 text-center mb-6">
+                    Tindakan ini tidak dapat dibatalkan. Data volume per ukuran juga akan terhapus.
+                </p>
+                <div className="flex gap-3">
+                    <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">Batal</button>
+                    <button onClick={onConfirm} className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all shadow-lg shadow-red-500/30">Hapus Sekarang</button>
                 </div>
             </div>
         </div>
     );
 }
 
-// ---------------------------------------------------------------------------
+// =============================================================================
 // Index Page
-// ---------------------------------------------------------------------------
+// =============================================================================
+
 export default function Index({ intensities, filters }) {
-    const [viewMode, setViewMode]               = useState(() => localStorage.getItem("intensityViewMode") || "grid");
+    const [viewMode, setViewMode]               = useState("grid");
     const [selectedIds, setSelectedIds]         = useState([]);
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [showBulkDelete, setShowBulkDelete]   = useState(false);
+    const [deleteModal, setDeleteModal]         = useState({ show: false, item: null, loading: false });
     const [currentFilters, setCurrentFilters]   = useState({
         is_active: filters?.is_active ?? "",
         per_page:  filters?.per_page  || 12,
     });
 
-    const handleViewModeChange = (mode) => {
-        setViewMode(mode);
-        localStorage.setItem("intensityViewMode", mode);
+    // ── Selection ─────────────────────────────────────────────────────────────
+    const handleSelect    = (id, checked) => setSelectedIds(prev => checked ? [...prev, id] : prev.filter(sid => sid !== id));
+    const handleSelectAll = (checked)     => setSelectedIds(checked ? intensities.data.map(i => i.id) : []);
+    const allSelected     = intensities.data.length > 0 && selectedIds.length === intensities.data.length;
+
+    // ── Single Delete ─────────────────────────────────────────────────────────
+    const confirmDelete = (intensity) => setDeleteModal({ show: true, item: intensity, loading: false });
+    const closeDelete   = ()          => setDeleteModal({ show: false, item: null, loading: false });
+
+    const handleDelete = () => {
+        setDeleteModal(prev => ({ ...prev, loading: true }));
+        router.delete(route("intensities.destroy", deleteModal.item.id), {
+            onSuccess: () => { closeDelete(); toast.success("Level intensitas berhasil dihapus! 🗑️"); },
+            onError:   () => { closeDelete(); toast.error("Gagal menghapus level intensitas, coba lagi."); },
+        });
     };
 
-    const handleSelect = (id, checked) => {
-        setSelectedIds(prev => checked ? [...prev, id] : prev.filter(sid => sid !== id));
+    // ── Bulk Delete ───────────────────────────────────────────────────────────
+    const handleBulkDelete = () => {
+        router.post(route("intensities.bulk-delete"), { ids: selectedIds }, {
+            onSuccess: () => {
+                setSelectedIds([]);
+                setShowBulkDelete(false);
+                toast.success(`${selectedIds.length} intensitas berhasil dihapus!`);
+            },
+            onError: () => toast.error("Terjadi kesalahan saat menghapus intensitas"),
+        });
     };
 
-    const handleSelectAll = (checked) => {
-        setSelectedIds(checked ? intensities.data.map(i => i.id) : []);
-    };
-
+    // ── Filters ───────────────────────────────────────────────────────────────
     const handleApplyFilters = (newFilters) => {
         setCurrentFilters(newFilters);
         const clean = {};
-        if (filters?.search)              clean.search    = filters.search;
-        if (newFilters.is_active !== "")  clean.is_active = newFilters.is_active;
-        if (newFilters.per_page)          clean.per_page  = newFilters.per_page;
+        if (filters?.search)             clean.search    = filters.search;
+        if (newFilters.is_active !== "") clean.is_active = newFilters.is_active;
+        if (newFilters.per_page)         clean.per_page  = newFilters.per_page;
         router.get(route("intensities.index"), clean, { preserveState: false, replace: true });
-    };
-
-    const handleBulkDelete = () => {
-        router.post(route("intensities.bulk-delete"), { ids: selectedIds }, {
-            onSuccess: () => { setSelectedIds([]); setShowBulkDelete(false); toast.success(`${selectedIds.length} intensitas berhasil dihapus!`); },
-            onError:   () => toast.error("Terjadi kesalahan saat menghapus intensitas"),
-        });
     };
 
     const hasActiveFilters = currentFilters.is_active !== "";
@@ -359,7 +418,7 @@ export default function Index({ intensities, filters }) {
         <>
             <Head title="Level Intensitas" />
 
-            {/* Page Header */}
+            {/* ── Header ── */}
             <div className="mb-6">
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                     <div>
@@ -380,35 +439,48 @@ export default function Index({ intensities, filters }) {
                             )}
                         </p>
                     </div>
-                    <Button type="link" icon={<IconCirclePlus size={20} strokeWidth={2} />}
+                    <Button
+                        type="link"
+                        icon={<IconCirclePlus size={20} strokeWidth={2} />}
                         className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white shadow-lg shadow-primary-500/40 font-semibold"
-                        label="Tambah Level" href={route("intensities.create")}
+                        label="Tambah Level"
+                        href={route("intensities.create")}
                     />
                 </div>
             </div>
 
-            {/* Toolbar */}
+            {/* ── Toolbar ── */}
             <div className="mb-6 space-y-4">
                 <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
                     <div className="w-full sm:w-96">
                         <Search url={route("intensities.index")} placeholder="Cari nama atau kode..." />
                     </div>
                     <div className="flex items-center gap-2">
-                        <button onClick={() => router.reload({ only: ["intensities"] })}
+                        <button
+                            onClick={() => router.reload({ only: ["intensities"] })}
                             className="p-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                             title="Refresh"
                         >
                             <IconRefresh size={20} strokeWidth={2} />
                         </button>
-                        <button onClick={() => setShowFilterModal(true)}
-                            className={`p-2.5 rounded-xl transition-colors relative ${hasActiveFilters ? "bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400" : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"}`}
+                        <button
+                            onClick={() => setShowFilterModal(true)}
+                            className={`p-2.5 rounded-xl transition-colors relative ${
+                                hasActiveFilters
+                                    ? "bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400"
+                                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                            }`}
                         >
                             <IconFilter size={20} strokeWidth={2} />
-                            {hasActiveFilters && <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary-600 rounded-full border-2 border-white dark:border-slate-900" />}
+                            {hasActiveFilters && (
+                                <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary-600 rounded-full border-2 border-white dark:border-slate-900" />
+                            )}
                         </button>
                         <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
                             {[["grid", <IconLayoutGrid size={18} strokeWidth={2} />], ["list", <IconList size={18} strokeWidth={2} />]].map(([mode, icon]) => (
-                                <button key={mode} onClick={() => handleViewModeChange(mode)}
+                                <button
+                                    key={mode}
+                                    onClick={() => setViewMode(mode)}
                                     className={`p-2 rounded-lg transition-all ${viewMode === mode ? "bg-white dark:bg-slate-900 text-primary-600 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
                                 >
                                     {icon}
@@ -428,12 +500,8 @@ export default function Index({ intensities, filters }) {
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button onClick={() => setSelectedIds([])}
-                                className="px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-all"
-                            >Batal</button>
-                            <button onClick={() => setShowBulkDelete(true)}
-                                className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-all flex items-center gap-2"
-                            >
+                            <button onClick={() => setSelectedIds([])} className="px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-all">Batal</button>
+                            <button onClick={() => setShowBulkDelete(true)} className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-all flex items-center gap-2">
                                 <IconTrash size={16} strokeWidth={2} /> Hapus {selectedIds.length} Item
                             </button>
                         </div>
@@ -447,28 +515,25 @@ export default function Index({ intensities, filters }) {
                         {currentFilters.is_active !== "" && (
                             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 text-xs font-semibold">
                                 Status: {currentFilters.is_active === "1" ? "Aktif" : "Tidak Aktif"}
-                                <button onClick={() => handleApplyFilters({ ...currentFilters, is_active: "" })}
-                                    className="hover:bg-primary-200 dark:hover:bg-primary-800 rounded-full p-0.5"
-                                >
+                                <button onClick={() => handleApplyFilters({ ...currentFilters, is_active: "" })} className="hover:bg-primary-200 dark:hover:bg-primary-800 rounded-full p-0.5">
                                     <IconX size={12} strokeWidth={3} />
                                 </button>
                             </span>
                         )}
-                        <button onClick={() => handleApplyFilters({ is_active: "", per_page: 12 })}
-                            className="text-xs font-semibold text-red-600 dark:text-red-400 hover:underline"
-                        >Reset Semua</button>
+                        <button onClick={() => handleApplyFilters({ is_active: "", per_page: 12 })} className="text-xs font-semibold text-red-600 dark:text-red-400 hover:underline">Reset Semua</button>
                     </div>
                 )}
             </div>
 
-            {/* Content */}
+            {/* ── Content ── */}
             {intensities.data.length > 0 ? (
                 viewMode === "grid" ? (
                     <>
                         <div className="mb-4">
                             <label className="inline-flex items-center gap-2 cursor-pointer px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-                                <input type="checkbox"
-                                    checked={selectedIds.length === intensities.data.length && intensities.data.length > 0}
+                                <input
+                                    type="checkbox"
+                                    checked={allSelected}
                                     onChange={(e) => handleSelectAll(e.target.checked)}
                                     className="w-4 h-4 rounded border-2 border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-500"
                                 />
@@ -479,29 +544,34 @@ export default function Index({ intensities, filters }) {
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                             {intensities.data.map((intensity) => (
-                                <IntensityCard key={intensity.id} intensity={intensity}
+                                <IntensityCard
+                                    key={intensity.id}
+                                    intensity={intensity}
                                     isSelected={selectedIds.includes(intensity.id)}
                                     onSelect={handleSelect}
+                                    onDelete={confirmDelete}
                                 />
                             ))}
                         </div>
                     </>
                 ) : (
-                    /* ── List View ── */
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
                                         <th className="px-4 py-4 text-left">
-                                            <input type="checkbox"
-                                                checked={selectedIds.length === intensities.data.length && intensities.data.length > 0}
+                                            <input
+                                                type="checkbox"
+                                                checked={allSelected}
                                                 onChange={(e) => handleSelectAll(e.target.checked)}
                                                 className="w-4 h-4 rounded border-2 border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-500"
                                             />
                                         </th>
-                                        {["No", "Level", "Ratio", "Level Konsentrasi", "Volume per Ukuran", "Status", "Urutan", "Aksi"].map(h => (
-                                            <th key={h} className={`px-4 py-4 text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider ${h === "Aksi" ? "text-right" : ["Status","Urutan","Level Konsentrasi"].includes(h) ? "text-center" : "text-left"}`}>
+                                        {["No", "Level", "Ratio", "Level Konsentrasi", "Volume per Ukuran", "Status", "Aksi"].map(h => (
+                                            <th key={h} className={`px-4 py-4 text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider ${
+                                                h === "Aksi" ? "text-right" : ["Status", "Level Konsentrasi"].includes(h) ? "text-center" : "text-left"
+                                            }`}>
                                                 {h}
                                             </th>
                                         ))}
@@ -509,9 +579,10 @@ export default function Index({ intensities, filters }) {
                                 </thead>
                                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                                     {intensities.data.map((intensity, i) => (
-                                        <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors" key={intensity.id}>
+                                        <tr key={intensity.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                             <td className="px-4 py-4">
-                                                <input type="checkbox"
+                                                <input
+                                                    type="checkbox"
                                                     checked={selectedIds.includes(intensity.id)}
                                                     onChange={(e) => handleSelect(intensity.id, e.target.checked)}
                                                     className="w-4 h-4 rounded border-2 border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-500"
@@ -528,11 +599,11 @@ export default function Index({ intensities, filters }) {
                                                 <div className="space-y-1">
                                                     <div className="flex items-center gap-2">
                                                         <IconFlask size={12} className="text-primary-600" />
-                                                        <span className="text-xs text-slate-600 dark:text-slate-400">Bibit: <strong>{intensity.oil_ratio}%</strong></span>
+                                                        <span className="text-xs text-slate-600 dark:text-slate-400">Bibit: <strong>{intensity.oil_ratio}</strong></span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <IconBottle size={12} className="text-blue-600" />
-                                                        <span className="text-xs text-slate-600 dark:text-slate-400">Alkohol: <strong>{intensity.alcohol_ratio}%</strong></span>
+                                                        <span className="text-xs text-slate-600 dark:text-slate-400">Alkohol: <strong>{intensity.alcohol_ratio}</strong></span>
                                                     </div>
                                                     <span className="text-xs font-mono font-bold text-slate-500">{intensity.ratio_display}</span>
                                                 </div>
@@ -540,7 +611,6 @@ export default function Index({ intensities, filters }) {
                                             <td className="px-4 py-4 text-center">
                                                 <ConcentrationBadge level={intensity.concentration_level} />
                                             </td>
-                                            {/* Volume per size — mini inline */}
                                             <td className="px-4 py-4">
                                                 {intensity.size_quantities && intensity.size_quantities.length > 0 ? (
                                                     <div className="space-y-1">
@@ -564,22 +634,20 @@ export default function Index({ intensities, filters }) {
                                                     <StatusBadge isActive={intensity.is_active} />
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-4 text-center">
-                                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-mono font-semibold text-slate-600 dark:text-slate-400">
-                                                    #{intensity.sort_order}
-                                                </span>
-                                            </td>
                                             <td className="px-4 py-4">
                                                 <div className="flex justify-end gap-2">
-                                                    <Link href={route("intensities.edit", intensity.id)}
+                                                    <Link
+                                                        href={route("intensities.edit", intensity.id)}
                                                         className="p-2 rounded-lg bg-warning-100 border border-warning-200 text-warning-600 hover:bg-warning-200 dark:bg-warning-900/50 dark:border-warning-800 dark:text-warning-400 transition-all"
                                                     >
                                                         <IconPencilCog size={16} strokeWidth={2} />
                                                     </Link>
-                                                    <Button type="delete" icon={<IconTrash size={16} strokeWidth={2} />}
+                                                    <button
+                                                        onClick={() => confirmDelete(intensity)}
                                                         className="p-2 rounded-lg bg-danger-100 border border-danger-200 text-danger-600 hover:bg-danger-200 dark:bg-danger-900/50 dark:border-danger-800 dark:text-danger-400 transition-all"
-                                                        url={route("intensities.destroy", intensity.id)}
-                                                    />
+                                                    >
+                                                        <IconTrash size={16} strokeWidth={2} />
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -604,9 +672,12 @@ export default function Index({ intensities, filters }) {
                         }
                     </p>
                     {!filters?.search && (
-                        <Button type="link" icon={<IconCirclePlus size={20} strokeWidth={2} />}
+                        <Button
+                            type="link"
+                            icon={<IconCirclePlus size={20} strokeWidth={2} />}
                             className="bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg shadow-primary-500/40 font-semibold"
-                            label="Tambah Level Sekarang" href={route("intensities.create")}
+                            label="Tambah Level Sekarang"
+                            href={route("intensities.create")}
                         />
                     )}
                 </div>
@@ -620,6 +691,7 @@ export default function Index({ intensities, filters }) {
 
             <FilterModal show={showFilterModal} onClose={() => setShowFilterModal(false)} filters={currentFilters} onApply={handleApplyFilters} />
             <BulkDeleteModal show={showBulkDelete} onClose={() => setShowBulkDelete(false)} onConfirm={handleBulkDelete} count={selectedIds.length} />
+            <DeleteModal show={deleteModal.show} item={deleteModal.item} loading={deleteModal.loading} onConfirm={handleDelete} onClose={closeDelete} />
         </>
     );
 }

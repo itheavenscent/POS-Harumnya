@@ -7,28 +7,17 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * SALES SEEDER — Data Dummy Penjualan Lengkap
- * =====================================================================
- * PERBAIKAN: sale_items.product_id diisi dari tabel products
- * agar query Dashboard yang JOIN ke products bisa berjalan.
- *
- * Tabel yang di-seed:
- *   - sales
- *   - sale_items            ← product_id valid dari tabel products
- *   - sale_item_packagings
- *   - sale_payments
- *   - sale_discounts
- *   - sale_returns + sale_return_items
- *   - discount_usages
- *   - stock_movements
- *   - customer_point_ledgers
- *
- * Prasyarat: ProductSeeder sudah dijalankan.
- * =====================================================================
+ * FIX dari versi lama:
+ *   - Store code STR001/STR002 → STR-JATIM/STR-JATENG
+ *   - Cashier email: kasir.lamongan/kasir.gresik → kasir.jatim/kasir.jateng
+ *   - movement_type 'sale_out' → 'sale_deduction' (sesuai migration)
+ *   - Tambahkan kolom is_custom_order, alcohol_is_free, alcohol_cogs_per_unit,
+ *     alcohol_cogs_total, cogs_alcohol ke sale_items & sales
+ *   - sale_items: tambah missing field yang NOT NULL
  */
 class SalesSeeder extends Seeder
 {
-    private array   $products    = []; // [variant_id][intensity_id][size_id] => product
+    private array   $products    = [];
     private array   $variants    = [];
     private array   $intensities = [];
     private array   $sizes       = [];
@@ -45,12 +34,11 @@ class SalesSeeder extends Seeder
     private int     $saleCounter = 0;
 
     private const COMPOSITION = [
-        'EDT' => ['fragrance' => 7,  'base' => 3,  'alc' => 19, 'add' => 1],
-        'EDP' => ['fragrance' => 10, 'base' => 4,  'alc' => 15, 'add' => 1],
-        'EXT' => ['fragrance' => 14, 'base' => 5,  'alc' => 10, 'add' => 1],
+        'EDT' => ['fragrance' =>  7, 'base' => 3, 'alc' => 19, 'add' => 1],
+        'EDP' => ['fragrance' => 10, 'base' => 4, 'alc' => 15, 'add' => 1],
+        'EXT' => ['fragrance' => 14, 'base' => 5, 'alc' => 10, 'add' => 1],
     ];
 
-    // =========================================================================
     public function run(): void
     {
         $this->command->info('Loading master data...');
@@ -61,13 +49,13 @@ class SalesSeeder extends Seeder
             return;
         }
         if (! $this->store1 || ! $this->store2) {
-            $this->command->error('Stores belum ada.');
+            $this->command->error('Stores belum ada (STR-JATIM / STR-JATENG).');
             return;
         }
 
         DB::beginTransaction();
         try {
-            $this->command->info('Seeding sales...');
+            $this->command->info('Seeding sales data...');
 
             // ── Januari 2025 ──────────────────────────────────────────────────
             $this->seedDay('2025-01-05', $this->store1, 4, []);
@@ -111,13 +99,18 @@ class SalesSeeder extends Seeder
 
             $this->command->info('');
             $this->command->info('✅ Sales seeded!');
-            $this->command->info('  sales                : ' . DB::table('sales')->count());
-            $this->command->info('  sale_items           : ' . DB::table('sale_items')->count());
-            $this->command->info('  sale_item_packagings : ' . DB::table('sale_item_packagings')->count());
-            $this->command->info('  sale_payments        : ' . DB::table('sale_payments')->count());
-            $this->command->info('  sale_discounts       : ' . DB::table('sale_discounts')->count());
-            $this->command->info('  discount_usages      : ' . DB::table('discount_usages')->count());
-            $this->command->info('  stock_movements      : ' . DB::table('stock_movements')->where('movement_type','sale_out')->count());
+            $this->command->table(
+                ['Table', 'Count'],
+                [
+                    ['sales',                DB::table('sales')->count()],
+                    ['sale_items',           DB::table('sale_items')->count()],
+                    ['sale_item_packagings', DB::table('sale_item_packagings')->count()],
+                    ['sale_payments',        DB::table('sale_payments')->count()],
+                    ['sale_discounts',       DB::table('sale_discounts')->count()],
+                    ['discount_usages',      DB::table('discount_usages')->count()],
+                    ['stock_movements (sale_deduction)', DB::table('stock_movements')->where('movement_type', 'sale_deduction')->count()],
+                ]
+            );
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -127,17 +120,17 @@ class SalesSeeder extends Seeder
         }
     }
 
-    // =========================================================================
-    // LOAD MASTER DATA
-    // =========================================================================
     private function loadMasterData(): void
     {
-        $this->store1   = DB::table('stores')->where('code', 'STR001')->first();
-        $this->store2   = DB::table('stores')->where('code', 'STR002')->first();
-        $this->cashier1 = DB::table('users')->where('email', 'kasir.lamongan@gmail.com')->first()
-                        ?? DB::table('users')->first();
-        $this->cashier2 = DB::table('users')->where('email', 'kasir.gresik@gmail.com')->first()
-                        ?? DB::table('users')->first();
+        // FIX: store codes konsisten dengan WarehouseStoreSeeder
+        $this->store1   = DB::table('stores')->where('code', 'STR-JATIM')->first();
+        $this->store2   = DB::table('stores')->where('code', 'STR-JATENG')->first();
+
+        // FIX: cashier emails konsisten dengan UserSeeder
+        $this->cashier1 = DB::table('users')->where('email', 'kasir.jatim@harumnya.com')->first()
+                        ?? DB::table('users')->where('email', 'admin@harumnya.com')->first();
+        $this->cashier2 = DB::table('users')->where('email', 'kasir.jateng@harumnya.com')->first()
+                        ?? DB::table('users')->where('email', 'admin@harumnya.com')->first();
 
         foreach (DB::table('variants')->where('is_active', true)->get() as $v) {
             $this->variants[$v->id] = $v;
@@ -148,8 +141,6 @@ class SalesSeeder extends Seeder
         foreach (DB::table('sizes')->where('is_active', true)->get() as $s) {
             $this->sizes[$s->volume_ml] = $s;
         }
-
-        // ✅ Index products [variant_id][intensity_id][size_id] => product
         foreach (DB::table('products')->where('is_active', true)->get() as $p) {
             $this->products[$p->variant_id][$p->intensity_id][$p->size_id] = $p;
         }
@@ -168,14 +159,11 @@ class SalesSeeder extends Seeder
             ];
         }
 
-        $pkgs = DB::table('packaging_materials')
+        $this->packagings = DB::table('packaging_materials')
             ->where('is_active', true)
             ->where('is_available_as_addon', true)
             ->where('selling_price', '>', 0)
-            ->get();
-        foreach ($pkgs as $pkg) {
-            $this->packagings[] = $pkg;
-        }
+            ->get()->all();
 
         $this->customers = DB::table('customers')->where('is_active', true)->get()->all();
 
@@ -190,33 +178,26 @@ class SalesSeeder extends Seeder
         }
     }
 
-    // =========================================================================
-    // SEED SATU HARI
-    // =========================================================================
     private function seedDay(string $date, ?object $store, int $count, array $promoFlags): void
     {
         if (! $store) return;
-        $cashier = $store->code === 'STR001' ? $this->cashier1 : $this->cashier2;
-
         for ($i = 0; $i < $count; $i++) {
             $promo = null;
             if ($i === 0 && ! empty($promoFlags)) $promo = $promoFlags[0];
             if ($i === 1 && isset($promoFlags[1])) $promo = $promoFlags[1];
-            $this->createSale($date, $store, $cashier, $promo);
+            $this->createSale($date, $store, $promo);
         }
     }
 
-    // =========================================================================
-    // BUAT SATU TRANSAKSI
-    // =========================================================================
-    private function createSale(string $date, object $store, ?object $cashier, ?string $promo): void
+    private function createSale(string $date, object $store, ?string $promo): void
     {
-        $soldAt = $date . ' ' . str_pad(rand(9,20), 2, '0', STR_PAD_LEFT) . ':' . str_pad(rand(0,59), 2, '0', STR_PAD_LEFT) . ':00';
+        $soldAt  = $date . ' ' . str_pad(rand(9, 20), 2, '0', STR_PAD_LEFT)
+                 . ':' . str_pad(rand(0, 59), 2, '0', STR_PAD_LEFT) . ':00';
 
-        $customer = (! empty($this->customers) && rand(1, 10) <= 6)
-            ? $this->customers[array_rand($this->customers)]
-            : null;
-
+        $cashier     = $store->code === 'STR-JATIM' ? $this->cashier1 : $this->cashier2;
+        $customer    = (! empty($this->customers) && rand(1, 10) <= 6)
+                       ? $this->customers[array_rand($this->customers)]
+                       : null;
         $storeSps    = $this->salesPeople[$store->id] ?? [];
         $salesPerson = ! empty($storeSps) ? $storeSps[array_rand($storeSps)] : null;
 
@@ -231,25 +212,36 @@ class SalesSeeder extends Seeder
             $pkg      = $this->packagings[array_rand($this->packagings)];
             $pkgPrice = (float) $pkg->selling_price;
             $pkgCost  = (float) ($pkg->average_cost ?? 0);
-            $packagingItems[] = ['packaging_id' => $pkg->id, 'packaging_name' => $pkg->name, 'packaging_code' => $pkg->code, 'qty' => 1, 'unit_price' => $pkgPrice, 'subtotal' => $pkgPrice, 'unit_cost' => $pkgCost, 'cogs_total' => $pkgCost];
+            $packagingItems[] = [
+                'packaging_id'   => $pkg->id,
+                'packaging_name' => $pkg->name,
+                'packaging_code' => $pkg->code,
+                'qty'            => 1,
+                'unit_price'     => $pkgPrice,
+                'subtotal'       => $pkgPrice,
+                'unit_cost'      => $pkgCost,
+                'cogs_total'     => $pkgCost,
+            ];
             $subtotalPackaging = $pkgPrice;
         }
 
-        $subtotal        = $subtotalPerfume + $subtotalPackaging;
-        [$discAmt, $dt]  = $promo ? $this->calculateDiscount($promo) : [0, null];
-        $total           = max(0.0, $subtotal - $discAmt);
-        $cogsPerfume     = array_sum(array_map(fn($i) => $i['cogs_per_unit'] * $i['qty'], $items));
-        $cogsPackaging   = array_sum(array_map(fn($p) => $p['cogs_total'], $packagingItems));
-        $cogsTotal       = $cogsPerfume + $cogsPackaging;
-        $grossProfit     = $total - $cogsTotal;
-        $grossMargin     = $total > 0 ? round(($grossProfit / $total) * 100, 2) : 0;
-        $pointsEarned    = (int) floor($total / 1000);
+        $subtotal          = $subtotalPerfume + $subtotalPackaging;
+        [$discAmt, $dt]    = $promo ? $this->calculateDiscount($promo) : [0, null];
+        $total             = max(0.0, $subtotal - $discAmt);
+        $cogsPerfume       = array_sum(array_map(fn($i) => $i['cogs_per_unit'] * $i['qty'], $items));
+        $cogsPackaging     = array_sum(array_map(fn($p) => $p['cogs_total'], $packagingItems));
+        $cogsAlcohol       = 0.00; // regular order — alkohol sudah termasuk dalam cogs_per_unit
+        $cogsTotal         = $cogsPerfume + $cogsPackaging + $cogsAlcohol;
+        $grossProfit       = $total - $cogsTotal;
+        $grossMargin       = $total > 0 ? round(($grossProfit / $total) * 100, 2) : 0;
+        $pointsEarned      = (int) floor($total / 1000);
 
         [$amtPaid, $change, $payRows] = $this->buildPayment($total);
 
         $this->saleCounter++;
         $saleId     = Str::uuid()->toString();
-        $saleNumber = 'INV/' . str_replace('-', '', substr($date, 0, 10)) . '/' . str_pad($this->saleCounter, 5, '0', STR_PAD_LEFT);
+        $saleNumber = 'INV/' . str_replace('-', '', substr($date, 0, 10))
+                    . '/' . str_pad($this->saleCounter, 5, '0', STR_PAD_LEFT);
 
         // ── SALES ─────────────────────────────────────────────────────────────
         DB::table('sales')->insert([
@@ -273,6 +265,7 @@ class SalesSeeder extends Seeder
             'change_amount'           => $change,
             'cogs_perfume'            => $cogsPerfume,
             'cogs_packaging'          => $cogsPackaging,
+            'cogs_alcohol'            => $cogsAlcohol,   // FIX: kolom wajib diisi
             'cogs_total'              => $cogsTotal,
             'gross_profit'            => $grossProfit,
             'gross_margin_pct'        => $grossMargin,
@@ -290,16 +283,16 @@ class SalesSeeder extends Seeder
 
         // ── SALE ITEMS ────────────────────────────────────────────────────────
         foreach ($items as $idx => $item) {
-            $saleItemId  = Str::uuid()->toString();
-            $itemSub     = $item['unit_price'] * $item['qty'];
-            $itemCogs    = $item['cogs_per_unit'] * $item['qty'];
-            $itemProfit  = $itemSub - $itemCogs;
-            $itemMargin  = $itemSub > 0 ? round(($itemProfit / $itemSub) * 100, 2) : 0;
+            $saleItemId = Str::uuid()->toString();
+            $itemSub    = $item['unit_price'] * $item['qty'];
+            $itemCogs   = $item['cogs_per_unit'] * $item['qty'];
+            $itemProfit = $itemSub - $itemCogs;
+            $itemMargin = $itemSub > 0 ? round(($itemProfit / $itemSub) * 100, 2) : 0;
 
             DB::table('sale_items')->insert([
                 'id'                    => $saleItemId,
                 'sale_id'               => $saleId,
-                'product_id'            => $item['product_id'], // ✅ FK ke products
+                'product_id'            => $item['product_id'],
                 'product_name'          => $item['product_name'],
                 'product_sku'           => $item['sku'],
                 'variant_name'          => $item['variant_name'],
@@ -314,6 +307,15 @@ class SalesSeeder extends Seeder
                 'subtotal'              => $itemSub,
                 'cogs_per_unit'         => $item['cogs_per_unit'],
                 'cogs_total'            => $itemCogs,
+                // FIX: kolom custom order (wajib ada di migration)
+                'is_custom_order'       => false,
+                'custom_oil_qty'        => null,
+                'custom_alcohol_qty'    => null,
+                'custom_other_qty'      => null,
+                'custom_total_volume'   => null,
+                'alcohol_is_free'       => true,
+                'alcohol_cogs_per_unit' => 0.0000,
+                'alcohol_cogs_total'    => 0.00,
                 'line_gross_profit'     => $itemProfit,
                 'line_gross_margin_pct' => $itemMargin,
                 'notes'                 => null,
@@ -439,9 +441,6 @@ class SalesSeeder extends Seeder
         }
     }
 
-    // =========================================================================
-    // BUILD CART ITEMS — menggunakan product_id dari tabel products
-    // =========================================================================
     private function buildCartItems(?string $promo): array
     {
         $variantIds = array_keys($this->variants);
@@ -464,15 +463,12 @@ class SalesSeeder extends Seeder
             $intCode   = $intCodes[array_rand($intCodes)];
             $volume    = $volumes[array_rand($volumes)];
 
-            $variant   = $this->variants[$variantId] ?? null;
-            $intensity = $this->intensities[$intCode] ?? null;
-            $size      = $this->sizes[$volume] ?? null;
-            if (! $variant || ! $intensity || ! $size) continue;
+            $variant   = $this->variants[$variantId]         ?? null;
+            $intensity = $this->intensities[$intCode]         ?? null;
+            $size      = $this->sizes[$volume]                ?? null;
+            $priceData = $this->prices[$intCode][$volume]     ?? null;
+            if (! $variant || ! $intensity || ! $size || ! $priceData) continue;
 
-            $priceData = $this->prices[$intCode][$volume] ?? null;
-            if (! $priceData) continue;
-
-            // ✅ Ambil product_id dari tabel products
             $product = $this->products[$variantId][$intensity->id][$size->id] ?? null;
             if (! $product) continue;
 
@@ -499,73 +495,84 @@ class SalesSeeder extends Seeder
         $comp  = self::COMPOSITION[$intCode] ?? self::COMPOSITION['EDT'];
         $scale = $volume / 30;
         return round(
-            ($comp['fragrance'] * 2000 + $comp['base'] * 450 + $comp['alc'] * 50 + $comp['add'] * 2000) * $scale, 2
+            ($comp['fragrance'] * 2000 + $comp['base'] * 450 + $comp['alc'] * 50 + $comp['add'] * 2000) * $scale,
+            2
         );
     }
 
-    // =========================================================================
-    // CALCULATE DISCOUNT
-    // =========================================================================
     private function calculateDiscount(string $promo): array
     {
-        $map = ['plinko'=>'PLINKO-P50','b1g1'=>'B1G1-P50-INTENSE','b4g1'=>'B4G1-P50-ALL','b1g3'=>'B1G3-P50-TRAVEL'];
-        $dt  = $this->discounts[$map[$promo] ?? ''] ?? null;
+        $map = [
+            'plinko' => 'PLINKO-P50',
+            'b1g1'   => 'B1G1-P50-INTENSE',
+            'b4g1'   => 'B4G1-P50-ALL',
+            'b1g3'   => 'B1G3-P50-TRAVEL',
+        ];
+        $dt = $this->discounts[$map[$promo] ?? ''] ?? null;
         if (! $dt) return [0, null];
 
         $value = match ($promo) {
             'plinko' => 25000.00,
-            'b1g1'   => $this->prices['EDT'][50]['price'] ?? 64000.00,
-            'b4g1'   => $this->prices['EDT'][50]['price'] ?? 64000.00,
+            'b1g1'   => $this->prices['EDT'][50]['price']  ?? 64000.00,
+            'b4g1'   => $this->prices['EDT'][50]['price']  ?? 64000.00,
             'b1g3'   => ($this->prices['EDT'][30]['price'] ?? 46000.00) * 2,
             default  => 0,
         };
         return [$value, $dt];
     }
 
-    // =========================================================================
-    // BUILD PAYMENT
-    // =========================================================================
     private function buildPayment(float $total): array
     {
         $rand = rand(1, 10);
         $rows = []; $paid = 0; $change = 0;
 
         if ($rand <= 4) {
-            $pm   = $this->payMethods['CASH'] ?? null;
-            $paid = ceil($total / 10000) * 10000;
+            $pm     = $this->payMethods['CASH'] ?? null;
+            $paid   = ceil($total / 10000) * 10000;
             $rows[] = $this->payRow($pm, $paid, 0, null);
             $change = $paid - $total;
         } elseif ($rand <= 7) {
-            $pm  = $this->payMethods['QRIS'] ?? null;
-            $fee = round($total * 0.007, 2);
-            $rows[] = $this->payRow($pm, $total, $fee, 'QR' . rand(100000,999999));
-            $paid = $total;
+            $pm     = $this->payMethods['QRIS'] ?? null;
+            $fee    = round($total * 0.007, 2);
+            $rows[] = $this->payRow($pm, $total, $fee, 'QR' . rand(100000, 999999));
+            $paid   = $total;
         } elseif ($rand <= 9) {
-            $codes  = ['TRF-BCA','TRF-MANDIRI','TRF-BRI'];
+            $codes  = ['TRF-BCA', 'TRF-MANDIRI', 'TRF-BRI'];
             $pm     = $this->payMethods[$codes[array_rand($codes)]] ?? null;
-            $rows[] = $this->payRow($pm, $total, 0, 'TF' . rand(10000000,99999999));
+            $rows[] = $this->payRow($pm, $total, 0, 'TF' . rand(10000000, 99999999));
             $paid   = $total;
         } else {
             $cashPart = floor($total * 0.5 / 50000) * 50000;
             $qrisPart = $total - $cashPart;
             $fee      = round($qrisPart * 0.007, 2);
             $rows[]   = $this->payRow($this->payMethods['CASH'] ?? null, $cashPart, 0, null);
-            $rows[]   = $this->payRow($this->payMethods['QRIS'] ?? null, $qrisPart, $fee, 'QR'.rand(100000,999999));
-            $paid = $total;
+            $rows[]   = $this->payRow($this->payMethods['QRIS'] ?? null, $qrisPart, $fee, 'QR' . rand(100000, 999999));
+            $paid     = $total;
         }
         return [$paid, $change, $rows];
     }
 
     private function payRow(?object $pm, float $amount, float $fee, ?string $ref): array
     {
-        return ['method_id'=>$pm?->id,'amount'=>$amount,'admin_fee'=>$fee,'method_name'=>$pm?->name??'Tunai','method_type'=>$pm?->type??'cash','ref'=>$ref];
+        return [
+            'method_id'   => $pm?->id,
+            'amount'      => $amount,
+            'admin_fee'   => $fee,
+            'method_name' => $pm?->name ?? 'Tunai',
+            'method_type' => $pm?->type ?? 'cash',
+            'ref'         => $ref,
+        ];
     }
 
-    // =========================================================================
-    // STOCK MOVEMENT
-    // =========================================================================
-    private function insertStockMovement(array $item, object $store, string $saleId, string $saleNumber, string $date, string $soldAt, ?object $cashier): void
-    {
+    private function insertStockMovement(
+        array   $item,
+        object  $store,
+        string  $saleId,
+        string  $saleNumber,
+        string  $date,
+        string  $soldAt,
+        ?object $cashier
+    ): void {
         $alcIng = DB::table('ingredients')->where('code', 'ING-AL-001')->first();
         if (! $alcIng) return;
 
@@ -585,7 +592,8 @@ class SalesSeeder extends Seeder
             'location_id'      => $store->id,
             'item_type'        => 'ingredient',
             'item_id'          => $alcIng->id,
-            'movement_type'    => 'sale_out',
+            // FIX: movement_type 'sale_deduction' sesuai enum di migration
+            'movement_type'    => 'sale_deduction',
             'qty_change'       => -$deduct,
             'qty_before'       => $qtyBefore,
             'qty_after'        => $qtyAfter,
@@ -606,23 +614,30 @@ class SalesSeeder extends Seeder
         DB::table('store_ingredient_stocks')
             ->where('store_id', $store->id)
             ->where('ingredient_id', $alcIng->id)
-            ->update(['quantity'=>$qtyAfter,'last_out_at'=>$soldAt,'last_out_qty'=>$deduct,'updated_at'=>$soldAt]);
+            ->update([
+                'quantity'    => $qtyAfter,
+                'last_out_at' => $soldAt,
+                'last_out_qty'=> $deduct,
+                'updated_at'  => $soldAt,
+            ]);
     }
 
-    // =========================================================================
-    // SEED RETURN
-    // =========================================================================
     private function seedReturn(): void
     {
-        $sale = DB::table('sales')->where('status','completed')->where('store_id',$this->store1?->id)->orderBy('sold_at')->first();
+        $sale = DB::table('sales')
+            ->where('status', 'completed')
+            ->where('store_id', $this->store1?->id)
+            ->orderBy('sold_at')
+            ->first();
         if (! $sale) return;
+
         $saleItem = DB::table('sale_items')->where('sale_id', $sale->id)->first();
         if (! $saleItem) return;
 
-        $now     = now();
-        $retId   = Str::uuid()->toString();
-        $retNum  = 'RET/' . date('Ymd', strtotime($sale->sold_at)) . '/00001';
-        $refund  = (float) $saleItem->unit_price;
+        $now    = now();
+        $retId  = Str::uuid()->toString();
+        $retNum = 'RET/' . date('Ymd', strtotime($sale->sold_at)) . '/00001';
+        $refund = (float) $saleItem->unit_price;
 
         DB::table('sale_returns')->insert([
             'id'            => $retId,
@@ -649,7 +664,7 @@ class SalesSeeder extends Seeder
             'created_at'     => $now,
             'updated_at'     => $now,
         ]);
-        DB::table('sales')->where('id', $sale->id)->update(['status'=>'refunded','updated_at'=>$now]);
+        DB::table('sales')->where('id', $sale->id)->update(['status' => 'refunded', 'updated_at' => $now]);
         $this->command->info("Return seeded: {$retNum}");
     }
 }

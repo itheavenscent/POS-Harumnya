@@ -24,7 +24,6 @@ class Variant extends Model
         'description',
         'image',
         'is_active',
-        'sort_order',
     ];
 
     /**
@@ -34,7 +33,6 @@ class Variant extends Model
      */
     protected $casts = [
         'is_active' => 'boolean',
-        'sort_order' => 'integer',
     ];
 
     /**
@@ -47,7 +45,7 @@ class Variant extends Model
     /**
      * Boot the model.
      */
-    protected static function boot()
+    protected static function boot(): void
     {
         parent::boot();
 
@@ -57,19 +55,14 @@ class Variant extends Model
                 $model->id = (string) Str::uuid();
             }
         });
-
-        // Auto-increment sort_order if not set
-        static::creating(function ($model) {
-            if ($model->sort_order === 0) {
-                $model->sort_order = static::max('sort_order') + 1;
-            }
-        });
     }
 
+    // =========================================================================
+    // Accessors
+    // =========================================================================
+
     /**
-     * Get the image URL accessor.
-     *
-     * @return string|null
+     * Get the full image URL.
      */
     public function getImageUrlAttribute(): ?string
     {
@@ -80,63 +73,40 @@ class Variant extends Model
         return asset('storage/variants/' . $this->image);
     }
 
+    // =========================================================================
+    // Scopes
+    // =========================================================================
+
     /**
-     * Scope: Search by name, code, or description
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $search
-     * @return \Illuminate\Database\Eloquent\Builder
+     * Scope: Search by name, code, or description.
      */
-    public function scopeSearch($query, $search)
+    public function scopeSearch($query, string $search)
     {
         return $query->where(function ($q) use ($search) {
-            $q->where('name', 'ILIKE', "%{$search}%")
-            ->orWhere('code', 'ILIKE', "%{$search}%")
-            ->orWhere('description', 'ILIKE', "%{$search}%");
+            $q->where('name', 'LIKE', "%{$search}%")
+              ->orWhere('code', 'LIKE', "%{$search}%")
+              ->orWhere('description', 'LIKE', "%{$search}%");
         });
     }
 
     /**
-     * Scope: Filter by gender
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $gender
-     * @return \Illuminate\Database\Eloquent\Builder
+     * Scope: Filter by gender.
      */
-    public function scopeGender($query, $gender)
+    public function scopeGender($query, string $gender)
     {
         return $query->where('gender', $gender);
     }
 
     /**
-     * Scope: Filter by active status
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param bool $isActive
-     * @return \Illuminate\Database\Eloquent\Builder
+     * Scope: Filter by active status.
      */
-    public function scopeActive($query, $isActive = true)
+    public function scopeActive($query, bool $isActive = true)
     {
         return $query->where('is_active', $isActive);
     }
 
     /**
-     * Scope: Order by sort order
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $direction
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeOrdered($query, $direction = 'asc')
-    {
-        return $query->orderBy('sort_order', $direction);
-    }
-
-    /**
-     * Scope: Only active variants
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * Scope: Only active variants.
      */
     public function scopeOnlyActive($query)
     {

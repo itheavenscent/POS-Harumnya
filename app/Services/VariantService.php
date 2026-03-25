@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Storage;
 class VariantService
 {
     /**
-     * Get paginated variants with filters
+     * Get paginated variants with filters.
      *
      * @param array $filters
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
@@ -20,18 +20,17 @@ class VariantService
         $perPage = $filters['per_page'] ?? 20;
 
         return Variant::query()
-            ->select(['id', 'code', 'name', 'image', 'gender', 'is_active', 'description', 'sort_order', 'created_at'])
+            ->select(['id', 'code', 'name', 'image', 'gender', 'is_active', 'description', 'created_at'])
             ->when(!empty($filters['search']), fn($q) => $q->search($filters['search']))
             ->when(!empty($filters['gender']), fn($q) => $q->gender($filters['gender']))
-            ->when(isset($filters['is_active']) && $filters['is_active'] !== '', fn($q) => $q->active((bool)$filters['is_active']))
-            ->ordered()
+            ->when(isset($filters['is_active']) && $filters['is_active'] !== '', fn($q) => $q->active((bool) $filters['is_active']))
             ->latest('created_at')
             ->paginate($perPage)
             ->withQueryString();
     }
 
     /**
-     * Create a new variant
+     * Create a new variant.
      *
      * @param array $data
      * @return Variant
@@ -42,7 +41,6 @@ class VariantService
         DB::beginTransaction();
 
         try {
-            // Handle image upload
             if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
                 $data['image'] = $this->uploadImage($data['image']);
             }
@@ -55,7 +53,6 @@ class VariantService
         } catch (\Exception $e) {
             DB::rollBack();
 
-            // Clean up uploaded image if exists
             if (isset($data['image']) && is_string($data['image'])) {
                 $this->deleteImage($data['image']);
             }
@@ -65,7 +62,7 @@ class VariantService
     }
 
     /**
-     * Update an existing variant
+     * Update an existing variant.
      *
      * @param Variant $variant
      * @param array $data
@@ -79,16 +76,13 @@ class VariantService
         try {
             $oldImage = $variant->image;
 
-            // Handle image upload
             if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
                 $data['image'] = $this->uploadImage($data['image']);
 
-                // Delete old image after successful upload
                 if ($oldImage) {
                     $this->deleteImage($oldImage);
                 }
             } else {
-                // Don't update image column if no new file
                 unset($data['image']);
             }
 
@@ -100,7 +94,6 @@ class VariantService
         } catch (\Exception $e) {
             DB::rollBack();
 
-            // Clean up new uploaded image if exists
             if (isset($data['image']) && is_string($data['image']) && $data['image'] !== $oldImage) {
                 $this->deleteImage($data['image']);
             }
@@ -110,7 +103,7 @@ class VariantService
     }
 
     /**
-     * Delete a variant
+     * Delete a variant.
      *
      * @param Variant $variant
      * @return bool
@@ -121,7 +114,6 @@ class VariantService
         DB::beginTransaction();
 
         try {
-            // Delete image
             if ($variant->image) {
                 $this->deleteImage($variant->image);
             }
@@ -138,7 +130,7 @@ class VariantService
     }
 
     /**
-     * Bulk delete variants
+     * Bulk delete variants.
      *
      * @param array $ids
      * @return int
@@ -150,7 +142,7 @@ class VariantService
 
         try {
             $variants = Variant::whereIn('id', $ids)->get();
-            $count = 0;
+            $count    = 0;
 
             foreach ($variants as $variant) {
                 if ($variant->image) {
@@ -170,7 +162,7 @@ class VariantService
     }
 
     /**
-     * Upload variant image
+     * Upload variant image.
      *
      * @param UploadedFile $file
      * @return string
@@ -183,7 +175,7 @@ class VariantService
     }
 
     /**
-     * Delete variant image
+     * Delete variant image from storage.
      *
      * @param string $imageName
      * @return bool
@@ -200,7 +192,7 @@ class VariantService
     }
 
     /**
-     * Transform variant for response
+     * Transform variant data for frontend response.
      *
      * @param Variant $variant
      * @return array
@@ -208,15 +200,14 @@ class VariantService
     public function transformVariant(Variant $variant): array
     {
         return [
-            'id' => $variant->id,
-            'code' => $variant->code,
-            'name' => $variant->name,
-            'image' => $variant->image_url,
-            'gender' => $variant->gender,
-            'is_active' => $variant->is_active,
+            'id'          => $variant->id,
+            'code'        => $variant->code,
+            'name'        => $variant->name,
+            'image'       => $variant->image_url,
+            'gender'      => $variant->gender,
+            'is_active'   => $variant->is_active,
             'description' => $variant->description,
-            'sort_order' => $variant->sort_order,
-            'created_at' => $variant->created_at->format('d M Y'),
+            'created_at'  => $variant->created_at->format('d M Y'),
         ];
     }
 }

@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Apps;
 use App\Http\Controllers\Controller;
 use App\Models\Cart;
 use App\Models\CartPackaging;
+use App\Models\CustomOrderPricingRule;
 use App\Models\Customer;
 use App\Models\CustomerPointLedger;
 use App\Models\DiscountType;
 use App\Models\DiscountUsage;
+use App\Models\Ingredient;
 use App\Models\Intensity;
 use App\Models\IntensitySizePrice;
 use App\Models\PackagingMaterial;
@@ -48,18 +50,19 @@ class TransactionController extends Controller
 
         if (! $storeId) {
             return Inertia::render('Dashboard/Transactions/Index', [
-                'error'              => 'Anda belum memiliki toko default. Hubungi admin.',
-                'carts'              => [],
-                'carts_total'        => 0,
-                'heldCarts'          => [],
-                'intensities'        => [],
-                'customers'          => [],
-                'salesPeople'        => [],
-                'packagingMaterials' => [],
-                'paymentMethods'     => [],
-                'discounts'          => [],
-                'storeId'            => null,
-                'storeName'          => null,
+                'error'               => 'Anda belum memiliki toko default. Hubungi admin.',
+                'carts'               => [],
+                'carts_total'         => 0,
+                'heldCarts'           => [],
+                'intensities'         => [],
+                'customers'           => [],
+                'salesPeople'         => [],
+                'packagingMaterials'  => [],
+                'paymentMethods'      => [],
+                'discounts'           => [],
+                'customPricingRules'  => [],
+                'storeId'             => null,
+                'storeName'           => null,
             ]);
         }
 
@@ -102,6 +105,16 @@ class TransactionController extends Controller
 
         $discounts = $this->getActiveDiscountsForStore($storeId);
 
+        // Pricing rules untuk custom order — kirim ke frontend agar bisa
+        // kalkulasi harga live sebelum add-to-cart
+        $customPricingRules = CustomOrderPricingRule::where('is_active', true)
+            ->where(fn ($q) => $q->whereNull('valid_from')
+                                 ->orWhereDate('valid_from', '<=', today()))
+            ->where(fn ($q) => $q->whereNull('valid_until')
+                                 ->orWhereDate('valid_until', '>=', today()))
+            ->orderByRaw('variant_id IS NULL ASC') // spesifik dulu, fallback global terakhir
+            ->get(['id', 'variant_id', 'price_per_ml_oil', 'min_oil_ml', 'max_oil_ml', 'min_ratio_note']);
+
         return Inertia::render('Dashboard/Transactions/Index', [
             'carts'              => $carts,
             'carts_total'        => $cartsTotal,
@@ -112,11 +125,176 @@ class TransactionController extends Controller
             'packagingMaterials' => $packagingMaterials,
             'paymentMethods'     => $paymentMethods,
             'discounts'          => $discounts,
+            'customPricingRules' => $customPricingRules,
             'storeId'            => $storeId,
             'storeName'          => $store?->name,
             'error'              => null,
         ]);
     }
+
+    // =========================================================================
+    // GET CUSTOM ORDER PRICE (AJAX)
+    // GET /dashboard/transactions/custom-price
+    //
+    // PERUBAHAN: harga dihitung dari ingredients.selling_price (oil),
+    // bukan dari CustomOrderPricingRule.
+    // Formula: custom_unit_price = oil_qty × oil_ingredient.selling_price
+    // =========================================================================
+    public function getCustomPrice(Request $request): JsonResponse
+    {
+        $request->validate([
+            'variant_id'   => 'required|uuid|exists:variants,id',
+            'oil_qty'      => 'required|integer|min:1',
+            'alcohol_qty'  => 'nullable|integer|min:0',
+        ]);
+
+        $oilQty     = (int) $request->oil_qty;
+        $alcoholQty = (int) ($request->alcohol_qty ?? 0);
+
+        // Validasi rasio minimum 1:1
+        if ($alcoholQty > $oilQty) {
+            return response()->json([
+                'success' => false,
+                'message' => "Rasio tidak valid: alkohol ({$alcoholQty}ml) tidak boleh melebihi oil ({$oilQty}ml). Minimum rasio oil:alkohol = 1:1.",
+            ], 422);
+        }
+
+        // ── Cari selling_price ingredient oil ─────────────────────────────────
+        // Prioritas: ingredient oil yang terkait variant (via variant_recipes),
+        // fallback ke ingredient oil manapun yang is_active dan punya selling_price.
+        $oilIngredient = $this->resolveOilIngredient($request->variant_id);
+
+        if (! $oilIngredient) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ingredient oil tidak ditemukan atau belum memiliki harga jual. Hubungi admin untuk mengatur selling_price pada ingredient oil.',
+            ], 422);
+        }
+
+        if (! $oilIngredient->selling_price || $oilIngredient->selling_price <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => "Ingredient oil \"{$oilIngredient->name}\" belum memiliki harga jual (selling_price). Hubungi admin.",
+            ], 422);
+        }
+
+        // Harga = oil_qty × selling_price per ml; alkohol GRATIS ke customer
+        $calculatedPrice = (int) round($oilQty * $oilIngredient->selling_price);
+        $totalVolume     = $oilQty + $alcoholQty;
+
+        // Snapshot WAC alkohol — untuk COGS, bukan untuk harga jual
+        $alcoholWac = $this->getAlcoholWac(Auth::user()->default_store_id);
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'calculated_price'      => $calculatedPrice,
+                'price_per_ml_oil'      => (float) $oilIngredient->selling_price,
+                'oil_ingredient_id'     => $oilIngredient->id,
+                'oil_ingredient_name'   => $oilIngredient->name,
+                'oil_qty'               => $oilQty,
+                'alcohol_qty'           => $alcoholQty,
+                'total_volume'          => $totalVolume,
+                'alcohol_cost_snapshot' => $alcoholWac,
+                'alcohol_is_free'       => true,
+                // min/max tidak lagi dari pricing rule; bisa ditambahkan config lain jika perlu
+                'min_oil_ml'            => null,
+                'max_oil_ml'            => null,
+                'ratio_note'            => 'Minimum rasio oil:alkohol = 1:1. Alkohol gratis ke customer.',
+            ],
+        ]);
+    }
+
+    // =========================================================================
+    // ADD CUSTOM ORDER TO CART
+    // POST /dashboard/transactions/add-custom-to-cart
+    // =========================================================================
+    public function addCustomToCart(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'variant_id'         => 'required|uuid|exists:variants,id',
+            'oil_qty'            => 'required|integer|min:1',
+            'alcohol_qty'        => 'nullable|integer|min:0',
+            'other_qty'          => 'nullable|integer|min:0',
+            'custom_unit_price'  => 'required|numeric|min:0',
+            'qty'                => 'required|integer|min:1|max:99',
+            'packaging_ids'      => 'nullable|array',
+            'packaging_ids.*'    => 'uuid|exists:packaging_materials,id',
+            'notes'              => 'nullable|string|max:500',
+        ]);
+
+        $user    = Auth::user();
+        $storeId = $user->default_store_id;
+
+        abort_unless($storeId, 422, 'Toko default tidak ditemukan. Hubungi admin.');
+
+        $oilQty     = (int) $request->oil_qty;
+        $alcoholQty = (int) $request->alcohol_qty;
+        $otherQty   = (int) ($request->other_qty ?? 0);
+
+        // Validasi rasio minimum 1:1
+        abort_if(
+            $alcoholQty > $oilQty,
+            422,
+            "Rasio tidak valid: alkohol tidak boleh melebihi oil. Minimum rasio oil:alkohol = 1:1."
+        );
+
+        // Ambil selling_price oil untuk snapshot harga per ml saat cart dibuat
+        $oilIngredient    = $this->resolveOilIngredient($request->variant_id);
+        $oilSellingPrice  = $oilIngredient?->selling_price ?? 0;
+
+        $alcoholWac  = $this->getAlcoholWac($storeId);
+        $totalVolume = $oilQty + $alcoholQty + $otherQty;
+
+        DB::transaction(function () use (
+            $request, $user, $storeId,
+            $oilQty, $alcoholQty, $otherQty, $totalVolume,
+            $alcoholWac, $oilIngredient, $oilSellingPrice
+        ) {
+            $cart = Cart::create([
+                'cashier_id'                => $user->id,
+                'store_id'                  => $storeId,
+                'variant_id'                => $request->variant_id,
+                'intensity_id'              => null,   // custom order tidak punya intensity baku
+                'size_id'                   => null,   // custom order tidak punya size baku
+                'product_id'                => null,   // custom = made-to-order
+                'unit_price'                => (int) $request->custom_unit_price,
+                'qty'                       => $request->qty,
+                // ── Custom fields ──────────────────────────────────────────
+                'is_custom_order'           => true,
+                'custom_oil_qty'            => $oilQty,
+                'custom_alcohol_qty'        => $alcoholQty,
+                'custom_other_qty'          => $otherQty ?: null,
+                'custom_total_volume'       => $totalVolume,
+                'custom_unit_price'         => $request->custom_unit_price,
+                // Snapshot selling_price oil saat transaksi (historis, tidak terpengaruh edit master)
+                'oil_selling_price_snapshot' => $oilSellingPrice,
+                'oil_ingredient_id'          => $oilIngredient?->id,
+                'alcohol_cost_snapshot'      => $alcoholWac,
+                'notes'                      => $request->notes,
+            ]);
+
+            if ($request->filled('packaging_ids')) {
+                PackagingMaterial::whereIn('id', $request->packaging_ids)
+                    ->where('is_active', true)
+                    ->get()
+                    ->each(function ($pkg) use ($cart) {
+                        CartPackaging::create([
+                            'cart_id'               => $cart->id,
+                            'packaging_material_id' => $pkg->id,
+                            'qty'                   => 1,
+                            'unit_price'            => $pkg->is_free ? 0 : (int) ($pkg->selling_price ?? 0),
+                        ]);
+                    });
+            }
+        });
+
+        return back();
+    }
+
+    // =========================================================================
+    // EXISTING ENDPOINTS (tidak berubah)
+    // =========================================================================
 
     public function history(Request $request): Response
     {
@@ -232,6 +410,50 @@ class TransactionController extends Controller
             'success' => true,
             'data'    => $variantQuery->get(['id', 'name', 'code', 'gender', 'image']),
         ]);
+    }
+
+    /**
+     * Endpoint: ambil semua variant aktif (tanpa filter intensity),
+     * digunakan untuk dropdown custom order.
+     */
+    public function getVariantsForCustom(Request $request): JsonResponse
+    {
+        try {
+            $user    = Auth::user();
+            $storeId = $user->default_store_id ?? null;
+            $store   = $storeId ? Store::with('storeCategory')->find($storeId) : null;
+
+            $variantQuery = Variant::where('is_active', true);
+
+            try {
+                $variantQuery->orderBy('sort_order');
+            } catch (\Exception $e) {
+                $variantQuery->orderBy('name');
+            }
+
+            if ($store && $store->store_category_id) {
+                $category = $store->storeCategory;
+                if ($category && ! $category->allow_all_variants) {
+                    $allowedIds = $category->variants()
+                        ->wherePivot('is_active', true)
+                        ->pluck('variants.id');
+                    if ($allowedIds->isNotEmpty()) {
+                        $variantQuery->whereIn('id', $allowedIds);
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data'    => $variantQuery->get(['id', 'name', 'code', 'gender', 'image']),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('getVariantsForCustom error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat varian: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function getAvailableSizes(Request $request): JsonResponse
@@ -477,24 +699,7 @@ class TransactionController extends Controller
 
     // =========================================================================
     // CHECKOUT / STORE SALE
-    // POST /dashboard/transactions/store
-    //
-    // STOCK DEDUCTION — Setelah semua record tersimpan, masih di dalam
-    // DB::transaction(), panggil StockDeductionService:
-    //
-    //   deductAfterSale()
-    //   └─ per SaleItem parfum:
-    //      ├─ Ingredient → lookup intensity_size_quantities → dapat total_volume
-    //      │               → lookup product_recipes / variant_recipes → dapat proporsi
-    //      │               → update store_ingredient_stocks + catat StockMovement
-    //      └─ Packaging melekat → update store_packaging_stocks + StockMovement
-    //
-    //   deductStandalonePackagings()
-    //   └─ packaging tanpa item parfum → store_packaging_stocks + StockMovement
-    //
-    // Jika ada exception → seluruh transaction di-rollback otomatis.
     // =========================================================================
-
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
@@ -547,7 +752,7 @@ class TransactionController extends Controller
             $paymentMethod, $customer, $salesPerson, $discountType,
             $stockDeduction
         ) {
-            [$subtotalPerfume, $subtotalPackaging, $cogsPerfume, $cogsPackaging]
+            [$subtotalPerfume, $subtotalPackaging, $cogsPerfume, $cogsPackaging, $cogsAlcohol]
                 = $this->calcSubtotals($carts, $standalonePkgs);
 
             $subtotal       = $subtotalPerfume + $subtotalPackaging;
@@ -559,7 +764,7 @@ class TransactionController extends Controller
             $adminFee   = (int) round($amountPaid * ($paymentMethod->admin_fee_pct ?? 0) / 100);
             $change     = $isCash ? max(0, $amountPaid - $total) : 0;
 
-            $cogsTotal   = $cogsPerfume + $cogsPackaging;
+            $cogsTotal   = $cogsPerfume + $cogsPackaging + $cogsAlcohol;
             $grossProfit = $total - $cogsTotal;
             $marginPct   = $total > 0 ? round($grossProfit / $total * 100, 2) : 0;
 
@@ -583,6 +788,7 @@ class TransactionController extends Controller
                 'change_amount'      => (int) $change,
                 'cogs_perfume'       => $cogsPerfume,
                 'cogs_packaging'     => $cogsPackaging,
+                'cogs_alcohol'       => $cogsAlcohol,
                 'cogs_total'         => $cogsTotal,
                 'gross_profit'       => (int) $grossProfit,
                 'gross_margin_pct'   => $marginPct,
@@ -591,14 +797,26 @@ class TransactionController extends Controller
                 'status'             => 'completed',
             ]);
 
-            // ── Sale Items ─────────────────────────────────────────────────
-            // Kumpulkan ID agar bisa load ulang setelah semua insert selesai
             $saleItemIds = [];
 
             foreach ($carts as $cart) {
-                $itemSub    = $cart->unit_price * $cart->qty;
-                $itemCogs   = ($cart->product?->production_cost ?? 0) * $cart->qty;
-                $itemProfit = $itemSub - $itemCogs;
+                $isCustom = (bool) ($cart->is_custom_order ?? false);
+                $itemSub  = $cart->unit_price * $cart->qty;
+
+                // HPP oil
+                $cogsPerUnit = $isCustom
+                    ? $this->calcCustomOilCogs($cart)
+                    : ($cart->product?->production_cost ?? 0);
+                $itemCogs = $cogsPerUnit * $cart->qty;
+
+                // HPP alkohol (gratis ke customer, tetap masuk COGS)
+                $alcoholCogsPerUnit = $isCustom
+                    ? $this->calcCustomAlcoholCogs($cart)
+                    : 0;
+                $alcoholCogsTotal = $alcoholCogsPerUnit * $cart->qty;
+
+                $totalCogsThisItem = $itemCogs + $alcoholCogsTotal;
+                $itemProfit        = $itemSub - $totalCogsThisItem;
 
                 $saleItem = SaleItem::create([
                     'sale_id'               => $sale->id,
@@ -607,8 +825,9 @@ class TransactionController extends Controller
                     'product_sku'           => $cart->product?->sku,
                     'variant_name'          => $cart->variant?->name,
                     'intensity_code'        => $cart->intensity?->code,
-                    'size_ml'               => $cart->size?->volume_ml,
-                    // Snapshot untuk StockDeductionService & laporan historis
+                    'size_ml'               => $isCustom
+                        ? $cart->custom_total_volume
+                        : $cart->size?->volume_ml,
                     'variant_id_snapshot'   => $cart->variant_id,
                     'intensity_id_snapshot' => $cart->intensity_id,
                     'size_id_snapshot'      => $cart->size_id,
@@ -616,11 +835,24 @@ class TransactionController extends Controller
                     'unit_price'            => $cart->unit_price,
                     'item_discount'         => 0,
                     'subtotal'              => $itemSub,
-                    'cogs_per_unit'         => $cart->product?->production_cost ?? 0,
+                    'cogs_per_unit'         => $cogsPerUnit,
                     'cogs_total'            => $itemCogs,
                     'line_gross_profit'     => $itemProfit,
                     'line_gross_margin_pct' => $itemSub > 0
                         ? round($itemProfit / $itemSub * 100, 2) : 0,
+                    // ── Custom order fields ─────────────────────────────────
+                    'is_custom_order'            => $isCustom,
+                    'custom_oil_qty'             => $isCustom ? $cart->custom_oil_qty     : null,
+                    'custom_alcohol_qty'         => $isCustom ? $cart->custom_alcohol_qty : null,
+                    'custom_other_qty'           => $isCustom ? $cart->custom_other_qty   : null,
+                    'custom_total_volume'        => $isCustom ? $cart->custom_total_volume : null,
+                    'alcohol_is_free'            => true,
+                    'alcohol_cogs_per_unit'      => $alcoholCogsPerUnit,
+                    'alcohol_cogs_total'         => $alcoholCogsTotal,
+                    // Snapshot harga jual oil per ml saat transaksi
+                    'oil_selling_price_snapshot' => $isCustom ? $cart->oil_selling_price_snapshot : null,
+                    // ───────────────────────────────────────────────────────
+                    'notes'                      => $cart->notes,
                 ]);
 
                 foreach ($cart->packagings as $cartPkg) {
@@ -630,7 +862,7 @@ class TransactionController extends Controller
                 $saleItemIds[] = $saleItem->id;
             }
 
-            // ── Standalone packagings ──────────────────────────────────────
+            // Standalone packagings
             foreach ($standalonePkgs as $sp) {
                 $pkg           = $sp['pkg'];
                 $qty           = $sp['qty'];
@@ -665,7 +897,7 @@ class TransactionController extends Controller
                 ]);
             }
 
-            // ── Sale Discount ──────────────────────────────────────────────
+            // Sale Discount
             if ($discountAmount > 0) {
                 SaleDiscount::create([
                     'sale_id'           => $sale->id,
@@ -680,19 +912,18 @@ class TransactionController extends Controller
                 if ($discountType) {
                     DiscountUsage::create([
                         'discount_type_id' => $discountType->id,
-                        'user_id'          => $user->id,
                         'order_id'         => $sale->id,
                         'store_id'         => $storeId,
+                        'customer_id'      => $customer?->id,
                         'discount_amount'  => (int) $discountAmount,
                         'original_amount'  => (int) $subtotal,
                         'final_amount'     => (int) $total,
-                        'amount_saved'     => (int) $discountAmount,
                         'used_at'          => now(),
                     ]);
                 }
             }
 
-            // ── Sale Payment ───────────────────────────────────────────────
+            // Sale Payment
             SalePayment::create([
                 'sale_id'             => $sale->id,
                 'payment_method_id'   => $paymentMethod->id,
@@ -704,7 +935,7 @@ class TransactionController extends Controller
                 'settled_at'          => now(),
             ]);
 
-            // ── Loyalty Points ─────────────────────────────────────────────
+            // Loyalty Points
             if ($customer && $total > 0) {
                 $pointsEarned = (int) floor($total / 10000);
 
@@ -727,29 +958,18 @@ class TransactionController extends Controller
                 }
             }
 
-            // ════════════════════════════════════════════════════════════════
-            // STOCK DEDUCTION — Kurangi stok sesuai resep
-            //
-            // Load ulang SaleItem dari DB (bukan dari memori) agar relasi
-            // 'packagings' tersedia dengan data yang sudah persist.
-            //
-            // Urutan: setelah semua SaleItem + SaleItemPackaging selesai
-            //         di-insert, tapi sebelum Cart dihapus.
-            // ════════════════════════════════════════════════════════════════
+            // Stock Deduction
             $saleItems = SaleItem::with('packagings')
                 ->whereIn('id', $saleItemIds)
                 ->get();
 
-            // [A] Ingredient bahan parfum + packaging melekat pada tiap item
             $stockDeduction->deductAfterSale($sale, $storeId, $saleItems);
 
-            // [B] Packaging standalone (tanpa item parfum)
             if (! empty($standalonePkgs)) {
                 $stockDeduction->deductStandalonePackagings($sale, $storeId, $standalonePkgs);
             }
-            // ════════════════════════════════════════════════════════════════
 
-            // ── Bersihkan cart ─────────────────────────────────────────────
+            // Bersihkan cart
             Cart::where('cashier_id', $user->id)
                 ->where('store_id', $storeId)
                 ->whereNull('hold_id')
@@ -766,6 +986,129 @@ class TransactionController extends Controller
     // =========================================================================
     // PRIVATE HELPERS
     // =========================================================================
+
+    /**
+     * Resolve ingredient oil yang dipakai untuk custom order pricing.
+     *
+     * Prioritas:
+     *   1. Ingredient oil yang terkait variant (via variant_recipes) + punya selling_price
+     *   2. Ingredient oil manapun yang is_active + punya selling_price (fallback global)
+     *
+     * Return: Ingredient model dengan field id, name, selling_price, average_cost
+     *         atau null jika tidak ditemukan.
+     */
+    private function resolveOilIngredient(?string $variantId): ?object
+    {
+        // Prioritas 1: spesifik variant
+        if ($variantId) {
+            $ingredient = DB::table('ingredients as i')
+                ->join('ingredient_categories as ic', 'ic.id', '=', 'i.ingredient_category_id')
+                ->join('variant_recipes as vr', 'vr.ingredient_id', '=', 'i.id')
+                ->where('vr.variant_id', $variantId)
+                ->where('ic.ingredient_type', 'oil')
+                ->where('i.is_active', true)
+                ->whereNotNull('i.selling_price')
+                ->where('i.selling_price', '>', 0)
+                ->orderByDesc('i.selling_price')   // ambil yang paling mahal jika ada >1
+                ->select('i.id', 'i.name', 'i.selling_price', 'i.average_cost')
+                ->first();
+
+            if ($ingredient) {
+                return $ingredient;
+            }
+        }
+
+        // Prioritas 2: fallback global — ingredient oil apapun yang punya selling_price
+        return DB::table('ingredients as i')
+            ->join('ingredient_categories as ic', 'ic.id', '=', 'i.ingredient_category_id')
+            ->where('ic.ingredient_type', 'oil')
+            ->where('i.is_active', true)
+            ->whereNotNull('i.selling_price')
+            ->where('i.selling_price', '>', 0)
+            ->orderByDesc('i.selling_price')
+            ->select('i.id', 'i.name', 'i.selling_price', 'i.average_cost')
+            ->first();
+    }
+
+    /**
+     * Hitung HPP oil untuk custom order menggunakan average_cost ingredient
+     * (WAC dari stok — untuk laporan margin, bukan untuk harga jual).
+     */
+    private function calcCustomOilCogs(Cart $cart): float
+    {
+        if (! $cart->custom_oil_qty) {
+            return 0;
+        }
+
+        // Gunakan WAC dari stok toko — sama seperti sebelumnya
+        $oilWac = $this->getOilWac($cart->store_id, $cart->variant_id);
+
+        return round($cart->custom_oil_qty * $oilWac, 4);
+    }
+
+    /**
+     * Hitung HPP alkohol untuk custom order.
+     * Alkohol gratis ke customer, tetapi HPP tetap dihitung untuk laporan margin.
+     */
+    private function calcCustomAlcoholCogs(Cart $cart): float
+    {
+        if (! $cart->custom_alcohol_qty) {
+            return 0;
+        }
+
+        $wac = (float) ($cart->alcohol_cost_snapshot ?? 0);
+
+        return round($cart->custom_alcohol_qty * $wac, 4);
+    }
+
+    /**
+     * Ambil WAC alkohol dari store_ingredient_stocks.
+     */
+    private function getAlcoholWac(?string $storeId): float
+    {
+        if (! $storeId) return 0;
+
+        return (float) DB::table('store_ingredient_stocks as sis')
+            ->join('ingredients as i', 'i.id', '=', 'sis.ingredient_id')
+            ->join('ingredient_categories as ic', 'ic.id', '=', 'i.ingredient_category_id')
+            ->where('sis.store_id', $storeId)
+            ->where('ic.ingredient_type', 'alcohol')
+            ->where('i.is_active', true)
+            ->orderByDesc('sis.quantity')
+            ->value('sis.average_cost') ?? 0;
+    }
+
+    /**
+     * Ambil WAC oil dari store_ingredient_stocks untuk kalkulasi COGS.
+     * (Berbeda dari selling_price — ini untuk HPP/margin, bukan harga jual.)
+     */
+    private function getOilWac(?string $storeId, ?string $variantId): float
+    {
+        if (! $storeId) return 0;
+
+        if ($variantId) {
+            $wac = (float) DB::table('store_ingredient_stocks as sis')
+                ->join('variant_recipes as vr', 'vr.ingredient_id', '=', 'sis.ingredient_id')
+                ->join('ingredients as i', 'i.id', '=', 'sis.ingredient_id')
+                ->join('ingredient_categories as ic', 'ic.id', '=', 'i.ingredient_category_id')
+                ->where('sis.store_id', $storeId)
+                ->where('vr.variant_id', $variantId)
+                ->where('ic.ingredient_type', 'oil')
+                ->where('i.is_active', true)
+                ->value('sis.average_cost') ?? 0;
+
+            if ($wac > 0) return $wac;
+        }
+
+        return (float) DB::table('store_ingredient_stocks as sis')
+            ->join('ingredients as i', 'i.id', '=', 'sis.ingredient_id')
+            ->join('ingredient_categories as ic', 'ic.id', '=', 'i.ingredient_category_id')
+            ->where('sis.store_id', $storeId)
+            ->where('ic.ingredient_type', 'oil')
+            ->where('i.is_active', true)
+            ->orderByDesc('sis.quantity')
+            ->value('sis.average_cost') ?? 0;
+    }
 
     private function getActiveCarts(int $cashierId, string $storeId): Collection
     {
@@ -828,13 +1171,29 @@ class TransactionController extends Controller
             ]);
     }
 
+    /**
+     * Hitung subtotals — mengembalikan 5 nilai.
+     * Return: [subtotalPerfume, subtotalPackaging, cogsPerfume, cogsPackaging, cogsAlcohol]
+     */
     private function calcSubtotals(Collection $carts, array $standalonePkgs): array
     {
-        $sp = $sc = $cp = $cc = 0;
+        $sp = $sc = $cp = $cc = $ca = 0;
 
         foreach ($carts as $cart) {
+            $isCustom = (bool) ($cart->is_custom_order ?? false);
+
             $sp += $cart->unit_price * $cart->qty;
-            $cp += ($cart->product?->production_cost ?? 0) * $cart->qty;
+
+            if ($isCustom) {
+                $oilCogs = $this->calcCustomOilCogs($cart) * $cart->qty;
+                $cp += $oilCogs;
+
+                $alcCogs = $this->calcCustomAlcoholCogs($cart) * $cart->qty;
+                $ca += $alcCogs;
+            } else {
+                $cp += ($cart->product?->production_cost ?? 0) * $cart->qty;
+            }
+
             foreach ($cart->packagings as $pkg) {
                 $sc += $pkg->unit_price * $pkg->qty;
                 $cc += ($pkg->packagingMaterial?->average_cost ?? 0) * $pkg->qty;
@@ -847,13 +1206,13 @@ class TransactionController extends Controller
             $cc += ($s['pkg']->average_cost ?? 0) * $s['qty'];
         }
 
-        return [(int) $sp, (int) $sc, (int) $cp, (int) $cc];
+        return [(int) $sp, (int) $sc, (int) $cp, (int) $cc, (int) $ca];
     }
 
     private function createSaleItemPackaging(string $saleItemId, $cartPkg): void
     {
-        $pkg      = $cartPkg->packagingMaterial;
-        $isFree   = $pkg?->is_free ?? false;
+        $pkg       = $cartPkg->packagingMaterial;
+        $isFree    = $pkg?->is_free ?? false;
         $unitPrice = $cartPkg->unit_price;
         $sub       = $unitPrice * $cartPkg->qty;
         $unitCost  = $pkg?->average_cost ?? 0;
@@ -878,6 +1237,16 @@ class TransactionController extends Controller
 
     private function buildProductName($cart): string
     {
+        if ($cart->is_custom_order ?? false) {
+            $parts = array_filter([
+                $cart->variant?->name,
+                'Custom',
+                $cart->custom_oil_qty ? $cart->custom_oil_qty . 'ml oil' : null,
+                $cart->custom_alcohol_qty ? $cart->custom_alcohol_qty . 'ml alkohol' : null,
+            ]);
+            return implode(' - ', $parts);
+        }
+
         if ($cart->product?->name) {
             return $cart->product->name;
         }
