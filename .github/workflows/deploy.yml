@@ -31,21 +31,23 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          debug: true # Membantu melihat log jika koneksi terputus
-          command_timeout: 30m
           script: |
             set -e
             cd /var/www/POS-Harumnya
 
+            # --- PERBAIKAN UTAMA ---
+            # Ambil alih kepemilikan ke user SSH agar Git bisa melakukan reset/overwrite
+            sudo chown -R ${{ secrets.SSH_USERNAME }}:${{ secrets.SSH_USERNAME }} .
+
             # Pastikan direktori aman bagi Git
             git config --global --add safe.directory /var/www/POS-Harumnya
 
-            # Ambil update terbaru dari branch main
+            # Ambil update terbaru
             git fetch origin main
             git reset --hard origin/main
 
-            # Install dependencies PHP
-            composer install --no-dev --optimize-autoloader
+            # Install dependencies PHP (Gunakan --no-interaction agar tidak stuck)
+            composer install --no-dev --no-interaction --optimize-autoloader
 
       # Langkah 2: Upload hasil build Vite (folder public/build)
       - name: Upload Build Folder (Vite)
@@ -55,7 +57,6 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          debug: true
           source: "public/build"
           target: "/var/www/POS-Harumnya"
           overwrite: true
@@ -68,24 +69,22 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          debug: true
           script: |
             set -e
             cd /var/www/POS-Harumnya
 
-            # Optimasi Laravel Cache
-            php artisan optimize:clear
-            php artisan config:cache
-            php artisan route:cache
+            # Jalankan migrasi jika ada perubahan database
+            php artisan migrate --force
+
+            # Optimasi Laravel Cache (Satu perintah 'optimize' mencakup config, route, dan file)
+            php artisan optimize
             php artisan view:cache
 
-            # Jalankan migrasi database (opsional, hapus jika tidak perlu otomatis)
-            # php artisan migrate --force
-
-            # Perbaikan Permission (Menggunakan sudo NOPASSWD)
+            # Setel ulang permission agar web server (www-data) bisa menulis ke folder storage
+            # Kita set folder ke www-data, tapi user SSH tetap punya akses (775)
             sudo chown -R ${{ secrets.SSH_USERNAME }}:www-data .
             sudo chmod -R 775 storage bootstrap/cache public/build
 
-            # Restart Service (Sesuaikan versi PHP Anda, misal 8.4)
-            sudo systemctl restart php8.4-fpm
-            sudo systemctl reload nginx
+            # Restart PHP-FPM agar cache opcode bersih (Sesuaikan versi PHP Anda)
+            # Menggunakan reload lebih aman daripada restart untuk zero-downtime
+            sudo systemctl reload php8.4-fpm
