@@ -33,21 +33,21 @@ jobs:
           port: 22
           script: |
             set -e
-            # Sesuaikan dengan folder domain utama Anda
+            # Folder domain utama sesuai setup Nginx terbaru
             cd /var/www/harumnya.cloud
 
-            # Pastikan kepemilikan benar sebelum git reset
+            # Ambil alih kepemilikan agar git bisa update tanpa kendala permission
             sudo chown -R ${{ secrets.USERNAME }}:${{ secrets.USERNAME }} .
             git config --global --add safe.directory /var/www/harumnya.cloud
 
-            # Ambil update terbaru
+            # Ambil update terbaru dari GitHub
             git fetch origin main
             git reset --hard origin/main
 
-            # Install dependencies PHP 8.4
+            # Install dependencies backend PHP 8.4
             composer install --no-dev --no-interaction --optimize-autoloader
 
-      # Langkah 2: Upload hasil build Vite (agar server tidak berat saat build)
+      # Langkah 2: Upload hasil build Vite (public/build)
       - name: Upload Build Folder (Vite)
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -59,7 +59,7 @@ jobs:
           target: "/var/www/harumnya.cloud"
           overwrite: true
 
-      # Langkah 3: Finalisasi, Database, & Permissions
+      # Langkah 3: Finalisasi & Permissions (Tanpa Migrate)
       - name: Finalize & Permissions
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -71,16 +71,13 @@ jobs:
             set -e
             cd /var/www/harumnya.cloud
 
-            # Jalankan migrasi database
-            php artisan migrate --force
-
-            # Optimasi Cache Laravel
+            # Optimasi Cache Laravel agar aplikasi lebih cepat
             php artisan optimize
             php artisan view:cache
 
-            # Setel ulang permission (Sangat krusial untuk PHP 8.4-FPM)
+            # Setel ulang permission agar Nginx (www-data) bisa menulis log/cache
             sudo chown -R ${{ secrets.USERNAME }}:www-data .
             sudo chmod -R 775 storage bootstrap/cache public/build
 
-            # Reload PHP 8.4 FPM sesuai versi di VPS Anda
+            # Reload PHP 8.4 FPM untuk menerapkan perubahan kode
             sudo systemctl reload php8.4-fpm
