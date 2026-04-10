@@ -8,6 +8,7 @@ use App\Http\Requests\POS\CheckoutRequest;
 use App\Http\Requests\POS\StoreCustomerRequest;
 use App\Models\Cart;
 use App\Models\CartPackaging;
+use App\Models\AppSetting;
 use App\Models\Customer;
 use App\Models\CustomerPointLedger;
 use App\Models\DiscountType;
@@ -45,33 +46,33 @@ class POSController extends Controller
 
     public function index(): Response
     {
-        $user    = Auth::user();
+        $user = Auth::user();
         $storeId = $user->default_store_id;
 
-        if (! $storeId) {
+        if (!$storeId) {
             return Inertia::render('Dashboard/Transactions/Index', [
-                'error'              => 'Anda belum memiliki toko default. Hubungi admin.',
-                'carts'              => [],
-                'carts_total'        => 0,
-                'heldCarts'          => [],
-                'variants'           => [],
-                'customers'          => [],
-                'salesPeople'        => [],
+                'error' => 'Anda belum memiliki toko default. Hubungi admin.',
+                'carts' => [],
+                'carts_total' => 0,
+                'heldCarts' => [],
+                'variants' => [],
+                'customers' => [],
+                'salesPeople' => [],
                 'packagingMaterials' => [],
-                'paymentMethods'     => [],
-                'discounts'          => [],
-                'storeId'            => null,
-                'storeName'          => null,
+                'paymentMethods' => [],
+                'discounts' => [],
+                'storeId' => null,
+                'storeName' => null,
             ]);
         }
 
         $store = Store::with('storeCategory')->find($storeId);
 
-        $carts      = $this->getActiveCarts($user->id, $storeId);
+        $carts = $this->getActiveCarts($user->id, $storeId);
         $cartsTotal = $this->calcCartsTotal($carts);
-        $heldCarts  = $this->getHeldCarts($user->id, $storeId);
+        $heldCarts = $this->getHeldCarts($user->id, $storeId);
 
-        $customers = Customer::select('id', 'name', 'phone', 'code', 'tier', 'points')
+        $customers = Customer::select('id', 'name', 'phone', 'code', 'points')
             ->where('is_active', true)
             ->orderBy('name')
             ->limit(100)
@@ -88,7 +89,12 @@ class POSController extends Controller
             ->get();
 
         $paymentMethods = PaymentMethod::select(
-            'id', 'name', 'code', 'type', 'admin_fee_pct', 'can_give_change'
+            'id',
+            'name',
+            'code',
+            'type',
+            'admin_fee_pct',
+            'can_give_change'
         )
             ->where('is_active', true)
             ->orderBy('sort_order')
@@ -97,18 +103,18 @@ class POSController extends Controller
         $discounts = $this->getActiveDiscountsForStore($storeId);
 
         return Inertia::render('Dashboard/Transactions/Index', [
-            'carts'              => $carts,
-            'carts_total'        => $cartsTotal,
-            'heldCarts'          => $heldCarts,
-            'variants'           => $this->getVariantsForStore($store),
-            'customers'          => $customers,
-            'salesPeople'        => $salesPeople,
+            'carts' => $carts,
+            'carts_total' => $cartsTotal,
+            'heldCarts' => $heldCarts,
+            'variants' => $this->getVariantsForStore($store),
+            'customers' => $customers,
+            'salesPeople' => $salesPeople,
             'packagingMaterials' => $packagingMaterials,
-            'paymentMethods'     => $paymentMethods,
-            'discounts'          => $discounts,
-            'storeId'            => $storeId,
-            'storeName'          => $store?->name,
-            'error'              => null,
+            'paymentMethods' => $paymentMethods,
+            'discounts' => $discounts,
+            'storeId' => $storeId,
+            'storeName' => $store?->name,
+            'error' => null,
         ]);
     }
 
@@ -121,9 +127,11 @@ class POSController extends Controller
     {
         $request->validate(['variant_id' => 'required|uuid|exists:variants,id']);
 
-        $intensities = Intensity::whereHas('products', fn ($q) =>
-                $q->where('variant_id', $request->variant_id)->where('is_active', true)
-            )
+        $intensities = Intensity::whereHas(
+            'products',
+            fn($q) =>
+            $q->where('variant_id', $request->variant_id)->where('is_active', true)
+        )
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get(['id', 'name', 'code', 'oil_ratio', 'alcohol_ratio', 'concentration_percentage', 'sort_order']);
@@ -139,15 +147,17 @@ class POSController extends Controller
     public function getSizes(Request $request): JsonResponse
     {
         $request->validate([
-            'variant_id'   => 'required|uuid|exists:variants,id',
+            'variant_id' => 'required|uuid|exists:variants,id',
             'intensity_id' => 'required|uuid|exists:intensities,id',
         ]);
 
-        $sizes = Size::whereHas('products', fn ($q) =>
-                $q->where('variant_id', $request->variant_id)
-                  ->where('intensity_id', $request->intensity_id)
-                  ->where('is_active', true)
-            )
+        $sizes = Size::whereHas(
+            'products',
+            fn($q) =>
+            $q->where('variant_id', $request->variant_id)
+                ->where('intensity_id', $request->intensity_id)
+                ->where('is_active', true)
+        )
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get(['id', 'name', 'volume_ml', 'sort_order'])
@@ -171,10 +181,10 @@ class POSController extends Controller
     public function getPerfumePrice(Request $request): JsonResponse
     {
         $request->validate([
-            'variant_id'      => 'required|uuid|exists:variants,id',
-            'intensity_id'    => 'required|uuid|exists:intensities,id',
-            'size_id'         => 'required|uuid|exists:sizes,id',
-            'packaging_ids'   => 'nullable|array',
+            'variant_id' => 'required|uuid|exists:variants,id',
+            'intensity_id' => 'required|uuid|exists:intensities,id',
+            'size_id' => 'required|uuid|exists:sizes,id',
+            'packaging_ids' => 'nullable|array',
             'packaging_ids.*' => 'uuid|exists:packaging_materials,id',
         ]);
 
@@ -184,7 +194,7 @@ class POSController extends Controller
             ->where('is_active', true)
             ->first();
 
-        if (! $product) {
+        if (!$product) {
             return response()->json([
                 'success' => false,
                 'message' => 'Produk tidak tersedia untuk kombinasi ini',
@@ -196,7 +206,7 @@ class POSController extends Controller
             ->where('is_active', true)
             ->value('price') ?? $product->selling_price;
 
-        $packagingTotal   = 0;
+        $packagingTotal = 0;
         $packagingDetails = [];
 
         if ($request->filled('packaging_ids')) {
@@ -204,10 +214,10 @@ class POSController extends Controller
                 ->where('is_active', true)
                 ->get(['id', 'name', 'selling_price'])
                 ->each(function ($pkg) use (&$packagingTotal, &$packagingDetails) {
-                    $packagingTotal      += $pkg->selling_price ?? 0;
-                    $packagingDetails[]   = [
-                        'id'    => $pkg->id,
-                        'name'  => $pkg->name,
+                    $packagingTotal += $pkg->selling_price ?? 0;
+                    $packagingDetails[] = [
+                        'id' => $pkg->id,
+                        'name' => $pkg->name,
                         'price' => $pkg->selling_price,
                     ];
                 });
@@ -215,15 +225,15 @@ class POSController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'product_id'       => $product->id,
-                'product_name'     => $product->name,
-                'product_sku'      => $product->sku,
-                'perfume_price'    => $perfumePrice,
-                'packaging_total'  => $packagingTotal,
+            'data' => [
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'product_sku' => $product->sku,
+                'perfume_price' => $perfumePrice,
+                'packaging_total' => $packagingTotal,
                 'packaging_detail' => $packagingDetails,
-                'total_price'      => $perfumePrice + $packagingTotal,
-                'stock_available'  => true,
+                'total_price' => $perfumePrice + $packagingTotal,
+                'stock_available' => true,
             ],
         ]);
     }
@@ -236,10 +246,10 @@ class POSController extends Controller
 
     public function addToCart(AddToCartRequest $request): RedirectResponse
     {
-        $user    = Auth::user();
+        $user = Auth::user();
         $storeId = $user->default_store_id;
 
-        abort_unless($storeId, 422, 'Toko default tidak ditemukan');
+        abort_unless(!!$storeId, 422, 'Toko default tidak ditemukan');
 
         $product = Product::where('variant_id', $request->variant_id)
             ->where('intensity_id', $request->intensity_id)
@@ -254,14 +264,14 @@ class POSController extends Controller
 
         DB::transaction(function () use ($request, $user, $storeId, $product, $price) {
             $cart = Cart::create([
-                'cashier_id'   => $user->id,
-                'store_id'     => $storeId,
-                'variant_id'   => $request->variant_id,
+                'cashier_id' => $user->id,
+                'store_id' => $storeId,
+                'variant_id' => $request->variant_id,
                 'intensity_id' => $request->intensity_id,
-                'size_id'      => $request->size_id,
-                'product_id'   => $product?->id,
-                'unit_price'   => $price,
-                'qty'          => $request->qty,
+                'size_id' => $request->size_id,
+                'product_id' => $product?->id,
+                'unit_price' => $price,
+                'qty' => $request->qty,
             ]);
 
             if ($request->filled('packaging_ids')) {
@@ -271,10 +281,10 @@ class POSController extends Controller
 
                 foreach ($pkgs as $pkg) {
                     CartPackaging::create([
-                        'cart_id'               => $cart->id,
+                        'cart_id' => $cart->id,
                         'packaging_material_id' => $pkg->id,
-                        'qty'                   => 1,
-                        'unit_price'            => $pkg->selling_price ?? 0,
+                        'qty' => 1,
+                        'unit_price' => $pkg->selling_price ?? 0,
                     ]);
                 }
             }
@@ -323,7 +333,7 @@ class POSController extends Controller
     {
         $request->validate([
             'packaging_material_id' => 'required|uuid|exists:packaging_materials,id',
-            'qty'                   => 'integer|min:1|max:20',
+            'qty' => 'integer|min:1|max:20',
         ]);
 
         $cart = Cart::where('id', $cartId)
@@ -342,10 +352,10 @@ class POSController extends Controller
             $existing->increment('qty', $request->qty ?? 1);
         } else {
             CartPackaging::create([
-                'cart_id'               => $cart->id,
+                'cart_id' => $cart->id,
                 'packaging_material_id' => $request->packaging_material_id,
-                'qty'                   => $request->qty ?? 1,
-                'unit_price'            => $pkg->selling_price ?? 0,
+                'qty' => $request->qty ?? 1,
+                'unit_price' => $pkg->selling_price ?? 0,
             ]);
         }
 
@@ -359,7 +369,7 @@ class POSController extends Controller
 
     public function removePackaging(string $id): RedirectResponse
     {
-        CartPackaging::whereHas('cart', fn ($q) => $q->where('cashier_id', Auth::id()))
+        CartPackaging::whereHas('cart', fn($q) => $q->where('cashier_id', Auth::id()))
             ->findOrFail($id)
             ->delete();
 
@@ -373,17 +383,17 @@ class POSController extends Controller
 
     public function holdCart(Request $request): RedirectResponse
     {
-        $user    = Auth::user();
+        $user = Auth::user();
         $storeId = $user->default_store_id;
-        $holdId  = (string) Str::uuid();
+        $holdId = (string) Str::uuid();
 
         Cart::where('cashier_id', $user->id)
             ->where('store_id', $storeId)
             ->whereNull('hold_id')
             ->update([
-                'hold_id'         => $holdId,
-                'hold_label'      => $request->label ?? 'Hold ' . now()->format('H:i'),
-                'held_at'         => now(),
+                'hold_id' => $holdId,
+                'hold_label' => $request->label ?? 'Hold ' . now()->format('H:i'),
+                'held_at' => now(),
                 'cart_expires_at' => now()->addHours(2),
             ]);
 
@@ -397,7 +407,7 @@ class POSController extends Controller
 
     public function resumeCart(string $holdId): RedirectResponse
     {
-        $user    = Auth::user();
+        $user = Auth::user();
         $storeId = $user->default_store_id;
 
         DB::transaction(function () use ($user, $storeId, $holdId) {
@@ -405,9 +415,9 @@ class POSController extends Controller
             if (Cart::where('cashier_id', $user->id)->where('store_id', $storeId)->whereNull('hold_id')->exists()) {
                 Cart::where('cashier_id', $user->id)->where('store_id', $storeId)->whereNull('hold_id')
                     ->update([
-                        'hold_id'         => (string) Str::uuid(),
-                        'hold_label'      => 'Hold ' . now()->format('H:i'),
-                        'held_at'         => now(),
+                        'hold_id' => (string) Str::uuid(),
+                        'hold_label' => 'Hold ' . now()->format('H:i'),
+                        'held_at' => now(),
                         'cart_expires_at' => now()->addHours(2),
                     ]);
             }
@@ -417,9 +427,9 @@ class POSController extends Controller
                 ->where('store_id', $storeId)
                 ->where('hold_id', $holdId)
                 ->update([
-                    'hold_id'         => null,
-                    'hold_label'      => null,
-                    'held_at'         => null,
+                    'hold_id' => null,
+                    'hold_label' => null,
+                    'held_at' => null,
                     'cart_expires_at' => null,
                 ]);
         });
@@ -448,16 +458,16 @@ class POSController extends Controller
 
     public function store(CheckoutRequest $request): RedirectResponse
     {
-        $user    = Auth::user();
+        $user = Auth::user();
         $storeId = $user->default_store_id;
 
         $carts = Cart::with([
-                'packagings.packagingMaterial',
-                'product',
-                'variant:id,name,code',
-                'intensity:id,name,code',
-                'size:id,name,volume_ml',
-            ])
+            'packagings.packagingMaterial',
+            'product',
+            'variant:id,name,code',
+            'intensity:id,name,code',
+            'size:id,name,volume_ml',
+        ])
             ->where('cashier_id', $user->id)
             ->where('store_id', $storeId)
             ->whereNull('hold_id')
@@ -468,9 +478,9 @@ class POSController extends Controller
         }
 
         $paymentMethod = PaymentMethod::findOrFail($request->payment_method_id);
-        $customer      = $request->customer_id ? Customer::find($request->customer_id) : null;
-        $salesPerson   = $request->sales_person_id ? SalesPerson::find($request->sales_person_id) : null;
-        $discountType  = $request->discount_type_id ? DiscountType::find($request->discount_type_id) : null;
+        $customer = $request->customer_id ? Customer::find($request->customer_id) : null;
+        $salesPerson = $request->sales_person_id ? SalesPerson::find($request->sales_person_id) : null;
+        $discountType = $request->discount_type_id ? DiscountType::find($request->discount_type_id) : null;
 
         // Standalone packagings dari tab Kemasan
         $standalonePkgs = [];
@@ -483,75 +493,72 @@ class POSController extends Controller
             }
         }
 
-        DB::transaction(function () use (
-            $carts, $standalonePkgs, $request, $user, $storeId,
-            $paymentMethod, $customer, $salesPerson, $discountType
-        ) {
+        DB::transaction(function () use ($carts, $standalonePkgs, $request, $user, $storeId, $paymentMethod, $customer, $salesPerson, $discountType) {
             [$subtotalPerfume, $subtotalPackaging, $cogsPerfume, $cogsPackaging]
                 = $this->calcSubtotals($carts, $standalonePkgs);
 
-            $subtotal       = $subtotalPerfume + $subtotalPackaging;
+            $subtotal = $subtotalPerfume + $subtotalPackaging;
             $discountAmount = min((float) ($request->discount_amount ?? 0), $subtotal);
-            $total          = max(0, $subtotal - $discountAmount);
+            $total = max(0, $subtotal - $discountAmount);
 
-            $isCash     = $paymentMethod->can_give_change || $paymentMethod->type === 'cash';
+            $isCash = $paymentMethod->can_give_change || $paymentMethod->type === 'cash';
             $amountPaid = $isCash ? (float) ($request->cash_amount ?? $total) : $total;
-            $adminFee   = (int) round($amountPaid * ($paymentMethod->admin_fee_pct ?? 0) / 100);
-            $change     = $isCash ? max(0, $amountPaid - $total) : 0;
-            $cogsTotal  = $cogsPerfume + $cogsPackaging;
+            $adminFee = (int) round($amountPaid * ($paymentMethod->admin_fee_pct ?? 0) / 100);
+            $change = $isCash ? max(0, $amountPaid - $total) : 0;
+            $cogsTotal = $cogsPerfume + $cogsPackaging;
             $grossProfit = $total - $cogsTotal;
-            $marginPct   = $total > 0 ? round($grossProfit / $total * 100, 2) : 0;
+            $marginPct = $total > 0 ? round($grossProfit / $total * 100, 2) : 0;
 
             // ── Sale header ────────────────────────────────────────────────────
             $sale = Sale::create([
-                'sale_number'        => $this->generateSaleNumber($storeId),
-                'store_id'           => $storeId,
-                'cashier_id'         => $user->id,
-                'cashier_name'       => $user->name,
-                'sales_person_id'    => $salesPerson?->id,
-                'sales_person_name'  => $salesPerson?->name,
-                'customer_id'        => $customer?->id,
-                'customer_name'      => $customer?->name,
-                'sold_at'            => now(),
-                'subtotal_perfume'   => $subtotalPerfume,
+                'sale_number' => $this->generateSaleNumber($storeId),
+                'store_id' => $storeId,
+                'cashier_id' => $user->id,
+                'cashier_name' => $user->name,
+                'sales_person_id' => $salesPerson?->id,
+                'sales_person_name' => $salesPerson?->name,
+                'customer_id' => $customer?->id,
+                'customer_name' => $customer?->name,
+                'sold_at' => now(),
+                'subtotal_perfume' => $subtotalPerfume,
                 'subtotal_packaging' => $subtotalPackaging,
-                'subtotal'           => $subtotal,
-                'discount_amount'    => $discountAmount,
-                'tax_amount'         => 0,
-                'total'              => $total,
-                'amount_paid'        => (int) $amountPaid,
-                'change_amount'      => (int) $change,
-                'cogs_perfume'       => $cogsPerfume,
-                'cogs_packaging'     => $cogsPackaging,
-                'cogs_total'         => $cogsTotal,
-                'gross_profit'       => $grossProfit,
-                'gross_margin_pct'   => $marginPct,
-                'points_earned'      => 0,
-                'points_redeemed'    => 0,
-                'status'             => 'completed',
+                'subtotal' => $subtotal,
+                'discount_amount' => $discountAmount,
+                'tax_amount' => 0,
+                'total' => $total,
+                'amount_paid' => (int) $amountPaid,
+                'change_amount' => (int) $change,
+                'cogs_perfume' => $cogsPerfume,
+                'cogs_packaging' => $cogsPackaging,
+                'cogs_total' => $cogsTotal,
+                'gross_profit' => $grossProfit,
+                'gross_margin_pct' => $marginPct,
+                'points_earned' => 0,
+                'points_redeemed' => 0,
+                'status' => 'completed',
             ]);
 
             // ── Sale items dari cart ───────────────────────────────────────────
             foreach ($carts as $cart) {
-                $itemSub    = $cart->unit_price * $cart->qty;
-                $itemCogs   = ($cart->product?->production_cost ?? 0) * $cart->qty;
+                $itemSub = $cart->unit_price * $cart->qty;
+                $itemCogs = ($cart->product?->production_cost ?? 0) * $cart->qty;
                 $itemProfit = $itemSub - $itemCogs;
 
                 $saleItem = SaleItem::create([
-                    'sale_id'               => $sale->id,
-                    'product_id'            => $cart->product_id,
-                    'product_name'          => $this->buildProductName($cart),
-                    'product_sku'           => $cart->product?->sku,
-                    'variant_name'          => $cart->variant?->name,
-                    'intensity_code'        => $cart->intensity?->code,
-                    'size_ml'               => $cart->size?->volume_ml,
-                    'qty'                   => $cart->qty,
-                    'unit_price'            => $cart->unit_price,
-                    'item_discount'         => 0,
-                    'subtotal'              => $itemSub,
-                    'cogs_per_unit'         => $cart->product?->production_cost ?? 0,
-                    'cogs_total'            => $itemCogs,
-                    'line_gross_profit'     => $itemProfit,
+                    'sale_id' => $sale->id,
+                    'product_id' => $cart->product_id,
+                    'product_name' => $this->buildProductName($cart),
+                    'product_sku' => $cart->product?->sku,
+                    'variant_name' => $cart->variant?->name,
+                    'intensity_code' => $cart->intensity?->code,
+                    'size_ml' => $cart->size?->volume_ml,
+                    'qty' => $cart->qty,
+                    'unit_price' => $cart->unit_price,
+                    'item_discount' => 0,
+                    'subtotal' => $itemSub,
+                    'cogs_per_unit' => $cart->product?->production_cost ?? 0,
+                    'cogs_total' => $itemCogs,
+                    'line_gross_profit' => $itemProfit,
                     'line_gross_margin_pct' => $itemSub > 0 ? round($itemProfit / $itemSub * 100, 2) : 0,
                 ]);
 
@@ -562,71 +569,73 @@ class POSController extends Controller
 
             // ── Standalone packagings sebagai sale items terpisah ──────────────
             foreach ($standalonePkgs as $sp) {
-                $pkg     = $sp['pkg'];
-                $qty     = $sp['qty'];
-                $pkgSub  = ($pkg->selling_price ?? 0) * $qty;
+                $pkg = $sp['pkg'];
+                $qty = $sp['qty'];
+                $pkgSub = ($pkg->selling_price ?? 0) * $qty;
                 $pkgCogs = ($pkg->average_cost ?? 0) * $qty;
 
                 SaleItem::create([
-                    'sale_id'               => $sale->id,
-                    'product_id'            => null,
-                    'product_name'          => '[Kemasan] ' . $pkg->name,
-                    'product_sku'           => $pkg->code,
-                    'variant_name'          => null,
-                    'intensity_code'        => null,
-                    'size_ml'               => null,
-                    'qty'                   => $qty,
-                    'unit_price'            => $pkg->selling_price ?? 0,
-                    'item_discount'         => 0,
-                    'subtotal'              => $pkgSub,
-                    'cogs_per_unit'         => $pkg->average_cost ?? 0,
-                    'cogs_total'            => $pkgCogs,
-                    'line_gross_profit'     => $pkgSub - $pkgCogs,
+                    'sale_id' => $sale->id,
+                    'product_id' => null,
+                    'product_name' => '[Kemasan] ' . $pkg->name,
+                    'product_sku' => $pkg->code,
+                    'variant_name' => null,
+                    'intensity_code' => null,
+                    'size_ml' => null,
+                    'qty' => $qty,
+                    'unit_price' => $pkg->selling_price ?? 0,
+                    'item_discount' => 0,
+                    'subtotal' => $pkgSub,
+                    'cogs_per_unit' => $pkg->average_cost ?? 0,
+                    'cogs_total' => $pkgCogs,
+                    'line_gross_profit' => $pkgSub - $pkgCogs,
                     'line_gross_margin_pct' => $pkgSub > 0
                         ? round(($pkgSub - $pkgCogs) / $pkgSub * 100, 2) : 0,
-                    'notes'                 => 'Kemasan standalone',
+                    'notes' => 'Kemasan standalone',
                 ]);
             }
 
             // ── Sale discount ──────────────────────────────────────────────────
             if ($discountAmount > 0) {
                 SaleDiscount::create([
-                    'sale_id'           => $sale->id,
-                    'discount_type_id'  => $discountType?->id,
-                    'discount_name'     => $discountType?->name ?? 'Diskon Manual',
+                    'sale_id' => $sale->id,
+                    'discount_type_id' => $discountType?->id,
+                    'discount_name' => $discountType?->name ?? 'Diskon Manual',
                     'discount_category' => $discountType?->type ?? 'manual',
-                    'discount_value'    => $discountType?->value ?? 0,
-                    'applied_amount'    => (int) $discountAmount,
-                    'sort_order'        => 1,
+                    'discount_value' => $discountType?->value ?? 0,
+                    'applied_amount' => (int) $discountAmount,
+                    'sort_order' => 1,
                 ]);
 
                 if ($discountType) {
                     DiscountUsage::create([
                         'discount_type_id' => $discountType->id,
-                        'user_id'          => $user->id,
-                        'order_id'         => $sale->id,
-                        'amount_saved'     => (int) $discountAmount,
-                        'used_at'          => now(),
+                        'user_id' => $user->id,
+                        'order_id' => $sale->id,
+                        'amount_saved' => (int) $discountAmount,
+                        'used_at' => now(),
                     ]);
                 }
             }
 
             // ── Sale payment ───────────────────────────────────────────────────
             SalePayment::create([
-                'sale_id'             => $sale->id,
-                'payment_method_id'   => $paymentMethod->id,
-                'amount'              => (int) $amountPaid,
-                'admin_fee'           => $adminFee,
+                'sale_id' => $sale->id,
+                'payment_method_id' => $paymentMethod->id,
+                'amount' => (int) $amountPaid,
+                'admin_fee' => $adminFee,
                 'payment_method_name' => $paymentMethod->name,
                 'payment_method_type' => $paymentMethod->type,
-                'reference_number'    => $request->reference_number,
-                'payment_status'      => 'completed',
-                'settled_at'          => now(),
+                'reference_number' => $request->reference_number,
+                'payment_status' => 'completed',
+                'settled_at' => now(),
             ]);
 
             // ── Loyalty points ─────────────────────────────────────────────────
             if ($customer && $total > 0) {
-                $pointsEarned = (int) floor($total / 10000);
+                // Get point rate from settings, default to 10.000
+                $conversionRate = (int) AppSetting::getValue('loyalty_point_rate', 10000);
+                $pointsEarned = $conversionRate > 0 ? (int) floor($total / $conversionRate) : 0;
 
                 if ($pointsEarned > 0) {
                     $sale->update(['points_earned' => $pointsEarned]);
@@ -636,12 +645,12 @@ class POSController extends Controller
                     $customer->increment('total_transactions');
 
                     CustomerPointLedger::create([
-                        'customer_id'    => $customer->id,
-                        'type'           => 'earned',
-                        'points'         => $pointsEarned,
+                        'customer_id' => $customer->id,
+                        'type' => 'earned',
+                        'points' => $pointsEarned,
                         'reference_type' => Sale::class,
-                        'reference_id'   => $sale->id,
-                        'notes'          => "Pembelian {$sale->sale_number}",
+                        'reference_id' => $sale->id,
+                        'notes' => "Pembelian {$sale->sale_number}",
                     ]);
                 }
             }
@@ -665,22 +674,20 @@ class POSController extends Controller
     public function storeCustomer(StoreCustomerRequest $request): JsonResponse
     {
         $customer = Customer::create([
-            'code'          => $this->generateCustomerCode(),
-            'name'          => $request->name,
-            'phone'         => $request->phone,
-            'email'         => $request->email,
-            'birth_date'    => $request->birth_date,
-            'gender'        => $request->gender,
-            'tier'          => 'bronze',
-            'points'        => 0,
-            'is_active'     => true,
+            'code' => $this->generateCustomerCode(),
+            'name' => $request->name,
+            'phone' => $request->phone,
+            'email' => $request->email,
+            'birth_date' => $request->birth_date,
+            'gender' => $request->gender,
+            'is_active' => true,
             'registered_at' => now(),
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Pelanggan baru berhasil ditambahkan',
-            'data'    => $customer->only('id', 'name', 'phone', 'code', 'tier', 'points'),
+            'data' => $customer->only('id', 'name', 'phone', 'code', 'points'),
         ]);
     }
 
@@ -691,14 +698,15 @@ class POSController extends Controller
 
     public function searchCustomers(Request $request): JsonResponse
     {
-        $q = trim($request->get('q', ''));
+        $q = trim($request->input('q', ''));
 
-        $customers = Customer::select('id', 'name', 'phone', 'code', 'tier', 'points')
+        $customers = Customer::select('id', 'name', 'phone', 'code', 'points')
             ->where('is_active', true)
-            ->when($q, fn ($query) => $query->where(fn ($inner) =>
+            ->when($q, fn($query) => $query->where(
+                fn($inner) =>
                 $inner->where('name', 'like', "%{$q}%")
-                      ->orWhere('phone', 'like', "%{$q}%")
-                      ->orWhere('code', 'like', "%{$q}%")
+                    ->orWhere('phone', 'like', "%{$q}%")
+                    ->orWhere('code', 'like', "%{$q}%")
             ))
             ->orderBy('name')
             ->limit(20)
@@ -716,12 +724,12 @@ class POSController extends Controller
     public function checkDiscounts(Request $request): JsonResponse
     {
         $request->validate([
-            'cart_total'    => 'required|numeric|min:0',
+            'cart_total' => 'required|numeric|min:0',
             'cart_quantity' => 'required|integer|min:0',
-            'cart_items'    => 'nullable|array',
+            'cart_items' => 'nullable|array',
         ]);
 
-        $storeId  = Auth::user()->default_store_id;
+        $storeId = Auth::user()->default_store_id;
         $eligible = $this->getActiveDiscountsForStore($storeId)
             ->filter(function ($d) use ($request) {
                 if ($d->min_purchase_amount && $request->cart_total < $d->min_purchase_amount) {
@@ -747,11 +755,11 @@ class POSController extends Controller
     private function getActiveCarts(int $cashierId, string $storeId): Collection
     {
         return Cart::with([
-                'variant:id,name,code,image',
-                'intensity:id,name,code',
-                'size:id,name,volume_ml',
-                'packagings.packagingMaterial:id,name,code,selling_price',
-            ])
+            'variant:id,name,code,image',
+            'intensity:id,name,code',
+            'size:id,name,volume_ml',
+            'packagings.packagingMaterial:id,name,code,selling_price',
+        ])
             ->where('cashier_id', $cashierId)
             ->where('store_id', $storeId)
             ->whereNull('hold_id')
@@ -762,7 +770,7 @@ class POSController extends Controller
     private function calcCartsTotal(Collection $carts): int
     {
         return (int) $carts->sum(function ($cart) {
-            $pkgTotal = $cart->packagings->sum(fn ($p) => ($p->unit_price ?? 0) * ($p->qty ?? 1));
+            $pkgTotal = $cart->packagings->sum(fn($p) => ($p->unit_price ?? 0) * ($p->qty ?? 1));
             return ($cart->unit_price ?? 0) * $cart->qty + $pkgTotal;
         });
     }
@@ -776,10 +784,10 @@ class POSController extends Controller
             ->selectRaw('SUM(unit_price * qty) as total')
             ->groupBy('hold_id', 'hold_label', 'held_at')
             ->get()
-            ->map(fn ($h) => [
+            ->map(fn($h) => [
                 'hold_id' => $h->hold_id,
-                'label'   => $h->hold_label,
-                'total'   => (int) $h->total,
+                'label' => $h->hold_label,
+                'total' => (int) $h->total,
                 'held_at' => $h->held_at,
             ]);
     }
@@ -795,13 +803,13 @@ class POSController extends Controller
     {
         $base = Variant::where('is_active', true)->orderBy('sort_order');
 
-        if (! $store || ! $store->store_category_id) {
+        if (!$store || !$store->store_category_id) {
             return $base->get(['id', 'name', 'code', 'gender', 'image']);
         }
 
         $category = $store->storeCategory;
 
-        if (! $category || $category->allow_all_variants) {
+        if (!$category || $category->allow_all_variants) {
             return $base->get(['id', 'name', 'code', 'gender', 'image']);
         }
 
@@ -825,19 +833,30 @@ class POSController extends Controller
     private function getActiveDiscountsForStore(string $storeId): Collection
     {
         return DiscountType::where('is_active', true)
-            ->where(fn ($q) => $q->whereNull('start_date')
-                                 ->orWhereDate('start_date', '<=', today()))
-            ->where(fn ($q) => $q->whereNull('end_date')
-                                 ->orWhereDate('end_date', '>=', today()))
-            ->where(fn ($q) => $q->whereDoesntHave('stores')
-                                 ->orWhereHas('stores', fn ($sq) => $sq->where('store_id', $storeId)))
+            ->where(fn($q) => $q->whereNull('start_date')
+                ->orWhereDate('start_date', '<=', today()))
+            ->where(fn($q) => $q->whereNull('end_date')
+                ->orWhereDate('end_date', '>=', today()))
+            ->where(fn($q) => $q->whereDoesntHave('stores')
+                ->orWhereHas('stores', fn($sq) => $sq->where('store_id', $storeId)))
             ->with(['requirements', 'applicabilities'])
             ->orderByDesc('priority')
             ->get([
-                'id', 'name', 'code', 'type', 'value', 'description',
-                'min_purchase_amount', 'min_purchase_quantity',
-                'max_discount_amount', 'buy_quantity', 'get_quantity',
-                'get_product_type', 'is_game_reward', 'is_combinable', 'priority',
+                'id',
+                'name',
+                'code',
+                'type',
+                'value',
+                'description',
+                'min_purchase_amount',
+                'min_purchase_quantity',
+                'max_discount_amount',
+                'buy_quantity',
+                'get_quantity',
+                'get_product_type',
+                'is_game_reward',
+                'is_combinable',
+                'priority',
             ]);
     }
 
@@ -846,15 +865,18 @@ class POSController extends Controller
      */
     private function checkRequirements($requirements, array $cartItems): bool
     {
-        $groups = $requirements->groupBy(fn ($r) => $r->group_key ?? 'grp_' . $r->id);
+        $groups = $requirements->groupBy(fn($r) => $r->group_key ?? 'grp_' . $r->id);
 
         foreach ($groups as $group) {
             $groupMet = false;
             foreach ($group as $req) {
                 $matchQty = collect($cartItems)->filter(function ($item) use ($req) {
-                    if ($req->size_id      && ($item['size_id']      ?? null) !== $req->size_id)      return false;
-                    if ($req->intensity_id && ($item['intensity_id'] ?? null) !== $req->intensity_id) return false;
-                    if ($req->variant_id   && ($item['variant_id']   ?? null) !== $req->variant_id)   return false;
+                    if ($req->size_id && ($item['size_id'] ?? null) !== $req->size_id)
+                        return false;
+                    if ($req->intensity_id && ($item['intensity_id'] ?? null) !== $req->intensity_id)
+                        return false;
+                    if ($req->variant_id && ($item['variant_id'] ?? null) !== $req->variant_id)
+                        return false;
                     return true;
                 })->sum('qty');
 
@@ -863,7 +885,8 @@ class POSController extends Controller
                     break;
                 }
             }
-            if (! $groupMet) return false;
+            if (!$groupMet)
+                return false;
         }
         return true;
     }
@@ -885,7 +908,7 @@ class POSController extends Controller
         }
         foreach ($standalonePkgs as $s) {
             $sc += ($s['pkg']->selling_price ?? 0) * $s['qty'];
-            $cc += ($s['pkg']->average_cost  ?? 0) * $s['qty'];
+            $cc += ($s['pkg']->average_cost ?? 0) * $s['qty'];
         }
 
         return [(int) $sp, (int) $sc, (int) $cp, (int) $cc];
@@ -893,20 +916,20 @@ class POSController extends Controller
 
     private function createSaleItemPackaging(string $saleItemId, $cartPkg): void
     {
-        $sub  = $cartPkg->unit_price * $cartPkg->qty;
+        $sub = $cartPkg->unit_price * $cartPkg->qty;
         $cogs = ($cartPkg->packagingMaterial?->average_cost ?? 0) * $cartPkg->qty;
 
         SaleItemPackaging::create([
-            'sale_item_id'          => $saleItemId,
+            'sale_item_id' => $saleItemId,
             'packaging_material_id' => $cartPkg->packaging_material_id,
-            'packaging_name'        => $cartPkg->packagingMaterial?->name ?? 'Packaging',
-            'packaging_code'        => $cartPkg->packagingMaterial?->code,
-            'qty'                   => $cartPkg->qty,
-            'unit_price'            => $cartPkg->unit_price,
-            'subtotal'              => $sub,
-            'unit_cost'             => $cartPkg->packagingMaterial?->average_cost ?? 0,
-            'cogs_total'            => $cogs,
-            'line_gross_profit'     => $sub - $cogs,
+            'packaging_name' => $cartPkg->packagingMaterial?->name ?? 'Packaging',
+            'packaging_code' => $cartPkg->packagingMaterial?->code,
+            'qty' => $cartPkg->qty,
+            'unit_price' => $cartPkg->unit_price,
+            'subtotal' => $sub,
+            'unit_cost' => $cartPkg->packagingMaterial?->average_cost ?? 0,
+            'cogs_total' => $cogs,
+            'line_gross_profit' => $sub - $cogs,
             'line_gross_margin_pct' => $sub > 0 ? round(($sub - $cogs) / $sub * 100, 2) : 0,
         ]);
     }
@@ -926,11 +949,11 @@ class POSController extends Controller
     private function generateSaleNumber(string $storeId): string
     {
         $prefix = 'INV/' . now()->format('Ymd') . '/';
-        $last   = Sale::where('sale_number', 'like', $prefix . '%')
+        $last = Sale::where('sale_number', 'like', $prefix . '%')
             ->lockForUpdate()
             ->orderByDesc('sale_number')
             ->value('sale_number');
-        $seq    = $last ? ((int) substr($last, -5)) + 1 : 1;
+        $seq = $last ? ((int) substr($last, -5)) + 1 : 1;
         return $prefix . str_pad($seq, 5, '0', STR_PAD_LEFT);
     }
 

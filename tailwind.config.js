@@ -25,81 +25,81 @@ export default {
                 ],
             },
             colors: {
-                // Primary - Deep Teal (sidebar background, main dark color)
+                // Primary - Vivid Indigo (Biru Nila yang sangat kuat dan terang)
                 primary: {
-                    50: "#e6f4f6",
-                    100: "#c0e3e9",
-                    200: "#8dcad5",
-                    300: "#52afc0",
-                    400: "#2b98ae",
-                    500: "#0e8299",
-                    600: "#0a6e82",
-                    700: "#075a6b",
-                    800: "#054656",
-                    900: "#0d2d3a",  // main sidebar dark bg
-                    950: "#071a22",
+                    50: "#eef2ff",
+                    100: "#e0e7ff",
+                    200: "#c7d2fe",
+                    300: "#a5b4fc",
+                    400: "#818cf8",
+                    500: "#6366f1",  // Main Primary - Sangat cerah dan berenergi
+                    600: "#4f46e5",  // Hover state yang kuat
+                    700: "#4338ca",
+                    800: "#3730a3",
+                    900: "#1e1b4b",  // Background gelap yang kaya warna (tidak kusam)
+                    950: "#111029",
                 },
-                // Accent - Bright Cyan/Teal (active states, highlights, badges)
+                // Accent - Electric Cyan (Neon yang sangat menyala untuk highlight/badge)
                 accent: {
-                    50: "#e0faf8",
-                    100: "#b3f3ee",
-                    200: "#7deae3",
-                    300: "#3dddd6",
-                    400: "#16d0c9",  // bright active highlight
-                    500: "#0ab8b0",
-                    600: "#089b94",
-                    700: "#067d77",
-                    800: "#04605b",
-                    900: "#024441",
-                    950: "#012928",
+                    50: "#ecfeff",
+                    100: "#cffafe",
+                    200: "#a5f3fc",
+                    300: "#67e8f9",
+                    400: "#22d3ee",  // Active highlight yang sangat mencolok
+                    500: "#06b6d4",
+                    600: "#0891b2",
+                    700: "#0e7490",
+                    800: "#155e75",
+                    900: "#164e63",
+                    950: "#083344",
                 },
-                // Sidebar - Dark Navy Teal shades for sidebar layers
+                // Sidebar - Deep Rich Indigo (Gelap tapi warnanya tetap hidup/vibrant)
                 sidebar: {
-                    bg: "#0d2d3a",        // main sidebar background
-                    surface: "#0f3545",   // slightly lighter surface
-                    hover: "#134050",     // hover state
-                    active: "#1a5265",    // active/selected item bg
-                    border: "#1b4d5e",    // subtle borders
-                    muted: "#4d8a9a",     // muted text
-                    text: "#b8d8e0",      // default sidebar text
-                    heading: "#6bb8c8",   // section headings
+                    bg: "#111029",        // Background sidebar utama (sangat gelap tapi kebiruan)
+                    surface: "#1e1b4b",   // Layer di atas bg
+                    hover: "#3730a3",     // Hover state menyala
+                    active: "#4f46e5",    // Item aktif menggunakan biru kuat
+                    border: "#312e81",    // Border yang lebih tegas
+                    muted: "#818cf8",     // Text muted tapi tetap terbaca jelas
+                    text: "#e0e7ff",      // Text default putih kebiruan bersih
+                    heading: "#22d3ee",   // Heading menggunakan cyan cerah agar "Pop!"
                 },
-                // Success - Emerald
+                // Success - Vivid Emerald (Hijau menyala)
                 success: {
                     50: "#ecfdf5",
                     100: "#d1fae5",
                     200: "#a7f3d0",
                     300: "#6ee7b7",
                     400: "#34d399",
-                    500: "#10b981",
+                    500: "#10b981",  // Lebih cerah dari hijau standar
                     600: "#059669",
                     700: "#047857",
                     800: "#065f46",
                     900: "#064e3b",
                     950: "#022c22",
                 },
-                // Warning - Amber
+                // Warning - Bright Amber (Kuning/Oranye terang)
                 warning: {
                     50: "#fffbeb",
                     100: "#fef3c7",
                     200: "#fde68a",
                     300: "#fcd34d",
                     400: "#fbbf24",
-                    500: "#f59e0b",
+                    500: "#f59e0b",  // Oranye cerah
                     600: "#d97706",
                     700: "#b45309",
                     800: "#92400e",
                     900: "#78350f",
                     950: "#451a03",
                 },
-                // Danger - Rose
+                // Danger - Vibrant Rose/Red (Merah Pink menyala)
                 danger: {
                     50: "#fff1f2",
                     100: "#ffe4e6",
                     200: "#fecdd3",
                     300: "#fda4af",
                     400: "#fb7185",
-                    500: "#f43f5e",
+                    500: "#f43f5e",  // Merah yang sangat "punchy"
                     600: "#e11d48",
                     700: "#be123c",
                     800: "#9f1239",
@@ -126,11 +126,12 @@ export default {
                 "4xl": "2rem",
             },
             boxShadow: {
-                glow: "0 0 20px rgba(14, 130, 153, 0.35)",
-                "glow-lg": "0 0 40px rgba(14, 130, 153, 0.45)",
-                "glow-accent": "0 0 20px rgba(22, 208, 201, 0.4)",
-                "inner-lg": "inset 0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                sidebar: "4px 0 24px rgba(7, 26, 34, 0.6)",
+                // Glow disesuaikan dengan warna baru agar bersinar cerah
+                glow: "0 0 20px rgba(99, 102, 241, 0.45)",
+                "glow-lg": "0 0 40px rgba(99, 102, 241, 0.55)",
+                "glow-accent": "0 0 25px rgba(34, 211, 238, 0.55)",
+                "inner-lg": "inset 0 4px 6px -1px rgb(0 0 0 / 0.15)",
+                sidebar: "4px 0 24px rgba(17, 16, 41, 0.7)",
             },
             animation: {
                 "slide-in": "slideIn 0.2s ease-out",

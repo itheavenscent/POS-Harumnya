@@ -14,40 +14,45 @@ class DiscountType extends Model
     protected $table = 'discount_types';
 
     protected $fillable = [
-        'code', 'name', 'type', 'value',
-        'buy_quantity', 'get_quantity', 'get_product_type',
-        'min_purchase_amount', 'min_purchase_quantity', 'max_discount_amount',
-        'start_date', 'end_date',
-        // FIX: tambah start_time & end_time sesuai migration
-        'start_time', 'end_time',
-        'is_game_reward', 'game_probability',
-        'priority', 'is_combinable', 'is_active',
-        'description', 'terms_conditions',
+        'code',
+        'name',
+        'type',
+        'value',
+        'buy_quantity',
+        'get_quantity',
+        'get_product_type',
+        'min_purchase_amount',
+        'min_purchase_quantity',
+        'max_discount_amount',
+        'start_date',
+        'end_date',
+        'start_time',
+        'end_time',
+        'is_game_reward',
+        'game_probability',
+        'priority',
+        'is_combinable',
+        'is_active',
+        'description',
+        'terms_conditions',
     ];
 
     protected $casts = [
-        // decimal(15,2) — nilai diskon: angka % atau rupiah
         'value'                 => 'decimal:2',
-        // decimal(15,2) — minimal total belanja agar diskon berlaku (rupiah)
         'min_purchase_amount'   => 'decimal:2',
-        // decimal(15,2) — batas maksimal potongan (rupiah)
         'max_discount_amount'   => 'decimal:2',
-        // integer fields
         'buy_quantity'          => 'integer',
         'get_quantity'          => 'integer',
         'min_purchase_quantity' => 'integer',
         'game_probability'      => 'integer',
         'priority'              => 'integer',
-        // boolean fields
         'is_game_reward'        => 'boolean',
         'is_combinable'         => 'boolean',
         'is_active'             => 'boolean',
-        // date fields
         'start_date'            => 'date',
         'end_date'              => 'date',
-        // time fields — disimpan sebagai string HH:MM:SS, tidak perlu cast khusus
-        // 'start_time' dan 'end_time' akan dikembalikan sebagai string
-        // json
+        // start_time & end_time: TIME kolom — dikembalikan sebagai string "HH:MM:SS"
+        // Tidak di-cast ke Carbon agar tidak ada overhead & mudah dibandingkan string
         'terms_conditions'      => 'array',
     ];
 
@@ -85,11 +90,18 @@ class DiscountType extends Model
     // Scopes
     // -------------------------------------------------------------------------
 
+    /** Hanya diskon yang is_active = true */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
+    /**
+     * Diskon yang saat ini valid:
+     *   - is_active
+     *   - tanggal start/end mencakup hari ini (null = tidak dibatasi)
+     *   - jam start_time/end_time mencakup jam sekarang (null = sepanjang hari)
+     */
     public function scopeCurrentlyValid($query)
     {
         $now   = now();
@@ -98,10 +110,8 @@ class DiscountType extends Model
 
         return $query
             ->active()
-            // Tanggal berlaku
             ->where(fn ($q) => $q->whereNull('start_date')->orWhereDate('start_date', '<=', $today))
             ->where(fn ($q) => $q->whereNull('end_date')->orWhereDate('end_date', '>=', $today))
-            // Happy hour: jika start_time/end_time diset, cek range jam
             ->where(fn ($q) => $q
                 ->whereNull('start_time')
                 ->orWhere(fn ($inner) => $inner
@@ -128,42 +138,63 @@ class DiscountType extends Model
         };
     }
 
+    /** Cek apakah diskon ini sedang aktif berdasarkan tanggal dan jam. */
     public function isCurrentlyActive(): bool
     {
-        if (! $this->is_active) return false;
+        if (! $this->is_active) {
+            return false;
+        }
 
         $now   = now();
         $today = $now->toDateString();
 
-        if ($this->start_date && $this->start_date->toDateString() > $today) return false;
-        if ($this->end_date && $this->end_date->toDateString() < $today) return false;
+        if ($this->start_date && $this->start_date->toDateString() > $today) {
+            return false;
+        }
+        if ($this->end_date && $this->end_date->toDateString() < $today) {
+            return false;
+        }
 
-        // Cek happy hour jika dikonfigurasi
         if ($this->start_time && $this->end_time) {
             $currentTime = $now->format('H:i:s');
-            // Normalisasi ke HH:MM:SS
-            $start = strlen($this->start_time) === 5 ? $this->start_time . ':00' : $this->start_time;
-            $end   = strlen($this->end_time) === 5 ? $this->end_time . ':00' : $this->end_time;
+            // Normalisasi ke HH:MM:SS (DB bisa mengembalikan HH:MM atau HH:MM:SS)
+            $start = strlen($this->start_time) === 5
+                ? $this->start_time . ':00'
+                : $this->start_time;
+            $end = strlen($this->end_time) === 5
+                ? $this->end_time . ':00'
+                : $this->end_time;
 
-            if ($currentTime < $start || $currentTime > $end) return false;
+            if ($currentTime < $start || $currentTime > $end) {
+                return false;
+            }
         }
 
         return true;
     }
 
     /**
-     * Format start_time & end_time ke HH:MM untuk ditampilkan di frontend.
-     * Menghapus detik jika ada (:SS).
+     * Accessor: start_time diformat ke HH:MM untuk ditampilkan di frontend.
+     * Append ke $appends jika dibutuhkan di resource/API.
      */
     public function getStartTimeFormattedAttribute(): ?string
     {
-        if (! $this->start_time) return null;
+        if (! $this->start_time) {
+            return null;
+        }
+
         return substr($this->start_time, 0, 5);
     }
 
+    /**
+     * Accessor: end_time diformat ke HH:MM untuk ditampilkan di frontend.
+     */
     public function getEndTimeFormattedAttribute(): ?string
     {
-        if (! $this->end_time) return null;
+        if (! $this->end_time) {
+            return null;
+        }
+
         return substr($this->end_time, 0, 5);
     }
 }

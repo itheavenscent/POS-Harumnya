@@ -24,7 +24,6 @@ class Customer extends Model
         'lifetime_points_earned',
         'lifetime_spending',
         'total_transactions',
-        'tier',
         'is_active',
         'registered_at',
     ];
@@ -37,19 +36,6 @@ class Customer extends Model
         'lifetime_points_earned' => 'integer',
         'lifetime_spending'      => 'decimal:2',
         'total_transactions'     => 'integer',
-    ];
-
-    // Tier sebagai enum kolom DB — tidak perlu appends lagi,
-    // tapi member_tier tetap tersedia sebagai alias accessor untuk kompatibilitas frontend.
-    protected $appends = ['member_tier'];
-
-    public const TIERS = ['bronze', 'silver', 'gold', 'platinum'];
-
-    public const TIER_THRESHOLDS = [
-        'platinum' => 2000,
-        'gold'     => 1000,
-        'silver'   => 500,
-        'bronze'   => 0,
     ];
 
     // ─── Boot ─────────────────────────────────────────────────────────
@@ -67,31 +53,7 @@ class Customer extends Model
         });
     }
 
-    // ─── Accessors ────────────────────────────────────────────────────
-
-    /**
-     * Alias untuk kompatibilitas frontend yang sudah pakai member_tier.
-     * Nilai diambil dari kolom tier (sudah tersimpan di DB).
-     */
-    public function getMemberTierAttribute(): string
-    {
-        return ucfirst($this->tier ?? 'bronze');
-    }
-
     // ─── Business Logic ───────────────────────────────────────────────
-
-    /**
-     * Hitung tier berdasarkan poin saat ini.
-     */
-    public static function resolveTier(int $points): string
-    {
-        foreach (self::TIER_THRESHOLDS as $tier => $threshold) {
-            if ($points >= $threshold) {
-                return $tier;
-            }
-        }
-        return 'bronze';
-    }
 
     /**
      * Update denormalized fields setelah transaksi selesai.
@@ -99,15 +61,10 @@ class Customer extends Model
      */
     public function syncAfterSale(float $saleAmount, int $pointsEarned): void
     {
-        $newPoints = $this->points + $pointsEarned;
-
         $this->increment('total_transactions');
         $this->increment('lifetime_points_earned', $pointsEarned);
         $this->increment('lifetime_spending', $saleAmount);
-        $this->update([
-            'points' => $newPoints,
-            'tier'   => self::resolveTier($newPoints),
-        ]);
+        $this->increment('points', $pointsEarned);
     }
 
     // ─── Scopes ───────────────────────────────────────────────────────
@@ -120,12 +77,10 @@ class Customer extends Model
     public function scopeSegment($query, ?string $segment)
     {
         return match ($segment) {
-            'vip'      => $query->where('lifetime_spending', '>', 5_000_000),
-            'new'      => $query->where('created_at', '>=', now()->subDays(30)),
-            'loyal'    => $query->where('points', '>=', 500),
-            'platinum' => $query->where('tier', 'platinum'),
-            'gold'     => $query->where('tier', 'gold'),
-            default    => $query,
+            'vip'   => $query->where('lifetime_spending', '>', 5_000_000),
+            'new'   => $query->where('created_at', '>=', now()->subDays(30)),
+            'active' => $query->where('total_transactions', '>', 0),
+            default => $query,
         };
     }
 

@@ -14,11 +14,9 @@ class DiscountUsage extends Model
 
     protected $fillable = [
         'discount_type_id',
-        'order_id',
+        'order_id',       // FK → sales.id (constraint ditambahkan di migration 14)
         'store_id',
-        // BUG FIX: customer_id FK ke customers (BUKAN users!)
-        // FK constraint ditambahkan di migration 010 setelah tabel customers dibuat
-        'customer_id',
+        'customer_id',    // FK → customers.id (BUKAN users! constraint di migration 14)
         'discount_amount',
         'original_amount',
         'final_amount',
@@ -32,13 +30,9 @@ class DiscountUsage extends Model
     ];
 
     protected $casts = [
-        // decimal(15,2) — nominal diskon yang diberikan (rupiah)
-        'discount_amount' => 'decimal:2',
-        // decimal(15,2) — total belanja sebelum diskon (rupiah)
-        'original_amount' => 'decimal:2',
-        // decimal(15,2) — total belanja setelah diskon (rupiah)
-        'final_amount'    => 'decimal:2',
-        // json snapshots
+        'discount_amount'  => 'decimal:2',
+        'original_amount'  => 'decimal:2',
+        'final_amount'     => 'decimal:2',
         'applied_to_items' => 'array',
         'reward_items'     => 'array',
         'is_game_reward'   => 'boolean',
@@ -61,7 +55,7 @@ class DiscountUsage extends Model
 
     /**
      * FK ke tabel customers (BUKAN users!).
-     * Constraint ditambahkan di migration 010 setelah tabel customers dibuat.
+     * Constraint FK ditambahkan di migration 14.
      */
     public function customer(): BelongsTo
     {
@@ -69,8 +63,8 @@ class DiscountUsage extends Model
     }
 
     /**
-     * FK ke tabel sales (order).
-     * Constraint ditambahkan di migration 010 setelah tabel sales dibuat.
+     * FK ke tabel sales.
+     * Constraint FK ditambahkan di migration 14.
      */
     public function order(): BelongsTo
     {

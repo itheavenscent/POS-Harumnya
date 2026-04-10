@@ -21,7 +21,7 @@ class ProductController extends Controller
             'intensity:id,code,name',
             'size:id,name,volume_ml',
             'recipes.ingredient:id,name,unit',
-        ])->orderBy('created_at', 'desc');
+        ])->orderBy('variant_id')->orderBy('created_at', 'desc');
 
         // Filter variant
         if ($request->filled('variant_id')) {
@@ -52,7 +52,25 @@ class ProductController extends Controller
             });
         }
 
-        $products = $query->paginate(20)->withQueryString();
+        // Fetch all (no pagination) then group by variant
+        $allProducts = $query->get();
+
+        // Group by variant
+        $grouped = $allProducts
+            ->groupBy('variant_id')
+            ->map(function ($products) {
+                $variant = $products->first()->variant;
+                return [
+                    'variant'          => $variant,
+                    'products'         => $products->values(),
+                    'total_products'   => $products->count(),
+                    'active_products'  => $products->where('is_active', true)->count(),
+                    'avg_margin'       => round($products->avg('gross_margin_percentage'), 1),
+                    'min_price'        => $products->min('selling_price'),
+                    'max_price'        => $products->max('selling_price'),
+                ];
+            })
+            ->values();
 
         // Summary stats
         $stats = [
@@ -63,12 +81,12 @@ class ProductController extends Controller
         ];
 
         return Inertia::render('Dashboard/Products/Index', [
-            'products'   => $products,
-            'stats'      => $stats,
-            'filters'    => $request->only(['variant_id', 'intensity_id', 'size_id', 'search', 'is_active']),
-            'variants'   => Variant::where('is_active', true)->orderBy('sort_order')->get(['id', 'code', 'name']),
-            'intensities'=> Intensity::where('is_active', true)->orderBy('sort_order')->get(['id', 'code', 'name']),
-            'sizes'      => Size::where('is_active', true)->orderBy('volume_ml')->get(['id', 'name', 'volume_ml']),
+            'grouped'     => $grouped,
+            'stats'       => $stats,
+            'filters'     => $request->only(['variant_id', 'intensity_id', 'size_id', 'search', 'is_active']),
+            'variants'    => Variant::where('is_active', true)->orderBy('sort_order')->get(['id', 'code', 'name']),
+            'intensities' => Intensity::where('is_active', true)->orderBy('sort_order')->get(['id', 'code', 'name']),
+            'sizes'       => Size::where('is_active', true)->orderBy('volume_ml')->get(['id', 'name', 'volume_ml']),
         ]);
     }
 

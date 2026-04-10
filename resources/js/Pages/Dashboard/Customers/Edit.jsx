@@ -111,16 +111,6 @@ export default function Edit({ customer }) {
                                         value={data.member_points}
                                         min="0"
                                     />
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                            Tier Member
-                                        </label>
-                                        <div className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                                            {data.member_points >= 1000 ? "Gold" :
-                                             data.member_points >= 500 ? "Silver" :
-                                             data.member_points >= 100 ? "Bronze" : "Regular"}
-                                        </div>
-                                    </div>
                                 </div>
 
                                 {/* Display Join Date & Last Visit */}

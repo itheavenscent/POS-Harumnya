@@ -28,20 +28,20 @@ class DiscountReward extends Model
     ];
 
     protected $casts = [
-        // unsignedSmallInteger
         'reward_quantity'     => 'integer',
         'customer_can_choose' => 'boolean',
         'is_pool'             => 'boolean',
-        // unsignedTinyInteger
         'max_choices'         => 'integer',
-        // decimal(5,2) — 100.00 = gratis; 50.00 = diskon 50%
+        // decimal(5,2): 100.00 = gratis; 50.00 = diskon 50%
         'discount_percentage' => 'decimal:2',
-        // decimal(15,2) — override harga reward (rupiah); null = tidak override
-        // PERUBAHAN: sebelumnya unsignedBigInteger, sekarang decimal(15,2)
+        // decimal(15,2): override harga reward (rupiah); null = tidak override
         'fixed_price'         => 'decimal:2',
-        // unsignedTinyInteger
         'priority'            => 'integer',
     ];
+
+    // -------------------------------------------------------------------------
+    // Relations
+    // -------------------------------------------------------------------------
 
     public function discountType(): BelongsTo
     {
@@ -63,6 +63,10 @@ class DiscountReward extends Model
         return $this->belongsTo(Size::class, 'size_id');
     }
 
+    /**
+     * Pool item reward — diurutkan berdasarkan sort_order ASC.
+     * Hanya relevan jika is_pool = true.
+     */
     public function pools(): HasMany
     {
         return $this->hasMany(DiscountRewardPool::class, 'discount_reward_id')

@@ -144,16 +144,6 @@ function StatusBadge({ status }) {
     return <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap ${cfg.cls}`}>{cfg.label}</span>;
 }
 
-function TierBadge({ tier }) {
-    if (!tier) return null;
-    const cls = {
-        platinum: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-        gold:     'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-        silver:   'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
-        bronze:   'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-    }[tier] ?? 'bg-slate-100 text-slate-500';
-    return <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold capitalize ${cls}`}>{tier}</span>;
-}
 
 function GenderBadge({ gender }) {
     const map = {
@@ -754,14 +744,13 @@ export default function LaporanPenjualan({
                             <div className="overflow-x-auto">
                                 <table className="w-full text-xs">
                                     <thead>
-                                        <tr>{['#', 'Nama', 'Tier', 'Telp', 'Order', 'Total Belanja', 'Avg Order', 'Poin Aktif', 'Terakhir Beli'].map(h => <TH key={h}>{h}</TH>)}</tr>
+                                        <tr>{['#', 'Nama', 'Telp', 'Order', 'Total Belanja', 'Avg Order', 'Poin Aktif', 'Terakhir Beli'].map(h => <TH key={h}>{h}</TH>)}</tr>
                                     </thead>
                                     <tbody>
                                         {topCustomers.length > 0 ? topCustomers.map((c, i) => (
                                             <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                                 <TD className="text-lg">{['🥇', '🥈', '🥉'][i] ?? '🏅'}</TD>
                                                 <TD><span className="font-bold text-slate-900 dark:text-white">{c.name}</span></TD>
-                                                <TD><TierBadge tier={c.tier} /></TD>
                                                 <TD className="font-mono text-slate-400">{c.phone ?? '-'}</TD>
                                                 <TD><span className="font-black text-indigo-600 dark:text-indigo-400">{num(c.total_orders)}</span></TD>
                                                 <TD><span className="font-black text-slate-900 dark:text-white">{compact(c.total_spending)}</span></TD>
@@ -974,7 +963,7 @@ export default function LaporanPenjualan({
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-xs">
                                         <thead>
-                                            <tr>{['Invoice', 'Tgl', 'Jam', 'Status', 'Toko', 'Pelanggan', 'Tier', 'Kasir', 'Sales', 'Item', 'Gross Sales', 'Diskon', 'Total'].map(h => <TH key={h}>{h}</TH>)}</tr>
+                                            <tr>{['Invoice', 'Tgl', 'Jam', 'Status', 'Toko', 'Pelanggan', 'Kasir', 'Sales', 'Item', 'Gross Sales', 'Diskon', 'Total'].map(h => <TH key={h}>{h}</TH>)}</tr>
                                         </thead>
                                         <tbody>
                                             {recentTransactions.map((tx, i) => (
@@ -985,7 +974,6 @@ export default function LaporanPenjualan({
                                                     <TD><StatusBadge status={tx.status} /></TD>
                                                     <TD className="text-slate-600 dark:text-slate-400 whitespace-nowrap">{tx.store}</TD>
                                                     <TD className="font-semibold text-slate-900 dark:text-white">{tx.customer}</TD>
-                                                    <TD><TierBadge tier={tx.customer_tier} /></TD>
                                                     <TD className="text-slate-500">{tx.cashier}</TD>
                                                     <TD className="text-slate-500">{tx.sales_person}</TD>
                                                     <TD className="text-slate-500">{num(tx.total_items)}</TD>

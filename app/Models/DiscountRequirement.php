@@ -23,11 +23,14 @@ class DiscountRequirement extends Model
     ];
 
     protected $casts = [
-        // unsignedSmallInteger
         'required_quantity' => 'integer',
-        // enum('all','any') — string by default, no cast needed
+        // matching_mode: enum('all','any') — string, no cast needed
         // group_key: string|null — no cast needed
     ];
+
+    // -------------------------------------------------------------------------
+    // Relations
+    // -------------------------------------------------------------------------
 
     public function discountType(): BelongsTo
     {

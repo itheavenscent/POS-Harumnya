@@ -19,8 +19,14 @@ class DiscountApplicability extends Model
         'size_id',
     ];
 
-    // Semua FK nullable — null = berlaku semua
-    protected $casts = [];
+    // Semua FK nullable — null = berlaku untuk semua
+    protected $casts = [
+        // UUID fields — tidak perlu cast khusus, HasUuids sudah handle
+    ];
+
+    // -------------------------------------------------------------------------
+    // Relations
+    // -------------------------------------------------------------------------
 
     public function discountType(): BelongsTo
     {

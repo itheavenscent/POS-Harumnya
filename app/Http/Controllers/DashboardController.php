@@ -58,17 +58,110 @@ class DashboardController extends Controller
             : [];
 
         // ── Period filter ─────────────────────────────────────────────────
-        $period    = $request->input('period', '30');
-        $startDate = Carbon::now()->subDays((int) $period)->startOfDay();
-        $endDate   = Carbon::now()->endOfDay();
+        $startStr = $request->input('start_date');
+        $endStr   = $request->input('end_date');
 
-        $prevStart = Carbon::now()->subDays((int) $period * 2)->startOfDay();
-        $prevEnd   = Carbon::now()->subDays((int) $period)->endOfDay();
+        if ($startStr && $endStr) {
+            $startDate = Carbon::parse($startStr)->startOfDay();
+            $endDate   = Carbon::parse($endStr)->endOfDay();
+        } else {
+            // Fallback default 30 days
+            $startDate = Carbon::now()->subDays(30)->startOfDay();
+            $endDate   = Carbon::now()->endOfDay();
+        }
+
+        $diffInDays = $startDate->diffInDays($endDate);
+        if ($diffInDays < 1) $diffInDays = 1;
+
+        $prevStart = $startDate->copy()->subDays($diffInDays)->startOfDay();
+        $prevEnd   = $startDate->copy()->subSeconds(1);
+
 
         // ══════════════════════════════════════════════════════════════════
-        //  KPI CARDS
+        //  DATA RETRIEVAL
         // ══════════════════════════════════════════════════════════════════
 
+        $kpiData         = $this->getKpiData($storeId, $startDate, $endDate, $prevStart, $prevEnd);
+        $revenueTrend    = $this->getRevenueTrend($storeId, $startDate, $endDate);
+        $rankings        = $this->getRankings($storeId, $startDate, $endDate);
+        $operationalData = $this->getOperationalData($storeId, $startDate, $endDate, $user, $canFilterStore);
+
+        $storePerformance = $canFilterStore
+            ? $this->getStorePerformance($storeId, $startDate, $endDate)
+            : [];
+
+        // ══════════════════════════════════════════════════════════════════
+        //  SUMMARY COUNTS
+        // ══════════════════════════════════════════════════════════════════
+
+        $totalVariants    = DB::table('variants')->where('is_active', true)->count();
+        $totalIngredients = DB::table('ingredients')->where('is_active', true)->count();
+        $totalCustomers   = DB::table('customers')->where('is_active', true)->count();
+        $totalStores      = DB::table('stores')->where('is_active', true)->count();
+        $totalProducts    = DB::table('products')->where('is_active', true)->count();
+
+        $currentStore = $storeId
+            ? DB::table('stores')->where('id', $storeId)->first()
+            : null;
+
+        return Inertia::render('Dashboard', [
+            // Meta
+            'startDate'       => $startDate->format('Y-m-d'),
+            'endDate'         => $endDate->format('Y-m-d'),
+            'diffDays'        => $diffInDays,
+            'isSuperAdmin'    => $isSuperAdmin,
+            'isAdmin'         => $isAdmin,
+            'canFilterStore'  => $canFilterStore,
+            'selectedStoreId' => $storeId,
+            'stores'          => $stores,
+            'currentStore' => $currentStore ? [
+                'id'   => $currentStore->id,
+                'name' => $currentStore->name,
+                'code' => $currentStore->code,
+            ] : null,
+
+            // KPI
+            'kpi' => $kpiData,
+
+            // Counts
+            'counts' => [
+                'variants'    => $totalVariants,
+                'ingredients' => $totalIngredients,
+                'customers'   => $totalCustomers,
+                'stores'      => $totalStores,
+                'products'    => $totalProducts,
+            ],
+
+            // Charts
+            'revenueTrend'     => $revenueTrend,
+            'salesByIntensity' => $rankings['salesByIntensity'],
+            'salesBySize'      => $rankings['salesBySize'],
+            'paymentBreakdown' => $operationalData['paymentBreakdown'],
+            'discountUsage'    => $operationalData['discountUsage'],
+
+            // Rankings
+            'topVariants'            => $rankings['topVariants'],
+            'topCustomers'           => $rankings['topCustomers'],
+            'topPackaging'           => $operationalData['topPackaging'],
+            'salesPeoplePerformance' => $rankings['salesPeoplePerformance'],
+
+            // Store (super admin)
+            'storePerformance' => $storePerformance,
+
+            // Operations
+            'activeCashDrawer'    => $operationalData['activeCashDrawer'],
+            'lowStockIngredients' => $operationalData['lowStockIngredients'],
+            'lowStockWarehouse'   => $operationalData['lowStockWarehouse'],
+            'recentTransactions'  => $operationalData['recentTransactions'],
+        ]);
+
+    }
+
+    /**
+     * Get KPI data for the dashboard.
+     */
+    private function getKpiData($storeId, $startDate, $endDate, $prevStart, $prevEnd): array
+    {
         $kpiCurrent = DB::table('sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->where('status', 'completed')
@@ -110,11 +203,32 @@ class DashboardController extends Controller
             ? round((($cur - $prev) / $prev) * 100, 1)
             : null;
 
-        // ══════════════════════════════════════════════════════════════════
-        //  REVENUE TREND
-        // ══════════════════════════════════════════════════════════════════
+        return [
+            'totalRevenue'      => (int) ($kpiCurrent->total_revenue ?? 0),
+            'totalProfit'       => (int) ($kpiCurrent->total_profit ?? 0),
+            'totalCogs'         => (int) ($kpiCurrent->total_cogs ?? 0),
+            'avgOrder'          => (int) ($kpiCurrent->avg_order ?? 0),
+            'totalTransactions' => (int) ($kpiCurrent->total_transactions ?? 0),
+            'totalDiscount'     => (int) ($kpiCurrent->total_discount ?? 0),
+            'totalPointsEarned' => (int) ($kpiCurrent->total_points_earned ?? 0),
+            'marginPct'         => ($kpiCurrent->total_revenue ?? 0) > 0
+                ? round(($kpiCurrent->total_profit / $kpiCurrent->total_revenue) * 100, 1)
+                : 0,
+            'todayRevenue'      => (int) ($todayKpi->today_revenue ?? 0),
+            'todayTransactions' => (int) ($todayKpi->today_transactions ?? 0),
+            'trendRevenue'      => $trend($kpiCurrent->total_revenue ?? 0, $kpiPrev->total_revenue ?? 0),
+            'trendProfit'       => $trend($kpiCurrent->total_profit ?? 0, $kpiPrev->total_profit ?? 0),
+            'trendTransactions' => $trend($kpiCurrent->total_transactions ?? 0, $kpiPrev->total_transactions ?? 0),
+            'trendCogs'         => $trend($kpiCurrent->total_cogs ?? 0, $kpiPrev->total_cogs ?? 0),
+        ];
+    }
 
-        $revenueTrend = DB::table('sales')
+    /**
+     * Get revenue trend data.
+     */
+    private function getRevenueTrend($storeId, $startDate, $endDate): array
+    {
+        return DB::table('sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->where('status', 'completed')
             ->whereBetween('sold_at', [$startDate, $endDate])
@@ -135,16 +249,16 @@ class DashboardController extends Controller
                 'profit'       => (int) $r->profit,
                 'cogs'         => (int) $r->cogs,
                 'transactions' => (int) $r->transactions,
-            ]);
+            ])
+            ->toArray();
+    }
 
-        // ══════════════════════════════════════════════════════════════════
-        //  SALES BY INTENSITY
-        //
-        //  FIX: Gunakan intensity_id_snapshot dari sale_items agar transaksi
-        //  made-to-order (product_id = NULL) tidak hilang.
-        //  LEFT JOIN ke intensities hanya untuk label terkini.
-        // ══════════════════════════════════════════════════════════════════
-
+    /**
+     * Get Rankings for dashboard (Intensity, Size, Variants, Customers, Sales People).
+     */
+    private function getRankings($storeId, $startDate, $endDate): array
+    {
+        // Intensity
         $salesByIntensity = DB::table('sale_items')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->leftJoin('intensities', 'sale_items.intensity_id_snapshot', '=', 'intensities.id')
@@ -181,13 +295,7 @@ class DashboardController extends Controller
             'pct' => round(($r['revenue'] / $totalIntensityRevenue) * 100, 1),
         ]));
 
-        // ══════════════════════════════════════════════════════════════════
-        //  SALES BY SIZE
-        //
-        //  FIX: Gunakan size_id_snapshot + size_ml (snapshot) agar data
-        //  made-to-order tidak hilang.
-        // ══════════════════════════════════════════════════════════════════
-
+        // Size
         $salesBySize = DB::table('sale_items')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->leftJoin('sizes', 'sale_items.size_id_snapshot', '=', 'sizes.id')
@@ -217,13 +325,7 @@ class DashboardController extends Controller
                 'revenue'   => (int) $r->total_revenue,
             ]);
 
-        // ══════════════════════════════════════════════════════════════════
-        //  TOP VARIANTS (by qty sold)
-        //
-        //  FIX: Gunakan variant_id_snapshot + snapshot variant_name agar
-        //  data made-to-order (product_id = NULL) tidak hilang.
-        // ══════════════════════════════════════════════════════════════════
-
+        // Variants
         $topVariants = DB::table('sale_items')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->leftJoin('variants', 'sale_items.variant_id_snapshot', '=', 'variants.id')
@@ -262,10 +364,7 @@ class DashboardController extends Controller
                     : 0,
             ]);
 
-        // ══════════════════════════════════════════════════════════════════
-        //  TOP CUSTOMERS
-        // ══════════════════════════════════════════════════════════════════
-
+        // Customers
         $topCustomers = DB::table('sales')
             ->join('customers', 'sales.customer_id', '=', 'customers.id')
             ->when($storeId, fn ($q) => $q->where('sales.store_id', $storeId))
@@ -276,12 +375,11 @@ class DashboardController extends Controller
                 customers.id                            AS customer_id,
                 customers.name                          AS name,
                 customers.phone                         AS phone,
-                customers.tier                          AS tier,
-                customers.points                AS points,
+                customers.points                        AS points,
                 COUNT(sales.id)                         AS total_orders,
                 COALESCE(SUM(sales.total), 0)           AS total_spending
             ')
-            ->groupBy('customers.id', 'customers.name', 'customers.phone', 'customers.tier', 'customers.points')
+            ->groupBy('customers.id', 'customers.name', 'customers.phone', 'customers.points')
             ->orderByDesc('total_spending')
             ->limit(7)
             ->get()
@@ -289,58 +387,93 @@ class DashboardController extends Controller
                 'customer_id'    => $r->customer_id,
                 'name'           => $r->name,
                 'phone'          => $r->phone,
-                'tier'           => $r->tier,
                 'points'         => (int) $r->points,
                 'total_orders'   => (int) $r->total_orders,
                 'total_spending' => (int) $r->total_spending,
             ]);
 
-        // ══════════════════════════════════════════════════════════════════
-        //  STORE PERFORMANCE (super admin & admin)
-        // ══════════════════════════════════════════════════════════════════
+        // Sales People
+        $salesPeoplePerformance = DB::table('sales')
+            ->join('sales_people', 'sales.sales_person_id', '=', 'sales_people.id')
+            ->when($storeId, fn ($q) => $q->where('sales.store_id', $storeId))
+            ->where('sales.status', 'completed')
+            ->whereBetween('sales.sold_at', [$startDate, $endDate])
+            ->whereNotNull('sales.sales_person_id')
+            ->selectRaw('
+                sales_people.id,
+                sales_people.name,
+                sales_people.code,
+                COUNT(sales.id)                 AS total_transactions,
+                COALESCE(SUM(sales.total), 0)   AS total_revenue,
+                COALESCE(AVG(sales.total), 0)   AS avg_order
+            ')
+            ->groupBy('sales_people.id', 'sales_people.name', 'sales_people.code')
+            ->orderByDesc('total_revenue')
+            ->limit(5)
+            ->get()
+            ->map(fn ($r) => [
+                'id'                 => $r->id,
+                'name'               => $r->name,
+                'code'               => $r->code,
+                'total_transactions' => (int) $r->total_transactions,
+                'total_revenue'      => (int) $r->total_revenue,
+                'avg_order'          => (int) $r->avg_order,
+            ]);
 
-        $storePerformance = [];
-        if ($canFilterStore) {
-            $storePerformance = DB::table('sales')
-                ->join('stores', 'sales.store_id', '=', 'stores.id')
-                ->where('sales.status', 'completed')
-                ->whereBetween('sales.sold_at', [$startDate, $endDate])
-                ->when($storeId, fn ($q) => $q->where('sales.store_id', $storeId))
-                ->selectRaw('
-                    stores.id                               AS store_id,
-                    stores.name                             AS store_name,
-                    stores.code                             AS store_code,
-                    COUNT(sales.id)                         AS total_transactions,
-                    COALESCE(SUM(sales.total), 0)           AS total_revenue,
-                    COALESCE(SUM(sales.gross_profit), 0)    AS total_profit,
-                    COALESCE(SUM(sales.cogs_total), 0)      AS total_cogs,
-                    COALESCE(AVG(sales.total), 0)           AS avg_order
-                ')
-                ->groupBy('stores.id', 'stores.name', 'stores.code')
-                ->orderByDesc('total_revenue')
-                ->get()
-                ->map(fn ($r) => [
-                    'store_id'           => $r->store_id,
-                    'store_name'         => $r->store_name,
-                    'store_code'         => $r->store_code,
-                    'total_transactions' => (int) $r->total_transactions,
-                    'total_revenue'      => (int) $r->total_revenue,
-                    'total_profit'       => (int) $r->total_profit,
-                    'total_cogs'         => (int) $r->total_cogs,
-                    'avg_order'          => (int) $r->avg_order,
-                    'margin'             => $r->total_revenue > 0
-                        ? round(($r->total_profit / $r->total_revenue) * 100, 1)
-                        : 0,
-                ])
-                ->toArray();
-        }
+        return [
+            'salesByIntensity'       => $salesByIntensity,
+            'salesBySize'            => $salesBySize,
+            'topVariants'            => $topVariants,
+            'topCustomers'           => $topCustomers,
+            'salesPeoplePerformance' => $salesPeoplePerformance,
+        ];
+    }
 
-        // ══════════════════════════════════════════════════════════════════
-        //  PAYMENT METHOD BREAKDOWN
-        //  Gunakan JOIN ke payment_methods (masih valid untuk dashboard, data
-        //  aktif). Untuk laporan historis gunakan snapshot dari sale_payments.
-        // ══════════════════════════════════════════════════════════════════
+    /**
+     * Get store performance for SuperAdmin/Admin.
+     */
+    private function getStorePerformance($storeId, $startDate, $endDate): array
+    {
+        return DB::table('sales')
+            ->join('stores', 'sales.store_id', '=', 'stores.id')
+            ->where('sales.status', 'completed')
+            ->whereBetween('sales.sold_at', [$startDate, $endDate])
+            ->when($storeId, fn ($q) => $q->where('sales.store_id', $storeId))
+            ->selectRaw('
+                stores.id                               AS store_id,
+                stores.name                             AS store_name,
+                stores.code                             AS store_code,
+                COUNT(sales.id)                         AS total_transactions,
+                COALESCE(SUM(sales.total), 0)           AS total_revenue,
+                COALESCE(SUM(sales.gross_profit), 0)    AS total_profit,
+                COALESCE(SUM(sales.cogs_total), 0)      AS total_cogs,
+                COALESCE(AVG(sales.total), 0)           AS avg_order
+            ')
+            ->groupBy('stores.id', 'stores.name', 'stores.code')
+            ->orderByDesc('total_revenue')
+            ->get()
+            ->map(fn ($r) => [
+                'store_id'           => $r->store_id,
+                'store_name'         => $r->store_name,
+                'store_code'         => $r->store_code,
+                'total_transactions' => (int) $r->total_transactions,
+                'total_revenue'      => (int) $r->total_revenue,
+                'total_profit'       => (int) $r->total_profit,
+                'total_cogs'         => (int) $r->total_cogs,
+                'avg_order'          => (int) $r->avg_order,
+                'margin'             => $r->total_revenue > 0
+                    ? round(($r->total_profit / $r->total_revenue) * 100, 1)
+                    : 0,
+            ])
+            ->toArray();
+    }
 
+    /**
+     * Get operational data (Payments, Packaging, Low Stock, Recent Transactions).
+     */
+    private function getOperationalData($storeId, $startDate, $endDate, $user, $canFilterStore): array
+    {
+        // Payment Breakdown
         $paymentBreakdown = DB::table('sale_payments')
             ->join('sales', 'sale_payments.sale_id', '=', 'sales.id')
             ->leftJoin('payment_methods', 'sale_payments.payment_method_id', '=', 'payment_methods.id')
@@ -368,11 +501,7 @@ class DashboardController extends Controller
                 'total_amount'       => (int) $r->total_amount,
             ]);
 
-        // ══════════════════════════════════════════════════════════════════
-        //  TOP PACKAGING ADD-ONS
-        //  Migration: sale_item_packagings.packaging_material_id
-        // ══════════════════════════════════════════════════════════════════
-
+        // Packaging
         $topPackaging = DB::table('sale_item_packagings')
             ->join('sale_items', 'sale_item_packagings.sale_item_id', '=', 'sale_items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
@@ -402,12 +531,92 @@ class DashboardController extends Controller
                 'revenue' => (int) $r->total_revenue,
             ]);
 
-        // ══════════════════════════════════════════════════════════════════
-        //  RECENT TRANSACTIONS
-        //  Gunakan snapshot cashier_name & customer_name dari sales table.
-        //  LEFT JOIN ke customers & users sebagai fallback saja.
-        // ══════════════════════════════════════════════════════════════════
+        // Low Stock Ingredients
+        $lowStockIngredients = [];
+        if ($storeId) {
+            $lowStockIngredients = DB::table('store_ingredient_stocks as sis')
+                ->join('ingredients as ing',          'sis.ingredient_id',          '=', 'ing.id')
+                ->join('ingredient_categories as ic', 'ing.ingredient_category_id', '=', 'ic.id')
+                ->where('sis.store_id', $storeId)
+                ->whereNotNull('sis.min_stock')
+                ->whereRaw('sis.quantity <= sis.min_stock')
+                ->where('ing.is_active', true)
+                ->selectRaw('
+                    ing.id,
+                    ing.name,
+                    ing.unit,
+                    ic.ingredient_type,
+                    sis.quantity    AS current_qty,
+                    sis.min_stock   AS min_qty
+                ')
+                ->orderByRaw('sis.quantity / NULLIF(sis.min_stock, 0) ASC')
+                ->limit(6)
+                ->get()
+                ->map(fn ($r) => [
+                    'id'      => $r->id,
+                    'name'    => $r->name,
+                    'unit'    => $r->unit,
+                    'type'    => $r->ingredient_type,
+                    'current' => (int) $r->current_qty,
+                    'minimum' => (int) $r->min_qty,
+                    'pct'     => $r->min_qty > 0 ? round(($r->current_qty / $r->min_qty) * 100) : 0,
+                    'status'  => $r->current_qty <= 0 ? 'empty' : ($r->current_qty <= ($r->min_qty * 0.3) ? 'critical' : 'low'),
+                ]);
+        }
 
+        // Warehouse low stock
+        $lowStockWarehouse = [];
+        if ($canFilterStore) {
+            $lowStockWarehouse = DB::table('warehouse_ingredient_stocks as wis')
+                ->join('ingredients as ing', 'wis.ingredient_id', '=', 'ing.id')
+                ->join('warehouses as wh',   'wis.warehouse_id',  '=', 'wh.id')
+                ->whereNotNull('wis.min_stock')
+                ->whereRaw('wis.quantity <= wis.min_stock')
+                ->where('ing.is_active', true)
+                ->selectRaw('
+                    ing.id,
+                    ing.name,
+                    ing.unit,
+                    wh.name         AS warehouse_name,
+                    wis.quantity    AS current_qty,
+                    wis.min_stock   AS min_qty
+                ')
+                ->orderByRaw('wis.quantity / NULLIF(wis.min_stock, 0) ASC')
+                ->limit(5)
+                ->get()
+                ->map(fn ($r) => [
+                    'id'             => $r->id,
+                    'name'           => $r->name,
+                    'unit'           => $r->unit,
+                    'warehouse_name' => $r->warehouse_name,
+                    'current'        => (int) $r->current_qty,
+                    'minimum'        => (int) $r->min_qty,
+                    'pct'            => $r->min_qty > 0 ? round(($r->current_qty / $r->min_qty) * 100) : 0,
+                    'status'         => $r->current_qty <= 0 ? 'empty' : ($r->current_qty <= ($r->min_qty * 0.3) ? 'critical' : 'low'),
+                ]);
+        }
+
+        // Discount Usage
+        $discountUsage = DB::table('sale_discounts')
+            ->join('sales', 'sale_discounts.sale_id', '=', 'sales.id')
+            ->when($storeId, fn ($q) => $q->where('sales.store_id', $storeId))
+            ->where('sales.status', 'completed')
+            ->whereBetween('sales.sold_at', [$startDate, $endDate])
+            ->selectRaw('
+                sale_discounts.discount_category                    AS category,
+                COUNT(DISTINCT sales.id)                            AS usage_count,
+                COALESCE(SUM(sale_discounts.applied_amount), 0)     AS total_discount_given
+            ')
+            ->groupBy('sale_discounts.discount_category')
+            ->orderByDesc('total_discount_given')
+            ->get()
+            ->map(fn ($r) => [
+                'category'             => $r->category,
+                'usage_count'          => (int) $r->usage_count,
+                'total_discount_given' => (int) $r->total_discount_given,
+            ]);
+
+        // Recent Transactions
         $recentTransactions = DB::table('sales')
             ->leftJoin('customers',       'sales.customer_id', '=', 'customers.id')
             ->leftJoin('users as cashier', 'sales.cashier_id', '=', 'cashier.id')
@@ -442,216 +651,24 @@ class DashboardController extends Controller
                 'status'       => $r->status,
             ]);
 
-        // ── Tabel cash_drawers belum diimplementasikan
         $activeCashDrawer = null;
-
-        // ══════════════════════════════════════════════════════════════════
-        //  LOW STOCK: INGREDIENTS (store)
-        // ══════════════════════════════════════════════════════════════════
-
-        $lowStockIngredients = [];
-        if ($storeId) {
-            $lowStockIngredients = DB::table('store_ingredient_stocks as sis')
-                ->join('ingredients as ing',          'sis.ingredient_id',          '=', 'ing.id')
-                ->join('ingredient_categories as ic', 'ing.ingredient_category_id', '=', 'ic.id')
-                ->where('sis.store_id', $storeId)
-                ->whereNotNull('sis.min_stock')
-                ->whereRaw('sis.quantity <= sis.min_stock')
-                ->where('ing.is_active', true)
-                ->selectRaw('
-                    ing.id,
-                    ing.name,
-                    ing.unit,
-                    ic.ingredient_type,
-                    sis.quantity    AS current_qty,
-                    sis.min_stock   AS min_qty
-                ')
-                ->orderByRaw('sis.quantity / NULLIF(sis.min_stock, 0) ASC')
-                ->limit(6)
-                ->get()
-                ->map(fn ($r) => [
-                    'id'      => $r->id,
-                    'name'    => $r->name,
-                    'unit'    => $r->unit,
-                    'type'    => $r->ingredient_type,
-                    'current' => (int) $r->current_qty,
-                    'minimum' => (int) $r->min_qty,
-                    'pct'     => $r->min_qty > 0
-                        ? round(($r->current_qty / $r->min_qty) * 100)
-                        : 0,
-                    'status'  => $r->current_qty <= 0 ? 'empty'
-                        : ($r->current_qty <= ($r->min_qty * 0.3) ? 'critical' : 'low'),
-                ]);
+        if ($user && $storeId) {
+            $activeCashDrawer = \App\Models\CashDrawer::where('store_id', $storeId)
+                ->where('cashier_id', $user->id)
+                ->where('status', 'open')
+                ->latest()
+                ->first();
         }
 
-        // ── Warehouse low stock (super admin & admin)
-        $lowStockWarehouse = [];
-        if ($canFilterStore) {
-            $lowStockWarehouse = DB::table('warehouse_ingredient_stocks as wis')
-                ->join('ingredients as ing', 'wis.ingredient_id', '=', 'ing.id')
-                ->join('warehouses as wh',   'wis.warehouse_id',  '=', 'wh.id')
-                ->whereNotNull('wis.min_stock')
-                ->whereRaw('wis.quantity <= wis.min_stock')
-                ->where('ing.is_active', true)
-                ->selectRaw('
-                    ing.id,
-                    ing.name,
-                    ing.unit,
-                    wh.name         AS warehouse_name,
-                    wis.quantity    AS current_qty,
-                    wis.min_stock   AS min_qty
-                ')
-                ->orderByRaw('wis.quantity / NULLIF(wis.min_stock, 0) ASC')
-                ->limit(5)
-                ->get()
-                ->map(fn ($r) => [
-                    'id'             => $r->id,
-                    'name'           => $r->name,
-                    'unit'           => $r->unit,
-                    'warehouse_name' => $r->warehouse_name,
-                    'current'        => (int) $r->current_qty,
-                    'minimum'        => (int) $r->min_qty,
-                    'pct'            => $r->min_qty > 0
-                        ? round(($r->current_qty / $r->min_qty) * 100)
-                        : 0,
-                    'status'         => $r->current_qty <= 0 ? 'empty'
-                        : ($r->current_qty <= ($r->min_qty * 0.3) ? 'critical' : 'low'),
-                ]);
-        }
-
-        // ══════════════════════════════════════════════════════════════════
-        //  DISCOUNT USAGE SUMMARY
-        //  Migration: sale_discounts.discount_category ✓ (bukan discount_type)
-        // ══════════════════════════════════════════════════════════════════
-
-        $discountUsage = DB::table('sale_discounts')
-            ->join('sales', 'sale_discounts.sale_id', '=', 'sales.id')
-            ->when($storeId, fn ($q) => $q->where('sales.store_id', $storeId))
-            ->where('sales.status', 'completed')
-            ->whereBetween('sales.sold_at', [$startDate, $endDate])
-            ->selectRaw('
-                sale_discounts.discount_category                    AS category,
-                COUNT(DISTINCT sales.id)                            AS usage_count,
-                COALESCE(SUM(sale_discounts.applied_amount), 0)     AS total_discount_given
-            ')
-            ->groupBy('sale_discounts.discount_category')
-            ->orderByDesc('total_discount_given')
-            ->get()
-            ->map(fn ($r) => [
-                'category'             => $r->category,
-                'usage_count'          => (int) $r->usage_count,
-                'total_discount_given' => (int) $r->total_discount_given,
-            ]);
-
-        // ══════════════════════════════════════════════════════════════════
-        //  SALES PEOPLE PERFORMANCE
-        // ══════════════════════════════════════════════════════════════════
-
-        $salesPeoplePerformance = DB::table('sales')
-            ->join('sales_people', 'sales.sales_person_id', '=', 'sales_people.id')
-            ->when($storeId, fn ($q) => $q->where('sales.store_id', $storeId))
-            ->where('sales.status', 'completed')
-            ->whereBetween('sales.sold_at', [$startDate, $endDate])
-            ->whereNotNull('sales.sales_person_id')
-            ->selectRaw('
-                sales_people.id,
-                sales_people.name,
-                sales_people.code,
-                COUNT(sales.id)                 AS total_transactions,
-                COALESCE(SUM(sales.total), 0)   AS total_revenue,
-                COALESCE(AVG(sales.total), 0)   AS avg_order
-            ')
-            ->groupBy('sales_people.id', 'sales_people.name', 'sales_people.code')
-            ->orderByDesc('total_revenue')
-            ->limit(5)
-            ->get()
-            ->map(fn ($r) => [
-                'id'                 => $r->id,
-                'name'               => $r->name,
-                'code'               => $r->code,
-                'total_transactions' => (int) $r->total_transactions,
-                'total_revenue'      => (int) $r->total_revenue,
-                'avg_order'          => (int) $r->avg_order,
-            ]);
-
-        // ══════════════════════════════════════════════════════════════════
-        //  SUMMARY COUNTS
-        // ══════════════════════════════════════════════════════════════════
-
-        $totalVariants    = DB::table('variants')->where('is_active', true)->count();
-        $totalIngredients = DB::table('ingredients')->where('is_active', true)->count();
-        $totalCustomers   = DB::table('customers')->where('is_active', true)->count();
-        $totalStores      = DB::table('stores')->where('is_active', true)->count();
-        $totalProducts    = DB::table('products')->where('is_active', true)->count();
-
-        $currentStore = $storeId
-            ? DB::table('stores')->where('id', $storeId)->first()
-            : null;
-
-        return Inertia::render('Dashboard', [
-            // Meta
-            'period'          => (int) $period,
-            'isSuperAdmin'    => $isSuperAdmin,
-            'isAdmin'         => $isAdmin,
-            'canFilterStore'  => $canFilterStore,
-            'selectedStoreId' => $storeId,
-            'stores'          => $stores,
-            'currentStore' => $currentStore ? [
-                'id'   => $currentStore->id,
-                'name' => $currentStore->name,
-                'code' => $currentStore->code,
-            ] : null,
-
-            // KPI
-            'kpi' => [
-                'totalRevenue'      => (int) ($kpiCurrent->total_revenue ?? 0),
-                'totalProfit'       => (int) ($kpiCurrent->total_profit ?? 0),
-                'totalCogs'         => (int) ($kpiCurrent->total_cogs ?? 0),
-                'avgOrder'          => (int) ($kpiCurrent->avg_order ?? 0),
-                'totalTransactions' => (int) ($kpiCurrent->total_transactions ?? 0),
-                'totalDiscount'     => (int) ($kpiCurrent->total_discount ?? 0),
-                'totalPointsEarned' => (int) ($kpiCurrent->total_points_earned ?? 0),
-                'marginPct'         => ($kpiCurrent->total_revenue ?? 0) > 0
-                    ? round(($kpiCurrent->total_profit / $kpiCurrent->total_revenue) * 100, 1)
-                    : 0,
-                'todayRevenue'      => (int) ($todayKpi->today_revenue ?? 0),
-                'todayTransactions' => (int) ($todayKpi->today_transactions ?? 0),
-                'trendRevenue'      => $trend($kpiCurrent->total_revenue ?? 0, $kpiPrev->total_revenue ?? 0),
-                'trendProfit'       => $trend($kpiCurrent->total_profit ?? 0, $kpiPrev->total_profit ?? 0),
-                'trendTransactions' => $trend($kpiCurrent->total_transactions ?? 0, $kpiPrev->total_transactions ?? 0),
-                'trendCogs'         => $trend($kpiCurrent->total_cogs ?? 0, $kpiPrev->total_cogs ?? 0),
-            ],
-
-            // Counts
-            'counts' => [
-                'variants'    => $totalVariants,
-                'ingredients' => $totalIngredients,
-                'customers'   => $totalCustomers,
-                'stores'      => $totalStores,
-                'products'    => $totalProducts,
-            ],
-
-            // Charts
-            'revenueTrend'     => $revenueTrend,
-            'salesByIntensity' => $salesByIntensity,
-            'salesBySize'      => $salesBySize,
-            'paymentBreakdown' => $paymentBreakdown,
-            'discountUsage'    => $discountUsage,
-
-            // Rankings
-            'topVariants'            => $topVariants,
-            'topCustomers'           => $topCustomers,
-            'topPackaging'           => $topPackaging,
-            'salesPeoplePerformance' => $salesPeoplePerformance,
-
-            // Store (super admin)
-            'storePerformance' => $storePerformance,
-
-            // Operations
-            'activeCashDrawer'    => $activeCashDrawer,
+        return [
+            'paymentBreakdown'    => $paymentBreakdown,
+            'topPackaging'        => $topPackaging,
             'lowStockIngredients' => $lowStockIngredients,
             'lowStockWarehouse'   => $lowStockWarehouse,
+            'discountUsage'       => $discountUsage,
             'recentTransactions'  => $recentTransactions,
-        ]);
+            'activeCashDrawer'    => $activeCashDrawer,
+        ];
     }
 }
+

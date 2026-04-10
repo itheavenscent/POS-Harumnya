@@ -26,10 +26,6 @@ const GENDER_COLOR = {
     female: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300",
     unisex: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
 };
-const TIER_COLOR = {
-    bronze: "text-amber-700", silver: "text-slate-500",
-    gold: "text-yellow-500", platinum: "text-violet-500",
-};
 const INTENSITY_COLORS = [
     { bg: "bg-violet-600", bar: "bg-violet-500", light: "bg-violet-50 dark:bg-violet-950/30", border: "border-violet-200 dark:border-violet-800", text: "text-violet-700 dark:text-violet-300" },
     { bg: "bg-blue-600",   bar: "bg-blue-500",   light: "bg-blue-50 dark:bg-blue-950/30",     border: "border-blue-200 dark:border-blue-800",     text: "text-blue-700 dark:text-blue-300"   },
@@ -510,81 +506,78 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
     );
 }
 
-// ─── Variant Modal ────────────────────────────────────────────────────────────
-function VariantModal({ show, onClose, intensity, variants, loading, onSelect, searchTerm, setSearchTerm, filterGender, setFilterGender }) {
-    const filtered = useMemo(() => {
-        let f = variants;
-        if (filterGender !== "all") f = f.filter(v => v.gender === filterGender);
-        if (searchTerm) f = f.filter(v =>
-            v.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (v.code ?? "").toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        return f;
-    }, [variants, filterGender, searchTerm]);
-
+// ─── Intensity Modal (pilih intensitas setelah varian dipilih) ────────────────
+function IntensityModal({ show, onClose, variant, intensities, loading, onSelect, onSelectCustom }) {
     return (
-        <Modal show={show} onClose={onClose} maxW="max-w-xl">
+        <Modal show={show} onClose={onClose} maxW="max-w-md">
             <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
                 <div>
-                    <p className="text-xs text-slate-400 mb-0.5">Pilih Varian</p>
-                    <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                        <span className="px-2.5 py-1 bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 rounded-lg text-sm font-black">{intensity?.code}</span>
-                        {intensity?.name}
-                    </h3>
+                    <p className="text-xs text-slate-400 mb-0.5">Pilih Konsentrasi</p>
+                    <h3 className="font-bold text-slate-800 dark:text-white text-sm leading-snug">{variant?.name}</h3>
                 </div>
-                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 flex items-center justify-center transition-colors">
+                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors">
                     <IconX size={16}/>
                 </button>
             </div>
-            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex-shrink-0 space-y-2">
-                <div className="relative">
-                    <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
-                    <input type="text" placeholder="Cari nama / kode varian..." value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full h-9 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"/>
-                </div>
-                <div className="flex gap-1.5 flex-wrap">
-                    {[{ value: "all", label: "Semua" }, { value: "male", label: "Pria" }, { value: "female", label: "Wanita" }, { value: "unisex", label: "Unisex" }].map(g => (
-                        <button key={g.value} onClick={() => setFilterGender(g.value)}
-                            className={`px-3 py-1 rounded-lg font-semibold text-xs transition-all ${filterGender === g.value ? "bg-primary-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200"}`}>
-                            {g.label}
-                        </button>
-                    ))}
-                </div>
-            </div>
-            <div className="overflow-y-auto p-4 flex-1">
+            <div className="p-4 overflow-y-auto flex-1">
                 {loading ? (
                     <div className="py-12 flex flex-col items-center gap-3 text-slate-400">
                         <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"/>
-                        <span className="text-sm">Memuat varian...</span>
+                        <span className="text-sm">Memuat konsentrasi...</span>
                     </div>
-                ) : filtered.length === 0 ? (
+                ) : intensities.length === 0 ? (
                     <div className="py-12 text-center">
                         <IconAlertTriangle size={32} className="mx-auto mb-2 text-amber-400"/>
-                        <p className="text-sm text-slate-500">Tidak ada varian ditemukan</p>
+                        <p className="text-sm text-slate-500">Tidak ada konsentrasi tersedia untuk varian ini</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {filtered.map((variant, idx) => (
-                            <button key={variant.id} onClick={() => { onSelect(variant); onClose(); }}
-                                className="group flex items-center gap-3 p-3.5 rounded-xl border-2 border-slate-100 dark:border-slate-800 hover:border-primary-400 dark:hover:border-primary-600 bg-white dark:bg-slate-800/50 hover:bg-primary-50/50 dark:hover:bg-primary-950/20 transition-all text-left">
-                                <div className={`w-10 h-10 rounded-xl ${INTENSITY_COLORS[idx % INTENSITY_COLORS.length].bg} flex items-center justify-center flex-shrink-0 shadow-sm`}>
-                                    <IconDroplet size={17} className="text-white"/>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-bold text-slate-800 dark:text-white text-sm leading-tight truncate">{variant.name}</p>
-                                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                        {variant.code && <span className="text-[10px] text-slate-400 font-mono">{variant.code}</span>}
-                                        {variant.gender && (
-                                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${GENDER_COLOR[variant.gender] ?? "bg-slate-100 text-slate-500"}`}>
-                                                {GENDER_LABEL[variant.gender] ?? variant.gender}
-                                            </span>
-                                        )}
+                    <div className="grid grid-cols-1 gap-2.5">
+                        {intensities.map((intensity, i) => {
+                            const c      = INTENSITY_COLORS[i % INTENSITY_COLORS.length];
+                            const oilPct = parseFloat(intensity.oil_ratio) || 0;
+                            return (
+                                <button key={intensity.id} onClick={() => { onSelect(intensity); onClose(); }}
+                                    className={`group relative p-4 rounded-2xl border-2 text-left transition-all duration-200 ${c.border} ${c.light} hover:shadow-md`}>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className={`w-10 h-10 rounded-xl ${c.bg} flex items-center justify-center shadow-sm flex-shrink-0`}>
+                                            <IconFlask size={18} className="text-white"/>
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-black text-slate-800 dark:text-white text-sm">{intensity.name}</p>
+                                            <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-black ${c.light} ${c.text}`}>{intensity.code}</span>
+                                        </div>
+                                        <IconChevronRight size={14} className={`${c.text} flex-shrink-0 opacity-50 group-hover:opacity-100 transition-opacity`}/>
                                     </div>
+                                    <div className="space-y-1">
+                                        <div className="flex justify-between text-[11px] text-slate-500">
+                                            <span>Kadar minyak</span>
+                                            <span className="font-bold text-slate-700 dark:text-slate-300">{intensity.oil_ratio}%</span>
+                                        </div>
+                                        <div className="h-1.5 bg-white/60 dark:bg-slate-700/60 rounded-full overflow-hidden">
+                                            <div className={`h-full ${c.bar} rounded-full transition-all`} style={{ width: `${Math.min(oilPct, 100)}%` }}/>
+                                        </div>
+                                        <div className="text-[11px] text-slate-400">Alkohol {intensity.alcohol_ratio}%</div>
+                                    </div>
+                                </button>
+                            );
+                        })}
+
+                        {/* Opsi Custom Order (Komposisi Bebas) */}
+                        <div className="mt-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                            <button onClick={() => { onSelectCustom(variant); onClose(); }}
+                                className="group w-full relative p-3 rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20 hover:border-amber-400 hover:bg-amber-50 text-left transition-all duration-200">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center shadow-sm flex-shrink-0">
+                                        <IconAdjustments size={18} className="text-white"/>
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-black text-amber-800 dark:text-amber-200 text-sm">Komposisi Bebas</p>
+                                        <span className="text-[10px] text-amber-600 dark:text-amber-400 block mt-0.5">Tentukan rasio ml minyak & alkohol sendiri</span>
+                                    </div>
+                                    <IconChevronRight size={14} className="text-amber-500 flex-shrink-0 opacity-50 group-hover:opacity-100 transition-opacity"/>
                                 </div>
-                                <IconChevronRight size={14} className="text-slate-300 group-hover:text-primary-500 flex-shrink-0 transition-colors"/>
                             </button>
-                        ))}
+                        </div>
                     </div>
                 )}
             </div>
@@ -641,7 +634,7 @@ function SizeModal({ show, onClose, variant, intensity, sizes, loading, onSelect
 }
 
 // ─── Packaging Modal ──────────────────────────────────────────────────────────
-function PackagingModal({ show, onClose, packagingMaterials = [], selectedPkgs = [], onToggle, onAddStandalone }) {
+function PackagingModal({ show, onClose, packagingMaterials = [], selectedPkgs = [], onToggle, onAddStandalone, isPendingMode = false, onSubmitPending = null, isSubmitting = false }) {
     const [search, setSearch] = useState("");
     const [activeTab, setActiveTab] = useState("addon");
     const filtered = useMemo(() => {
@@ -657,10 +650,12 @@ function PackagingModal({ show, onClose, packagingMaterials = [], selectedPkgs =
                 <h3 className="font-bold text-slate-800 dark:text-white text-lg">Kemasan Parfum</h3>
                 <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors"><IconX size={16}/></button>
             </div>
-            <div className="flex border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
-                <button onClick={() => setActiveTab("addon")} className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-colors ${activeTab === "addon" ? "text-primary-600 border-b-2 border-primary-500" : "text-slate-400 hover:text-slate-600"}`}><IconPackage size={13}/> Kemasan Parfum Ini</button>
-                <button onClick={() => setActiveTab("standalone")} className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-colors ${activeTab === "standalone" ? "text-orange-600 border-b-2 border-orange-500" : "text-slate-400 hover:text-slate-600"}`}><IconBox size={13}/> Kemasan Satuan</button>
-            </div>
+            {!isPendingMode && (
+                <div className="flex border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
+                    <button onClick={() => setActiveTab("addon")} className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-colors ${activeTab === "addon" ? "text-primary-600 border-b-2 border-primary-500" : "text-slate-400 hover:text-slate-600"}`}><IconPackage size={13}/> Kemasan Parfum Ini</button>
+                    <button onClick={() => setActiveTab("standalone")} className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-colors ${activeTab === "standalone" ? "text-orange-600 border-b-2 border-orange-500" : "text-slate-400 hover:text-slate-600"}`}><IconBox size={13}/> Kemasan Satuan</button>
+                </div>
+            )}
             <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
                 <div className="relative">
                     <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
@@ -671,7 +666,7 @@ function PackagingModal({ show, onClose, packagingMaterials = [], selectedPkgs =
                 {filtered.map((pkg, idx) => {
                     const bg   = PKG_BG_LIST[idx % PKG_BG_LIST.length];
                     const isOn = selectedPkgs.includes(pkg.id);
-                    if (activeTab === "addon") return (
+                    if (isPendingMode || activeTab === "addon") return (
                         <button key={pkg.id} onClick={() => onToggle(pkg.id)} className={`group flex items-center gap-3 p-3.5 mb-2 rounded-xl border-2 text-left transition-all w-full ${isOn ? "border-primary-400 bg-primary-50 dark:bg-primary-950/20" : "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800/50"}`}>
                             <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}><IconBox size={18} className="text-white"/></div>
                             <div className="flex-1 min-w-0">
@@ -697,6 +692,24 @@ function PackagingModal({ show, onClose, packagingMaterials = [], selectedPkgs =
                     );
                 })}
             </div>
+            
+            {isPendingMode && (
+                <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex-shrink-0 bg-slate-50 dark:bg-slate-800/50">
+                    <button onClick={onSubmitPending} disabled={isSubmitting} className="w-full h-12 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-sm transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 disabled:opacity-50">
+                        {isSubmitting ? (
+                            <>
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                                Menyimpan...
+                            </>
+                        ) : (
+                            <>
+                                <IconCheck size={18}/>
+                                Lanjut & Tambah ke Keranjang
+                            </>
+                        )}
+                    </button>
+                </div>
+            )}
         </Modal>
     );
 }
@@ -731,19 +744,26 @@ export default function Index({
     const [cartPackagings, setCartPackagings] = useState([]);
 
     // ── State: regular order builder ───────────────────────────────────────────
-    const [selectedIntensity,  setSelectedIntensity]  = useState(null);
-    const [selectedVariant,    setSelectedVariant]    = useState(null);
-    const [selectedPkgs,       setSelectedPkgs]       = useState([]);
-    const [availableVariants,  setAvailableVariants]  = useState([]);
-    const [availableSizes,     setAvailableSizes]     = useState([]);
-    const [loadingVariants,    setLoadingVariants]    = useState(false);
-    const [loadingSizes,       setLoadingSizes]       = useState(false);
-    const [showVariantModal,   setShowVariantModal]   = useState(false);
-    const [showSizeModal,      setShowSizeModal]      = useState(false);
-    const [showPackagingModal, setShowPackagingModal] = useState(false);
-    const [variantSearch,      setVariantSearch]      = useState("");
-    const [filterGender,       setFilterGender]       = useState("all");
-    const [addingToCart,       setAddingToCart]       = useState(false);
+    const [selectedIntensity,   setSelectedIntensity]   = useState(null);
+    const [selectedVariant,     setSelectedVariant]     = useState(null);
+    const [selectedPkgs,        setSelectedPkgs]        = useState([]);
+    // Katalog varian POS
+    const [catalogVariants,     setCatalogVariants]     = useState([]);
+    const [loadingCatalog,      setLoadingCatalog]      = useState(false);
+    const [catalogSearch,       setCatalogSearch]       = useState("");
+    const [catalogGender,       setCatalogGender]       = useState("all");
+    // Intensitas untuk varian terpilih
+    const [availableIntensities, setAvailableIntensities] = useState([]);
+    const [loadingIntensities,   setLoadingIntensities]   = useState(false);
+    const [showIntensityModal,   setShowIntensityModal]   = useState(false);
+    // Ukuran
+    const [availableSizes,      setAvailableSizes]      = useState([]);
+    const [loadingSizes,        setLoadingSizes]        = useState(false);
+    const [showSizeModal,       setShowSizeModal]       = useState(false);
+    // Kemasan
+    const [showPackagingModal,  setShowPackagingModal]  = useState(false);
+    const [addingToCart,        setAddingToCart]        = useState(false);
+    const [pendingOrder,        setPendingOrder]        = useState(null);
 
     // ── State: custom order ────────────────────────────────────────────────────
     const [showCustomModal,       setShowCustomModal]       = useState(false);
@@ -755,6 +775,10 @@ export default function Index({
     // ── State: misc ────────────────────────────────────────────────────────────
     const [mobileView, setMobileView] = useState("catalog");
     const [leftTab,    setLeftTab]    = useState("parfum");
+
+    // ── State: auto promo ──────────────────────────────────────────────────────
+    const [autoPromo, setAutoPromo] = useState(null);
+    const [dismissedPromos, setDismissedPromos] = useState([]);
 
     const customerRef = useRef(null);
 
@@ -785,14 +809,60 @@ export default function Index({
 
     useEffect(() => { if (!isCash) setCashInput(String(payable)); }, [isCash, payable]);
 
-    // ── Fetch variants for regular order ───────────────────────────────────────
-    const fetchVariants = async (intensityId) => {
-        setLoadingVariants(true); setAvailableVariants([]);
+    // ── Effect: Auto Promo Suggestion ──────────────────────────────────────────
+    useEffect(() => {
+        if (carts.length === 0 || payable <= 0) {
+            setAutoPromo(null);
+            return;
+        }
+
+        if (selectedDiscount) {
+            setAutoPromo(null);
+            return;
+        }
+
+        const totalCartQty = carts.reduce((acc, curr) => acc + curr.qty, 0) + cartPackagings.reduce((acc, curr) => acc + curr.qty, 0);
+
+        const eligible = (discounts || []).find(d => {
+            if (dismissedPromos.includes(d.id)) return false;
+            
+            let meetRequire = true;
+            if (Number(d.min_purchase_amount) > 0 && subtotal < Number(d.min_purchase_amount)) {
+                meetRequire = false;
+            }
+            if (Number(d.min_purchase_quantity) > 0 && totalCartQty < Number(d.min_purchase_quantity)) {
+                meetRequire = false;
+            }
+            return meetRequire;
+        });
+
+        if (eligible && (!autoPromo || autoPromo.id !== eligible.id)) {
+            setAutoPromo(eligible);
+        } else if (!eligible && autoPromo) {
+            setAutoPromo(null);
+        }
+    }, [carts, cartPackagings, subtotal, discounts, dismissedPromos, selectedDiscount, payable]);
+
+
+    // ── Fetch katalog varian POS ───────────────────────────────────────────────
+    const fetchCatalogVariants = async () => {
+        if (loadingCatalog || catalogVariants.length > 0) return;
+        setLoadingCatalog(true);
         try {
-            const res = await axios.get(route("transactions.get-variants"), { params: { intensity_id: intensityId } });
-            if (res.data.success) setAvailableVariants(res.data.data);
+            const res = await axios.get(route("transactions.get-variants-pos"));
+            if (res.data.success) setCatalogVariants(res.data.data);
             else toast.error(res.data.message ?? "Gagal memuat varian");
-        } catch { toast.error("Gagal memuat varian"); } finally { setLoadingVariants(false); }
+        } catch { toast.error("Gagal memuat varian"); } finally { setLoadingCatalog(false); }
+    };
+
+    // Fetch intensitas untuk varian yang dipilih
+    const fetchIntensities = async (variantId) => {
+        setLoadingIntensities(true); setAvailableIntensities([]);
+        try {
+            const res = await axios.get(route("transactions.get-intensities"), { params: { variant_id: variantId } });
+            if (res.data.success) setAvailableIntensities(res.data.data);
+            else toast.error(res.data.message ?? "Gagal memuat konsentrasi");
+        } catch { toast.error("Gagal memuat konsentrasi"); } finally { setLoadingIntensities(false); }
     };
 
     const fetchSizes = async (intensityId, variantId) => {
@@ -841,51 +911,100 @@ export default function Index({
         setShowCustomModal(true);
     };
 
-    // ── Regular order builder ──────────────────────────────────────────────────
-    const selectIntensity = (intensity) => {
-        setSelectedIntensity(intensity); setSelectedVariant(null);
-        setSelectedPkgs([]); setAvailableVariants([]); setAvailableSizes([]);
-        setVariantSearch(""); setFilterGender("all");
-        setShowVariantModal(true); fetchVariants(intensity.id);
+    // Load katalog varian saat tab parfum aktif
+    useEffect(() => {
+        if (leftTab === "parfum" && catalogVariants.length === 0) fetchCatalogVariants();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [leftTab]);
+
+    // ── Regular order builder (alur: Varian → Intensitas → Ukuran) ─────────────
+    const selectCatalogVariant = (variant) => {
+        setSelectedVariant(variant);
+        setSelectedIntensity(null);
+        setAvailableIntensities([]);
+        setAvailableSizes([]);
+        setSelectedPkgs([]);
+        setShowIntensityModal(true);
+        fetchIntensities(variant.id);
     };
 
-    const selectVariant = (variant) => {
-        setSelectedVariant(variant); setAvailableSizes([]);
-        setTimeout(() => setShowSizeModal(true), 80); fetchSizes(selectedIntensity.id, variant.id);
+    const selectIntensity = (intensity) => {
+        setSelectedIntensity(intensity);
+        setAvailableSizes([]);
+        setTimeout(() => setShowSizeModal(true), 80);
+        fetchSizes(intensity.id, selectedVariant.id);
     };
 
     const selectSize = (size) => {
         if (!selectedIntensity || !selectedVariant) { toast.error("Lengkapi pilihan"); return; }
-        setAddingToCart(true);
-        router.post(route("transactions.add-to-cart"), {
+        
+        const payload = {
             intensity_id: selectedIntensity.id, variant_id: selectedVariant.id,
-            size_id: size.id, packaging_ids: selectedPkgs, qty: 1,
-        }, {
-            preserveScroll: true, preserveState: true, only: ["carts", "carts_total"],
-            onSuccess: () => {
-                toast.success("Ditambahkan ke keranjang");
-                setSelectedIntensity(null); setSelectedVariant(null);
-                setSelectedPkgs([]); setAvailableVariants([]); setAvailableSizes([]);
-                setAddingToCart(false); setMobileView("cart");
-            },
-            onError: (errs) => { toast.error(errs?.message || "Gagal menambahkan"); setAddingToCart(false); },
-        });
+            size_id: size.id, qty: 1
+        };
+        
+        setPendingOrder({ type: "regular", payload });
+        setSelectedPkgs([]);
+        setTimeout(() => setShowSizeModal(false), 50);
+
+        // Langsung tampilkan modal packaging sebelum beneran submit ke API
+        if (packagingMaterials.length > 0) {
+            setTimeout(() => setShowPackagingModal(true), 350);
+        } else {
+            submitPendingOrder({ type: "regular", payload });
+        }
     };
 
     // ── Custom order handler ───────────────────────────────────────────────────
     const handleCustomConfirm = (payload) => {
-        setAddingCustomToCart(true);
-        router.post(route("transactions.add-custom-to-cart"), payload, {
+        setPendingOrder({ type: "custom", payload });
+        setSelectedPkgs([]);
+        
+        if (packagingMaterials.length > 0) {
+            setTimeout(() => setShowPackagingModal(true), 350);
+        } else {
+            submitPendingOrder({ type: "custom", payload });
+        }
+    };
+
+    const submitPendingOrder = (overrideOrder = null) => {
+        const order = overrideOrder || pendingOrder;
+        if (!order) return;
+        
+        const isCustom = order.type === "custom";
+        const finalPayload = { ...order.payload, packaging_ids: selectedPkgs };
+        
+        const stateSetter = isCustom ? setAddingCustomToCart : setAddingToCart;
+        const submitRoute = isCustom ? "transactions.add-custom-to-cart" : "transactions.add-to-cart";
+        const successMsg  = isCustom ? "Custom order ditambahkan ke keranjang!" : "Ditambahkan ke keranjang!";
+        
+        stateSetter(true);
+        router.post(route(submitRoute), finalPayload, {
             preserveScroll: true, preserveState: true, only: ["carts", "carts_total"],
             onSuccess: () => {
-                toast.success("Custom order ditambahkan ke keranjang");
-                setAddingCustomToCart(false); setMobileView("cart");
+                toast.success(successMsg);
+                if (!isCustom) {
+                    setSelectedIntensity(null); setSelectedVariant(null);
+                    setAvailableIntensities([]); setAvailableSizes([]);
+                }
+                setSelectedPkgs([]); 
+                stateSetter(false); setMobileView("cart");
+                setPendingOrder(null);
+                setShowPackagingModal(false);
             },
             onError: (errs) => {
                 const msg = typeof errs === "object" ? Object.values(errs)[0] : (errs?.message || "Gagal menambahkan");
-                toast.error(msg); setAddingCustomToCart(false);
+                toast.error(msg); stateSetter(false);
             },
         });
+    };
+
+    const handleClosePackagingModal = () => {
+        if (pendingOrder) {
+            submitPendingOrder();
+        } else {
+            setShowPackagingModal(false);
+        }
     };
 
     const togglePkg = (pkgId) => setSelectedPkgs(prev => prev.includes(pkgId) ? prev.filter(id => id !== pkgId) : [...prev, pkgId]);
@@ -963,10 +1082,10 @@ export default function Index({
         <>
             <Head title="Transaksi POS"/>
 
-            {/* Modals */}
-            <VariantModal show={showVariantModal} onClose={() => setShowVariantModal(false)} intensity={selectedIntensity} variants={availableVariants} loading={loadingVariants} onSelect={selectVariant} searchTerm={variantSearch} setSearchTerm={setVariantSearch} filterGender={filterGender} setFilterGender={setFilterGender}/>
+            {/* Modals — alur baru: Varian → Intensitas → Ukuran → Kemasan */}
+            <IntensityModal show={showIntensityModal} onClose={() => setShowIntensityModal(false)} variant={selectedVariant} intensities={availableIntensities} loading={loadingIntensities} onSelect={selectIntensity} onSelectCustom={openCustomModalWithVariant}/>
             <SizeModal show={showSizeModal} onClose={() => setShowSizeModal(false)} variant={selectedVariant} intensity={selectedIntensity} sizes={availableSizes} loading={loadingSizes} onSelect={selectSize}/>
-            <PackagingModal show={showPackagingModal} onClose={() => setShowPackagingModal(false)} packagingMaterials={packagingMaterials} selectedPkgs={selectedPkgs} onToggle={togglePkg} onAddStandalone={handleAddPkg}/>
+            <PackagingModal show={showPackagingModal} onClose={handleClosePackagingModal} packagingMaterials={packagingMaterials} selectedPkgs={selectedPkgs} onToggle={togglePkg} onAddStandalone={handleAddPkg} isPendingMode={!!pendingOrder} onSubmitPending={() => submitPendingOrder()} isSubmitting={addingToCart || addingCustomToCart}/>
             <CustomOrderModal
                 show={showCustomModal}
                 onClose={() => { setShowCustomModal(false); setCustomTabVariant(null); }}
@@ -1007,7 +1126,7 @@ export default function Index({
                             <div className="flex items-center justify-between mb-3">
                                 <div>
                                     <h1 className="font-black text-slate-800 dark:text-white text-base">Katalog</h1>
-                                    <p className="text-[11px] text-slate-400 mt-0.5">Pilih intensitas, varian, ukuran — atau buat komposisi bebas</p>
+                                    <p className="text-[11px] text-slate-400 mt-0.5">Pilih varian → konsentrasi → ukuran, atau komposisi bebas</p>
                                 </div>
                                 {storeName && (
                                     <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl flex-shrink-0">
@@ -1027,77 +1146,106 @@ export default function Index({
                             </div>
                         </div>
 
-                        {/* ── TAB PARFUM ── */}
+                        {/* ── TAB PARFUM — Katalog Varian dengan gambar ── */}
                         {leftTab === "parfum" && (
                             <div className="flex-1 overflow-y-auto p-4">
-                                {intensities.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-16">
-                                        <IconFlask size={28} className="text-slate-300 dark:text-slate-600 mb-3"/>
-                                        <p className="font-semibold text-slate-500">Belum ada konsentrasi</p>
+                                {/* Search + filter gender */}
+                                <div className="flex gap-2 mb-3">
+                                    <div className="relative flex-1">
+                                        <IconSearch size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"/>
+                                        <input type="text" placeholder="Cari varian..." value={catalogSearch}
+                                            onChange={e => setCatalogSearch(e.target.value)}
+                                            className="w-full h-8 pl-8 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white"/>
                                     </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-                                        {intensities.map((intensity, i) => {
-                                            const c      = INTENSITY_COLORS[i % INTENSITY_COLORS.length];
-                                            const oilPct = parseFloat(intensity.oil_ratio) || 0;
-                                            return (
-                                                <button key={intensity.id} onClick={() => selectIntensity(intensity)}
-                                                    className="group relative p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:shadow-sm hover:border-slate-300 dark:hover:border-slate-600 text-left transition-all duration-200">
-                                                    <div className="flex items-start gap-3 mb-3">
-                                                        <div className={`w-11 h-11 rounded-xl ${c.bg} flex items-center justify-center shadow-sm flex-shrink-0`}>
-                                                            <IconFlask size={20} className="text-white"/>
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">{intensity.name}</p>
-                                                            <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-black mt-1 ${c.light} ${c.text}`}>{intensity.code}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="space-y-1.5">
-                                                        <div className="flex justify-between text-[11px] text-slate-500">
-                                                            <span>Kadar minyak</span>
-                                                            <span className="font-bold text-slate-700 dark:text-slate-300">{intensity.oil_ratio}%</span>
-                                                        </div>
-                                                        <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                                                            <div className={`h-full ${c.bar} rounded-full`} style={{ width: `${Math.min(oilPct, 100)}%` }}/>
-                                                        </div>
-                                                        <div className="flex justify-between text-[11px]">
-                                                            <span className="text-slate-400">Alkohol {intensity.alcohol_ratio}%</span>
-                                                            <span className={`${c.text} font-semibold`}>Pilih →</span>
-                                                        </div>
-                                                    </div>
-                                                </button>
-                                            );
-                                        })}
+                                    <div className="flex gap-1">
+                                        {["all","male","female"].map(g => (
+                                            <button key={g} onClick={() => setCatalogGender(g)}
+                                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                                                    catalogGender === g ? "bg-primary-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200"
+                                                }`}>
+                                                {g === "all" ? "Semua" : g === "male" ? "Pria" : "Wanita"}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
 
-                                        {/* Card Custom Order */}
-                                        <button
-                                            onClick={openCustomModal}
-                                            className="group relative p-4 rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20 hover:border-amber-400 hover:bg-amber-50 dark:hover:border-amber-600 dark:hover:bg-amber-950/30 text-left transition-all duration-200">
-                                            <div className="flex items-start gap-3 mb-3">
-                                                <div className="w-11 h-11 rounded-xl bg-amber-500 flex items-center justify-center shadow-sm flex-shrink-0">
-                                                    <IconAdjustments size={20} className="text-white"/>
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-black text-amber-800 dark:text-amber-200 text-sm leading-tight">Komposisi Bebas</p>
-                                                    <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-black mt-1 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">CUSTOM</span>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <div className="flex justify-between text-[11px] text-slate-500">
-                                                    <span>Rasio oil</span>
-                                                    <span className="font-bold text-amber-700 dark:text-amber-300">Bebas (min 1:1)</span>
-                                                </div>
-                                                <div className="h-1.5 bg-amber-100 dark:bg-amber-900/40 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-amber-400 rounded-full" style={{ width: "60%" }}/>
-                                                </div>
-                                                <div className="flex justify-between text-[11px]">
-                                                    <span className="text-emerald-600 font-bold">Alkohol GRATIS</span>
-                                                    <span className="text-amber-500 font-semibold group-hover:text-amber-600">Buat →</span>
-                                                </div>
-                                            </div>
-                                        </button>
+                                {loadingCatalog ? (
+                                    <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-400">
+                                        <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"/>
+                                        <span className="text-sm">Memuat katalog...</span>
                                     </div>
-                                )}
+                                ) : (() => {
+                                    const filtered = catalogVariants.filter(v => {
+                                        const matchSearch = !catalogSearch ||
+                                            v.name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+                                            (v.code ?? "").toLowerCase().includes(catalogSearch.toLowerCase());
+                                        const matchGender = catalogGender === "all" || v.gender === catalogGender;
+                                        return matchSearch && matchGender;
+                                    });
+                                    return filtered.length === 0 && !loadingCatalog ? (
+                                        <div className="flex flex-col items-center justify-center py-16">
+                                            <IconAlertTriangle size={28} className="text-amber-400 mb-2"/>
+                                            <p className="font-semibold text-slate-500 text-sm">Tidak ada varian ditemukan</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                                            {filtered.map((variant, idx) => {
+                                                const genderColor = variant.gender === "male"
+                                                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                                                    : variant.gender === "female"
+                                                    ? "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300"
+                                                    : "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300";
+                                                const accentBg = INTENSITY_COLORS[idx % INTENSITY_COLORS.length].bg;
+                                                return (
+                                                    <button key={variant.id} onClick={() => selectCatalogVariant(variant)}
+                                                        className="group flex flex-col rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-primary-400 dark:hover:border-primary-600 hover:shadow-md transition-all duration-200 overflow-hidden text-left">
+                                                        {/* Gambar varian */}
+                                                        <div className="relative w-full aspect-square bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
+                                                            {variant.image_url ? (
+                                                                <img src={variant.image_url} alt={variant.name}
+                                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
+                                                            ) : (
+                                                                <div className={`w-14 h-14 rounded-2xl ${accentBg} flex items-center justify-center`}>
+                                                                    <IconDroplet size={26} className="text-white"/>
+                                                                </div>
+                                                            )}
+                                                            {variant.gender && (
+                                                                <span className={`absolute top-2 left-2 px-1.5 py-0.5 rounded text-[9px] font-black ${genderColor}`}>
+                                                                    {GENDER_LABEL[variant.gender] ?? variant.gender}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {/* Info */}
+                                                        <div className="p-2.5">
+                                                            <p className="font-black text-slate-800 dark:text-white text-xs leading-tight line-clamp-2">{variant.name}</p>
+                                                            {variant.code && <p className="text-[10px] text-slate-400 font-mono mt-0.5">{variant.code}</p>}
+                                                            <div className="mt-1.5 flex items-center justify-between">
+                                                                <span className="text-[10px] text-primary-600 dark:text-primary-400 font-bold">Pilih →</span>
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+
+                                            {/* Card Custom Order */}
+                                            <button onClick={openCustomModal}
+                                                className="group flex flex-col rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-all duration-200 overflow-hidden text-left">
+                                                <div className="w-full aspect-square bg-amber-100/50 dark:bg-amber-900/20 flex items-center justify-center">
+                                                    <div className="w-14 h-14 rounded-2xl bg-amber-500 flex items-center justify-center shadow-sm">
+                                                        <IconAdjustments size={26} className="text-white"/>
+                                                    </div>
+                                                </div>
+                                                <div className="p-2.5">
+                                                    <p className="font-black text-amber-800 dark:text-amber-200 text-xs leading-tight">Komposisi Bebas</p>
+                                                    <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-black mt-1 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">CUSTOM</span>
+                                                    <div className="mt-1.5">
+                                                        <span className="text-[10px] text-amber-500 font-bold group-hover:text-amber-600">Buat →</span>
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         )}
 
@@ -1165,7 +1313,6 @@ export default function Index({
                                 {selectedCustomer && (
                                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                                         <p className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><IconCheck size={10}/> {selectedCustomer.name}</p>
-                                        {selectedCustomer.tier && <span className={`text-[10px] font-bold capitalize ${TIER_COLOR[selectedCustomer.tier] ?? ""}`}>⭐ {selectedCustomer.tier}</span>}
                                         {selectedCustomer.points > 0 && <span className="ml-auto text-[10px] text-amber-500 font-bold">{Number(selectedCustomer.points).toLocaleString("id-ID")} poin</span>}
                                     </div>
                                 )}
@@ -1412,6 +1559,53 @@ export default function Index({
                     </div>
                 </div>
             )}
+
+            {/* ── Auto Promo Modal ───────────────────────────────────────────── */}
+            <Modal show={autoPromo !== null} onClose={() => {
+                if (autoPromo) setDismissedPromos(prev => [...prev, autoPromo.id]);
+                setAutoPromo(null);
+            }} maxW="max-w-md">
+                <div className="p-6 text-center">
+                    <div className="w-16 h-16 mx-auto bg-emerald-100 dark:bg-emerald-900/40 rounded-full flex items-center justify-center mb-4 shadow-sm border-4 border-white dark:border-slate-900">
+                        <IconTag size={32} className="text-emerald-500" />
+                    </div>
+                    <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2 leading-tight">Selamat! Promo Tersedia 🎉</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 px-4">
+                        Pelanggan telah memenuhi syarat untuk mendapatkan <span className="font-bold text-emerald-600 dark:text-emerald-400">{autoPromo?.name}</span>.
+                        {Number(autoPromo?.min_purchase_amount) > 0 && <span className="block mt-1 text-xs text-slate-400">Syarat minimal belanja {fmt(autoPromo?.min_purchase_amount)} telah tercapai.</span>}
+                    </p>
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={() => {
+                                if (autoPromo) setDismissedPromos(prev => [...prev, autoPromo.id]);
+                                setAutoPromo(null);
+                            }}
+                            className="flex-1 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex justify-center items-center gap-2">
+                            Abaikan
+                        </button>
+                        <button 
+                            onClick={() => {
+                                // Hitung amount dari diskon (disamakan dengan format selectedDiscount)
+                                let obj = { ...autoPromo };
+                                if (autoPromo?.type === 'percentage') {
+                                    obj.amount = (subtotal + pkgCartTotal) * (autoPromo.value / 100);
+                                    if (autoPromo.max_discount_amount > 0 && obj.amount > autoPromo.max_discount_amount) {
+                                        obj.amount = autoPromo.max_discount_amount;
+                                    }
+                                } else {
+                                    obj.amount = autoPromo?.value || 0;
+                                }
+                                
+                                setSelectedDiscount(obj);
+                                setAutoPromo(null);
+                                toast.success(`Promo ${autoPromo?.name} berhasil diterapkan!`);
+                            }}
+                            className="flex-1 py-3 rounded-xl font-black text-white bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/30 transition flex justify-center items-center gap-2">
+                            Terapkan Promo
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </>
     );
 }

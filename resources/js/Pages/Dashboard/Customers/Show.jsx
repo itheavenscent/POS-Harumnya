@@ -14,12 +14,6 @@ import {
     IconStar,
 } from "@tabler/icons-react";
 
-const TIER_CONFIG = {
-    bronze:   { label: "Bronze",   color: "bg-orange-100 text-orange-700" },
-    silver:   { label: "Silver",   color: "bg-slate-200 text-slate-700" },
-    gold:     { label: "Gold",     color: "bg-amber-100 text-amber-700" },
-    platinum: { label: "Platinum", color: "bg-purple-100 text-purple-700" },
-};
 
 const STATUS_CONFIG = {
     completed:  { label: "Selesai",   color: "bg-emerald-100 text-emerald-700" },
@@ -42,7 +36,6 @@ function formatDate(value) {
 }
 
 export default function Show({ customer, stats }) {
-    const tierCfg = TIER_CONFIG[customer.tier] ?? TIER_CONFIG.bronze;
 
     return (
         <>
@@ -78,9 +71,6 @@ export default function Show({ customer, stats }) {
                         <h2 className="text-xl font-bold dark:text-white">{customer.name}</h2>
                         <p className="text-slate-400 text-sm mb-4 font-mono">{customer.code}</p>
                         <div className="flex justify-center gap-2 flex-wrap">
-                            <span className={`px-3 py-1 rounded-full text-xs font-black uppercase ${tierCfg.color}`}>
-                                {tierCfg.label}
-                            </span>
                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                                 customer.is_active
                                     ? "bg-emerald-100 text-emerald-700"

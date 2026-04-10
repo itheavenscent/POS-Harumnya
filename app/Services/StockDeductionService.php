@@ -42,7 +42,11 @@ class StockDeductionService
         // ─────────────────────────────────────────────────────────────────────
 
         foreach ($saleItems as $saleItem) {
-            if ($saleItem->intensity_id_snapshot && $saleItem->size_id_snapshot) {
+            if ($saleItem->is_custom_order) {
+                // ── JALUR CUSTOM ORDER ──────────────────────────────────────────
+                $this->deductCustomOrderIngredients($sale, $storeId, $saleItem);
+            } elseif ($saleItem->intensity_id_snapshot && $saleItem->size_id_snapshot) {
+                // ── JALUR REGULAR ───────────────────────────────────────────────
                 $this->deductIngredients($sale, $storeId, $saleItem);
             } else {
                 Log::info('[StockDeduction] SaleItem dilewati (bukan item parfum / snapshot null)', [
@@ -225,6 +229,90 @@ class StockDeductionService
                 unitLabel:    $recipe->unit ?? 'ml',
             );
         }
+    }
+
+    /**
+     * Deduct bahan baku spesifik untuk Custom Order (oil dan alcohol terpisah)
+     */
+    private function deductCustomOrderIngredients(Sale $sale, string $storeId, SaleItem $saleItem): void
+    {
+        Log::info('[StockDeduction] deductCustomOrderIngredients masuk', [
+            'sale_number'  => $sale->sale_number,
+            'sale_item_id' => $saleItem->id,
+            'variant_id'   => $saleItem->variant_id_snapshot,
+            'qty_sold'     => $saleItem->qty,
+            'custom_oil'   => $saleItem->custom_oil_qty,
+            'custom_alc'   => $saleItem->custom_alcohol_qty,
+        ]);
+
+        $qtySold = (int) $saleItem->qty;
+
+        // 1. Deduct Oil
+        if ($saleItem->custom_oil_qty > 0) {
+            $oilIngredient = $this->resolveOilIngredient($saleItem->variant_id_snapshot);
+            if ($oilIngredient) {
+                $this->deductOneIngredient(
+                    sale:         $sale,
+                    storeId:      $storeId,
+                    ingredientId: $oilIngredient->id,
+                    qty:          (float) $saleItem->custom_oil_qty * $qtySold,
+                    unitLabel:    'ml'
+                );
+            } else {
+                Log::warning('[StockDeduction] Oil ingredient tidak ditemukan untuk custom order', [
+                    'variant_id' => $saleItem->variant_id_snapshot,
+                ]);
+            }
+        }
+
+        // 2. Deduct Alcohol
+        if ($saleItem->custom_alcohol_qty > 0) {
+            $alcoholIngredient = $this->resolveAlcoholIngredient();
+            if ($alcoholIngredient) {
+                $this->deductOneIngredient(
+                    sale:         $sale,
+                    storeId:      $storeId,
+                    ingredientId: $alcoholIngredient->id,
+                    qty:          (float) $saleItem->custom_alcohol_qty * $qtySold,
+                    unitLabel:    'ml'
+                );
+            } else {
+                Log::warning('[StockDeduction] Alcohol ingredient tidak ditemukan untuk custom order');
+            }
+        }
+    }
+
+    private function resolveOilIngredient(?string $variantId): ?object
+    {
+        if ($variantId) {
+            $ingredient = \Illuminate\Support\Facades\DB::table('ingredients as i')
+                ->join('ingredient_categories as ic', 'ic.id', '=', 'i.ingredient_category_id')
+                ->join('variant_recipes as vr', 'vr.ingredient_id', '=', 'i.id')
+                ->where('vr.variant_id', $variantId)
+                ->where('ic.ingredient_type', 'oil')
+                ->where('i.is_active', true)
+                ->select('i.id')
+                ->first();
+
+            if ($ingredient) return $ingredient;
+        }
+
+        return \Illuminate\Support\Facades\DB::table('ingredients as i')
+            ->join('ingredient_categories as ic', 'ic.id', '=', 'i.ingredient_category_id')
+            ->where('ic.ingredient_type', 'oil')
+            ->where('i.is_active', true)
+            ->select('i.id')
+            ->first();
+    }
+
+    private function resolveAlcoholIngredient(): ?object
+    {
+        return \Illuminate\Support\Facades\DB::table('ingredients as i')
+            ->join('ingredient_categories as ic', 'ic.id', '=', 'i.ingredient_category_id')
+            ->where('ic.ingredient_type', 'alcohol')
+            ->where('i.is_active', true)
+            ->select('i.id')
+            ->first();
     }
 
     private function deductOneIngredient(

@@ -118,12 +118,6 @@ export default function Form({ customer = null }) {
                                 errors={errors.points}
                                 onChange={(e) => setData("points", e.target.value)}
                             />
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                                <span className="text-xs text-slate-500 block mb-1">Tier Saat Ini</span>
-                                <span className="font-bold text-primary-600 italic">
-                                    {data.points >= 1000 ? 'Gold' : data.points >= 500 ? 'Silver' : data.points >= 100 ? 'Bronze' : 'Regular'}
-                                </span>
-                            </div>
                             <div className="flex items-center gap-3 py-2">
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input

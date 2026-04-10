@@ -18,6 +18,10 @@ class DiscountStore extends Model
         // store_id nullable: null = berlaku di semua toko
     ];
 
+    // -------------------------------------------------------------------------
+    // Relations
+    // -------------------------------------------------------------------------
+
     public function discountType(): BelongsTo
     {
         return $this->belongsTo(DiscountType::class, 'discount_type_id');

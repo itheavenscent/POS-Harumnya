@@ -14,7 +14,6 @@ class CustomOrderPricingRule extends Model
     protected $table    = 'custom_order_pricing_rules';
     protected $fillable = [
         'variant_id',
-        'price_per_ml_oil',
         'min_oil_ml',
         'max_oil_ml',
         'min_ratio_note',
@@ -25,7 +24,6 @@ class CustomOrderPricingRule extends Model
     ];
 
     protected $casts = [
-        'price_per_ml_oil' => 'decimal:4',
         'min_oil_ml'       => 'integer',
         'max_oil_ml'       => 'integer',
         'valid_from'       => 'date',

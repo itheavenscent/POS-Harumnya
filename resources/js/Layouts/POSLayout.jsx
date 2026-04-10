@@ -9,16 +9,29 @@ import {
     IconMenu2,
     IconX,
     IconUser,
-    IconMaximize,
     IconMinimize,
+    IconCash,
+    IconCashBanknote,
+    IconMaximize
 } from "@tabler/icons-react";
+import OpenShiftModal from "@/Components/Dashboard/OpenShiftModal";
+import CloseShiftModal from "@/Components/Dashboard/CloseShiftModal";
 
-export default function POSLayout({ children }) {
-    const { auth } = usePage().props;
+export default function POSLayout({ children, headerActions }) {
+    const { component, props } = usePage();
+    const { auth, activeCashDrawer } = props;
     const { darkMode } = useTheme();
     const [currentTime, setCurrentTime] = useState(new Date());
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isOpenShiftModalOpen, setIsOpenShiftModalOpen] = useState(false);
+    const [isCloseShiftModalOpen, setIsCloseShiftModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (activeCashDrawer === null && component === 'Dashboard/Transactions/Index') {
+            setIsOpenShiftModalOpen(true);
+        }
+    }, [activeCashDrawer, component]);
 
     useEffect(() => {
         const handleChange = () => setIsFullscreen(!!document.fullscreenElement);
@@ -117,9 +130,53 @@ export default function POSLayout({ children }) {
                             <IconHistory size={16} />
                             <span>Riwayat</span>
                         </Link>
+                        <Link
+                            href={route("cash-drawers.index")}
+                            preserveScroll
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                                component === "Dashboard/Shifts/Index"
+                                    ? "text-cyan-600 bg-cyan-50 dark:text-cyan-400 dark:bg-cyan-900/30"
+                                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800"
+                            }`}
+                        >
+                            <IconCash size={16} />
+                            <span>Shift</span>
+                        </Link>
                     </nav>
 
                     <div className="hidden lg:block w-px h-7 bg-slate-200 dark:bg-slate-700" />
+
+                    {/* Shift Buttons */}
+                    {activeCashDrawer !== undefined && (
+                        <div className="flex items-center">
+                            {activeCashDrawer ? (
+                                <Link
+                                    href={route("cash-drawers.current")}
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-black text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-all border border-emerald-200 dark:border-emerald-800"
+                                >
+                                    <IconCashBanknote size={16} />
+                                    <span>Shift Aktif</span>
+                                </Link>
+                            ) : (
+                                <Link
+                                    href={route("cash-drawers.current")}
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-black text-rose-600 bg-rose-50 dark:text-rose-400 dark:bg-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-all border border-rose-200 dark:border-rose-800"
+                                >
+                                    <IconCash size={16} />
+                                    <span>Buka Shift</span>
+                                </Link>
+                            )}
+                            <div className="w-px h-7 bg-slate-200 dark:bg-slate-700 mx-2 lg:mx-3" />
+                        </div>
+                    )}
+
+                    {/* Header Actions */}
+                    {headerActions && (
+                        <div className="flex items-center gap-2">
+                            {headerActions}
+                            <div className="hidden lg:block w-px h-7 bg-slate-200 dark:bg-slate-700" />
+                        </div>
+                    )}
 
                     {/* Fullscreen Toggle */}
                     <button
@@ -192,6 +249,19 @@ export default function POSLayout({ children }) {
                                 <span className="font-medium text-sm">Riwayat Transaksi</span>
                             </Link>
                             <Link
+                                href={route("cash-drawers.index")}
+                                preserveScroll
+                                onClick={() => setShowMobileMenu(false)}
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors ${
+                                    component === "Dashboard/Shifts/Index"
+                                        ? "text-cyan-600 bg-cyan-50 dark:bg-cyan-900/30"
+                                        : "text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                                }`}
+                            >
+                                <IconCash size={18} />
+                                <span className="font-medium text-sm">Histori Shift</span>
+                            </Link>
+                            <Link
                                 href={route("profile.edit")}
                                 preserveScroll
                                 onClick={() => setShowMobileMenu(false)}
@@ -230,6 +300,22 @@ export default function POSLayout({ children }) {
                     }}
                 />
                 {children}
+
+                {/* Modals */}
+                {isOpenShiftModalOpen && (
+                    <OpenShiftModal
+                        isOpen={isOpenShiftModalOpen}
+                        onClose={() => setIsOpenShiftModalOpen(false)}
+                    />
+                )}
+
+                {isCloseShiftModalOpen && activeCashDrawer && (
+                    <CloseShiftModal
+                        isOpen={isCloseShiftModalOpen}
+                        onClose={() => setIsCloseShiftModalOpen(false)}
+                        activeCashDrawer={activeCashDrawer}
+                    />
+                )}
             </main>
         </div>
     );

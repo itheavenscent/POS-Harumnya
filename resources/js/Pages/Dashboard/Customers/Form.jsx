@@ -12,23 +12,6 @@ import {
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 
-// Tier labels & colors (sesuai kolom enum DB)
-const TIER_CONFIG = {
-    bronze:   { label: "Bronze",   color: "text-orange-600 bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400" },
-    silver:   { label: "Silver",   color: "text-slate-600 bg-slate-100 border-slate-300 dark:bg-slate-800 dark:text-slate-300" },
-    gold:     { label: "Gold",     color: "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400" },
-    platinum: { label: "Platinum", color: "text-purple-600 bg-purple-50 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400" },
-};
-
-const TIER_THRESHOLDS = { platinum: 2000, gold: 1000, silver: 500, bronze: 0 };
-
-function resolveTier(points) {
-    const p = parseInt(points) || 0;
-    if (p >= 2000) return "platinum";
-    if (p >= 1000) return "gold";
-    if (p >= 500)  return "silver";
-    return "bronze";
-}
 
 export default function Form({ customer = null }) {
     const isEdit = !!customer;
@@ -59,14 +42,6 @@ export default function Form({ customer = null }) {
         }
     };
 
-    const currentTier = resolveTier(data.points);
-    const tierCfg     = TIER_CONFIG[currentTier];
-
-    // Hitung poin menuju tier berikutnya
-    const nextTierEntry = Object.entries(TIER_THRESHOLDS)
-        .sort(([, a], [, b]) => a - b)
-        .find(([, threshold]) => threshold > (parseInt(data.points) || 0));
-    const pointsToNext = nextTierEntry ? nextTierEntry[1] - (parseInt(data.points) || 0) : null;
 
     return (
         <>
@@ -212,32 +187,6 @@ export default function Form({ customer = null }) {
                                     onChange={(e) => setData("points", parseInt(e.target.value) || 0)}
                                 />
 
-                                {/* Tier badge dinamis */}
-                                <div className={`mt-2 p-3 rounded-xl border flex items-center justify-between ${tierCfg.color}`}>
-                                    <div>
-                                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-0.5">Tier Saat Ini</p>
-                                        <p className="font-black text-sm uppercase">{tierCfg.label}</p>
-                                    </div>
-                                    {pointsToNext && (
-                                        <p className="text-[10px] text-right opacity-70 leading-tight">
-                                            {pointsToNext.toLocaleString()} poin<br />ke tier berikutnya
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* Progress bar */}
-                                {nextTierEntry && (
-                                    <div className="mt-2">
-                                        <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-primary-500 rounded-full transition-all duration-500"
-                                                style={{
-                                                    width: `${Math.min(100, ((parseInt(data.points) || 0) / nextTierEntry[1]) * 100)}%`
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
                             </div>
 
                             {/* Toggle Status Aktif */}
@@ -269,13 +218,6 @@ export default function Form({ customer = null }) {
                         {processing ? "Memproses..." : isEdit ? "Simpan Perubahan" : "Daftarkan Pelanggan"}
                     </button>
 
-                    {isEdit && (
-                        <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 rounded-2xl">
-                            <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
-                                <strong>Info:</strong> Mengubah poin secara manual akan otomatis menyesuaikan tier pelanggan.
-                            </p>
-                        </div>
-                    )}
                 </div>
             </form>
         </>

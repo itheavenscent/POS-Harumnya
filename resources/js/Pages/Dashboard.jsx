@@ -240,7 +240,7 @@ const TABS = [
 
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function Dashboard({
-    period = 30, isSuperAdmin = false, isAdmin = false,
+    startDate, endDate, diffDays = 30, isSuperAdmin = false, isAdmin = false,
     canFilterStore = false, selectedStoreId = null, stores = [],
     currentStore = null, error = null,
     kpi = {}, counts = {},
@@ -252,24 +252,36 @@ export default function Dashboard({
     recentTransactions = [],
 }) {
     const [activeTab, setActiveTab] = useState('overview');
-    const [selectedPeriod, setSelectedPeriod] = useState(String(period));
+    const [sd, setSd] = useState(startDate || '');
+    const [ed, setEd] = useState(endDate || '');
     const [selectedStore, setSelectedStore] = useState(selectedStoreId ?? '');
 
-    const changeFilter = useCallback((newPeriod, newStoreId) => {
-        const params = { period: newPeriod };
+    const changeFilter = useCallback((newSd, newEd, newStoreId) => {
+        const params = {};
+        if (newSd && newEd) {
+            params.start_date = newSd;
+            params.end_date = newEd;
+        }
         if (newStoreId) params.store_id = newStoreId;
         router.get(route('dashboard'), params, { preserveState: true, preserveScroll: true });
     }, []);
 
-    const changePeriod = useCallback((p) => {
-        setSelectedPeriod(p);
-        changeFilter(p, selectedStore || null);
-    }, [selectedStore, changeFilter]);
+    const handleStartDateChange = useCallback((e) => {
+        const newSd = e.target.value;
+        setSd(newSd);
+        if (newSd && ed) changeFilter(newSd, ed, selectedStore || null);
+    }, [ed, selectedStore, changeFilter]);
+
+    const handleEndDateChange = useCallback((e) => {
+        const newEd = e.target.value;
+        setEd(newEd);
+        if (sd && newEd) changeFilter(sd, newEd, selectedStore || null);
+    }, [sd, selectedStore, changeFilter]);
 
     const changeStore = useCallback((storeId) => {
         setSelectedStore(storeId);
-        changeFilter(selectedPeriod, storeId || null);
-    }, [selectedPeriod, changeFilter]);
+        changeFilter(sd, ed, storeId || null);
+    }, [sd, ed, changeFilter]);
 
     const profitMargin = useMemo(() => {
         if (!kpi.totalRevenue) return 0;
@@ -394,19 +406,24 @@ export default function Dashboard({
                             </div>
                         )}
 
-                        {/* Period selector */}
+                        {/* Date Range selectors */}
                         <div className="flex items-center gap-2">
                             <IconCalendar size={14} className="text-slate-400" />
-                            <select
-                                value={selectedPeriod}
-                                onChange={(e) => changePeriod(e.target.value)}
-                                className="text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
-                            >
-                                <option value="7">7 Hari</option>
-                                <option value="14">14 Hari</option>
-                                <option value="30">30 Hari</option>
-                                <option value="90">90 Hari</option>
-                            </select>
+                            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pr-1.5 focus-within:ring-2 focus-within:ring-primary-500 overflow-hidden">
+                                <input
+                                    type="date"
+                                    value={sd}
+                                    onChange={handleStartDateChange}
+                                    className="text-xs bg-transparent border-none text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-0 py-1.5 pl-3"
+                                />
+                                <span className="text-slate-300 dark:text-slate-600">-</span>
+                                <input
+                                    type="date"
+                                    value={ed}
+                                    onChange={handleEndDateChange}
+                                    className="text-xs bg-transparent border-none text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-0 py-1.5 pl-2"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -427,7 +444,7 @@ export default function Dashboard({
                                 color="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
                                 icon={<IconBox size={20} strokeWidth={1.5} />}
                                 total={counts.ingredients ?? 0} />
-                            <Widget title="Transaksi" subtitle={`${selectedPeriod} hari`}
+                            <Widget title="Transaksi" subtitle={`${diffDays} hari`}
                                 color="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
                                 icon={<IconShoppingCart size={20} strokeWidth={1.5} />}
                                 total={kpi.totalTransactions ?? 0} />

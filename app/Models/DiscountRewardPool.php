@@ -27,14 +27,17 @@ class DiscountRewardPool extends Model
     ];
 
     protected $casts = [
-        // decimal(15,2) — 0.00 = gratis; null = ikut discount_rewards.fixed_price
-        'fixed_price'  => 'decimal:2',
-        // unsignedTinyInteger — bobot Plinko 1–100; null = equal weight
-        'probability'  => 'integer',
-        'is_active'    => 'boolean',
-        // unsignedSmallInteger
-        'sort_order'   => 'integer',
+        // decimal(15,2): 0.00 = gratis; null = ikut discount_rewards.fixed_price
+        'fixed_price' => 'decimal:2',
+        // unsignedTinyInteger: bobot Plinko 1–100; null = equal weight
+        'probability' => 'integer',
+        'is_active'   => 'boolean',
+        'sort_order'  => 'integer',
     ];
+
+    // -------------------------------------------------------------------------
+    // Relations
+    // -------------------------------------------------------------------------
 
     public function reward(): BelongsTo
     {

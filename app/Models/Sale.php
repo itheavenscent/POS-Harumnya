@@ -6,6 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\SaleItem;
+use App\Models\SalePayment;
+use App\Models\CashDrawer;
+use App\Models\Store;
+use App\Models\User;
+use App\Models\Customer;
+use App\Models\SalesPerson;
 
 class Sale extends Model
 {
@@ -15,6 +22,7 @@ class Sale extends Model
     protected $fillable = [
         'sale_number',
         'store_id',
+        'cash_drawer_id',
         'cashier_id',        'cashier_name',
         'sales_person_id',   'sales_person_name',
         'customer_id',       'customer_name',
@@ -45,6 +53,7 @@ class Sale extends Model
     public function items(): HasMany          { return $this->hasMany(SaleItem::class,       'sale_id'); }
     public function discounts(): HasMany      { return $this->hasMany(SaleDiscount::class,   'sale_id'); }
     public function payments(): HasMany       { return $this->hasMany(SalePayment::class,    'sale_id'); }
+    public function cashDrawer(): BelongsTo   { return $this->belongsTo(CashDrawer::class,   'cash_drawer_id'); }
 
     public function scopeCompleted($q) { return $q->where('status', 'completed'); }
     public function scopeToday($q)     { return $q->whereDate('sold_at', today()); }

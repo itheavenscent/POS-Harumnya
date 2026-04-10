@@ -1,36 +1,26 @@
-# Point of Sales – Laravel & Inertia
+# POS Harumnya - ERP & Point of Sales Parfum
 
-> Sistem kasir modern dengan alur transaksi cepat, dukungan laporan, dan mode cetak invoice yang rapi. Kalau kamu suka proyek ini, bantu dengan menekan ⭐ di atas – itu sangat membantu visibilitas repositori ini.
+> Sistem kasir cerdas dan Enterprise Resource Planning (ERP) mini yang dirancang khusus untuk bisnis ritel dan produksi parfum. Aplikasi ini mencakup manajemen inventori dari tingkat bahan mentah (*raw materials*) hingga barang jadi, formulasi resep, produksi (*repacking*), dan modul kasir dengan dukungan *Custom Order*.
 
 ![Dashboard Preview](public/media/revamp-pos.png "Point of Sales Dashboard Preview")
 <sub>_Cuplikan antarmuka kasir revamp. Screenshot tambahan ada di bagian di bawah._</sub>
 
-## 🆕 What's New (Revamp 2.0)
+## ✨ Kemampuan Utama
 
--   **UI/UX Redesign** – Tampilan modern dengan tema slate/primary, gradient accents, dan dark mode ready
--   **Landing Page Baru** – Halaman depan profesional dengan preview & perbandingan V1 vs Revamp
--   **Hold Transaction** – Simpan keranjang sementara, lanjutkan nanti
--   **Customer History** – Lihat riwayat transaksi pelanggan langsung dari halaman kasir
--   **Add Customer Modal** – Tambah pelanggan baru tanpa meninggalkan halaman transaksi
--   **Keyboard Shortcuts** – `/` atau `F5` untuk search, `Esc` untuk clear, dan lainnya
--   **Thermal Receipt** – Dukungan print struk 58mm dan 80mm
--   **Sample Data Seeder** – Data contoh lengkap dengan gambar produk
-
-## ✨ Kenapa Menarik?
-
--   **Kasir cepat & intuitif** – pencarian barcode, keranjang, ringkasan pembayaran, dan kalkulasi diskon otomatis.
--   **Invoice siap cetak & payment link** – setelah transaksi, kasir bisa melihat preview invoice elegan, membagikan link pembayaran Midtrans/Xendit, dan memilih kapan mau mencetaknya.
--   **Laporan lengkap** – dari penjualan, profit, sampai riwayat transaksi dengan filter multi parameter.
--   **Akses berbasis role** – integrasi Spatie Permissions bawaan untuk role, user, dan hak akses yang granular.
--   **Dark mode ready** – UI sudah disiapkan untuk mode gelap/terang tanpa konfigurasi tambahan.
+-   **Manajemen Formulasi & Kustomisasi Produk** – Atur produk berdasarkan kombinasi *Variant* (jenis aroma), *Intensity* (EDP, Extrait, dll), dan *Size*. Sistem mendukung resep standar maupun takaran bebas (*Custom Order*).
+-   **Alur Produksi (*Repacking*)** – Fitur untuk meracik/memproduksi barang jadi dari bahan mentah (Bibit/Oil & Pelarut/Alcohol). HPP/WAC (*Weighted Average Cost*) dikalkulasi secara otomatis dari nilai bahan baku.
+-   **Pengurangan Stok Cerdas (*Auto-Deduction*)** – Ketika kasir melakukan *checkout*, stok yang dipotong sistem otomatis berjalan mundur ke tingkat per *Ingredient* (dalam satuan ml) dan memotong botol kemasan, sesuai dengan *scaling* dari resep varian atau sesuai input kustom pesanan.
+-   **Modul Kasir (POS) Multi-Fungsi** – Antarmuka penjualan berkecepatan tinggi dengan fitur keranjang, *Hold Transaction* (simpan keranjang sementara), *Customer History*, integrasi *Custom Order Pricing*, kalkulasi kembalian, diskon, hingga bayar kas dan transfer.
+-   **Distribusi Stok Real-time** – Kelola persediaan antara Gudang Utama (*Warehouse*) dan berbagai Toko (*Stores*). Lengkap dengan modul pergerakan inventori: *Purchase Orders*, *Stock Transfers*, *Adjustments*.
+-   **Akses Berbasis Role & Laporan** – Manajemen *Role* yang granular via Spatie Permissions. Dilengkapi dengan ringkasan keuangan, laporan profit (GPM), dan historik staf/penjualan.
 
 ## 🔧 Teknologi Inti
 
--   [Laravel 12](https://laravel.com) + [Inertia.js](https://inertiajs.com)
--   [React](https://react.dev) + [Tailwind CSS](https://tailwindcss.com)
--   [Spatie Laravel Permission](https://spatie.be/docs/laravel-permission)
--   [Tabler Icons](https://tabler-icons.io) untuk ikon kasir modern
--   Integrasi payment gateway Midtrans Snap & Xendit Invoice (opsional)
+-   **Backend:** [Laravel 12](https://laravel.com)
+-   **Frontend:** [Inertia.js](https://inertiajs.com) + [React](https://react.dev)
+-   **Styling:** [Tailwind CSS](https://tailwindcss.com) & Komponen UI modern (Dark Mode Ready)
+-   **Akses:** [Spatie Laravel Permission](https://spatie.be/docs/laravel-permission)
+-   **Ikon:** [Tabler Icons](https://tabler-icons.io)
 
 ## 🚀 Cara Menjalankan
 
@@ -46,61 +36,37 @@ npm run dev
 php artisan serve
 ```
 
-### Default Login
-
+### Log in (Contoh Berdasarkan Seeder):
 -   **Admin**: `arya@gmail.com` / `password`
 -   **Kasir**: `cashier@gmail.com` / `password`
 
-> **Tip:** Jalankan `php artisan db:seed --class=SampleDataSeeder` untuk data contoh lengkap dengan gambar.
+## 📊 Fitur Lengkap
 
-## 📊 Fitur Utama
+### 1. Manajemen Bahan Baku & Formula
+- **Ingredients & Packaging**: Menginventarisir ketersediaan bahan pembuat parfum dan kemasannya.
+- **Recipes**: Buat resep pasti per aroma, dengan hitung biaya satuan berdasar fluktuasi harga modal *ingredient*.
 
--   **Dashboard**: ringkasan kategori, produk, transaksi, pendapatan, dan trend chart.
--   **Kelola Produk & Stok**: CRUD lengkap dengan kategori dan barcode unik.
--   **Modul Kasir**: pencarian barcode, keranjang multi item, diskon, hitung kembalian otomatis, dan pilihan gateway (tunai, Midtrans, Xendit).
--   **Hold Transaction**: Simpan keranjang sementara dan lanjutkan nanti.
--   **Customer History**: Lihat statistik dan riwayat transaksi pelanggan.
--   **Invoice / Payment Link**: tampilan siap cetak + tombol manual print dan tautan pembayaran yang bisa dibagikan ke pelanggan.
--   **Thermal Receipt**: Dukungan cetak struk thermal 58mm dan 80mm.
--   **Riwayat Transaksi**: filter per tanggal/invoice/kasir + export laporan.
--   **Laporan Profit & Penjualan**: pantau performa bisnis dalam sekali klik.
+### 2. Inventori Lanjut (ERP)
+- **Warehouse vs Store**: Lokalisasi aset, sehingga stok toko kasir terpisah dari stok pusat/gudang.
+- **Stock Movement Log**: Audit mutasi persediaan masuk-keluar terlengkap seperti kartu stok.
 
-## ⌨️ Keyboard Shortcuts
-
-| Shortcut      | Aksi                        |
-| ------------- | --------------------------- |
-| `/` atau `F5` | Fokus pencarian produk      |
-| `Escape`      | Clear search & tutup modal  |
-| `F1`          | Buka numpad                 |
-| `F2`          | Submit transaksi            |
-| `F4`          | Tampilkan bantuan shortcuts |
+### 3. POS Kasir Interaktif
+- **Standar & Custom**: Jual parfum reguler atau pelanggan menentukan rasio ml (bibit) vs ml (pelarut). Validasi minimum pemesanan dan rasio ditangani *real-time*.
+- **Customer CRM**: Daftarkan pelanggan dari POS langsung, pantau riwayat *checkout* pelanggan, kelola staf *Sales Person* untuk skema performa/insentif.
+- **Thermal Receipt Ready**: Sempurna untuk cetak bon ukuran 58mm atau 80mm pada laci kas.
+- **Shortcut Keyboard Cepat**:  
+  - `/` atau `F5` : Fokus pencarian  
+  - `Escape` : Clear / Tutup  
+  - `F1` : Buka numpad pembayaran  
 
 ## 📷 Cuplikan Layar
 
-### Versi Revamp 2.0
+### Versi Revamp POS Harumnya
 
 | Modul     | Preview                                                |
 | --------- | ------------------------------------------------------ |
 | Dashboard | ![Dashboard Revamp](public/media/revamp-dashboard.png) |
 | Kasir/POS | ![POS Revamp](public/media/revamp-pos.png)             |
-
-### Versi 1.0 (Legacy)
-
-| Modul                  | Preview                                                    |
-| ---------------------- | ---------------------------------------------------------- |
-| Dashboard              | ![Dashboard Screenshot](public/media/readme-dashboard.png) |
-| Kasir / POS            | ![POS Screenshot](public/media/readme-pos.png)             |
-| Invoice Ready-to-Print | ![Invoice Screenshot](public/media/readme-invoice.png)     |
-
-<sub>_Tidak ada file? Silakan ganti dengan screenshot kamu sendiri di `public/media`._</sub>
-
-## 🧪 Pengujian
-
-```bash
-php artisan test --filter=TransactionFlowTest
-```
-
-Pengujian ini mensimulasikan checkout lengkap: keranjang ➜ transaksi ➜ invoice, termasuk validasi stok, detail transaksi, profit, hitung stok, integrasi Midtrans (HTTP fake), dan render Inertia untuk halaman print.
 
 ## 🤝 Kontribusi
 
@@ -110,16 +76,12 @@ Pengujian ini mensimulasikan checkout lengkap: keranjang ➜ transaksi ➜ invoi
 4. Push branch: `git push origin feature/namamu`
 5. Buka Pull Request
 
-Ada bug atau ide fitur? Buat issue supaya kita bisa diskusi bareng.
+Ada *bug* laporan stok cacat atau ide sinkronisasi yang lebih mutakhir? Buat *issue* agar bisa didiskusikan proses hulu-ke-hilirnya.
 
 ## Authors
 
--   [Arya Dwi Putra](https://www.github.com/aryadwiputra)
--   Aplikasi ini menggunakan resource dari https://github.com/Raf-Taufiqurrahman/RILT-Starter dengan beberapa modifikasi yang saya lakukan terhadap komponen-komponen untuk mendukung aplikasi kasir
-
-## ⭐ Dukung Proyek Ini
-
-Kalau repositori ini membantumu membangun POS lebih cepat, klik **Star**. Dukungan kecil ini bikin proyek tetap aktif dan membantu developer lain menemukannya. Terima kasih! 🙌
+-   [Arya Dwi Putra](https://www.github.com/aryadwiputra) (Developer Original POS Base)
+-   *Basis awal sistem ini dikembangkan menggunakan [RILT-Starter](https://github.com/Raf-Taufiqurrahman/RILT-Starter), kemudian didesain ulang total dari arsitektur datanya menjadi ERP + POS khusus manufaktur parfum skala ritel.*
 
 ---
 

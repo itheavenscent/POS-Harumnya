@@ -7,12 +7,6 @@ import {
 } from "@tabler/icons-react";
 import Pagination from "@/Components/Dashboard/Pagination";
 
-const TIER_CONFIG = {
-    bronze:   { label: "Bronze",   color: "bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400" },
-    silver:   { label: "Silver",   color: "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300" },
-    gold:     { label: "Gold",     color: "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400" },
-    platinum: { label: "Platinum", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400" },
-};
 
 const SEGMENTS = [
     { key: "",       label: "Semua" },
@@ -21,7 +15,7 @@ const SEGMENTS = [
     { key: "loyal",  label: "Loyal" },
 ];
 
-export default function Index({ customers, filters, tiers = [] }) {
+export default function Index({ customers, filters }) {
     const [search, setSearch] = useState(filters.search || "");
 
     useEffect(() => {
@@ -104,17 +98,6 @@ export default function Index({ customers, filters, tiers = [] }) {
                     ))}
                 </div>
 
-                {/* Tier filter */}
-                <select
-                    className="rounded-xl border-slate-200 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-white py-2.5 px-3"
-                    value={filters.tier || ""}
-                    onChange={(e) => handleFilter("tier", e.target.value)}
-                >
-                    <option value="">Semua Tier</option>
-                    {(tiers.length ? tiers : ["bronze", "silver", "gold", "platinum"]).map((t) => (
-                        <option key={t} value={t}>{TIER_CONFIG[t]?.label ?? t}</option>
-                    ))}
-                </select>
             </div>
 
             {/* Table */}
@@ -124,7 +107,6 @@ export default function Index({ customers, filters, tiers = [] }) {
                         <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
                             <tr>
                                 <th className="p-4">Pelanggan</th>
-                                <th className="p-4">Tier</th>
                                 <th className="p-4 text-center">Poin Aktif</th>
                                 <th className="p-4 text-center">Transaksi</th>
                                 <th className="p-4">Total Belanja</th>
@@ -134,65 +116,57 @@ export default function Index({ customers, filters, tiers = [] }) {
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                             {customers.data.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="p-16 text-center text-slate-400">
+                                    <td colSpan={5} className="p-16 text-center text-slate-400">
                                         <IconUser size={40} strokeWidth={1} className="mx-auto mb-3 opacity-40" />
                                         <p className="font-semibold">Tidak ada pelanggan ditemukan</p>
                                         <p className="text-xs mt-1">Coba ubah filter atau tambah pelanggan baru</p>
                                     </td>
                                 </tr>
                             ) : (
-                                customers.data.map((c) => {
-                                    const tierCfg = TIER_CONFIG[c.tier] ?? TIER_CONFIG.bronze;
-                                    return (
-                                        <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center font-bold text-primary-600 text-sm flex-shrink-0">
-                                                        {c.name.charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-bold dark:text-white">{c.name}</p>
-                                                        <p className="text-[11px] text-slate-400">
-                                                            {c.code} • {c.phone || "—"}
-                                                        </p>
-                                                    </div>
+                                customers.data.map((c) => (
+                                    <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center font-bold text-primary-600 text-sm flex-shrink-0">
+                                                    {c.name.charAt(0).toUpperCase()}
                                                 </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase ${tierCfg.color}`}>
-                                                    {tierCfg.label}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-center font-bold dark:text-slate-300">
-                                                {(c.points ?? 0).toLocaleString()}
-                                            </td>
-                                            <td className="p-4 text-center text-slate-500 dark:text-slate-400">
-                                                {(c.total_transactions ?? 0).toLocaleString()}
-                                            </td>
-                                            <td className="p-4 font-bold text-emerald-600">
-                                                Rp {Math.floor(parseFloat(c.lifetime_spending ?? 0)).toLocaleString()}
-                                            </td>
-                                            <td className="p-4 text-right">
-                                                <div className="flex justify-end gap-1">
-                                                    <Link
-                                                        href={route("customers.show", c.id)}
-                                                        className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-xl transition-all"
-                                                        title="Lihat Detail"
-                                                    >
-                                                        <IconUser size={18} />
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => deleteCustomer(c.id, c.name)}
-                                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
-                                                        title="Hapus"
-                                                    >
-                                                        <IconTrash size={18} />
-                                                    </button>
+                                                <div>
+                                                    <p className="font-bold dark:text-white">{c.name}</p>
+                                                    <p className="text-[11px] text-slate-400">
+                                                        {c.code} • {c.phone || "—"}
+                                                    </p>
                                                 </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
+                                            </div>
+                                        </td>
+                                        <td className="p-4 text-center font-bold dark:text-slate-300">
+                                            {(c.points ?? 0).toLocaleString()}
+                                        </td>
+                                        <td className="p-4 text-center text-slate-500 dark:text-slate-400">
+                                            {(c.total_transactions ?? 0).toLocaleString()}
+                                        </td>
+                                        <td className="p-4 font-bold text-emerald-600">
+                                            Rp {Math.floor(parseFloat(c.lifetime_spending ?? 0)).toLocaleString()}
+                                        </td>
+                                        <td className="p-4 text-right">
+                                            <div className="flex justify-end gap-1">
+                                                <Link
+                                                    href={route("customers.show", c.id)}
+                                                    className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-xl transition-all"
+                                                    title="Lihat Detail"
+                                                >
+                                                    <IconUser size={18} />
+                                                </Link>
+                                                <button
+                                                    onClick={() => deleteCustomer(c.id, c.name)}
+                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
+                                                    title="Hapus"
+                                                >
+                                                    <IconTrash size={18} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
                             )}
                         </tbody>
                     </table>

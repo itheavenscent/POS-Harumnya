@@ -24,7 +24,6 @@ class CustomerController extends Controller
                 });
             })
             ->when($request->segment, fn ($q, $s) => $q->segment($s))
-            ->when($request->tier, fn ($q, $t) => $q->where('tier', $t))
             ->when($request->is_active !== null, fn ($q) => $q->where('is_active', $request->is_active === 'true'))
             ->latest()
             ->paginate(10)
@@ -32,8 +31,7 @@ class CustomerController extends Controller
 
         return Inertia::render('Dashboard/Customers/Index', [
             'customers' => $customers,
-            'filters'   => $request->only(['search', 'segment', 'tier', 'is_active']),
-            'tiers'     => Customer::TIERS,
+            'filters'   => $request->only(['search', 'segment', 'is_active']),
         ]);
     }
 
@@ -82,10 +80,6 @@ class CustomerController extends Controller
     {
         $validated = $request->validated();
 
-        // Recalculate tier jika poin berubah
-        if (isset($validated['points'])) {
-            $validated['tier'] = Customer::resolveTier((int) $validated['points']);
-        }
 
         $customer->update($validated);
 
@@ -106,7 +100,7 @@ class CustomerController extends Controller
             fputcsv($handle, [
                 'Kode', 'Nama', 'Email', 'Telepon', 'Gender',
                 'Poin Aktif', 'Total Poin Diperoleh', 'Total Transaksi',
-                'Total Belanja', 'Tier', 'Status', 'Terdaftar',
+                'Total Belanja', 'Status', 'Terdaftar',
             ]);
 
             Customer::withTrashed(false)->chunk(500, function ($customers) use ($handle) {
@@ -121,7 +115,6 @@ class CustomerController extends Controller
                         $c->lifetime_points_earned,
                         $c->total_transactions,
                         $c->lifetime_spending,
-                        ucfirst($c->tier),
                         $c->is_active ? 'Aktif' : 'Nonaktif',
                         $c->registered_at?->format('d/m/Y') ?? '-',
                     ]);

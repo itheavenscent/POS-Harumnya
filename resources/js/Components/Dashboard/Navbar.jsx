@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { usePage } from "@inertiajs/react";
-import { IconMenu2, IconMoon, IconSun } from "@tabler/icons-react";
+import { IconMenu2, IconMoon, IconSun, IconCash, IconCashBanknote } from "@tabler/icons-react";
 import AuthDropdown from "@/Components/Dashboard/AuthDropdown";
 import Menu from "@/Utils/Menu";
-
 export default function Navbar({ toggleSidebar, themeSwitcher, darkMode }) {
     const { auth } = usePage().props;
     const menuNavigation = Menu();
@@ -57,10 +56,10 @@ export default function Navbar({ toggleSidebar, themeSwitcher, darkMode }) {
                 {/* Mobile Logo */}
                 <div className="md:hidden flex items-center gap-2">
                     <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
-                        <span className="text-white font-bold text-xs">K</span>
+                        <span className="text-white font-bold text-xs">H</span>
                     </div>
                     <span className="text-lg font-bold text-slate-800 dark:text-white">
-                        KASIR
+                        Harumnya
                     </span>
                 </div>
 
@@ -75,6 +74,7 @@ export default function Navbar({ toggleSidebar, themeSwitcher, darkMode }) {
 
             {/* Right */}
             <div className="flex items-center gap-2">
+
                 {/* Theme Toggle */}
                 <button
                     onClick={themeSwitcher}
@@ -95,6 +95,7 @@ export default function Navbar({ toggleSidebar, themeSwitcher, darkMode }) {
 
                 <AuthDropdown auth={auth} isMobile={isMobile} />
             </div>
+
         </header>
     );
 }

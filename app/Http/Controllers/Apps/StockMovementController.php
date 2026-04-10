@@ -83,7 +83,7 @@ class StockMovementController extends Controller
             'summary'       => [
                 'total'    => StockMovement::count(),
                 'today'    => StockMovement::whereDate('movement_date', today())->count(),
-                'repack'   => StockMovement::whereIn('movement_type', ['repack_in', 'repack_out'])->count(),
+                'repack'   => StockMovement::whereIn('movement_type', ['production_in', 'production_out'])->count(),
                 'transfer' => StockMovement::whereIn('movement_type', ['transfer_in', 'transfer_out'])->count(),
             ],
         ]);
@@ -136,8 +136,6 @@ class StockMovementController extends Controller
             ['value' => 'purchase_in',    'label' => 'Pembelian Masuk'],
             ['value' => 'transfer_in',    'label' => 'Transfer Masuk'],
             ['value' => 'transfer_out',   'label' => 'Transfer Keluar'],
-            ['value' => 'repack_in',      'label' => 'Repack Masuk'],
-            ['value' => 'repack_out',     'label' => 'Repack Keluar'],
             ['value' => 'sale_deduction', 'label' => 'Penjualan'],       // ★ FIX: bukan 'sales_out'
             ['value' => 'adjustment_in',  'label' => 'Penyesuaian (+)'],
             ['value' => 'adjustment_out', 'label' => 'Penyesuaian (-)'],

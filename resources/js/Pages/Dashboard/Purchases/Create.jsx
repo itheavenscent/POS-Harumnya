@@ -29,9 +29,9 @@ const displayDecimal = (val) => {
 
 // ─── Searchable dropdown ──────────────────────────────────────────────────────
 function SearchSelect({ options, value, onChange, placeholder = "Cari...", renderOption, renderSelected, disabled = false }) {
-    const [open, setOpen]   = useState(false);
+    const [open, setOpen] = useState(false);
     const [query, setQuery] = useState("");
-    const ref               = useRef(null);
+    const ref = useRef(null);
 
     useEffect(() => {
         const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -53,9 +53,9 @@ function SearchSelect({ options, value, onChange, placeholder = "Cari...", rende
                 onClick={() => { setOpen((v) => !v); setQuery(""); }}
                 className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-sm text-left transition-colors
                     ${disabled ? "bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200"
-                    : open ? "border-indigo-400 ring-2 ring-indigo-100 bg-white dark:bg-slate-950"
-                    : "border-slate-200 bg-white dark:bg-slate-950 hover:border-slate-300"}`}>
-                <span className={selected ? "text-slate-800 dark:text-slate-200 font-medium" : "text-slate-400"}>
+                        : open ? "border-indigo-400 ring-2 ring-indigo-100 bg-white dark:bg-slate-950"
+                            : "border-slate-200 bg-white dark:bg-slate-950 hover:border-slate-300"}`}>
+                <span className={`truncate ${selected ? "text-slate-800 dark:text-slate-200 font-medium" : "text-slate-400"}`}>
                     {selected ? (renderSelected ? renderSelected(selected) : renderOption(selected)) : placeholder}
                 </span>
                 {value && !disabled
@@ -69,7 +69,7 @@ function SearchSelect({ options, value, onChange, placeholder = "Cari...", rende
                             <IconSearch size={13} className="text-slate-400 shrink-0" />
                             <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)}
                                 placeholder="Ketik untuk mencari..."
-                                className="flex-1 bg-transparent text-sm outline-none text-slate-700 dark:text-slate-300" />
+                                className="flex-1 bg-transparent text-sm outline-none text-slate-700 dark:text-slate-300 min-w-0" />
                         </div>
                     </div>
                     <div className="max-h-52 overflow-y-auto">
@@ -105,7 +105,7 @@ function MoneyInput({ value, onChange, placeholder = "0", className = "" }) {
 
     const handleBlur = () => {
         const parsed = parseDecimal(display);
-        const num    = parseFloat(parsed);
+        const num = parseFloat(parsed);
         setDisplay(num === 0 ? "" : num.toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 2 }));
         onChange(parsed);
     };
@@ -126,22 +126,26 @@ const PAYMENT_LABELS = {
 
 export default function Create({ suppliers, warehouses, stores, ingredients, packagingMaterials }) {
     const { data, setData, post, processing, errors } = useForm({
-        supplier_id:            "",
-        destination_type:       "warehouse",
-        destination_id:         "",
-        purchase_date:          new Date().toISOString().split("T")[0],
+        supplier_id: "",
+        destination_type: "warehouse",
+        destination_id: "",
+        purchase_date: new Date().toISOString().split("T")[0],
         expected_delivery_date: "",
-        tax:                    "0",
-        discount:               "0",
-        shipping_cost:          "0",
-        notes:                  "",
+        tax: "0",
+        discount: "0",
+        shipping_cost: "0",
+        notes: "",
         items: [{
-            item_type: "ingredient", item_id: "",
-            quantity: "", unit_price: "0", notes: "",
+            item_type: "ingredient",
+            item_id: "",
+            quantity: "",
+            total_price: "0", // Input harga utama dari user
+            unit_price: "0",  // Harga per unit yang dihitung otomatis (disimpan ke DB)
+            notes: "",
         }],
     });
 
-    const destinations     = data.destination_type === "warehouse" ? warehouses : stores;
+    const destinations = data.destination_type === "warehouse" ? warehouses : stores;
     const selectedSupplier = suppliers.find((s) => s.id === data.supplier_id);
 
     const allItems = useMemo(() => [
@@ -150,35 +154,57 @@ export default function Create({ suppliers, warehouses, stores, ingredients, pac
     ], [ingredients, packagingMaterials]);
 
     const usedItemIds = data.items.map((i) => i.item_id).filter(Boolean);
-    const addItem     = () => setData("items", [...data.items, { item_type: "ingredient", item_id: "", quantity: "", unit_price: "0", notes: "" }]);
-    const removeItem  = (idx) => setData("items", data.items.filter((_, i) => i !== idx));
+    const addItem = () => setData("items", [...data.items, { item_type: "ingredient", item_id: "", quantity: "", total_price: "0", unit_price: "0", notes: "" }]);
+    const removeItem = (idx) => setData("items", data.items.filter((_, i) => i !== idx));
 
-    // Update satu field saja
-    const updateItem = (idx, key, val) =>
-        setData("items", data.items.map((item, i) => (i === idx ? { ...item, [key]: val } : item)));
+    // Perhitungan otomatis Harga/Unit saat Qty atau Harga Total berubah
+    const updateItem = (idx, key, val) => {
+        setData("items", data.items.map((item, i) => {
+            if (i !== idx) return item;
 
-    // ✅ FIX: Update item_id + unit_price sekaligus dalam satu setData
-    // agar tidak terjadi race condition antar dua pemanggilan updateItem terpisah
+            const newItem = { ...item, [key]: val };
+
+            // Mengambil nilai terbaru (baik dari input maupun state lama)
+            const qty = parseInt(key === 'quantity' ? val : item.quantity) || 0;
+            const total = parseFloat(key === 'total_price' ? val : item.total_price) || 0;
+
+            // Kalkulasi Unit Price
+            if (qty > 0) {
+                newItem.unit_price = String(total / qty);
+            } else {
+                newItem.unit_price = "0";
+            }
+
+            return newItem;
+        }));
+    };
+
+    // Auto-isi harga dari master data saat item dipilih
     const selectItem = (idx, itemId, allItemsList) => {
-        const found    = allItemsList.find((i) => i.id === itemId);
-        const refPrice = found?.average_cost ?? found?.purchase_price ?? "0";
+        const found = allItemsList.find((i) => i.id === itemId);
+        const refPrice = parseFloat(found?.average_cost ?? found?.purchase_price ?? "0");
 
         setData("items", data.items.map((item, i) => {
             if (i !== idx) return item;
+
+            const qty = parseInt(item.quantity) || 1; // Jika kosong, asumsikan 1 agar harga wajar
+            const currentTotal = parseFloat(item.total_price) || 0;
+
+            // Hanya auto-fill jika total harga saat ini masih 0
+            const newTotal = currentTotal > 0 ? currentTotal : (refPrice * qty);
+
             return {
                 ...item,
-                item_id:    itemId,
-                // Auto-isi harga hanya jika belum ada harga sebelumnya
-                unit_price: parseFloat(item.unit_price) ? item.unit_price : String(parseFloat(refPrice) || "0"),
+                item_id: itemId,
+                total_price: String(newTotal),
+                unit_price: String(newTotal / qty),
             };
         }));
     };
 
-    const subtotal = data.items.reduce((s, i) => {
-        const qty   = parseInt(i.quantity) || 0;
-        const price = parseFloat(i.unit_price) || 0;
-        return s + qty * price;
-    }, 0);
+    // Subtotal kini menggunakan total_price dari masing-masing baris
+    const subtotal = data.items.reduce((s, i) => s + (parseFloat(i.total_price) || 0), 0);
+
     const total = subtotal
         + (parseFloat(data.tax) || 0)
         + (parseFloat(data.shipping_cost) || 0)
@@ -194,24 +220,24 @@ export default function Create({ suppliers, warehouses, stores, ingredients, pac
     return (
         <>
             <Head title="Buat Purchase Order" />
-            <div className="max-w-5xl mx-auto">
-                <Link href={route("purchases.index")} className="flex items-center gap-2 text-slate-500 mb-4 hover:text-indigo-600 text-sm">
+            <div className="max-w-5xl mx-auto px-4 sm:px-0 pb-10">
+                <Link href={route("purchases.index")} className="inline-flex items-center gap-2 text-slate-500 mb-4 hover:text-indigo-600 text-sm font-medium">
                     <IconArrowLeft size={18} /> Kembali
                 </Link>
 
-                <form onSubmit={submit} className="space-y-6">
+                <form onSubmit={submit} className="space-y-4 sm:space-y-6">
                     {/* Banner */}
-                    <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-2xl p-6 shadow-lg">
-                        <h2 className="text-2xl font-bold flex items-center gap-2">
-                            <IconShoppingBag size={28} /> Buat Purchase Order
+                    <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-2xl p-5 sm:p-6 shadow-lg">
+                        <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                            <IconShoppingBag size={24} className="sm:w-7 sm:h-7" /> Buat Purchase Order
                         </h2>
-                        <p className="text-indigo-100 text-sm mt-1">Pembelian bahan baku &amp; kemasan dari supplier</p>
+                        <p className="text-indigo-100 text-xs sm:text-sm mt-1.5">Pembelian bahan baku &amp; kemasan dari supplier</p>
                     </div>
 
                     {/* PO Header */}
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl p-6 space-y-5">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-sm">
                         <h3 className="font-bold text-slate-700 dark:text-slate-200 text-sm uppercase tracking-wide border-b pb-2">Informasi PO</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                             {/* Supplier */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-600 mb-1.5">Supplier *</label>
@@ -223,10 +249,17 @@ export default function Create({ suppliers, warehouses, stores, ingredients, pac
                                     renderOption={(s) => `${s.name} (${s.code})`} />
                                 {errors.supplier_id && <p className="text-red-500 text-xs mt-1">{errors.supplier_id}</p>}
                                 {selectedSupplier && (
-                                    <div className="mt-2 p-2 bg-indigo-50 rounded-lg text-xs text-indigo-700 flex items-center gap-1">
-                                        <IconBuilding size={12} />
-                                        {PAYMENT_LABELS[selectedSupplier.payment_term] ?? "-"}
-                                        {selectedSupplier.credit_limit > 0 && ` · Limit: ${fmtRp(selectedSupplier.credit_limit)}`}
+                                    <div className="mt-2 p-2.5 bg-indigo-50 rounded-xl text-xs text-indigo-700 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                        <div className="flex items-center gap-1 font-semibold">
+                                            <IconBuilding size={14} />
+                                            {PAYMENT_LABELS[selectedSupplier.payment_term] ?? "-"}
+                                        </div>
+                                        {selectedSupplier.credit_limit > 0 && (
+                                            <span className="hidden sm:inline">·</span>
+                                        )}
+                                        {selectedSupplier.credit_limit > 0 && (
+                                            <span className="opacity-80">Limit: {fmtRp(selectedSupplier.credit_limit)}</span>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -241,10 +274,9 @@ export default function Create({ suppliers, warehouses, stores, ingredients, pac
                                     {["warehouse", "store"].map((t) => (
                                         <button key={t} type="button"
                                             onClick={() => { setData("destination_type", t); setData("destination_id", ""); }}
-                                            className={`flex-1 py-2 rounded-xl border-2 font-bold text-xs transition-all ${
-                                                data.destination_type === t
-                                                    ? "border-indigo-400 bg-indigo-50 text-indigo-700"
-                                                    : "border-slate-200 text-slate-500"}`}>
+                                            className={`flex-1 py-2.5 rounded-xl border-2 font-bold text-xs transition-all ${data.destination_type === t
+                                                ? "border-indigo-400 bg-indigo-50 text-indigo-700"
+                                                : "border-slate-200 text-slate-500 bg-white"}`}>
                                             {t === "warehouse" ? "Gudang" : "Toko"}
                                         </button>
                                     ))}
@@ -264,42 +296,44 @@ export default function Create({ suppliers, warehouses, stores, ingredients, pac
                     </div>
 
                     {/* Items */}
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl p-6 space-y-4">
-                        <div className="flex items-center justify-between border-b pb-2">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl p-4 sm:p-6 space-y-4 shadow-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-3 gap-3">
                             <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wide">Item Pembelian</h3>
                             <button type="button" onClick={addItem}
-                                className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 px-3 py-1.5 bg-indigo-50 rounded-lg border border-indigo-200">
-                                <IconPlus size={14} /> Tambah Item
+                                className="flex items-center justify-center gap-1.5 text-xs font-bold text-indigo-600 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 transition-colors w-full sm:w-auto">
+                                <IconPlus size={16} /> Tambah Item
                             </button>
                         </div>
-                        {errors.items && <p className="text-red-500 text-xs">{errors.items}</p>}
+                        {errors.items && <p className="text-red-500 text-xs bg-red-50 p-2 rounded-lg">{errors.items}</p>}
 
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {data.items.map((item, idx) => {
-                                const qty       = parseInt(item.quantity) || 0;
-                                const price     = parseFloat(item.unit_price) || 0;
-                                const lineTotal = qty * price;
-                                const filtered  = allItems.filter((i) =>
+                                const qty = parseInt(item.quantity) || 0;
+                                const unitPrice = parseFloat(item.unit_price) || 0;
+                                const filtered = allItems.filter((i) =>
                                     i._type === item.item_type && (!usedItemIds.includes(i.id) || i.id === item.item_id)
                                 );
                                 const ing = allItems.find((i) => i._type === item.item_type && i.id === item.item_id);
 
                                 return (
-                                    <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl space-y-3">
-                                        <div className="grid grid-cols-12 gap-3 items-start">
+                                    <div key={idx} className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-800/40 rounded-xl space-y-4 border border-slate-100">
+
+                                        <div className="grid grid-cols-2 lg:grid-cols-12 gap-4 lg:gap-3 items-start">
+
                                             {/* Tipe */}
-                                            <div className="col-span-2">
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Tipe</label>
+                                            <div className="col-span-2 lg:col-span-2">
+                                                <label className="block text-xs font-bold text-slate-500 mb-1.5">Tipe</label>
                                                 <select value={item.item_type}
                                                     onChange={(e) => updateItem(idx, "item_type", e.target.value)}
-                                                    className="w-full rounded-xl border-slate-200 dark:bg-slate-900 text-xs py-2.5">
+                                                    className="w-full rounded-xl border-slate-200 dark:bg-slate-900 text-sm py-2.5 focus:ring-indigo-500">
                                                     <option value="ingredient">Ingredient</option>
                                                     <option value="packaging_material">Packaging</option>
                                                 </select>
                                             </div>
+
                                             {/* Item */}
-                                            <div className="col-span-4">
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Item</label>
+                                            <div className="col-span-2 lg:col-span-3">
+                                                <label className="block text-xs font-bold text-slate-500 mb-1.5">Item</label>
                                                 <SearchSelect
                                                     options={filtered}
                                                     value={item.item_id}
@@ -310,57 +344,68 @@ export default function Create({ suppliers, warehouses, stores, ingredients, pac
                                                     <p className="text-red-500 text-xs mt-1">{errors[`items.${idx}.item_id`]}</p>
                                                 )}
                                                 {ing?.average_cost && (
-                                                    <p className="text-xs text-slate-400 mt-0.5">
-                                                        Avg cost: {fmtRp(ing.average_cost)}
+                                                    <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
+                                                        <IconInfoCircle size={12} /> Histori Harga: {fmtRp(ing.average_cost)}
                                                     </p>
                                                 )}
                                             </div>
+
                                             {/* Qty */}
-                                            <div className="col-span-2">
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">
-                                                    Qty{ing ? ` (${ing.unit ?? ing.size?.name ?? "pcs"})` : ""}
+                                            <div className="col-span-1 lg:col-span-2">
+                                                <label className="block text-xs font-bold text-slate-500 mb-1.5 truncate">
+                                                    Qty {ing ? `(${ing.unit ?? ing.size?.name ?? "pcs"})` : ""}
                                                 </label>
                                                 <input type="number" step="1"
                                                     value={item.quantity}
                                                     onChange={(e) => updateItem(idx, "quantity", e.target.value)}
-                                                    className="w-full rounded-xl border-slate-200 dark:bg-slate-900 text-sm text-right py-2.5"
+                                                    className="w-full rounded-xl border-slate-200 dark:bg-slate-900 text-sm text-right py-2.5 focus:ring-indigo-500"
                                                     placeholder="0" />
                                                 {errors[`items.${idx}.quantity`] && (
                                                     <p className="text-red-500 text-xs mt-1">{errors[`items.${idx}.quantity`]}</p>
                                                 )}
                                             </div>
-                                            {/* Harga */}
-                                            <div className="col-span-3">
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Harga/Unit (Rp)</label>
+
+                                            {/* Harga Total (INPUT) */}
+                                            <div className="col-span-1 lg:col-span-2">
+                                                <label className="block text-xs font-bold text-slate-500 mb-1.5 truncate">Harga Total (Rp)</label>
                                                 <MoneyInput
-                                                    value={item.unit_price}
-                                                    onChange={(v) => updateItem(idx, "unit_price", v)}
-                                                    className="w-full" />
+                                                    value={item.total_price}
+                                                    onChange={(v) => updateItem(idx, "total_price", v)}
+                                                    className="w-full py-2.5 focus:ring-indigo-500" />
                                                 {errors[`items.${idx}.unit_price`] && (
                                                     <p className="text-red-500 text-xs mt-1">{errors[`items.${idx}.unit_price`]}</p>
                                                 )}
                                             </div>
+
+                                            {/* Harga/Unit (SHOW ONLY) */}
+                                            <div className="col-span-2 lg:col-span-2">
+                                                <label className="block text-xs font-bold text-indigo-400 mb-1.5 lg:invisible hidden lg:block">_</label>
+                                                <div className="w-full bg-indigo-50/50 dark:bg-slate-800 rounded-xl px-3 py-2 border border-indigo-100 flex flex-col justify-center min-h-[42px]">
+                                                    <span className="text-[10px] uppercase font-bold text-indigo-400 mb-0.5">Harga / Unit</span>
+                                                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                        {qty > 0 ? fmtRp(unitPrice) : "-"}
+                                                    </span>
+                                                </div>
+                                            </div>
+
                                             {/* Hapus */}
-                                            <div className="col-span-1 flex items-end pb-0.5 justify-center">
+                                            <div className="col-span-2 lg:col-span-1 flex justify-end lg:justify-center items-end lg:pb-1">
                                                 {data.items.length > 1 && (
                                                     <button type="button" onClick={() => removeItem(idx)}
-                                                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg mt-5">
-                                                        <IconTrash size={14} />
+                                                        className="flex items-center gap-1 px-3 py-2.5 lg:p-2.5 text-red-600 bg-red-100 hover:bg-red-200 rounded-xl transition-colors lg:mt-6 text-xs font-bold w-full lg:w-auto justify-center">
+                                                        <IconTrash size={16} /> <span className="lg:hidden">Hapus Item</span>
                                                     </button>
                                                 )}
                                             </div>
                                         </div>
-                                        {/* Subtotal baris */}
-                                        <div className="flex items-center justify-between px-3 py-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200">
-                                            <span className="text-xs text-slate-500">Subtotal</span>
-                                            <span className={`text-sm font-black ${lineTotal < 0 ? "text-red-600" : "text-indigo-700"}`}>
-                                                {fmtRp(lineTotal)}
-                                            </span>
+
+                                        {/* Catatan Item */}
+                                        <div className="pt-2">
+                                            <input type="text" value={item.notes}
+                                                onChange={(e) => updateItem(idx, "notes", e.target.value)}
+                                                placeholder="Catatan item (opsional)..."
+                                                className="w-full rounded-xl border-slate-200 dark:bg-slate-900 text-sm py-2 focus:ring-indigo-500" />
                                         </div>
-                                        <input type="text" value={item.notes}
-                                            onChange={(e) => updateItem(idx, "notes", e.target.value)}
-                                            placeholder="Catatan item (opsional)..."
-                                            className="w-full rounded-xl border-slate-200 dark:bg-slate-900 text-xs" />
                                     </div>
                                 );
                             })}
@@ -368,66 +413,71 @@ export default function Create({ suppliers, warehouses, stores, ingredients, pac
                     </div>
 
                     {/* Biaya + Ringkasan */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl p-5 space-y-3">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
                             <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wide border-b pb-2">Biaya Tambahan</h3>
                             {[
-                                { label: "PPN / Tax",    key: "tax" },
+                                { label: "PPN / Tax", key: "tax" },
                                 { label: "Ongkos Kirim", key: "shipping_cost" },
-                                { label: "Diskon",       key: "discount" },
+                                { label: "Diskon", key: "discount" },
                             ].map(({ label, key }) => (
-                                <div key={key} className="flex items-center gap-3">
-                                    <label className="text-sm text-slate-600 w-36 shrink-0">{label}</label>
-                                    <MoneyInput value={data[key]} onChange={(v) => setData(key, v)} className="flex-1" />
+                                <div key={key} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                                    <label className="text-sm font-medium text-slate-600 sm:w-32 shrink-0">{label}</label>
+                                    <MoneyInput value={data[key]} onChange={(v) => setData(key, v)} className="w-full sm:flex-1 py-2" />
                                 </div>
                             ))}
                         </div>
-                        <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 rounded-2xl p-5 space-y-2">
-                            <h3 className="font-bold text-indigo-700 text-sm uppercase tracking-wide border-b border-indigo-200 pb-2">Ringkasan</h3>
-                            {[
-                                { label: "Subtotal",  value: subtotal },
-                                { label: "PPN / Tax", value: parseFloat(data.tax) || 0 },
-                                { label: "Ongkir",    value: parseFloat(data.shipping_cost) || 0 },
-                                { label: "Diskon",    value: -(parseFloat(data.discount) || 0) },
-                            ].map(({ label, value }) => (
-                                <div key={label} className="flex justify-between text-sm">
-                                    <span className="text-slate-600">{label}</span>
-                                    <span className={`font-bold ${value < 0 ? "text-red-600" : "text-slate-700"}`}>
-                                        {value < 0 ? "-" : ""}{fmtRp(Math.abs(value))}
-                                    </span>
-                                </div>
-                            ))}
-                            <div className="flex justify-between text-base font-black border-t border-indigo-300 pt-2">
+
+                        <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 rounded-2xl p-4 sm:p-5 space-y-3">
+                            <h3 className="font-bold text-indigo-800 text-sm uppercase tracking-wide border-b border-indigo-200 pb-2">Ringkasan</h3>
+                            <div className="space-y-2.5">
+                                {[
+                                    { label: "Subtotal", value: subtotal },
+                                    { label: "PPN / Tax", value: parseFloat(data.tax) || 0 },
+                                    { label: "Ongkir", value: parseFloat(data.shipping_cost) || 0 },
+                                    { label: "Diskon", value: -(parseFloat(data.discount) || 0) },
+                                ].map(({ label, value }) => (
+                                    <div key={label} className="flex justify-between text-sm">
+                                        <span className="text-slate-600 font-medium">{label}</span>
+                                        <span className={`font-bold ${value < 0 ? "text-red-600" : "text-slate-800"}`}>
+                                            {value < 0 ? "- " : ""}{fmtRp(Math.abs(value))}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex justify-between items-center text-lg sm:text-xl font-black border-t-2 border-indigo-200 pt-3 mt-3">
                                 <span className="text-indigo-800">TOTAL</span>
-                                <span className="text-indigo-800">{fmtRp(total)}</span>
+                                <span className="text-indigo-800 bg-white px-3 py-1 rounded-lg shadow-sm border border-indigo-100">
+                                    {fmtRp(total)}
+                                </span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Catatan */}
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl p-5">
+                    {/* Catatan Utama */}
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
                         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Catatan PO</label>
                         <textarea value={data.notes} onChange={(e) => setData("notes", e.target.value)}
-                            rows={3} className="w-full rounded-xl border-slate-200 dark:bg-slate-950 text-sm resize-none"
+                            rows={3} className="w-full rounded-xl border-slate-200 dark:bg-slate-950 text-sm resize-none focus:ring-indigo-500"
                             placeholder="Instruksi pengiriman, keterangan khusus, dll..." />
                     </div>
 
-                    <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 rounded-xl p-3 border border-blue-100">
-                        <IconInfoCircle size={14} className="shrink-0" />
-                        Stok diperbarui otomatis saat PO <strong>Diselesaikan</strong>.
-                        Harga beli menjadi dasar perhitungan WAC (Weighted Average Cost).
-                        Qty negatif = retur ke supplier.
+                    <div className="flex items-start sm:items-center gap-3 text-xs sm:text-sm text-blue-700 bg-blue-50 rounded-xl p-3 sm:p-4 border border-blue-100">
+                        <IconInfoCircle size={20} className="shrink-0 mt-0.5 sm:mt-0" />
+                        <p>
+                            Stok diperbarui otomatis saat PO <strong>Diselesaikan</strong>. Harga beli menjadi dasar perhitungan WAC (Weighted Average Cost). Qty negatif = retur ke supplier.
+                        </p>
                     </div>
 
-                    <div className="flex justify-end gap-3">
+                    <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-2">
                         <Link href={route("purchases.index")}
-                            className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm">
+                            className="w-full sm:w-auto px-6 py-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-sm text-center transition-colors shadow-sm">
                             Batal
                         </Link>
                         <button type="submit" disabled={processing}
-                            className="px-7 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-indigo-500/30 text-sm">
-                            <IconDeviceFloppy size={18} />
-                            {processing ? "Menyimpan..." : "Simpan sebagai Draft"}
+                            className="w-full sm:w-auto px-7 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-indigo-500/30 text-sm transition-all">
+                            <IconDeviceFloppy size={20} />
+                            {processing ? "Menyimpan..." : "Simpan Purchase Order"}
                         </button>
                     </div>
                 </form>

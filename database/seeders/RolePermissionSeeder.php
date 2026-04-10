@@ -25,6 +25,7 @@ class RolePermissionSeeder extends Seeder
             'transactions-create',
             'transactions-void',
             'transactions-refund',
+            'transactions-all',
 
             // ── Products & Catalog ───────────────────────────────────────────
             'products-access',
@@ -176,68 +177,17 @@ class RolePermissionSeeder extends Seeder
 
         // ── ROLES ──────────────────────────────────────────────────────────────
 
+        // Bersihkan role lama yang tidak terpakai jika ada
+        Role::whereNotIn('name', ['super-admin', 'cashier'])->delete();
+
         // ── Super Admin — akses semua ─────────────────────────────────────────
         $superAdmin = Role::firstOrCreate(['name' => 'super-admin']);
         $superAdmin->syncPermissions(Permission::all());
 
-        // ── Admin — semua permissions (sama dengan super-admin) ───────────────
-        $admin = Role::firstOrCreate(['name' => 'admin']);
-        $admin->syncPermissions(Permission::all());
-
-        // ── Manager Toko — operasional toko ───────────────────────────────────
-        $manager = Role::firstOrCreate(['name' => 'store-manager']);
-        $manager->syncPermissions([
-            'dashboard-access',
-
-            // POS & Transaksi
-            'transactions-access',
-            'transactions-create',
-            'transactions-void',
-            'transactions-refund',
-
-            // Produk & Katalog (read only)
-            'products-access',
-            'variants-access',
-            'intensities-access',
-            'sizes-access',
-            'categories-access',
-            'recipes-access',
-            'ingredients-access',
-            'packaging-access',
-
-            // Stok
-            'stock-access',
-            'stock-transfer',
-            'stock-adjustment',
-
-            // Pembelian
-            'purchases-access',
-            'purchases-create',
-
-            // Pelanggan
-            'customers-access',
-            'customers-create',
-            'customers-edit',
-
-            // Sales People
-            'sales-people-access',
-
-            // Diskon
-            'discounts-access',
-
-            // Laporan Penjualan
-            'reports-access',
-            'reports-sales',
-            'reports-stock',
-
-            // Laporan Keuangan
-            'profits-access',
-        ]);
-
-        // ── Kasir — hanya POS & pelanggan ────────────────────────────────────
+        // ── Kasir — hanya POS & pelanggan, tidak dapat akses dashboard default
         $cashier = Role::firstOrCreate(['name' => 'cashier']);
         $cashier->syncPermissions([
-            'dashboard-access',
+            // Tidak ada 'dashboard-access'
 
             // POS
             'transactions-access',
@@ -261,67 +211,12 @@ class RolePermissionSeeder extends Seeder
             'stock-access',
         ]);
 
-        // ── Gudang — stok & pembelian ─────────────────────────────────────────
-        $warehouse = Role::firstOrCreate(['name' => 'warehouse-staff']);
-        $warehouse->syncPermissions([
-            'dashboard-access',
-
-            // Bahan Baku & Kemasan
-            'ingredients-access',
-            'ingredients-create',
-            'ingredients-edit',
-            'packaging-access',
-            'packaging-create',
-            'packaging-edit',
-
-            // Stok
-            'stock-access',
-            'stock-transfer',
-            'stock-adjustment',
-            'stock-repack',
-
-            // Pembelian
-            'purchases-access',
-            'purchases-create',
-
-            // Supplier
-            'suppliers-access',
-
-            // Laporan stok
-            'reports-stock',
-        ]);
-
-        // ── Finance / Akuntan — laporan keuangan ─────────────────────────────
-        $finance = Role::firstOrCreate(['name' => 'finance']);
-        $finance->syncPermissions([
-            'dashboard-access',
-
-            // Laporan Penjualan & Keuangan
-            'reports-access',
-            'reports-sales',
-            'reports-finance',
-            'profits-access',
-
-            // Bisa lihat customer & transaksi (read only)
-            'transactions-access',
-            'customers-access',
-            'discounts-access',
-
-            // Lihat toko & gudang
-            'stores-access',
-            'warehouses-access',
-        ]);
-
         $this->command->info('✓ Roles & Permissions seeded successfully.');
         $this->command->table(
             ['Role', 'Jumlah Permission'],
             [
-                ['super-admin',      $superAdmin->permissions()->count()],
-                ['admin',            $admin->permissions()->count()],
-                ['store-manager',    $manager->permissions()->count()],
-                ['cashier',          $cashier->permissions()->count()],
-                ['warehouse-staff',  $warehouse->permissions()->count()],
-                ['finance',          $finance->permissions()->count()],
+                ['super-admin', $superAdmin->permissions()->count()],
+                ['cashier',     $cashier->permissions()->count()],
             ]
         );
     }

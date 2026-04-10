@@ -20,18 +20,28 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 class RecipeController extends Controller
 {
     // =========================================================================
-    // INDEX
+    // INDEX — Grouped by Variant
     // =========================================================================
 
     public function index()
     {
-        $variantRecipes = VariantRecipe::with(['variant', 'intensity', 'ingredient.category'])
+        // Ambil semua kombinasi variant+intensity beserta aggregate
+        $raw = VariantRecipe::with(['variant', 'intensity', 'ingredient.category'])
             ->select('variant_id', 'intensity_id')
             ->selectRaw('COUNT(*) as ingredient_count')
             ->selectRaw('SUM(base_quantity) as total_volume')
             ->groupBy('variant_id', 'intensity_id')
-            ->get()
-            ->map(function ($item) {
+            ->get();
+
+        // Group per variant_id
+        $grouped = $raw->groupBy('variant_id');
+
+        $variantGroups = $grouped->map(function ($items) {
+            $firstItem = $items->first();
+            $variant   = $firstItem->variant;
+
+            // Bangun data per intensity
+            $intensities = $items->map(function ($item) {
                 $recipes = VariantRecipe::with('ingredient.category')
                     ->where('variant_id', $item->variant_id)
                     ->where('intensity_id', $item->intensity_id)
@@ -43,20 +53,18 @@ class RecipeController extends Controller
                     ->get()
                     ->sortBy('size.volume_ml');
 
-                // Cek apakah sudah ada product yang di-generate
                 $generatedSizes = Product::where('variant_id', $item->variant_id)
                     ->where('intensity_id', $item->intensity_id)
                     ->pluck('size_id')
                     ->toArray();
 
                 return [
-                    'variant'          => $item->variant,
+                    'variant_id'       => $item->variant_id,
+                    'intensity_id'     => $item->intensity_id,
                     'intensity'        => $item->intensity,
                     'ingredient_count' => $item->ingredient_count,
                     'total_volume'     => $item->total_volume,
                     'recipes'          => $recipes,
-                    'variant_id'       => $item->variant_id,
-                    'intensity_id'     => $item->intensity_id,
                     'generated_sizes'  => $generatedSizes,
                     'is_generated'     => count($generatedSizes) > 0,
                     'size_scaling'     => $sizeQuantities->map(fn($q) => [
@@ -70,10 +78,24 @@ class RecipeController extends Controller
                         'ingredients'      => $this->buildScaledIngredients($recipes, $q),
                     ])->values(),
                 ];
-            });
+            })->values();
+
+            $isAnyGenerated = $intensities->contains('is_generated', true);
+            $isAllGenerated = $intensities->every(fn($i) => $i['is_generated']);
+
+            return [
+                'variant'           => $variant,
+                'variant_id'        => $variant->id,
+                'intensity_count'   => $intensities->count(),
+                'total_ingredients' => $intensities->sum('ingredient_count'),
+                'is_any_generated'  => $isAnyGenerated,
+                'is_all_generated'  => $isAllGenerated,
+                'intensities'       => $intensities,
+            ];
+        })->values();
 
         return Inertia::render('Dashboard/Recipes/Index', [
-            'variantRecipes' => $variantRecipes,
+            'variantRecipes' => $variantGroups,
         ]);
     }
 
@@ -241,7 +263,6 @@ class RecipeController extends Controller
             'items.*.notes'         => 'nullable|string|max:255',
         ]);
 
-        // Pastikan variant & intensity ada
         Variant::findOrFail($variant_id);
         Intensity::findOrFail($intensity_id);
 
@@ -313,7 +334,6 @@ class RecipeController extends Controller
             return back()->with('error', 'Formula belum ada — buat formula terlebih dahulu.');
         }
 
-        // Jika tidak regenerate, cek apakah semua size sudah di-generate
         if (!$regenerate) {
             $existingCount = Product::where('variant_id', $variant_id)
                 ->where('intensity_id', $intensity_id)
@@ -340,11 +360,7 @@ class RecipeController extends Controller
 
                 if ($existingProduct && !$regenerate) {
                     $skipped++;
-                    $details[] = [
-                        'size'   => $size->name,
-                        'status' => 'skipped',
-                        'reason' => 'Product sudah ada (gunakan Regenerate untuk buat ulang)',
-                    ];
+                    $details[] = ['size' => $size->name, 'status' => 'skipped', 'reason' => 'Product sudah ada'];
                     continue;
                 }
 
@@ -356,22 +372,14 @@ class RecipeController extends Controller
 
                 if (!$priceRecord) {
                     $skipped++;
-                    $details[] = [
-                        'size'   => $size->name,
-                        'status' => 'skipped',
-                        'reason' => 'Harga jual belum dikonfigurasi di IntensitySizePrices',
-                    ];
+                    $details[] = ['size' => $size->name, 'status' => 'skipped', 'reason' => 'Harga belum dikonfigurasi'];
                     continue;
                 }
 
                 $intensityQty = IntensitySizeQuantity::getFor($intensity_id, $size->id);
                 if (!$intensityQty) {
                     $skipped++;
-                    $details[] = [
-                        'size'   => $size->name,
-                        'status' => 'skipped',
-                        'reason' => 'Kalibrasi IntensitySizeQuantity belum dikonfigurasi',
-                    ];
+                    $details[] = ['size' => $size->name, 'status' => 'skipped', 'reason' => 'Kalibrasi belum dikonfigurasi'];
                     continue;
                 }
 
@@ -409,12 +417,7 @@ class RecipeController extends Controller
                 $product->calculateProductionCost();
 
                 $generated++;
-                $details[] = [
-                    'size'    => $size->name,
-                    'status'  => 'generated',
-                    'sku'     => $product->sku,
-                    'recipes' => $recipes->count(),
-                ];
+                $details[] = ['size' => $size->name, 'status' => 'generated', 'sku' => $product->sku, 'recipes' => $recipes->count()];
             }
         });
 
@@ -442,7 +445,7 @@ class RecipeController extends Controller
         if (!file_exists($templatePath)) {
             $basePath = public_path('templates/template_import_variant_recipe.xlsx');
             if (!file_exists($basePath)) {
-                abort(404, 'Template file tidak ditemukan. Hubungi administrator.');
+                abort(404, 'Template file tidak ditemukan.');
             }
             if (!is_dir(dirname($templatePath))) {
                 mkdir(dirname($templatePath), 0755, true);
@@ -461,15 +464,13 @@ class RecipeController extends Controller
         if ($dataSheet) {
             $dataSheet->getCell('A2')->setValue(
                 'Isi data sesuai kolom. WAJIB: variant_code, intensity_code, ingredient_code, base_quantity. '
-                . 'Template dibuat: ' . now()->format('d/m/Y H:i') . ' WIB. Hapus baris contoh sebelum import.'
+                . 'Template dibuat: ' . now()->format('d/m/Y H:i') . ' WIB.'
             );
         }
 
         $filename = 'template_import_formula_variant_' . now()->format('Ymd_His') . '.xlsx';
         $tmpDir   = storage_path('app/tmp');
-        if (!is_dir($tmpDir)) {
-            mkdir($tmpDir, 0755, true);
-        }
+        if (!is_dir($tmpDir)) mkdir($tmpDir, 0755, true);
         $tmpPath = $tmpDir . '/' . $filename;
 
         $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
@@ -490,14 +491,12 @@ class RecipeController extends Controller
     }
 
     // =========================================================================
-    // IMPORT — Validate (preview, belum simpan)
+    // IMPORT — Validate
     // =========================================================================
 
     public function importValidate(Request $request)
     {
-        $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls|max:5120',
-        ]);
+        $request->validate(['file' => 'required|file|mimes:xlsx,xls|max:5120']);
 
         try {
             $rows   = $this->parseExcel($request->file('file'));
@@ -505,14 +504,12 @@ class RecipeController extends Controller
             return response()->json($result);
         } catch (\Exception $e) {
             Log::error('Recipe import validate error: ' . $e->getMessage());
-            return response()->json([
-                'message' => 'Gagal membaca file Excel: ' . $e->getMessage(),
-            ], 422);
+            return response()->json(['message' => 'Gagal membaca file Excel: ' . $e->getMessage()], 422);
         }
     }
 
     // =========================================================================
-    // IMPORT — Store (simpan ke database)
+    // IMPORT — Store
     // =========================================================================
 
     public function importStore(Request $request)
@@ -531,17 +528,13 @@ class RecipeController extends Controller
             $result = $this->validateRows($rows);
         } catch (\Exception $e) {
             Log::error('Recipe import store error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal membaca file Excel: ' . $e->getMessage(),
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Gagal membaca file: ' . $e->getMessage()], 422);
         }
 
-        // Jika ada error dan mode tidak skip → tolak semua
         if (!$skipErrors && count($result['errors']) > 0) {
             return response()->json([
                 'success' => false,
-                'message' => 'Import dibatalkan: ditemukan ' . count($result['errors']) . ' baris error. Perbaiki terlebih dahulu.',
+                'message' => 'Import dibatalkan: ' . count($result['errors']) . ' baris error.',
                 'errors'  => $result['errors'],
                 'summary' => $result['summary'],
             ], 422);
@@ -549,23 +542,16 @@ class RecipeController extends Controller
 
         if (count($result['valid_rows']) === 0) {
             return response()->json([
-                'success'  => false,
-                'message'  => 'Tidak ada baris valid untuk diimport.',
-                'errors'   => $result['errors'],
-                'summary'  => $result['summary'],
-                'imported' => 0,
-                'skipped'  => 0,
-                'overwritten' => 0,
+                'success' => false, 'message' => 'Tidak ada baris valid.',
+                'errors' => $result['errors'], 'summary' => $result['summary'],
+                'imported' => 0, 'skipped' => 0, 'overwritten' => 0,
             ], 422);
         }
 
-        $imported    = 0;
-        $skipped     = 0;
-        $overwritten = 0;
+        $imported = $skipped = $overwritten = 0;
 
         try {
             DB::transaction(function () use ($result, $overwrite, &$imported, &$skipped, &$overwritten) {
-                // Kelompokkan baris valid per kombinasi variant + intensity
                 $groups = [];
                 foreach ($result['valid_rows'] as $row) {
                     $key = $row['variant_id'] . '|' . $row['intensity_id'];
@@ -576,18 +562,11 @@ class RecipeController extends Controller
                     [$variantId, $intensityId] = explode('|', $key);
 
                     $exists = VariantRecipe::where('variant_id', $variantId)
-                        ->where('intensity_id', $intensityId)
-                        ->exists();
+                        ->where('intensity_id', $intensityId)->exists();
 
-                    if ($exists && !$overwrite) {
-                        $skipped += count($items);
-                        continue;
-                    }
-
+                    if ($exists && !$overwrite) { $skipped += count($items); continue; }
                     if ($exists) {
-                        VariantRecipe::where('variant_id', $variantId)
-                            ->where('intensity_id', $intensityId)
-                            ->delete();
+                        VariantRecipe::where('variant_id', $variantId)->where('intensity_id', $intensityId)->delete();
                         $overwritten++;
                     }
 
@@ -606,20 +585,14 @@ class RecipeController extends Controller
             });
         } catch (\Exception $e) {
             Log::error('Recipe import transaction error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat menyimpan data: ' . $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Kesalahan: ' . $e->getMessage()], 500);
         }
 
         return response()->json([
             'success'     => true,
-            'message'     => "Import selesai: {$imported} baris disimpan, {$skipped} kombinasi dilewati (sudah ada), {$overwritten} kombinasi ditimpa.",
-            'imported'    => $imported,
-            'skipped'     => $skipped,
-            'overwritten' => $overwritten,
-            'errors'      => $result['errors'],
-            'summary'     => $result['summary'],
+            'message'     => "Import selesai: {$imported} baris disimpan, {$skipped} dilewati, {$overwritten} ditimpa.",
+            'imported'    => $imported, 'skipped' => $skipped, 'overwritten' => $overwritten,
+            'errors'      => $result['errors'], 'summary' => $result['summary'],
         ]);
     }
 
@@ -689,26 +662,21 @@ class RecipeController extends Controller
 
     private function generateSKU($variant, $intensity, $size): string
     {
-        return sprintf(
-            '%s-%s-%d',
+        return sprintf('%s-%s-%d',
             strtoupper(substr($variant->code, 0, 3)),
             strtoupper($intensity->code),
             $size->volume_ml
         );
     }
 
-    // ─── Import: Parse Excel ──────────────────────────────────────────────────
-
     private function parseExcel($file): array
     {
         $spreadsheet = IOFactory::load($file->getRealPath());
         $sheet       = $spreadsheet->getSheetByName('Import Data') ?? $spreadsheet->getActiveSheet();
+        $rows        = [];
+        $maxRow      = $sheet->getHighestDataRow();
 
-        $rows     = [];
-        $maxRow   = $sheet->getHighestDataRow();
-        $startRow = 4; // baris 1-2: title/info, baris 3: header, baris 4+: data
-
-        for ($r = $startRow; $r <= $maxRow; $r++) {
+        for ($r = 4; $r <= $maxRow; $r++) {
             $variantCode    = trim((string) $sheet->getCell("A{$r}")->getValue());
             $intensityCode  = trim((string) $sheet->getCell("B{$r}")->getValue());
             $ingredientCode = trim((string) $sheet->getCell("C{$r}")->getValue());
@@ -716,10 +684,7 @@ class RecipeController extends Controller
             $unit           = trim((string) ($sheet->getCell("E{$r}")->getValue() ?? 'ml')) ?: 'ml';
             $notes          = trim((string) ($sheet->getCell("F{$r}")->getValue() ?? ''));
 
-            // Skip baris kosong
-            if ($variantCode === '' && $intensityCode === '' && $ingredientCode === '') {
-                continue;
-            }
+            if ($variantCode === '' && $intensityCode === '' && $ingredientCode === '') continue;
 
             $rows[] = [
                 'row'             => $r,
@@ -731,11 +696,8 @@ class RecipeController extends Controller
                 'notes'           => $notes,
             ];
         }
-
         return $rows;
     }
-
-    // ─── Import: Validate Rows ────────────────────────────────────────────────
 
     private function validateRows(array $rows): array
     {
@@ -745,46 +707,30 @@ class RecipeController extends Controller
 
         $validRows = [];
         $errorRows = [];
-        $groupQty  = []; // key: variant_code|intensity_code → total_qty
+        $groupQty  = [];
 
         foreach ($rows as $row) {
             $rowErrors = [];
 
-            if (empty($row['variant_code'])) {
-                $rowErrors[] = 'variant_code wajib diisi';
-            } elseif (!$variants->has($row['variant_code'])) {
-                $rowErrors[] = "variant_code '{$row['variant_code']}' tidak ditemukan";
-            }
+            if (empty($row['variant_code']))    $rowErrors[] = 'variant_code wajib diisi';
+            elseif (!$variants->has($row['variant_code'])) $rowErrors[] = "variant_code '{$row['variant_code']}' tidak ditemukan";
 
-            if (empty($row['intensity_code'])) {
-                $rowErrors[] = 'intensity_code wajib diisi';
-            } elseif (!$intensities->has($row['intensity_code'])) {
-                $rowErrors[] = "intensity_code '{$row['intensity_code']}' tidak ditemukan";
-            }
+            if (empty($row['intensity_code']))  $rowErrors[] = 'intensity_code wajib diisi';
+            elseif (!$intensities->has($row['intensity_code'])) $rowErrors[] = "intensity_code '{$row['intensity_code']}' tidak ditemukan";
 
-            if (empty($row['ingredient_code'])) {
-                $rowErrors[] = 'ingredient_code wajib diisi';
-            } elseif (!$ingredients->has($row['ingredient_code'])) {
-                $rowErrors[] = "ingredient_code '{$row['ingredient_code']}' tidak ditemukan";
-            }
+            if (empty($row['ingredient_code'])) $rowErrors[] = 'ingredient_code wajib diisi';
+            elseif (!$ingredients->has($row['ingredient_code'])) $rowErrors[] = "ingredient_code '{$row['ingredient_code']}' tidak ditemukan";
 
             $qty = is_numeric($row['base_quantity']) ? (float) $row['base_quantity'] : null;
-            if ($qty === null) {
-                $rowErrors[] = 'base_quantity harus angka';
-            } elseif ($qty <= 0) {
-                $rowErrors[] = 'base_quantity harus > 0';
-            }
+            if ($qty === null) $rowErrors[] = 'base_quantity harus angka';
+            elseif ($qty <= 0) $rowErrors[] = 'base_quantity harus > 0';
 
             if (!empty($rowErrors)) {
-                $errorRows[] = [
-                    'row'    => $row['row'],
-                    'data'   => $row,
-                    'errors' => $rowErrors,
-                ];
+                $errorRows[] = ['row' => $row['row'], 'data' => $row, 'errors' => $rowErrors];
                 continue;
             }
 
-            $groupKey            = $row['variant_code'] . '|' . $row['intensity_code'];
+            $groupKey = $row['variant_code'] . '|' . $row['intensity_code'];
             $groupQty[$groupKey] = ($groupQty[$groupKey] ?? 0) + $qty;
 
             $validRows[] = array_merge($row, [
@@ -795,16 +741,14 @@ class RecipeController extends Controller
             ]);
         }
 
-        // Warning jika total per kombinasi ≠ 30ml
         $volumeWarnings = [];
         foreach ($groupQty as $key => $total) {
             if (abs($total - 30) > 0.5) {
                 [$vc, $ic] = explode('|', $key);
-                $volumeWarnings[] = "Kombinasi {$vc} + {$ic}: total base_quantity = {$total}ml (seharusnya 30ml)";
+                $volumeWarnings[] = "Kombinasi {$vc} + {$ic}: total = {$total}ml (seharusnya 30ml)";
             }
         }
 
-        // Summary per kombinasi
         $summary = [];
         $grouped = collect($validRows)->groupBy(fn($r) => $r['variant_code'] . ' + ' . $r['intensity_code']);
         foreach ($grouped as $combo => $items) {
@@ -828,92 +772,50 @@ class RecipeController extends Controller
         ];
     }
 
-    // ─── Import: Fill Reference Sheet ─────────────────────────────────────────
-
     private function fillReferenceSheet($sheet, $variants, $intensities, $ingredients): void
     {
         $headerStyle = [
             'font' => ['bold' => true, 'size' => 9, 'color' => ['rgb' => '1E293B']],
             'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'EEF2FF']],
         ];
-        $dataStyle = [
-            'font'      => ['size' => 9],
-            'alignment' => ['vertical' => 'center'],
-        ];
+        $dataStyle = ['font' => ['size' => 9], 'alignment' => ['vertical' => 'center']];
 
         $row = 2;
 
-        // Variant section
-        $sheet->setCellValue("A{$row}", 'KODE VARIANT');
-        $sheet->mergeCells("A{$row}:C{$row}");
-        $sheet->getStyle("A{$row}")->applyFromArray([
-            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-            'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => '7C3AED']],
-            'alignment' => ['horizontal' => 'center'],
-        ]);
-        $row++;
+        $sections = [
+            ['title' => 'KODE VARIANT',    'color' => '7C3AED', 'headers' => ['A' => 'Kode', 'B' => 'Nama Variant',    'C' => 'Gender'],             'data' => $variants,    'fields' => ['code', 'name', 'gender']],
+            ['title' => 'KODE INTENSITAS', 'color' => '0369A1', 'headers' => ['A' => 'Kode', 'B' => 'Nama Intensitas', 'C' => 'Rasio (Oil:Alcohol)'], 'data' => $intensities, 'fields' => ['code', 'name', null]],
+            ['title' => 'KODE BAHAN BAKU', 'color' => '065F46', 'headers' => ['A' => 'Kode', 'B' => 'Nama Bahan',      'C' => 'Satuan'],             'data' => $ingredients, 'fields' => ['code', 'name', 'unit']],
+        ];
 
-        foreach (['A' => 'Kode', 'B' => 'Nama Variant', 'C' => 'Gender'] as $col => $label) {
-            $sheet->setCellValue("{$col}{$row}", $label);
-            $sheet->getStyle("{$col}{$row}")->applyFromArray($headerStyle);
-        }
-        $row++;
-
-        foreach ($variants as $v) {
-            $sheet->setCellValue("A{$row}", $v->code);
-            $sheet->setCellValue("B{$row}", $v->name);
-            $sheet->setCellValue("C{$row}", $v->gender);
-            $sheet->getStyle("A{$row}:C{$row}")->applyFromArray($dataStyle);
+        foreach ($sections as $section) {
+            $sheet->setCellValue("A{$row}", $section['title']);
+            $sheet->mergeCells("A{$row}:C{$row}");
+            $sheet->getStyle("A{$row}")->applyFromArray([
+                'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => $section['color']]],
+                'alignment' => ['horizontal' => 'center'],
+            ]);
             $row++;
-        }
-        $row++;
 
-        // Intensity section
-        $sheet->setCellValue("A{$row}", 'KODE INTENSITAS');
-        $sheet->mergeCells("A{$row}:C{$row}");
-        $sheet->getStyle("A{$row}")->applyFromArray([
-            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-            'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => '0369A1']],
-            'alignment' => ['horizontal' => 'center'],
-        ]);
-        $row++;
-
-        foreach (['A' => 'Kode', 'B' => 'Nama Intensitas', 'C' => 'Rasio (Oil:Alcohol)'] as $col => $label) {
-            $sheet->setCellValue("{$col}{$row}", $label);
-            $sheet->getStyle("{$col}{$row}")->applyFromArray($headerStyle);
-        }
-        $row++;
-
-        foreach ($intensities as $i) {
-            $sheet->setCellValue("A{$row}", $i->code);
-            $sheet->setCellValue("B{$row}", $i->name);
-            $sheet->setCellValue("C{$row}", "{$i->oil_ratio}:{$i->alcohol_ratio}");
-            $sheet->getStyle("A{$row}:C{$row}")->applyFromArray($dataStyle);
+            foreach ($section['headers'] as $col => $label) {
+                $sheet->setCellValue("{$col}{$row}", $label);
+                $sheet->getStyle("{$col}{$row}")->applyFromArray($headerStyle);
+            }
             $row++;
-        }
-        $row++;
 
-        // Ingredient section
-        $sheet->setCellValue("A{$row}", 'KODE BAHAN BAKU');
-        $sheet->mergeCells("A{$row}:C{$row}");
-        $sheet->getStyle("A{$row}")->applyFromArray([
-            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-            'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => '065F46']],
-            'alignment' => ['horizontal' => 'center'],
-        ]);
-        $row++;
-
-        foreach (['A' => 'Kode', 'B' => 'Nama Bahan', 'C' => 'Satuan'] as $col => $label) {
-            $sheet->setCellValue("{$col}{$row}", $label);
-            $sheet->getStyle("{$col}{$row}")->applyFromArray($headerStyle);
-        }
-        $row++;
-
-        foreach ($ingredients as $ing) {
-            $sheet->setCellValue("A{$row}", $ing->code);
-            $sheet->setCellValue("B{$row}", $ing->name);
-            $sheet->setCellValue("C{$row}", $ing->unit);
-            $sheet->getStyle("A{$row}:C{$row}")->applyFromArray($dataStyle);
+            foreach ($section['data'] as $item) {
+                $sheet->setCellValue("A{$row}", $item->{$section['fields'][0]});
+                $sheet->setCellValue("B{$row}", $item->{$section['fields'][1]});
+                if ($section['fields'][2]) {
+                    $val = $section['title'] === 'KODE INTENSITAS'
+                        ? "{$item->oil_ratio}:{$item->alcohol_ratio}"
+                        : $item->{$section['fields'][2]};
+                    $sheet->setCellValue("C{$row}", $val);
+                }
+                $sheet->getStyle("A{$row}:C{$row}")->applyFromArray($dataStyle);
+                $row++;
+            }
             $row++;
         }
     }
