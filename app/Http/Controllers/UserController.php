@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Store;
 use App\Models\Warehouse;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
@@ -66,6 +67,7 @@ class UserController extends Controller
             'stores'     => Store::select('id', 'name')->orderBy('name')->get(),
             'warehouses' => Warehouse::select('id', 'name')->orderBy('name')->get(),
             'roles'      => Role::select('id', 'name')->orderBy('name')->get(),
+            'permissions' => $this->getAvailablePermissions(),
         ]);
     }
 
@@ -80,6 +82,8 @@ class UserController extends Controller
             'password'             => ['required', 'confirmed', Password::defaults()],
             'roles'                => ['required', 'array', 'min:1'],
             'roles.*'              => ['string', 'exists:roles,name'],
+            'permissions'          => ['nullable', 'array'],
+            'permissions.*'        => ['string', 'exists:permissions,name'],
             'default_store_id'     => ['nullable', 'exists:stores,id'],
             'default_warehouse_id' => ['nullable', 'exists:warehouses,id'],
         ]);
@@ -95,6 +99,10 @@ class UserController extends Controller
                 ]);
 
                 $user->assignRole($validated['roles']);
+                
+                if (!empty($validated['permissions'])) {
+                    $user->syncPermissions($validated['permissions']);
+                }
             });
         } catch (Throwable $e) {
             Log::error('User creation failed', ['error' => $e->getMessage()]);
@@ -109,14 +117,16 @@ class UserController extends Controller
      */
     public function edit(User $user): Response
     {
-        $user->load('roles:id,name');
+        $user->load(['roles:id,name', 'permissions:id,name']);
 
         return Inertia::render('Dashboard/Users/Edit', [
-            'user'         => $user->only(['id', 'name', 'email', 'default_store_id', 'default_warehouse_id']),
-            'currentRoles' => $user->roles->pluck('name'),
-            'stores'       => Store::select('id', 'name')->orderBy('name')->get(),
-            'warehouses'   => Warehouse::select('id', 'name')->orderBy('name')->get(),
-            'roles'        => Role::select('id', 'name')->orderBy('name')->get(),
+            'user'              => $user->only(['id', 'name', 'email', 'default_store_id', 'default_warehouse_id']),
+            'currentRoles'      => $user->roles->pluck('name'),
+            'directPermissions' => $user->getDirectPermissions()->pluck('name'),
+            'stores'            => Store::select('id', 'name')->orderBy('name')->get(),
+            'warehouses'        => Warehouse::select('id', 'name')->orderBy('name')->get(),
+            'roles'             => Role::select('id', 'name')->orderBy('name')->get(),
+            'permissions'       => $this->getAvailablePermissions(),
         ]);
     }
 
@@ -131,6 +141,8 @@ class UserController extends Controller
             'password'             => ['nullable', 'confirmed', Password::defaults()],
             'roles'                => ['required', 'array', 'min:1'],
             'roles.*'              => ['string', 'exists:roles,name'],
+            'permissions'          => ['nullable', 'array'],
+            'permissions.*'        => ['string', 'exists:permissions,name'],
             'default_store_id'     => ['nullable', 'exists:stores,id'],
             'default_warehouse_id' => ['nullable', 'exists:warehouses,id'],
         ]);
@@ -150,6 +162,7 @@ class UserController extends Controller
 
                 $user->update($data);
                 $user->syncRoles($validated['roles']);
+                $user->syncPermissions($validated['permissions'] ?? []);
             });
         } catch (Throwable $e) {
             Log::error('User update failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
@@ -182,5 +195,46 @@ class UserController extends Controller
         }
 
         return back()->with('success', 'User berhasil dihapus.');
+    }
+
+    /**
+     * Get grouped permissions for UI.
+     */
+    private function getAvailablePermissions()
+    {
+        return Permission::all()
+            ->groupBy(function ($permission) {
+                $name = $permission->name;
+                if (str_contains($name, 'dashboard')) return 'Dashboard';
+                if (str_contains($name, 'transactions')) return 'Transaksi / POS';
+                if (str_contains($name, 'products')) return 'Produk & Katalog';
+                if (str_contains($name, 'variants')) return 'Varian';
+                if (str_contains($name, 'intensities')) return 'Intensitas';
+                if (str_contains($name, 'sizes')) return 'Ukuran';
+                if (str_contains($name, 'categories')) return 'Kategori';
+                if (str_contains($name, 'recipes')) return 'Resep';
+                if (str_contains($name, 'ingredients')) return 'Bahan Baku';
+                if (str_contains($name, 'packaging')) return 'Kemasan';
+                if (str_contains($name, 'suppliers')) return 'Supplier';
+                if (str_contains($name, 'warehouses')) return 'Gudang';
+                if (str_contains($name, 'stores')) return 'Toko';
+                if (str_contains($name, 'store-categories')) return 'Kategori Toko';
+                if (str_contains($name, 'purchases')) return 'Pembelian';
+                if (str_contains($name, 'stock')) return 'Stok Management';
+                if (str_contains($name, 'customers')) return 'Pelanggan';
+                if (str_contains($name, 'sales-people')) return 'Sales People';
+                if (str_contains($name, 'discounts')) return 'Promo & Diskon';
+                if (str_contains($name, 'payment-methods')) return 'Metode Pembayaran';
+                if (str_contains($name, 'payment-settings')) return 'Pengaturan Pembayaran';
+                if (str_contains($name, 'reports') || str_contains($name, 'profits')) return 'Laporan';
+                if (str_contains($name, 'users')) return 'User Management';
+                if (str_contains($name, 'roles')) return 'Role Management';
+                if (str_contains($name, 'permissions')) return 'Permission Management';
+                if (str_contains($name, 'settings')) return 'Pengaturan Umum';
+                return 'Lainnya';
+            })
+            ->map(function ($group) {
+                return $group->map(fn($p) => ['id' => $p->id, 'name' => $p->name]);
+            });
     }
 }

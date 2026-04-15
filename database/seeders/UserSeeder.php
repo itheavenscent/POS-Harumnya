@@ -89,6 +89,13 @@ class UserSeeder extends Seeder
                 ]);
             }
             $user->syncRoles([$cashierRole]);
+            
+            // ── Contoh Direct Permission ──────────────────────────────────────
+            // Kasir Jatim diberi akses refund (spesifik untuk user ini saja)
+            if ($email === 'kasir.jatim@harumnya.com') {
+                $user->syncPermissions(['transactions-refund']);
+            }
+
             $rows[] = [$nama, $email, 'cashier', $whCode, $storeCode];
         }
 

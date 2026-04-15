@@ -12,13 +12,14 @@ import {
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 
-export default function Edit({ user, currentRoles, stores, warehouses, roles }) {
+export default function Edit({ user, currentRoles, directPermissions, stores, warehouses, roles, permissions }) {
     const { data, setData, put, processing, errors } = useForm({
         name: user.name ?? "",
         email: user.email ?? "",
         password: "",
         password_confirmation: "",
         roles: currentRoles ?? [],
+        permissions: directPermissions ?? [],
         default_store_id: user.default_store_id ?? "",
         default_warehouse_id: user.default_warehouse_id ?? "",
     });
@@ -28,6 +29,25 @@ export default function Edit({ user, currentRoles, stores, warehouses, roles }) 
             ? data.roles.filter((r) => r !== roleName)
             : [...data.roles, roleName]
         );
+    };
+
+    const handlePermissionChange = (permName) => {
+        setData("permissions", data.permissions.includes(permName)
+            ? data.permissions.filter((p) => p !== permName)
+            : [...data.permissions, permName]
+        );
+    };
+
+    const handleToggleCategory = (categoryPerms, isAllSelected) => {
+        const permNames = categoryPerms.map(p => p.name);
+        if (isAllSelected) {
+            // Deselect all in category
+            setData("permissions", data.permissions.filter(p => !permNames.includes(p)));
+        } else {
+            // Select all in category
+            const newPerms = [...new Set([...data.permissions, ...permNames])];
+            setData("permissions", newPerms);
+        }
     };
 
     const submit = (e) => {
@@ -85,10 +105,10 @@ export default function Edit({ user, currentRoles, stores, warehouses, roles }) 
                         </div>
 
                         {/* Roles */}
-                        <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
-                            <h2 className="text-lg font-bold mb-2">Ubah Hak Akses</h2>
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 shadow-sm border-l-4 border-l-primary-500">
+                            <h2 className="text-lg font-bold mb-2">Role Pengguna</h2>
                             <p className="text-xs text-slate-400 mb-6 font-medium uppercase tracking-tighter">
-                                Izin yang diberikan kepada user:
+                                Pilih role dasar untuk user ini:
                             </p>
 
                             {roles.length === 0 ? (
@@ -100,13 +120,13 @@ export default function Edit({ user, currentRoles, stores, warehouses, roles }) 
                                             key={role.id}
                                             className={`flex items-center gap-3 p-4 rounded-2xl border transition-all cursor-pointer select-none ${
                                                 data.roles.includes(role.name)
-                                                    ? "border-amber-500 bg-amber-50/50 dark:bg-amber-900/10"
+                                                    ? "border-primary-500 bg-primary-50/50 dark:bg-primary-900/10"
                                                     : "border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
                                             }`}
                                         >
                                             <input
                                                 type="checkbox"
-                                                className="w-5 h-5 rounded-lg border-slate-300 text-amber-600 focus:ring-amber-500"
+                                                className="w-5 h-5 rounded-lg border-slate-300 text-primary-600 focus:ring-primary-500"
                                                 checked={data.roles.includes(role.name)}
                                                 onChange={() => handleRoleChange(role.name)}
                                             />
@@ -120,6 +140,67 @@ export default function Edit({ user, currentRoles, stores, warehouses, roles }) 
 
                             {errors.roles && (
                                 <p className="text-red-500 text-xs mt-3 font-medium">{errors.roles}</p>
+                            )}
+                        </div>
+
+                        {/* Direct Permissions */}
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
+                            <h2 className="text-lg font-bold mb-2">Permission Kustom (Direct)</h2>
+                            <p className="text-xs text-slate-400 mb-8 font-medium uppercase tracking-tighter">
+                                Tambahkan atau hapus izin spesifik untuk user ini secara satuan:
+                            </p>
+
+                            <div className="space-y-10">
+                                {Object.entries(permissions).map(([category, perms]) => {
+                                    const isAllSelected = perms.every(p => data.permissions.includes(p.name));
+                                    
+                                    return (
+                                        <div key={category} className="space-y-4">
+                                            <div className="flex items-center justify-between border-b pb-2 dark:border-slate-800">
+                                                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-primary-500"></span>
+                                                    {category}
+                                                </h3>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleToggleCategory(perms, isAllSelected)}
+                                                    className="text-[10px] uppercase tracking-widest font-bold text-primary-600 hover:text-primary-700"
+                                                >
+                                                    {isAllSelected ? "Deselect All" : "Select All"}
+                                                </button>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-3">
+                                                {perms.map((perm) => (
+                                                    <label
+                                                        key={perm.id}
+                                                        className="flex items-center gap-2.5 group cursor-pointer"
+                                                    >
+                                                        <div className="relative flex items-center justify-center">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="w-4.5 h-4.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500 transition-all"
+                                                                checked={data.permissions.includes(perm.name)}
+                                                                onChange={() => handlePermissionChange(perm.name)}
+                                                            />
+                                                        </div>
+                                                        <span className={`text-[11px] font-medium transition-colors ${
+                                                            data.permissions.includes(perm.name)
+                                                                ? "text-slate-900 dark:text-white"
+                                                                : "text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-300"
+                                                        }`}>
+                                                            {perm.name.replace(/-/g, ' ')}
+                                                        </span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {errors.permissions && (
+                                <p className="text-red-500 text-xs mt-3 font-medium">{errors.permissions}</p>
                             )}
                         </div>
 
