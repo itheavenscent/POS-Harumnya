@@ -129,9 +129,9 @@ class PurchaseController extends Controller
 
             [$subtotal] = $this->upsertItems($purchase, $v['items']);
 
-            $total = bcadd(
-                bcsub(
-                    bcadd($subtotal, (string) ($v['tax'] ?? 0), 2),
+            $total = $this->bcAdd(
+                $this->bcSub(
+                    $this->bcAdd($subtotal, (string) ($v['tax'] ?? 0), 2),
                     (string) ($v['discount'] ?? 0),
                     2
                 ),
@@ -253,9 +253,9 @@ class PurchaseController extends Controller
             $purchase->items()->delete();
             [$subtotal] = $this->upsertItems($purchase, $v['items']);
 
-            $total = bcadd(
-                bcsub(
-                    bcadd($subtotal, (string) ($v['tax'] ?? 0), 2),
+            $total = $this->bcAdd(
+                $this->bcSub(
+                    $this->bcAdd($subtotal, (string) ($v['tax'] ?? 0), 2),
                     (string) ($v['discount'] ?? 0),
                     2
                 ),
@@ -556,7 +556,7 @@ class PurchaseController extends Controller
      */
     private function upsertItems(Purchase $purchase, array $items): array
     {
-        $subtotal = '0';
+        $subtotal = '0.00';
         $colType  = Schema::getColumnType('purchase_items', 'unit_price');
         $isInt    = str_contains($colType, 'int');
 
@@ -565,7 +565,10 @@ class PurchaseController extends Controller
             $rawPrice  = (float) $item['unit_price'];
             $unitPrice = $isInt ? (int) round($rawPrice) : round($rawPrice, 2);
             $lineTotal = $isInt ? (int) round($qty * $unitPrice) : round($qty * $unitPrice, 2);
-            $subtotal  = bcadd($subtotal, (string) $lineTotal, 2);
+            
+            // Gunakan sprintf untuk memastikan string numerik murni (menghindari notasi scientific)
+            $lineTotalStr = sprintf("%.2f", (float) $lineTotal);
+            $subtotal = $this->bcAdd($subtotal, $lineTotalStr, 2);
 
             $purchase->items()->create([
                 'item_type'  => $item['item_type'],
@@ -657,5 +660,19 @@ class PurchaseController extends Controller
         return $type === 'ingredient'
             ? (Ingredient::find($id)?->name        ?? '-')
             : (PackagingMaterial::find($id)?->name ?? '-');
+    }
+
+    private function bcAdd($a, $b, $scale = 2): string
+    {
+        return function_exists('bcadd') 
+            ? bcadd((string)$a, (string)$b, $scale) 
+            : sprintf("%.{$scale}f", (float)$a + (float)$b);
+    }
+
+    private function bcSub($a, $b, $scale = 2): string
+    {
+        return function_exists('bcsub') 
+            ? bcsub((string)$a, (string)$b, $scale) 
+            : sprintf("%.{$scale}f", (float)$a - (float)$b);
     }
 }

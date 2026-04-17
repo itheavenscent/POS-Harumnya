@@ -5,6 +5,9 @@ export default function hasAnyPermission(permissions) {
     // destruct auth from usepage props
     const { auth } = usePage().props
 
+    // Super Admin bypass: Jika user adalah super admin, berikan akses penuh
+    if (auth.super) return true;
+
     // get all permissions from props auth.permissions
     let allPermissions = auth.permissions;
 
@@ -14,7 +17,7 @@ export default function hasAnyPermission(permissions) {
     // loop permissions
     permissions.forEach(function (item) {
         // do it if permission is match with key
-        if (allPermissions[item])
+        if (allPermissions && allPermissions[item])
             // assign hasPermission to true
             hasPermission = true;
     });

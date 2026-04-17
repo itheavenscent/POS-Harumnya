@@ -53,8 +53,7 @@ class UserSeeder extends Seeder
             $admin->update(['default_warehouse_id' => $whPusat->id]);
         }
         $admin->syncRoles([$superAdminRole]);
-        $admin->syncPermissions(Permission::all());
-        $rows[] = ['Admin Pusat', 'admin@gmail.com', 'super-admin', 'WH-PUSAT', '-'];
+        $rows[] = ['Admin Pusat', 'admin@harumnya.com', 'super-admin', 'WH-PUSAT', '-'];
 
         // ── Kasir per Toko ────────────────────────────────────────────────────
         $cashierMap = [

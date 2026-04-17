@@ -32,6 +32,7 @@ class RolePermissionSeeder extends Seeder
             'products-create',
             'products-edit',
             'products-delete',
+            'products-recalculate',
 
             // ── Variants ─────────────────────────────────────────────────────
             'variants-access',
@@ -62,6 +63,7 @@ class RolePermissionSeeder extends Seeder
             'recipes-create',
             'recipes-edit',
             'recipes-delete',
+            'recipes-import',
 
             // ── Ingredients (Bahan Baku) ──────────────────────────────────────
             'ingredients-access',
@@ -99,23 +101,39 @@ class RolePermissionSeeder extends Seeder
             'store-categories-edit',
             'store-categories-delete',
 
-            // ── Purchases ────────────────────────────────────────────────────
+            // ── Purchases (Purchase Order) ───────────────────────────────────
             'purchases-access',
             'purchases-create',
             'purchases-edit',
+            'purchases-delete',
+            'purchases-submit',
             'purchases-approve',
+            'purchases-receive',
+            'purchases-complete',
+            'purchases-cancel',
 
             // ── Stock Management ─────────────────────────────────────────────
             'stock-access',
+            'stock-warehouse-access',
+            'stock-store-access',
             'stock-transfer',
             'stock-adjustment',
             'stock-repack',
+
+            // ── Repacks (Produksi) ───────────────────────────────────────────
+            'repacks-access',
+            'repacks-create',
+            'repacks-edit',
+            'repacks-delete',
+            'repacks-complete',
+            'repacks-cancel',
 
             // ── Customers ────────────────────────────────────────────────────
             'customers-access',
             'customers-create',
             'customers-edit',
             'customers-delete',
+            'customers-export',
 
             // ── Sales People ─────────────────────────────────────────────────
             'sales-people-access',
@@ -129,6 +147,12 @@ class RolePermissionSeeder extends Seeder
             'discounts-edit',
             'discounts-delete',
 
+            // ── Cash Drawers (Shift) ─────────────────────────────────────────
+            'cash-drawers-access',
+            'cash-drawers-open',
+            'cash-drawers-close',
+            'cash-drawers-print',
+
             // ── Payment Methods ───────────────────────────────────────────────
             'payment-methods-access',
             'payment-methods-create',
@@ -139,8 +163,6 @@ class RolePermissionSeeder extends Seeder
             'payment-settings-access',
 
             // ── Reports ───────────────────────────────────────────────────────
-            //   reports-access  → Laporan Penjualan (route: permission:reports-access)
-            //   profits-access  → Laporan Keuangan  (route: permission:profits-access)
             'reports-access',
             'reports-sales',
             'reports-stock',

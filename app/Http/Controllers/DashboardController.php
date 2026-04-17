@@ -108,7 +108,7 @@ class DashboardController extends Controller
             // Meta
             'startDate'       => $startDate->format('Y-m-d'),
             'endDate'         => $endDate->format('Y-m-d'),
-            'diffDays'        => $diffInDays,
+            'diffDays'        => (int) $diffInDays,
             'isSuperAdmin'    => $isSuperAdmin,
             'isAdmin'         => $isAdmin,
             'canFilterStore'  => $canFilterStore,
@@ -200,22 +200,22 @@ class DashboardController extends Controller
             ->first();
 
         $trend = fn ($cur, $prev) => $prev > 0
-            ? round((($cur - $prev) / $prev) * 100, 1)
+            ? (float) round((($cur - $prev) / $prev) * 100, 1)
             : null;
 
         return [
-            'totalRevenue'      => (int) ($kpiCurrent->total_revenue ?? 0),
-            'totalProfit'       => (int) ($kpiCurrent->total_profit ?? 0),
-            'totalCogs'         => (int) ($kpiCurrent->total_cogs ?? 0),
-            'avgOrder'          => (int) ($kpiCurrent->avg_order ?? 0),
-            'totalTransactions' => (int) ($kpiCurrent->total_transactions ?? 0),
-            'totalDiscount'     => (int) ($kpiCurrent->total_discount ?? 0),
-            'totalPointsEarned' => (int) ($kpiCurrent->total_points_earned ?? 0),
+            'totalRevenue'      => (float) round($kpiCurrent->total_revenue ?? 0, 2),
+            'totalProfit'       => (float) round($kpiCurrent->total_profit ?? 0, 2),
+            'totalCogs'         => (float) round($kpiCurrent->total_cogs ?? 0, 2),
+            'avgOrder'          => (float) round($kpiCurrent->avg_order ?? 0, 2),
+            'totalTransactions' => (int)   ($kpiCurrent->total_transactions ?? 0),
+            'totalDiscount'     => (float) round($kpiCurrent->total_discount ?? 0, 2),
+            'totalPointsEarned' => (float) round($kpiCurrent->total_points_earned ?? 0, 2),
             'marginPct'         => ($kpiCurrent->total_revenue ?? 0) > 0
-                ? round(($kpiCurrent->total_profit / $kpiCurrent->total_revenue) * 100, 1)
-                : 0,
-            'todayRevenue'      => (int) ($todayKpi->today_revenue ?? 0),
-            'todayTransactions' => (int) ($todayKpi->today_transactions ?? 0),
+                ? (float) round(($kpiCurrent->total_profit / $kpiCurrent->total_revenue) * 100, 2)
+                : 0.0,
+            'todayRevenue'      => (float) round($todayKpi->today_revenue ?? 0, 2),
+            'todayTransactions' => (int)   ($todayKpi->today_transactions ?? 0),
             'trendRevenue'      => $trend($kpiCurrent->total_revenue ?? 0, $kpiPrev->total_revenue ?? 0),
             'trendProfit'       => $trend($kpiCurrent->total_profit ?? 0, $kpiPrev->total_profit ?? 0),
             'trendTransactions' => $trend($kpiCurrent->total_transactions ?? 0, $kpiPrev->total_transactions ?? 0),

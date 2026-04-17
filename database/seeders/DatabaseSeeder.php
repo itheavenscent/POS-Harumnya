@@ -41,14 +41,14 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,            // products + product_recipes (butuh variants + intensities + sizes + ingredients)
 
             // ── 08. Pembelian & Stok Awal ─────────────────────────────────────
-            PurchaseSeeder::class,           // purchases + purchase_items + stock_movements
-            StockSeeder::class,              // warehouse/store stock snapshots
+            // PurchaseSeeder::class,           // purchases + purchase_items + stock_movements
+            // StockSeeder::class,              // warehouse/store stock snapshots
 
             // ── 09. Promo & Diskon ────────────────────────────────────────────
             DiscountSeeder::class,
 
             // ── 10. Data Penjualan Demo ───────────────────────────────────────
-            SalesSeeder::class,              // sales + sale_items + payments + dll
+            // SalesSeeder::class,              // sales + sale_items + payments + dll
         ]);
     }
 }

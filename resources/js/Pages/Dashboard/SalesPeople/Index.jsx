@@ -7,7 +7,7 @@ import Table from "@/Components/Dashboard/Table";
 import Pagination from "@/Components/Dashboard/Pagination";
 import Search from "@/Components/Dashboard/Search";
 
-export default function Index({ salesPeople }) {
+export default function Index({ salesPeople, filters = {} }) {
     return (
         <>
             <Head title="Sales People" />
@@ -21,7 +21,7 @@ export default function Index({ salesPeople }) {
             </div>
 
             <div className="mb-4 w-full sm:w-80">
-                <Search url={route('sales-people.index')} placeholder="Cari nama atau kode..." />
+                <Search url={route('sales-people.index')} value={filters.search} placeholder="Cari nama atau kode..." />
             </div>
 
             <Table.Card title="Daftar Sales">

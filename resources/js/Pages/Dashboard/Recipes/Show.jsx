@@ -253,7 +253,7 @@ function SizePreviewPanel({ sizePreview }) {
                             ? <span className="text-teal-600 font-semibold">✓ Dikalibrasi</span>
                             : <span className="text-amber-600 font-semibold">⚠ Fallback</span>}
                         </span>
-                        <span>Total: <strong className="text-teal-700">{activePreview.total_volume} ml</strong></span>
+                        <span>Total: <strong className="text-teal-700">{parseFloat(activePreview.total_volume).toFixed(1)} ml</strong></span>
                     </div>
 
                     <div className="divide-y divide-slate-50 dark:divide-slate-800">

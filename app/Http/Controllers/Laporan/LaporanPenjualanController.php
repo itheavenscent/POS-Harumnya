@@ -187,11 +187,11 @@ class LaporanPenjualanController extends Controller
 
         return [
             'totalTransactions' => (int)   $summary->total_transactions,
-            'totalRevenue'      => (float) $summary->total_revenue,
-            'grossSales'        => (float) $summary->gross_sales,
-            'totalDiscount'     => (float) $summary->total_discount,
+            'totalRevenue'      => (float) round($summary->total_revenue, 2),
+            'grossSales'        => (float) round($summary->gross_sales, 2),
+            'totalDiscount'     => (float) round($summary->total_discount, 2),
             'totalItemsSold'    => (int)   $totalItemsSold,
-            'avgOrderValue'     => (float) $summary->avg_order_value,
+            'avgOrderValue'     => (float) round($summary->avg_order_value, 2),
             'uniqueCustomers'   => (int)   $summary->unique_customers,
             'activeCashiers'    => (int)   $summary->active_cashiers,
             'activeStores'      => (int)   $summary->active_stores,
@@ -200,8 +200,8 @@ class LaporanPenjualanController extends Controller
             'refundedCount'     => (int)   $summary->refunded_count,
             'memberTx'          => (int)   $summary->member_tx,
             'walkinTx'          => (int)   $summary->walkin_tx,
-            'completionRate'    => $summary->total_transactions > 0 ? round(($summary->completed_count / $summary->total_transactions) * 100, 1) : 0,
-            'memberRate'        => $summary->total_transactions > 0 ? round(($summary->member_tx / $summary->total_transactions) * 100, 1) : 0,
+            'completionRate'    => $summary->total_transactions > 0 ? round(($summary->completed_count / $summary->total_transactions) * 100, 2) : 0,
+            'memberRate'        => $summary->total_transactions > 0 ? round(($summary->member_tx / $summary->total_transactions) * 100, 2) : 0,
         ];
     }
 
@@ -231,10 +231,10 @@ class LaporanPenjualanController extends Controller
             ->map(fn ($r) => [
                 'label'            => $r->label,
                 'transactions'     => (int)   $r->transactions,
-                'revenue'          => (float) $r->revenue,
-                'gross_sales'      => (float) $r->gross_sales,
-                'discount'         => (float) $r->discount,
-                'avg_order'        => (float) $r->avg_order,
+                'revenue'          => (float) round($r->revenue, 2),
+                'gross_sales'      => (float) round($r->gross_sales, 2),
+                'discount'         => (float) round($r->discount, 2),
+                'avg_order'        => (float) round($r->avg_order, 2),
                 'unique_customers' => (int)   $r->unique_customers,
                 'member_tx'        => (int)   $r->member_tx,
             ])

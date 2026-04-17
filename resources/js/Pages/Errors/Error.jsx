@@ -1,97 +1,126 @@
 import { Link, Head } from '@inertiajs/react';
+import React from 'react';
 
 export default function Error({ status }) {
     const title = {
-        503: 'Service Unavailable',
-        500: 'Server Error',
+        503: 'Maintenance Mode',
+        500: 'Internal Server Error',
         404: 'Page Not Found',
-        403: 'Forbidden Access',
-    }[status] || 'Error';
+        403: 'Access Forbidden',
+    }[status] || 'Unexpected Error';
 
     const description = {
-        503: 'Maaf, layanan sedang dalam perbaikan (maintenance). Silakan coba lagi nanti.',
-        500: 'Waduh, terjadi kesalahan pada server kami. Tim kami sedang menanganinya.',
-        404: 'Halaman yang Anda cari tidak ditemukan, mungkin telah dihapus atau URL tidak valid.',
-        403: 'Maaf, Anda dilarang mengakses halaman ini. Silakan hubungi administrator.',
-    }[status] || 'Maaf, terjadi kesalahan yang tidak terduga. Silakan coba lagi.';
+        503: 'Sistem kami sedang dalam pemeliharaan rutin. Kami akan segera kembali untuk melayani Anda.',
+        500: 'Oops! Terjadi gangguan teknis pada server kami. Mohon maaf atas ketidaknyamanan ini.',
+        404: 'Halaman yang Anda tuju tidak dapat ditemukan. Mungkin telah dipindahkan atau tidak pernah ada.',
+        403: 'Anda tidak memiliki otorisasi untuk mengakses area ini. Silakan hubungi admin jika ini kesalahan.',
+    }[status] || 'Terjadi kesalahan sistem yang tidak diketahui. Silakan hubungi tim dukungan kami.';
 
-    const illustration = {
-        503: '🛠️',
-        500: '⚠️',
-        404: '🎯',
-        403: '🚫',
-    }[status] || '🛑';
+    const gradient = {
+        503: 'from-amber-500 via-orange-600 to-yellow-500',
+        500: 'from-rose-500 via-red-600 to-pink-500',
+        404: 'from-indigo-500 via-blue-600 to-cyan-500',
+        403: 'from-slate-700 via-slate-800 to-slate-900',
+    }[status] || 'from-indigo-500 via-purple-600 to-pink-500';
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
-            <Head title={title} />
+        <div className="min-h-screen flex items-center justify-center bg-[#fdfdfd] dark:bg-[#070b14] overflow-hidden relative selection:bg-indigo-100 dark:selection:bg-indigo-900/30 transition-colors duration-500">
+            <Head title={`${status} - ${title}`} />
             
-            <div className="max-w-xl w-full text-center relative">
-                {/* Decorative blob shapes background */}
-                <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-2xl opacity-30 dark:opacity-20 animate-blob"></div>
-                <div className="absolute top-0 -right-4 w-72 h-72 bg-indigo-300 rounded-full mix-blend-multiply filter blur-2xl opacity-30 dark:opacity-20 animate-blob animation-delay-2000"></div>
-                <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-2xl opacity-30 dark:opacity-20 animate-blob animation-delay-4000"></div>
+            {/* Dynamic Background Elements */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className={`absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-gradient-to-br ${gradient} opacity-[0.08] dark:opacity-[0.12] blur-[120px] rounded-full animate-pulse-slow`}></div>
+                <div className={`absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-gradient-to-tr ${gradient} opacity-[0.08] dark:opacity-[0.12] blur-[120px] rounded-full animate-pulse-slow delay-700`}></div>
+                
+                {/* Modern Grid Overlay */}
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] dark:opacity-[0.05] pointer-events-none mix-blend-overlay"></div>
+                <div className="absolute inset-0 bg-grid-slate-900/[0.03] dark:bg-grid-white/[0.02] bg-[center_top_-1px] [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
+            </div>
 
-                <div className="relative bg-white/70 dark:bg-slate-800/80 backdrop-blur-xl p-10 sm:p-14 rounded-[2rem] shadow-2xl shadow-indigo-500/10 dark:shadow-indigo-500/5 border border-slate-100 dark:border-slate-700/50">
-                    
-                    <div className="mx-auto flex items-center justify-center h-28 w-28 rounded-full bg-indigo-50 dark:bg-slate-700/50 mb-8 relative shadow-inner">
-                        <div className="absolute inset-0 rounded-full animate-ping opacity-25 bg-indigo-400"></div>
-                        <span className="text-6xl drop-shadow-md relative z-10">{illustration}</span>
-                    </div>
-                    
-                    <div>
-                        <h1 className="text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 tracking-tight drop-shadow-sm">
+            <div className="max-w-2xl w-full px-6 py-12 relative z-10">
+                <div className="text-center">
+                    {/* Status Code with Premium Effect */}
+                    <div className="relative inline-block mb-12">
+                        <div className={`absolute inset-0 bg-gradient-to-br ${gradient} blur-3xl opacity-20 dark:opacity-30 rounded-full scale-150 animate-pulse`}></div>
+                        <h1 className={`text-[12rem] sm:text-[16rem] font-black leading-none tracking-tighter text-transparent bg-clip-text bg-gradient-to-b ${gradient} drop-shadow-2xl relative select-none`}>
                             {status}
                         </h1>
-                        <h2 className="mt-6 text-3xl font-bold text-slate-900 dark:text-white">
+                        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-24 h-1.5 rounded-full bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent"></div>
+                    </div>
+
+                    {/* Content Section */}
+                    <div className="space-y-6 animate-fade-in-up">
+                        <h2 className="text-3xl sm:text-5xl font-bold text-slate-900 dark:text-white tracking-tight">
                             {title}
                         </h2>
-                        <p className="mt-4 text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-sm mx-auto">
+                        <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-400 max-w-lg mx-auto leading-relaxed font-medium">
                             {description}
                         </p>
                     </div>
-                    
-                    <div className="mt-10 pt-8 border-t border-slate-200/50 dark:border-slate-700/50 flex flex-col sm:flex-row gap-4 justify-center">
+
+                    {/* Action Buttons */}
+                    <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-5 animate-fade-in-up delay-300">
                         <Link
-                            href="/"
-                            className="inline-flex items-center justify-center px-8 py-3.5 border border-transparent text-base font-semibold rounded-2xl text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 dark:from-indigo-500 dark:to-purple-500 dark:hover:from-indigo-400 dark:hover:to-purple-400 transition-all duration-300 shadow-md hover:shadow-xl hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-800"
+                            href={route('dashboard')}
+                            className={`group relative flex items-center justify-center px-8 py-4 w-full sm:w-auto overflow-hidden rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-xl hover:shadow-2xl shadow-slate-900/10 dark:shadow-white/5`}
                         >
-                            <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                            </svg>
-                            Kembali ke Beranda
+                            <span className="relative z-10 flex items-center">
+                                <svg className="w-5 h-5 mr-3 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                </svg>
+                                Kembali ke Dashboard
+                            </span>
                         </Link>
                         
                         <button
-                            onClick={() => window.history.back()}
-                            className="inline-flex items-center justify-center px-8 py-3.5 border border-slate-300 dark:border-slate-600 text-base font-medium rounded-2xl text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 transition-all duration-300 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-800"
+                            onClick={() => window.location.reload()}
+                            className="flex items-center justify-center px-8 py-4 w-full sm:w-auto rounded-2xl bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 font-bold transition-all duration-300 hover:bg-slate-50 dark:hover:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm"
                         >
                             <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                             </svg>
-                            Halaman Sebelumnya
+                            Muat Ulang Halaman
                         </button>
+                    </div>
+                </div>
+
+                {/* Footer Branding */}
+                <div className="mt-24 text-center">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm shadow-sm opacity-60">
+                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-500">
+                            Harumnya POS &middot; Production Ready
+                        </span>
                     </div>
                 </div>
             </div>
 
             <style>{`
-                @keyframes blob {
-                    0% { transform: translate(0px, 0px) scale(1); }
-                    33% { transform: translate(30px, -50px) scale(1.1); }
-                    66% { transform: translate(-20px, 20px) scale(0.9); }
-                    100% { transform: translate(0px, 0px) scale(1); }
+                @keyframes pulse-slow {
+                    0%, 100% { opacity: 0.1; transform: scale(1); }
+                    50% { opacity: 0.15; transform: scale(1.1); }
                 }
-                .animate-blob {
-                    animation: blob 7s infinite;
+                .animate-pulse-slow {
+                    animation: pulse-slow 10s ease-in-out infinite;
                 }
-                .animation-delay-2000 {
-                    animation-delay: 2s;
+                @keyframes fade-in-up {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
-                .animation-delay-4000 {
-                    animation-delay: 4s;
+                .animate-fade-in-up {
+                    animation: fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+                }
+                .delay-300 { animation-delay: 0.3s; }
+                .delay-700 { animation-delay: 0.7s; }
+                
+                .bg-grid-slate-900\/\\[0\.03\\] {
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(15 23 42 / 0.03)'%3E%3Cpath d='M0 .5H31.5V32'/%3E%3C/svg%3E");
+                }
+                .dark .bg-grid-white\/\\[0\.02\\] {
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(255 255 255 / 0.02)'%3E%3Cpath d='M0 .5H31.5V32'/%3E%3C/svg%3E");
                 }
             `}</style>
         </div>
     );
 }
+

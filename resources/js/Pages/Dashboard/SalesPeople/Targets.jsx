@@ -86,21 +86,24 @@ export default function Targets({ salesPerson, targets }) {
 
                             <Input
                                 label="Target Nominal (Rp)"
-                                type="number"
-                                min="0"
-                                step="1000"
-                                value={data.target_amount}
-                                onChange={e => setData('target_amount', e.target.value)}
+                                type="text"
+                                value={data.target_amount ? new Intl.NumberFormat("id-ID").format(data.target_amount) : ""}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, "");
+                                    setData("target_amount", val ? parseInt(val) : 0);
+                                }}
                                 errors={errors.target_amount}
-                                placeholder="Contoh: 50000000"
+                                placeholder="Contoh: 50.000.000"
                             />
 
                             <Input
                                 label="Target Kuantitas (Opsional)"
-                                type="number"
-                                min="0"
-                                value={data.target_quantity}
-                                onChange={e => setData('target_quantity', e.target.value)}
+                                type="text"
+                                value={data.target_quantity ? new Intl.NumberFormat("id-ID").format(data.target_quantity) : ""}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, "");
+                                    setData("target_quantity", val ? parseInt(val) : 0);
+                                }}
                                 errors={errors.target_quantity}
                                 placeholder="Contoh: 100 unit"
                             />

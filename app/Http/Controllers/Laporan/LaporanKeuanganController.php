@@ -123,15 +123,15 @@ class LaporanKeuanganController extends Controller
             ->get()
             ->map(fn ($r) => [
                 'label'        => $r->label,
-                'gross_sales'  => (float) $r->gross_sales,
-                'discount'     => (float) $r->discount,
-                'revenue'      => (float) $r->revenue,
-                'cogs'         => (float) $r->cogs,
-                'gross_profit' => (float) $r->gross_profit,
+                'gross_sales'  => (float) round($r->gross_sales, 2),
+                'discount'     => (float) round($r->discount, 2),
+                'revenue'      => (float) round($r->revenue, 2),
+                'cogs'         => (float) round($r->cogs, 2),
+                'gross_profit' => (float) round($r->gross_profit, 2),
                 'transactions' => (int)   $r->transactions,
-                'avg_order'    => (float) $r->avg_order,
+                'avg_order'    => (float) round($r->avg_order, 2),
                 'margin_pct'   => $r->revenue > 0
-                    ? round(($r->gross_profit / $r->revenue) * 100, 1) : 0,
+                    ? round(($r->gross_profit / $r->revenue) * 100, 2) : 0,
             ]);
 
         // ══════════════════════════════════════════════════════════════════════
@@ -534,28 +534,28 @@ class LaporanKeuanganController extends Controller
 
             'summary' => [
                 // P&L
-                'grossSales'          => (float) $summary->gross_sales,
-                'totalDiscount'       => (float) $summary->total_discount,
-                'totalRevenue'        => (float) $summary->total_revenue,
-                'totalCogs'           => (float) $summary->total_cogs,
-                'grossProfit'         => (float) $summary->gross_profit,
+                'grossSales'          => (float) round($summary->gross_sales, 2),
+                'totalDiscount'       => (float) round($summary->total_discount, 2),
+                'totalRevenue'        => (float) round($summary->total_revenue, 2),
+                'totalCogs'           => (float) round($summary->total_cogs, 2),
+                'grossProfit'         => (float) round($summary->gross_profit, 2),
                 'grossMarginPct'      => $grossMarginPct,
                 'markupPct'           => $markupPct,
                 'discountRatePct'     => $discountRatePct,
                 // Breakdown P&L
-                'subtotalPerfume'     => (float) $summary->subtotal_perfume,
-                'subtotalPackaging'   => (float) $summary->subtotal_packaging,
-                'cogsPerfume'         => (float) $summary->cogs_perfume,
-                'cogsPackaging'       => (float) $summary->cogs_packaging,
-                'totalTax'            => (float) $summary->total_tax,
+                'subtotalPerfume'     => (float) round($summary->subtotal_perfume, 2),
+                'subtotalPackaging'   => (float) round($summary->subtotal_packaging, 2),
+                'cogsPerfume'         => (float) round($summary->cogs_perfume, 2),
+                'cogsPackaging'       => (float) round($summary->cogs_packaging, 2),
+                'totalTax'            => (float) round($summary->total_tax, 2),
                 // Loyalty
                 'totalPointsEarned'   => (int)   $summary->total_points_earned,
                 'totalPointsRedeemed' => (int)   $summary->total_points_redeemed,
-                'totalRedemptionValue'=> (float) $summary->total_redemption_value,
+                'totalRedemptionValue'=> (float) round($summary->total_redemption_value, 2),
                 // Ops
                 'totalTransactions'   => (int)   $summary->total_transactions,
-                'avgOrderValue'       => (float) $summary->avg_order_value,
-                'avgProfitPerTx'      => (float) $summary->avg_profit_per_tx,
+                'avgOrderValue'       => (float) round($summary->avg_order_value, 2),
+                'avgProfitPerTx'      => (float) round($summary->avg_profit_per_tx, 2),
                 'uniqueCustomers'     => (int)   $summary->unique_customers,
                 'activeCashiers'      => (int)   $summary->active_cashiers,
                 // Returns

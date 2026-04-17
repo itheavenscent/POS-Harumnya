@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import axios from "axios";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import { Head, useForm, Link } from "@inertiajs/react";
 import Input from "@/Components/Dashboard/Input";
@@ -267,22 +268,14 @@ export default function Create({ warehouses, stores, ingredients, packagingMater
 
         setLoadingIdx(idx);
         try {
-            const res = await fetch(route("stock-adjustments.current-stock"), {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content || "",
-                },
-                body: JSON.stringify({
-                    location_type,
-                    location_id,
-                    item_type: itemType,
-                    item_id:   itemId,
-                }),
+            const res = await axios.post(route("stock-adjustments.current-stock"), {
+                location_type,
+                location_id,
+                item_type: itemType,
+                item_id:   itemId,
             });
 
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const json = await res.json();
+            const json = res.data;
 
             // Baca items terkini dari dataRef — BUKAN dari closure
             const freshItems = dataRef.current.items;
@@ -300,6 +293,7 @@ export default function Create({ warehouses, stores, ingredients, packagingMater
             setLoadingIdx(null);
         }
     };
+
 
     const addItem    = () => setData("items", [...data.items, { item_type: "ingredient", item_id: "", system_quantity: 0, physical_quantity: "", unit_cost: 0.0, notes: "" }]);
     const removeItem = (idx) => setData("items", data.items.filter((_, i) => i !== idx));

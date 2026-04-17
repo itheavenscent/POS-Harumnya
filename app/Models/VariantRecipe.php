@@ -88,7 +88,7 @@ class VariantRecipe extends Model
         $baseByType = ['oil' => 0.0, 'alcohol' => 0.0, 'other' => 0.0];
         foreach ($recipes as $recipe) {
             $type = $recipe->ingredient->category->ingredient_type ?? 'other';
-            $baseByType[$type] += (float) $recipe->base_quantity;
+            $baseByType[$type] = round($baseByType[$type] + (float) $recipe->base_quantity, 4);
         }
 
         // Susun grup: type → [index, base_quantity]

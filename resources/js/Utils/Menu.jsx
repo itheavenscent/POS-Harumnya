@@ -86,7 +86,7 @@ export default function Menu() {
                     href: route("intensity-size-prices.index"),
                     active: url.startsWith("/dashboard/intensity-size-prices"),
                     icon: <IconCash size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["intensities-access", "sizes-access"]),
+                    permissions: hasAnyPermission(["products-edit"]),
                 },
                 {
                     title: "Supplier",
@@ -172,21 +172,21 @@ export default function Menu() {
                     href: route("warehouse-stocks.index"),
                     active: url.startsWith("/dashboard/warehouse-stocks"),
                     icon: <IconPackages size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["stock-access"]),
+                    permissions: hasAnyPermission(["stock-warehouse-access"]),
                 },
                 {
                     title: "Stok Toko",
                     href: route("store-stocks.index"),
                     active: url.startsWith("/dashboard/store-stocks"),
                     icon: <IconBoxPadding size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["stock-access"]),
+                    permissions: hasAnyPermission(["stock-store-access"]),
                 },
                 {
                     title: "Produksi / Repack",
                     href: route("repacks.index"),
                     active: url.startsWith("/dashboard/repacks"),
                     icon: <IconFlask size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["stock-repack"]),
+                    permissions: hasAnyPermission(["repacks-access"]),
                 },
                 {
                     title: "Transfer Stok",
@@ -326,7 +326,7 @@ export default function Menu() {
                 {
                     title: "Pengguna",
                     icon: <IconUserSquare size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["users-access"]),
+                    permissions: hasAnyPermission(["users-access", "users-create"]),
                     subdetails: [
                         {
                             title: "Data Pengguna",

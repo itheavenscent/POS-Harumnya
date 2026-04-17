@@ -5,7 +5,7 @@ import Table from "@/Components/Dashboard/Table";
 import Pagination from "@/Components/Dashboard/Pagination";
 import {
     IconDatabaseOff, IconTrendingUp, IconTrendingDown,
-    IconHistory, IconFilter, IconChartBar, IconCalendar,
+    IconHistory, IconFilter, IconChartBar, IconCalendar, IconRefresh,
 } from "@tabler/icons-react";
 
 const TYPE_CFG = {
@@ -67,6 +67,17 @@ export default function Index({
         };
         Object.keys(f).forEach((k) => { if (!f[k]) delete f[k]; });
         router.get(route("stock-movements.index"), f, { preserveState: true, replace: true });
+    };
+
+    const resetFilters = () => {
+        setSearch("");
+        setMovType("");
+        setLocType("");
+        setLocId("");
+        setItemType("");
+        setDateFrom("");
+        setDateTo("");
+        router.get(route("stock-movements.index"), {}, { preserveState: false });
     };
 
     // Rupiah — unit_cost adalah decimal(15,4) → parseFloat
@@ -147,12 +158,21 @@ export default function Index({
                     }`}
                 >
                     <IconFilter size={16} /> Filter
-                    {Object.values(filters).filter(Boolean).length > 1 && (
-                        <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-primary-500 text-white rounded-full font-black">
-                            {Object.values(filters).filter(Boolean).length - (filters.search ? 0 : 1)}
+                    {Object.values(filters).filter(Boolean).length > 0 && (
+                        <span className="w-5 h-5 bg-primary-500 text-white rounded-full text-[10px] flex items-center justify-center">
+                            {Object.values(filters).filter(Boolean).length}
                         </span>
                     )}
                 </button>
+
+                {Object.values(filters).filter(Boolean).length > 0 && (
+                    <button
+                        onClick={resetFilters}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 bg-red-50 text-red-600 text-sm font-bold hover:bg-red-200 transition-all shadow-sm"
+                    >
+                        <IconRefresh size={16} /> Reset
+                    </button>
+                )}
             </div>
 
             {/* Expanded filters */}

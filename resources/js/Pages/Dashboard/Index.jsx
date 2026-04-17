@@ -24,6 +24,9 @@ const formatCurrency = (value = 0) =>
         minimumFractionDigits: 0,
     }).format(value);
 
+const formatNumber = (value = 0) =>
+    new Intl.NumberFormat("id-ID").format(value);
+
 // Stat Card Component
 function StatCard({ title, value, subtitle, icon: Icon, gradient, trend }) {
     return (
@@ -292,7 +295,7 @@ export default function Dashboard({
                     />
                     <StatCard
                         title="Transaksi Hari Ini"
-                        value={todayTransactions}
+                        value={formatNumber(todayTransactions)}
                         subtitle="Transaksi"
                         icon={IconClock}
                         gradient="from-warning-500 to-warning-600"
@@ -313,12 +316,12 @@ export default function Dashboard({
                     />
                     <InfoCard
                         title="Total Transaksi"
-                        value={totalTransactions}
+                        value={formatNumber(totalTransactions)}
                         icon={IconMoneybag}
                     />
                     <InfoCard
                         title="Total Pengguna"
-                        value={totalUsers}
+                        value={formatNumber(totalUsers)}
                         icon={IconUsers}
                     />
                 </div>

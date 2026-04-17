@@ -183,15 +183,21 @@ class CashDrawerController extends Controller
             ->first();
 
         // Get breakdown by category or other details if needed
+        // Get breakdown by approximate category (Parfum vs Others)
+        // Since the v2 schema doesn't have a direct product -> category link,
+        // we group by the presence of variant_name.
         $categorySummary = DB::table('sale_items')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->join('products', 'sale_items.product_id', '=', 'products.id')
-            ->join('categories', 'products.category_id', '=', 'categories.id')
             ->where('sales.cash_drawer_id', $drawer->id)
             ->where('sales.status', 'completed')
-            ->select('categories.name', DB::raw('SUM(sale_items.qty) as qty'), DB::raw('SUM(sale_items.subtotal) as total'))
-            ->groupBy('categories.id', 'categories.name')
+            ->select(
+                DB::raw("CASE WHEN sale_items.variant_name IS NOT NULL THEN 'Parfum' ELSE 'Kemasan & Lainnya' END as name"),
+                DB::raw('SUM(sale_items.qty) as qty'),
+                DB::raw('SUM(sale_items.subtotal) as total')
+            )
+            ->groupBy(DB::raw("CASE WHEN sale_items.variant_name IS NOT NULL THEN 'Parfum' ELSE 'Kemasan & Lainnya' END"))
             ->get();
+
 
         return Inertia::render('Dashboard/Shifts/Show', [
             'drawer' => $drawer,

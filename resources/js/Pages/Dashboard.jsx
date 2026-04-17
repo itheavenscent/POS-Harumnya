@@ -112,7 +112,7 @@ function TrendBadge({ value }) {
                 : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
         }`}>
             {up ? <IconArrowUpRight size={11} /> : <IconArrowDownRight size={11} />}
-            {Math.abs(value)}%
+            {Math.abs(value).toFixed(1)}%
         </span>
     );
 }

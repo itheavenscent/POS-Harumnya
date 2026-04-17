@@ -21,9 +21,14 @@ class SalesPersonController extends Controller
     {
         $salesPeople = SalesPerson::with('store:id,name')
             ->when($request->search, function ($query, $search) {
-                $query->where('name', 'like', "%{$search}%")
-                      ->orWhere('code', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('code', 'like', "%{$search}%")
+                      ->orWhere('phone', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                });
             })
+
             ->latest()
             ->paginate(10)
             ->withQueryString();

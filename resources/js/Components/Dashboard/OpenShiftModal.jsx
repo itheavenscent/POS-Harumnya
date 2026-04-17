@@ -26,13 +26,17 @@ export default function OpenShiftModal({ isOpen, onClose }) {
                 
                 <Input
                     label="Modal Awal Laci (Rp)"
-                    type="number"
-                    min="0"
-                    value={data.starting_cash}
-                    onChange={(e) => setData("starting_cash", e.target.value)}
+                    type="text"
+                    value={data.starting_cash ? new Intl.NumberFormat("id-ID").format(data.starting_cash) : ""}
+                    onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "");
+                        setData("starting_cash", val ? parseInt(val) : 0);
+                    }}
                     errors={errors.starting_cash}
+                    placeholder="Contoh: 1.000.000"
                     required
                 />
+
 
                 <div className="mt-6 flex justify-end gap-3">
                     <button type="button" onClick={onClose}

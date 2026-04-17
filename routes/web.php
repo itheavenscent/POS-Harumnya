@@ -100,63 +100,102 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
             'destroy' => 'permission:categories-delete',
         ]);
 
-    Route::resource('sizes', SizeController::class);
-    Route::resource('intensity-size-prices', IntensitySizePriceController::class);
-    Route::resource('suppliers', SupplierController::class)->except('show');
+    Route::resource('sizes', SizeController::class)
+        ->middleware([
+            'index' => 'permission:sizes-access',
+            'create' => 'permission:sizes-create',
+            'store' => 'permission:sizes-create',
+            'edit' => 'permission:sizes-edit',
+            'update' => 'permission:sizes-edit',
+            'destroy' => 'permission:sizes-delete',
+        ]);
+
+    Route::resource('intensity-size-prices', IntensitySizePriceController::class)
+        ->middleware('permission:products-edit');
+
+    Route::resource('suppliers', SupplierController::class)
+        ->except('show')
+        ->middleware([
+            'index' => 'permission:suppliers-access',
+            'create' => 'permission:suppliers-create',
+            'store' => 'permission:suppliers-create',
+            'edit' => 'permission:suppliers-edit',
+            'update' => 'permission:suppliers-edit',
+            'destroy' => 'permission:suppliers-delete',
+        ]);
 
     // ── Variants ──────────────────────────────────────────────────────────────
 
     Route::prefix('variants')->name('variants.')->group(function () {
-        Route::get('/', [VariantController::class, 'index'])->name('index');
-        Route::get('/create', [VariantController::class, 'create'])->name('create');
-        Route::post('/', [VariantController::class, 'store'])->name('store');
-        Route::post('/bulk-delete', [VariantController::class, 'bulkDelete'])->name('bulk-delete'); // ! sebelum /{variant}
-        Route::get('/{variant}/edit', [VariantController::class, 'edit'])->name('edit');
-        Route::put('/{variant}', [VariantController::class, 'update'])->name('update');
-        Route::delete('/{variant}', [VariantController::class, 'destroy'])->name('destroy');
+        Route::get('/', [VariantController::class, 'index'])->name('index')->middleware('permission:variants-access');
+        Route::get('/create', [VariantController::class, 'create'])->name('create')->middleware('permission:variants-create');
+        Route::post('/', [VariantController::class, 'store'])->name('store')->middleware('permission:variants-create');
+        Route::post('/bulk-delete', [VariantController::class, 'bulkDelete'])->name('bulk-delete')->middleware('permission:variants-delete');
+        Route::get('/{variant}/edit', [VariantController::class, 'edit'])->name('edit')->middleware('permission:variants-edit');
+        Route::put('/{variant}', [VariantController::class, 'update'])->name('update')->middleware('permission:variants-edit');
+        Route::delete('/{variant}', [VariantController::class, 'destroy'])->name('destroy')->middleware('permission:variants-delete');
     });
 
     // ── Intensities ───────────────────────────────────────────────────────────
 
     Route::prefix('intensities')->name('intensities.')->group(function () {
-        Route::get('/', [IntensityController::class, 'index'])->name('index');
-        Route::get('/create', [IntensityController::class, 'create'])->name('create');
-        Route::post('/', [IntensityController::class, 'store'])->name('store');
-        Route::post('/bulk-delete', [IntensityController::class, 'bulkDelete'])->name('bulk-delete'); // ! sebelum /{intensity}
-        Route::get('/{intensity}/edit', [IntensityController::class, 'edit'])->name('edit');
-        Route::put('/{intensity}', [IntensityController::class, 'update'])->name('update');
-        Route::delete('/{intensity}', [IntensityController::class, 'destroy'])->name('destroy');
+        Route::get('/', [IntensityController::class, 'index'])->name('index')->middleware('permission:intensities-access');
+        Route::get('/create', [IntensityController::class, 'create'])->name('create')->middleware('permission:intensities-create');
+        Route::post('/', [IntensityController::class, 'store'])->name('store')->middleware('permission:intensities-create');
+        Route::post('/bulk-delete', [IntensityController::class, 'bulkDelete'])->name('bulk-delete')->middleware('permission:intensities-delete');
+        Route::get('/{intensity}/edit', [IntensityController::class, 'edit'])->name('edit')->middleware('permission:intensities-edit');
+        Route::put('/{intensity}', [IntensityController::class, 'update'])->name('update')->middleware('permission:intensities-edit');
+        Route::delete('/{intensity}', [IntensityController::class, 'destroy'])->name('destroy')->middleware('permission:intensities-delete');
     });
 
     // ─────────────────────────────────────────────────────────────────────────
     // Lokasi
     // ─────────────────────────────────────────────────────────────────────────
 
-    // ── Warehouses ────────────────────────────────────────────────────────────
-
     Route::post('warehouses/bulk-delete', [WarehouseController::class, 'bulkDelete'])
-        ->name('warehouses.bulk-delete');                                           // ! sebelum resource()
-    Route::resource('warehouses', WarehouseController::class);
+        ->middleware('permission:warehouses-delete')
+        ->name('warehouses.bulk-delete');
+
+    Route::resource('warehouses', WarehouseController::class)
+        ->middleware([
+            'index' => 'permission:warehouses-access',
+            'show' => 'permission:warehouses-access',
+            'create' => 'permission:warehouses-create',
+            'store' => 'permission:warehouses-create',
+            'edit' => 'permission:warehouses-edit',
+            'update' => 'permission:warehouses-edit',
+            'destroy' => 'permission:warehouses-delete',
+        ]);
 
     // ── Stores ────────────────────────────────────────────────────────────────
 
     Route::post('stores/bulk-delete', [StoreController::class, 'bulkDelete'])
-        ->name('stores.bulk-delete');                                               // ! sebelum resource()
-    Route::resource('stores', StoreController::class);
+        ->middleware('permission:stores-delete')
+        ->name('stores.bulk-delete');
+
+    Route::resource('stores', StoreController::class)
+        ->middleware([
+            'index' => 'permission:stores-access',
+            'show' => 'permission:stores-access',
+            'create' => 'permission:stores-create',
+            'store' => 'permission:stores-create',
+            'edit' => 'permission:stores-edit',
+            'update' => 'permission:stores-edit',
+            'destroy' => 'permission:stores-delete',
+        ]);
 
     // ── Store Categories ──────────────────────────────────────────────────────
 
     Route::prefix('store-categories')->name('store-categories.')->group(function () {
-        Route::get('/', [StoreCategoryController::class, 'index'])->name('index');
-        Route::get('/create', [StoreCategoryController::class, 'create'])->name('create');
-        Route::post('/', [StoreCategoryController::class, 'store'])->name('store');
-        // ! sub-routes statis sebelum wildcard lain
-        Route::get('/{storeCategory}/variants', [StoreCategoryController::class, 'variants'])->name('variants');
-        Route::post('/{storeCategory}/sync-variants', [StoreCategoryController::class, 'syncVariants'])->name('sync-variants');
-        Route::patch('/{storeCategory}/toggle', [StoreCategoryController::class, 'toggle'])->name('toggle');
-        Route::get('/{storeCategory}/edit', [StoreCategoryController::class, 'edit'])->name('edit');
-        Route::put('/{storeCategory}', [StoreCategoryController::class, 'update'])->name('update');
-        Route::delete('/{storeCategory}', [StoreCategoryController::class, 'destroy'])->name('destroy');
+        Route::get('/', [StoreCategoryController::class, 'index'])->name('index')->middleware('permission:store-categories-access');
+        Route::get('/create', [StoreCategoryController::class, 'create'])->name('create')->middleware('permission:store-categories-create');
+        Route::post('/', [StoreCategoryController::class, 'store'])->name('store')->middleware('permission:store-categories-create');
+        Route::get('/{storeCategory}/variants', [StoreCategoryController::class, 'variants'])->name('variants')->middleware('permission:store-categories-edit');
+        Route::post('/{storeCategory}/sync-variants', [StoreCategoryController::class, 'syncVariants'])->name('sync-variants')->middleware('permission:store-categories-edit');
+        Route::patch('/{storeCategory}/toggle', [StoreCategoryController::class, 'toggle'])->name('toggle')->middleware('permission:store-categories-edit');
+        Route::get('/{storeCategory}/edit', [StoreCategoryController::class, 'edit'])->name('edit')->middleware('permission:store-categories-edit');
+        Route::put('/{storeCategory}', [StoreCategoryController::class, 'update'])->name('update')->middleware('permission:store-categories-edit');
+        Route::delete('/{storeCategory}', [StoreCategoryController::class, 'destroy'])->name('destroy')->middleware('permission:store-categories-delete');
     });
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -166,37 +205,37 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     // ── Ingredients (Bahan Baku) ──────────────────────────────────────────────
 
     Route::prefix('ingredients')->name('ingredients.')->group(function () {
-        Route::get('/', [IngredientController::class, 'index'])->name('index');
-        Route::get('/create', [IngredientController::class, 'create'])->name('create');
-        Route::post('/', [IngredientController::class, 'store'])->name('store');
+        Route::get('/', [IngredientController::class, 'index'])->name('index')->middleware('permission:ingredients-access');
+        Route::get('/create', [IngredientController::class, 'create'])->name('create')->middleware('permission:ingredients-create');
+        Route::post('/', [IngredientController::class, 'store'])->name('store')->middleware('permission:ingredients-create');
 
         Route::prefix('categories')->name('categories.')->group(function () {
-            Route::post('/', [IngredientController::class, 'storeCategory'])->name('store');
-            Route::put('/{category}', [IngredientController::class, 'updateCategory'])->name('update');
-            Route::delete('/{category}', [IngredientController::class, 'destroyCategory'])->name('destroy');
+            Route::post('/', [IngredientController::class, 'storeCategory'])->name('store')->middleware('permission:ingredients-create');
+            Route::put('/{category}', [IngredientController::class, 'updateCategory'])->name('update')->middleware('permission:ingredients-edit');
+            Route::delete('/{category}', [IngredientController::class, 'destroyCategory'])->name('destroy')->middleware('permission:ingredients-delete');
         });
 
-        Route::get('/{ingredient}/edit', [IngredientController::class, 'edit'])->name('edit');
-        Route::put('/{ingredient}', [IngredientController::class, 'update'])->name('update');
-        Route::delete('/{ingredient}', [IngredientController::class, 'destroy'])->name('destroy');
+        Route::get('/{ingredient}/edit', [IngredientController::class, 'edit'])->name('edit')->middleware('permission:ingredients-edit');
+        Route::put('/{ingredient}', [IngredientController::class, 'update'])->name('update')->middleware('permission:ingredients-edit');
+        Route::delete('/{ingredient}', [IngredientController::class, 'destroy'])->name('destroy')->middleware('permission:ingredients-delete');
     });
 
     // ── Packaging (Kemasan) ───────────────────────────────────────────────────
 
     Route::prefix('packaging')->name('packaging.')->group(function () {
-        Route::get('/', [PackagingController::class, 'index'])->name('index');
-        Route::get('/create', [PackagingController::class, 'create'])->name('create');
-        Route::post('/', [PackagingController::class, 'store'])->name('store');
+        Route::get('/', [PackagingController::class, 'index'])->name('index')->middleware('permission:packaging-access');
+        Route::get('/create', [PackagingController::class, 'create'])->name('create')->middleware('permission:packaging-create');
+        Route::post('/', [PackagingController::class, 'store'])->name('store')->middleware('permission:packaging-create');
 
         Route::prefix('categories')->name('categories.')->group(function () {
-            Route::post('/', [PackagingController::class, 'storeCategory'])->name('store');
-            Route::put('/{category}', [PackagingController::class, 'updateCategory'])->name('update');
-            Route::delete('/{category}', [PackagingController::class, 'destroyCategory'])->name('destroy');
+            Route::post('/', [PackagingController::class, 'storeCategory'])->name('store')->middleware('permission:packaging-create');
+            Route::put('/{category}', [PackagingController::class, 'updateCategory'])->name('update')->middleware('permission:packaging-edit');
+            Route::delete('/{category}', [PackagingController::class, 'destroyCategory'])->name('destroy')->middleware('permission:packaging-delete');
         });
 
-        Route::get('/{packaging}/edit', [PackagingController::class, 'edit'])->name('edit');
-        Route::put('/{packaging}', [PackagingController::class, 'update'])->name('update');
-        Route::delete('/{packaging}', [PackagingController::class, 'destroy'])->name('destroy');
+        Route::get('/{packaging}/edit', [PackagingController::class, 'edit'])->name('edit')->middleware('permission:packaging-edit');
+        Route::put('/{packaging}', [PackagingController::class, 'update'])->name('update')->middleware('permission:packaging-edit');
+        Route::delete('/{packaging}', [PackagingController::class, 'destroy'])->name('destroy')->middleware('permission:packaging-delete');
     });
 
     // ── Recipes (Formula & Resep) ─────────────────────────────────────────────
@@ -211,32 +250,32 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
 
         // 1. Import
         Route::prefix('import')->name('import.')->group(function () {
-            Route::get('/', [RecipeController::class, 'importIndex'])->name('index');
-            Route::get('/template', [RecipeController::class, 'importTemplate'])->name('template');
-            Route::post('/validate', [RecipeController::class, 'importValidate'])->name('validate');
-            Route::post('/store', [RecipeController::class, 'importStore'])->name('store');
+            Route::get('/', [RecipeController::class, 'importIndex'])->name('index')->middleware('permission:recipes-import');
+            Route::get('/template', [RecipeController::class, 'importTemplate'])->name('template')->middleware('permission:recipes-import');
+            Route::post('/validate', [RecipeController::class, 'importValidate'])->name('validate')->middleware('permission:recipes-import');
+            Route::post('/store', [RecipeController::class, 'importStore'])->name('store')->middleware('permission:recipes-import');
         });
 
-        // 2. CRUD non-wildcard
-        Route::get('/', [RecipeController::class, 'index'])->name('index');
-        Route::get('/create', [RecipeController::class, 'create'])->name('create');
-        Route::post('/', [RecipeController::class, 'store'])->name('store');
+        // 2. CRUD
+        Route::get('/', [RecipeController::class, 'index'])->name('index')->middleware('permission:recipes-access');
+        Route::get('/create', [RecipeController::class, 'create'])->name('create')->middleware('permission:recipes-create');
+        Route::post('/', [RecipeController::class, 'store'])->name('store')->middleware('permission:recipes-create');
 
-        // 3. Wildcard ganda — HARUS paling bawah
-        Route::get('/{variant}/{intensity}', [RecipeController::class, 'show'])->name('show');
-        Route::get('/{variant}/{intensity}/edit', [RecipeController::class, 'edit'])->name('edit');
-        Route::put('/{variant}/{intensity}', [RecipeController::class, 'update'])->name('update');
-        Route::delete('/{variant}/{intensity}', [RecipeController::class, 'destroy'])->name('destroy');
-        Route::post('/{variant}/{intensity}/generate-products', [RecipeController::class, 'generateProducts'])->name('generate-products');
+        // 3. Wildcard
+        Route::get('/{variant}/{intensity}', [RecipeController::class, 'show'])->name('show')->middleware('permission:recipes-access');
+        Route::get('/{variant}/{intensity}/edit', [RecipeController::class, 'edit'])->name('edit')->middleware('permission:recipes-edit');
+        Route::put('/{variant}/{intensity}', [RecipeController::class, 'update'])->name('update')->middleware('permission:recipes-edit');
+        Route::delete('/{variant}/{intensity}', [RecipeController::class, 'destroy'])->name('destroy')->middleware('permission:recipes-delete');
+        Route::post('/{variant}/{intensity}/generate-products', [RecipeController::class, 'generateProducts'])->name('generate-products')->middleware('permission:recipes-create');
     });
 
     // ── Products ──────────────────────────────────────────────────────────────
 
     Route::prefix('products')->name('products.')->group(function () {
-        Route::get('/', [ProductController::class, 'index'])->name('index');
-        Route::get('/{product}', [ProductController::class, 'show'])->name('show');
-        Route::patch('/{product}/toggle-active', [ProductController::class, 'toggleActive'])->name('toggle-active');
-        Route::post('/{product}/recalculate', [ProductController::class, 'recalculate'])->name('recalculate');
+        Route::get('/', [ProductController::class, 'index'])->name('index')->middleware('permission:products-access');
+        Route::get('/{product}', [ProductController::class, 'show'])->name('show')->middleware('permission:products-access');
+        Route::patch('/{product}/toggle-active', [ProductController::class, 'toggleActive'])->name('toggle-active')->middleware('permission:products-edit');
+        Route::post('/{product}/recalculate', [ProductController::class, 'recalculate'])->name('recalculate')->middleware('permission:products-recalculate');
     });
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -246,25 +285,25 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     // ── Warehouse Stocks ──────────────────────────────────────────────────────
 
     Route::prefix('warehouse-stocks')->name('warehouse-stocks.')->group(function () {
-        Route::get('/', [WarehouseStockController::class, 'index'])->name('index');
-        Route::get('/create', [WarehouseStockController::class, 'create'])->name('create');
-        Route::post('/', [WarehouseStockController::class, 'store'])->name('store');
-        Route::get('/{id}', [WarehouseStockController::class, 'show'])->name('show');
-        Route::get('/{id}/edit', [WarehouseStockController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [WarehouseStockController::class, 'update'])->name('update');
-        Route::delete('/{id}', [WarehouseStockController::class, 'destroy'])->name('destroy');
+        Route::get('/', [WarehouseStockController::class, 'index'])->name('index')->middleware('permission:stock-warehouse-access');
+        Route::get('/create', [WarehouseStockController::class, 'create'])->name('create')->middleware('permission:stock-adjustment');
+        Route::post('/', [WarehouseStockController::class, 'store'])->name('store')->middleware('permission:stock-adjustment');
+        Route::get('/{id}', [WarehouseStockController::class, 'show'])->name('show')->middleware('permission:stock-warehouse-access');
+        Route::get('/{id}/edit', [WarehouseStockController::class, 'edit'])->name('edit')->middleware('permission:stock-adjustment');
+        Route::put('/{id}', [WarehouseStockController::class, 'update'])->name('update')->middleware('permission:stock-adjustment');
+        Route::delete('/{id}', [WarehouseStockController::class, 'destroy'])->name('destroy')->middleware('permission:stock-adjustment');
     });
 
     // ── Store Stocks ──────────────────────────────────────────────────────────
 
     Route::prefix('store-stocks')->name('store-stocks.')->group(function () {
-        Route::get('/', [StoreStockController::class, 'index'])->name('index');
-        Route::get('/create', [StoreStockController::class, 'create'])->name('create');
-        Route::post('/', [StoreStockController::class, 'store'])->name('store');
-        Route::get('/{id}', [StoreStockController::class, 'show'])->name('show');
-        Route::get('/{id}/edit', [StoreStockController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [StoreStockController::class, 'update'])->name('update');
-        Route::delete('/{id}', [StoreStockController::class, 'destroy'])->name('destroy');
+        Route::get('/', [StoreStockController::class, 'index'])->name('index')->middleware('permission:stock-store-access');
+        Route::get('/create', [StoreStockController::class, 'create'])->name('create')->middleware('permission:stock-adjustment');
+        Route::post('/', [StoreStockController::class, 'store'])->name('store')->middleware('permission:stock-adjustment');
+        Route::get('/{id}', [StoreStockController::class, 'show'])->name('show')->middleware('permission:stock-store-access');
+        Route::get('/{id}/edit', [StoreStockController::class, 'edit'])->name('edit')->middleware('permission:stock-adjustment');
+        Route::put('/{id}', [StoreStockController::class, 'update'])->name('update')->middleware('permission:stock-adjustment');
+        Route::delete('/{id}', [StoreStockController::class, 'destroy'])->name('destroy')->middleware('permission:stock-adjustment');
     });
 
     // ── Repacks (Produksi) ────────────────────────────────────────────────────
@@ -273,16 +312,16 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     //
 
     Route::prefix('repacks')->name('repacks.')->group(function () {
-        Route::get('/', [RepackController::class, 'index'])->name('index');
-        Route::get('/create', [RepackController::class, 'create'])->name('create');
-        Route::post('/', [RepackController::class, 'store'])->name('store');
-        Route::post('/available-stock', [RepackController::class, 'getAvailableStock'])->name('available-stock'); // ! sebelum /{id}
-        Route::get('/{id}', [RepackController::class, 'show'])->name('show');
-        Route::get('/{id}/edit', [RepackController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [RepackController::class, 'update'])->name('update');
-        Route::post('/{id}/complete', [RepackController::class, 'complete'])->name('complete');
-        Route::post('/{id}/cancel', [RepackController::class, 'cancel'])->name('cancel');
-        Route::delete('/{id}', [RepackController::class, 'destroy'])->name('destroy');
+        Route::get('/', [RepackController::class, 'index'])->name('index')->middleware('permission:repacks-access');
+        Route::get('/create', [RepackController::class, 'create'])->name('create')->middleware('permission:repacks-create');
+        Route::post('/', [RepackController::class, 'store'])->name('store')->middleware('permission:repacks-create');
+        Route::post('/available-stock', [RepackController::class, 'getAvailableStock'])->name('available-stock')->middleware('permission:repacks-access');
+        Route::get('/{id}', [RepackController::class, 'show'])->name('show')->middleware('permission:repacks-access');
+        Route::get('/{id}/edit', [RepackController::class, 'edit'])->name('edit')->middleware('permission:repacks-edit');
+        Route::put('/{id}', [RepackController::class, 'update'])->name('update')->middleware('permission:repacks-edit');
+        Route::post('/{id}/complete', [RepackController::class, 'complete'])->name('complete')->middleware('permission:repacks-complete');
+        Route::post('/{id}/cancel', [RepackController::class, 'cancel'])->name('cancel')->middleware('permission:repacks-cancel');
+        Route::delete('/{id}', [RepackController::class, 'destroy'])->name('destroy')->middleware('permission:repacks-delete');
     });
 
     // ── Stock Transfers ───────────────────────────────────────────────────────
@@ -291,18 +330,18 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     //
 
     Route::prefix('stock-transfers')->name('stock-transfers.')->group(function () {
-        Route::get('/', [StockTransferController::class, 'index'])->name('index');
-        Route::get('/create', [StockTransferController::class, 'create'])->name('create');
-        Route::post('/', [StockTransferController::class, 'store'])->name('store');
-        Route::get('/{id}', [StockTransferController::class, 'show'])->name('show');
-        Route::get('/{id}/edit', [StockTransferController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [StockTransferController::class, 'update'])->name('update');
-        Route::post('/{id}/submit', [StockTransferController::class, 'submit'])->name('submit');
-        Route::post('/{id}/approve', [StockTransferController::class, 'approve'])->name('approve');
-        Route::post('/{id}/send', [StockTransferController::class, 'send'])->name('send');
-        Route::post('/{id}/receive', [StockTransferController::class, 'receive'])->name('receive');
-        Route::post('/{id}/cancel', [StockTransferController::class, 'cancel'])->name('cancel');
-        Route::delete('/{id}', [StockTransferController::class, 'destroy'])->name('destroy');
+        Route::get('/', [StockTransferController::class, 'index'])->name('index')->middleware('permission:stock-transfer');
+        Route::get('/create', [StockTransferController::class, 'create'])->name('create')->middleware('permission:stock-transfer');
+        Route::post('/', [StockTransferController::class, 'store'])->name('store')->middleware('permission:stock-transfer');
+        Route::get('/{id}', [StockTransferController::class, 'show'])->name('show')->middleware('permission:stock-transfer');
+        Route::get('/{id}/edit', [StockTransferController::class, 'edit'])->name('edit')->middleware('permission:stock-transfer');
+        Route::put('/{id}', [StockTransferController::class, 'update'])->name('update')->middleware('permission:stock-transfer');
+        Route::post('/{id}/submit', [StockTransferController::class, 'submit'])->name('submit')->middleware('permission:stock-transfer');
+        Route::post('/{id}/approve', [StockTransferController::class, 'approve'])->name('approve')->middleware('permission:stock-transfer');
+        Route::post('/{id}/send', [StockTransferController::class, 'send'])->name('send')->middleware('permission:stock-transfer');
+        Route::post('/{id}/receive', [StockTransferController::class, 'receive'])->name('receive')->middleware('permission:stock-transfer');
+        Route::post('/{id}/cancel', [StockTransferController::class, 'cancel'])->name('cancel')->middleware('permission:stock-transfer');
+        Route::delete('/{id}', [StockTransferController::class, 'destroy'])->name('destroy')->middleware('permission:stock-transfer');
     });
 
     // ── Stock Adjustments ─────────────────────────────────────────────────────
@@ -315,18 +354,18 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     //
 
     Route::prefix('stock-adjustments')->name('stock-adjustments.')->group(function () {
-        Route::get('/', [StockAdjustmentController::class, 'index'])->name('index');
-        Route::get('/create', [StockAdjustmentController::class, 'create'])->name('create');
-        Route::post('/', [StockAdjustmentController::class, 'store'])->name('store');
-        Route::post('/current-stock', [StockAdjustmentController::class, 'getCurrentStock'])->name('current-stock'); // ! sebelum /{id}
-        Route::get('/{id}', [StockAdjustmentController::class, 'show'])->name('show');
-        Route::get('/{id}/edit', [StockAdjustmentController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [StockAdjustmentController::class, 'update'])->name('update');
-        Route::delete('/{id}', [StockAdjustmentController::class, 'destroy'])->name('destroy');
-        Route::post('/{id}/submit', [StockAdjustmentController::class, 'submit'])->name('submit');
-        Route::post('/{id}/approve', [StockAdjustmentController::class, 'approve'])->name('approve');
-        Route::post('/{id}/complete', [StockAdjustmentController::class, 'complete'])->name('complete');
-        Route::post('/{id}/cancel', [StockAdjustmentController::class, 'cancel'])->name('cancel');
+        Route::get('/', [StockAdjustmentController::class, 'index'])->name('index')->middleware('permission:stock-adjustment');
+        Route::get('/create', [StockAdjustmentController::class, 'create'])->name('create')->middleware('permission:stock-adjustment');
+        Route::post('/', [StockAdjustmentController::class, 'store'])->name('store')->middleware('permission:stock-adjustment');
+        Route::post('/current-stock', [StockAdjustmentController::class, 'getCurrentStock'])->name('current-stock')->middleware('permission:stock-adjustment');
+        Route::get('/{id}', [StockAdjustmentController::class, 'show'])->name('show')->middleware('permission:stock-adjustment');
+        Route::get('/{id}/edit', [StockAdjustmentController::class, 'edit'])->name('edit')->middleware('permission:stock-adjustment');
+        Route::put('/{id}', [StockAdjustmentController::class, 'update'])->name('update')->middleware('permission:stock-adjustment');
+        Route::delete('/{id}', [StockAdjustmentController::class, 'destroy'])->name('destroy')->middleware('permission:stock-adjustment');
+        Route::post('/{id}/submit', [StockAdjustmentController::class, 'submit'])->name('submit')->middleware('permission:stock-adjustment');
+        Route::post('/{id}/approve', [StockAdjustmentController::class, 'approve'])->name('approve')->middleware('permission:stock-adjustment');
+        Route::post('/{id}/complete', [StockAdjustmentController::class, 'complete'])->name('complete')->middleware('permission:stock-adjustment');
+        Route::post('/{id}/cancel', [StockAdjustmentController::class, 'cancel'])->name('cancel')->middleware('permission:stock-adjustment');
     });
 
     // ── Stock Movements (Log — Baca Saja) ─────────────────────────────────────
@@ -335,9 +374,9 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     //
 
     Route::prefix('stock-movements')->name('stock-movements.')->group(function () {
-        Route::get('/', [StockMovementController::class, 'index'])->name('index');
-        Route::post('/available-stock', [StockMovementController::class, 'getAvailableStock'])->name('available-stock'); // ! sebelum /{id}
-        Route::get('/{id}', [StockMovementController::class, 'show'])->name('show');
+        Route::get('/', [StockMovementController::class, 'index'])->name('index')->middleware('permission:stock-access');
+        Route::post('/available-stock', [StockMovementController::class, 'getAvailableStock'])->name('available-stock')->middleware('permission:stock-access');
+        Route::get('/{id}', [StockMovementController::class, 'show'])->name('show')->middleware('permission:stock-access');
     });
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -350,18 +389,18 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     //
 
     Route::prefix('purchases')->name('purchases.')->group(function () {
-        Route::get('/', [PurchaseController::class, 'index'])->name('index');
-        Route::get('/create', [PurchaseController::class, 'create'])->name('create');
-        Route::post('/', [PurchaseController::class, 'store'])->name('store');
-        Route::get('/{id}', [PurchaseController::class, 'show'])->name('show');
-        Route::get('/{id}/edit', [PurchaseController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [PurchaseController::class, 'update'])->name('update');
-        Route::delete('/{id}', [PurchaseController::class, 'destroy'])->name('destroy');
-        Route::post('/{id}/submit', [PurchaseController::class, 'submit'])->name('submit');
-        Route::post('/{id}/approve', [PurchaseController::class, 'approve'])->name('approve');
-        Route::post('/{id}/receive', [PurchaseController::class, 'receive'])->name('receive');
-        Route::post('/{id}/complete', [PurchaseController::class, 'complete'])->name('complete');
-        Route::post('/{id}/cancel', [PurchaseController::class, 'cancel'])->name('cancel');
+        Route::get('/', [PurchaseController::class, 'index'])->name('index')->middleware('permission:purchases-access');
+        Route::get('/create', [PurchaseController::class, 'create'])->name('create')->middleware('permission:purchases-create');
+        Route::post('/', [PurchaseController::class, 'store'])->name('store')->middleware('permission:purchases-create');
+        Route::get('/{id}', [PurchaseController::class, 'show'])->name('show')->middleware('permission:purchases-access');
+        Route::get('/{id}/edit', [PurchaseController::class, 'edit'])->name('edit')->middleware('permission:purchases-edit');
+        Route::put('/{id}', [PurchaseController::class, 'update'])->name('update')->middleware('permission:purchases-edit');
+        Route::delete('/{id}', [PurchaseController::class, 'destroy'])->name('destroy')->middleware('permission:purchases-delete');
+        Route::post('/{id}/submit', [PurchaseController::class, 'submit'])->name('submit')->middleware('permission:purchases-submit');
+        Route::post('/{id}/approve', [PurchaseController::class, 'approve'])->name('approve')->middleware('permission:purchases-approve');
+        Route::post('/{id}/receive', [PurchaseController::class, 'receive'])->name('receive')->middleware('permission:purchases-receive');
+        Route::post('/{id}/complete', [PurchaseController::class, 'complete'])->name('complete')->middleware('permission:purchases-complete');
+        Route::post('/{id}/cancel', [PurchaseController::class, 'cancel'])->name('cancel')->middleware('permission:purchases-cancel');
     });
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -375,18 +414,27 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     //
 
     Route::get('customers/export', [CustomerController::class, 'export'])
-        ->middleware('permission:customers-access')
-        ->name('customers.export');                                                 // ! sebelum resource()
+        ->middleware('permission:customers-export')
+        ->name('customers.export');
 
     Route::post('customers/store-ajax', [CustomerController::class, 'storeAjax'])
         ->middleware('permission:customers-create')
-        ->name('customers.store-ajax');                                             // ! sebelum resource()
+        ->name('customers.store-ajax');
 
     Route::get('customers/{customer}/history', [CustomerController::class, 'getHistory'])
         ->middleware('permission:transactions-access')
         ->name('customers.history');
 
-    Route::resource('customers', CustomerController::class);
+    Route::resource('customers', CustomerController::class)
+        ->middleware([
+            'index' => 'permission:customers-access',
+            'show' => 'permission:customers-access',
+            'create' => 'permission:customers-create',
+            'store' => 'permission:customers-create',
+            'edit' => 'permission:customers-edit',
+            'update' => 'permission:customers-edit',
+            'destroy' => 'permission:customers-delete',
+        ]);
 
     // ── Sales People ──────────────────────────────────────────────────────────
     //
@@ -394,16 +442,36 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     //
 
     Route::get('sales-people/{salesPerson}/targets', [SalesPersonController::class, 'targets'])
-        ->name('sales-people.targets');                                             // ! sebelum resource()
+        ->middleware('permission:sales-people-access')
+        ->name('sales-people.targets');
 
     Route::post('sales-people/{salesPerson}/targets', [SalesPersonController::class, 'storeTarget'])
-        ->name('sales-people.targets.store');                                       // ! sebelum resource()
+        ->middleware('permission:sales-people-edit')
+        ->name('sales-people.targets.store');
 
-    Route::resource('sales-people', SalesPersonController::class);
+    Route::resource('sales-people', SalesPersonController::class)
+        ->middleware([
+            'index' => 'permission:sales-people-access',
+            'show' => 'permission:sales-people-access',
+            'create' => 'permission:sales-people-create',
+            'store' => 'permission:sales-people-create',
+            'edit' => 'permission:sales-people-edit',
+            'update' => 'permission:sales-people-edit',
+            'destroy' => 'permission:sales-people-delete',
+        ]);
 
     // ── Discounts (Promo) ─────────────────────────────────────────────────────
 
-    Route::resource('discounts', DiscountController::class);
+    Route::resource('discounts', DiscountController::class)
+        ->middleware([
+            'index' => 'permission:discounts-access',
+            'show' => 'permission:discounts-access',
+            'create' => 'permission:discounts-create',
+            'store' => 'permission:discounts-create',
+            'edit' => 'permission:discounts-edit',
+            'update' => 'permission:discounts-edit',
+            'destroy' => 'permission:discounts-delete',
+        ]);
 
     // ── Transactions ──────────────────────────────────────────────────────────
     //
@@ -416,36 +484,35 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     Route::prefix('transactions')->name('transactions.')->group(function () {
 
         // 1. Halaman
-        Route::get('/', [TransactionController::class, 'index'])->name('index');
-        Route::get('/history', [TransactionController::class, 'history'])->name('history');
+        Route::get('/', [TransactionController::class, 'index'])->name('index')->middleware('permission:transactions-access');
+        Route::get('/history', [TransactionController::class, 'history'])->name('history')->middleware('permission:transactions-access');
         Route::get('/print/{saleNumber}', [TransactionController::class, 'print'])
             ->where('saleNumber', '.*')
-            ->name('print');
+            ->name('print')
+            ->middleware('permission:transactions-access');
 
-        // 2. API — Product Selection (flow baru: Variant → Intensity → Size)
-        Route::get('/get-variants-pos', [TransactionController::class, 'getVariantsForPOS'])->name('get-variants-pos');
-        Route::get('/get-intensities', [TransactionController::class, 'getIntensitiesForVariant'])->name('get-intensities');
-        Route::get('/get-variants', [TransactionController::class, 'getVariantsForIntensity'])->name('get-variants');
-        Route::get('/get-sizes', [TransactionController::class, 'getAvailableSizes'])->name('get-sizes');
-        Route::post('/get-perfume-price', [TransactionController::class, 'getPerfumePrice'])->name('get-perfume-price');
-
-        // 2b. API — Custom Order
-        Route::get('/get-variants-custom', [TransactionController::class, 'getVariantsForCustom'])->name('get-variants-custom');
-        Route::get('/get-custom-price', [TransactionController::class, 'getCustomPrice'])->name('get-custom-price');
+        // 2. API
+        Route::get('/get-variants-pos', [TransactionController::class, 'getVariantsForPOS'])->name('get-variants-pos')->middleware('permission:transactions-access');
+        Route::get('/get-intensities', [TransactionController::class, 'getIntensitiesForVariant'])->name('get-intensities')->middleware('permission:transactions-access');
+        Route::get('/get-variants', [TransactionController::class, 'getVariantsForIntensity'])->name('get-variants')->middleware('permission:transactions-access');
+        Route::get('/get-sizes', [TransactionController::class, 'getAvailableSizes'])->name('get-sizes')->middleware('permission:transactions-access');
+        Route::post('/get-perfume-price', [TransactionController::class, 'getPerfumePrice'])->name('get-perfume-price')->middleware('permission:transactions-access');
+        Route::get('/get-variants-custom', [TransactionController::class, 'getVariantsForCustom'])->name('get-variants-custom')->middleware('permission:transactions-access');
+        Route::get('/get-custom-price', [TransactionController::class, 'getCustomPrice'])->name('get-custom-price')->middleware('permission:transactions-access');
 
         // 3. Cart
-        Route::post('/add-to-cart', [TransactionController::class, 'addToCart'])->name('add-to-cart');
-        Route::post('/add-custom-to-cart', [TransactionController::class, 'addCustomToCart'])->name('add-custom-to-cart');
-        Route::patch('/cart/{id}', [TransactionController::class, 'updateCart'])->name('update-cart');
-        Route::delete('/cart/{id}', [TransactionController::class, 'destroyCart'])->name('destroy-cart');
+        Route::post('/add-to-cart', [TransactionController::class, 'addToCart'])->name('add-to-cart')->middleware('permission:transactions-create');
+        Route::post('/add-custom-to-cart', [TransactionController::class, 'addCustomToCart'])->name('add-custom-to-cart')->middleware('permission:transactions-create');
+        Route::patch('/cart/{id}', [TransactionController::class, 'updateCart'])->name('update-cart')->middleware('permission:transactions-create');
+        Route::delete('/cart/{id}', [TransactionController::class, 'destroyCart'])->name('destroy-cart')->middleware('permission:transactions-create');
 
         // 4. Hold / Resume
-        Route::post('/hold', [TransactionController::class, 'holdCart'])->name('hold');
-        Route::post('/resume/{holdId}', [TransactionController::class, 'resumeHeldCart'])->name('resume');
-        Route::delete('/held/{holdId}', [TransactionController::class, 'deleteHeldCart'])->name('delete-held');
+        Route::post('/hold', [TransactionController::class, 'holdCart'])->name('hold')->middleware('permission:transactions-create');
+        Route::post('/resume/{holdId}', [TransactionController::class, 'resumeHeldCart'])->name('resume')->middleware('permission:transactions-create');
+        Route::delete('/held/{holdId}', [TransactionController::class, 'deleteHeldCart'])->name('delete-held')->middleware('permission:transactions-create');
 
-        // 5. Checkout — paling bawah
-        Route::post('/store', [TransactionController::class, 'store'])->name('store');
+        // 5. Checkout
+        Route::post('/store', [TransactionController::class, 'store'])->name('store')->middleware('permission:transactions-create');
     });
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -453,12 +520,12 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     // ─────────────────────────────────────────────────────────────────────────
 
     Route::prefix('cash-drawers')->name('cash-drawers.')->group(function () {
-        Route::get('/current', [CashDrawerController::class, 'current'])->name('current');
-        Route::get('/', [CashDrawerController::class, 'index'])->name('index');
-        Route::post('/open', [CashDrawerController::class, 'open'])->name('open');
-        Route::get('/{id}', [CashDrawerController::class, 'show'])->name('show');
-        Route::put('/close/{id}', [CashDrawerController::class, 'close'])->name('close');
-        Route::get('/print/{id}', [CashDrawerController::class, 'printRecap'])->name('print');
+        Route::get('/current', [CashDrawerController::class, 'current'])->name('current')->middleware('permission:cash-drawers-access');
+        Route::get('/', [CashDrawerController::class, 'index'])->name('index')->middleware('permission:cash-drawers-access');
+        Route::post('/open', [CashDrawerController::class, 'open'])->name('open')->middleware('permission:cash-drawers-open');
+        Route::get('/{id}', [CashDrawerController::class, 'show'])->name('show')->middleware('permission:cash-drawers-access');
+        Route::put('/close/{id}', [CashDrawerController::class, 'close'])->name('close')->middleware('permission:cash-drawers-close');
+        Route::get('/print/{id}', [CashDrawerController::class, 'printRecap'])->name('print')->middleware('permission:cash-drawers-print');
     });
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -468,9 +535,19 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     // ! ATURAN URUTAN: /toggle SEBELUM resource()
 
     Route::patch('payment-methods/{paymentMethod}/toggle', [PaymentMethodController::class, 'toggle'])
-        ->name('payment-methods.toggle');                                           // ! sebelum resource()
+        ->middleware('permission:payment-methods-edit')
+        ->name('payment-methods.toggle');
 
-    Route::resource('payment-methods', PaymentMethodController::class);
+    Route::resource('payment-methods', PaymentMethodController::class)
+        ->middleware([
+            'index' => 'permission:payment-methods-access',
+            'show' => 'permission:payment-methods-access',
+            'create' => 'permission:payment-methods-create',
+            'store' => 'permission:payment-methods-create',
+            'edit' => 'permission:payment-methods-edit',
+            'update' => 'permission:payment-methods-edit',
+            'destroy' => 'permission:payment-methods-delete',
+        ]);
 
     // ─────────────────────────────────────────────────────────────────────────
     // Laporan

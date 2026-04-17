@@ -58,24 +58,23 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 403);
             }
 
-            $fallback = \Illuminate\Support\Facades\Auth::check() && \Illuminate\Support\Facades\Auth::user()->hasRole('cashier') 
-                ? route('transactions.index') 
-                : route('dashboard');
-
-            return redirect()
-                ->back(fallback: $fallback)
-                ->with('error', $message);
+            // Tampilkan halaman error 403 professional
+            return \Inertia\Inertia::render('Errors/Error', [
+                'status' => 403
+            ])->toResponse($request)->setStatusCode(403);
         });
 
         // Tangkap response error HTTP generik (404, 500, dll) dan arahkan ke halaman Inertia
-        // Jika APP_DEBUG = true, biarkan Laravel/Ignition menampilkan stack trace.
-        // Jika APP_DEBUG = false (Production), maka render custom page.
         $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response, \Throwable $exception, Request $request) {
-            if (!config('app.debug') && in_array($response->getStatusCode(), [500, 503, 404, 403])) {
+            $status = $response->getStatusCode();
+
+            if (!config('app.debug') && in_array($status, [500, 503, 404, 403])) {
                 return \Inertia\Inertia::render('Errors/Error', [
-                    'status' => $response->getStatusCode()
-                ])->toResponse($request)->setStatusCode($response->getStatusCode());
-            } elseif ($response->getStatusCode() === 419) {
+                    'status' => $status
+                ])->toResponse($request)->setStatusCode($status);
+            }
+
+            if ($status === 419) {
                 return back()->with([
                     'error' => 'Halaman telah kadaluarsa (Page expired), silakan coba lagi.',
                 ]);
