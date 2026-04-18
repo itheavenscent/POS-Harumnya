@@ -722,6 +722,7 @@ export default function Index({
     customers = [], salesPeople = [], packagingMaterials = [],
     paymentMethods = [], discounts = [],
     storeId = null, storeName = null, error = null,
+    activeCashDrawer = null,
 }) {
     // ── State: customer ────────────────────────────────────────────────────────
     const [selectedCustomer,     setSelectedCustomer]     = useState(null);
@@ -968,6 +969,10 @@ export default function Index({
     };
 
     const submitPendingOrder = (overrideOrder = null) => {
+        if (!activeCashDrawer) {
+            toast.error("Silakan buka shift terlebih dahulu!");
+            return;
+        }
         const order = overrideOrder || pendingOrder;
         if (!order) return;
         

@@ -209,11 +209,17 @@ class RolePermissionSeeder extends Seeder
         // ── Kasir — hanya POS & pelanggan, tidak dapat akses dashboard default
         $cashier = Role::firstOrCreate(['name' => 'cashier']);
         $cashier->syncPermissions([
-            // Tidak ada 'dashboard-access'
+            'dashboard-access',
 
             // POS
             'transactions-access',
             'transactions-create',
+
+            // Shift Kasir
+            'cash-drawers-access',
+            'cash-drawers-open',
+            'cash-drawers-close',
+            'cash-drawers-print',
 
             // Katalog (read only)
             'products-access',
@@ -231,6 +237,7 @@ class RolePermissionSeeder extends Seeder
 
             // Stok (lihat saja)
             'stock-access',
+            'stock-store-access',
         ]);
 
         $this->command->info('✓ Roles & Permissions seeded successfully.');

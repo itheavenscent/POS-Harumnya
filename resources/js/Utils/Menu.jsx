@@ -38,7 +38,8 @@ import hasAnyPermission from "./Permission";
 import React from "react";
 
 export default function Menu() {
-    const { url } = usePage();
+    const { url, auth } = usePage().props;
+    const isCashier = auth.roles.includes('cashier') && !auth.super;
 
     const menuNavigation = [
 
@@ -361,6 +362,25 @@ export default function Menu() {
             ],
         },
     ];
+
+    if (isCashier) {
+        return menuNavigation.map(category => ({
+            ...category,
+            details: category.details.filter(item => {
+                const allowedTitles = [
+                    "Dashboard",
+                    "Transaksi",
+                    "Riwayat Transaksi",
+                    "Histori Shift",
+                    "Stok Toko",
+                    "Kemasan",
+                    "Produk & Harga",
+                    "Pelanggan" // Usually cashier needs this for POS
+                ];
+                return allowedTitles.includes(item.title);
+            })
+        })).filter(category => category.details.length > 0);
+    }
 
     return menuNavigation;
 }

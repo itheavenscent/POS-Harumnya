@@ -87,9 +87,9 @@ export default function AuthDropdown({ auth, isMobile }) {
                     </button>
                     <div className={`${isToggle ? 'translate-x-0 opacity-100' : '-translate-x-full'} fixed top-0 left-0 z-50 w-[300px] h-full transition-all duration-300 transform border-r bg-white dark:bg-gray-950 dark:border-gray-900`}>
                         <div className="flex justify-center items-center px-6 py-2 h-16">
-                            <div className="text-2xl font-bold text-center leading-loose tracking-wider text-gray-900 dark:text-gray-200">
+                            <Link href={route('transactions.index')} className="text-2xl font-bold text-center leading-loose tracking-wider text-gray-900 dark:text-gray-200 hover:text-primary-500 transition-colors">
                                 KASIR
-                            </div>
+                            </Link>
                         </div>
                         <div className="w-full p-3 flex items-center gap-4 border-b border-t dark:bg-gray-950/50 dark:border-gray-900">
                             <img

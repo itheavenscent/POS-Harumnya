@@ -201,7 +201,7 @@ export default function Sidebar({ sidebarOpen, onClose }) {
                                         bg-[#E4F6F8]    text-[#3A9DAA]
                                         dark:bg-[rgba(86,184,195,0.15)] dark:text-[#56B8C3]
                                         border border-[rgba(86,184,195,0.25)] dark:border-[rgba(86,184,195,0.2)]">
-                                        Admin
+                                        {auth.roles[0] || 'User'}
                                     </span>
                                 </div>
                             </div>
