@@ -2,7 +2,7 @@ import React from "react";
 import { Link, usePage } from "@inertiajs/react";
 
 export default function LinkItem({ href, icon, access, title, sidebarOpen, exact = false, ...props }) {
-    const { url } = usePage();
+    const { url = "" } = usePage();
     const { auth } = usePage().props;
 
     const normHref = (() => {
@@ -20,8 +20,8 @@ export default function LinkItem({ href, icon, access, title, sidebarOpen, exact
     const isActive = forceExact
         ? url === normHref
         : url === normHref ||
-          url.startsWith(normHref + "/") ||
-          url.startsWith(normHref + "?");
+          (url && url.startsWith(normHref + "/")) ||
+          (url && url.startsWith(normHref + "?"));
 
     const canAccess = auth.super === true || access === true;
     if (!canAccess) return null;

@@ -38,7 +38,7 @@ import hasAnyPermission from "./Permission";
 import React from "react";
 
 export default function Menu() {
-    const { url, auth } = usePage().props;
+    const { url = "", props: { auth } } = usePage();
     const isCashier = auth.roles.includes('cashier') && !auth.super;
 
     const menuNavigation = [
