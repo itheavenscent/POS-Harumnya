@@ -442,7 +442,7 @@ class LaporanPenjualanController extends Controller
             ->orderByDesc('total_revenue')
             ->get()
             ->map(fn ($r) => [
-                'id'                 => $r->id,
+                'id'                 => $r->cashier_id,
                 'name'               => $r->name,
                 'total_transactions' => (int)   $r->total_transactions,
                 'total_revenue'      => (float) $r->total_revenue,

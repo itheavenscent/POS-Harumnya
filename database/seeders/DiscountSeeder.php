@@ -9,33 +9,22 @@ use Illuminate\Support\Str;
 /**
  * DISCOUNT SEEDER
  * ===============================================================
- * 4 Program Promo:
+ * Sumber: Sheet "PROMO" — Varian_Harumnya.xlsx
  *
- *   1. PLINKO (game_reward)
- *      Syarat : beli >= 2 pcs P50 (semua intensitas & varian)
- *      Reward : spin Plinko → 1 dari 4 hadiah
+ * 2 Program Promo resmi dari Excel:
  *
- *   2. BUY 1 GET 1 (buy_x_get_y)
- *      Syarat : beli 1 P50 EDP atau EXT (any variant)
- *      Reward : gratis 1 P50 EDT — varian ditentukan sistem
+ *   1. SPIN WHEEL (game_reward)
+ *      Syarat:
+ *        a. Beli >= 3 botol P30 (semua intensitas & varian)
+ *        b. Beli >= 2 botol P50 (semua intensitas & varian)
+ *        c. Beli >= 1 botol P100 (semua intensitas & varian)
+ *      Reward : 1x spin Spin Wheel
+ *      Hadiah spin: P30 EDT pilih varian + Botol, atau P10 EDT pilih varian + Botol Spray
  *
- *   3. BUY 4 GET 1 (buy_x_get_y)
- *      Syarat : beli 4 P50 semua kategori & varian
- *      Reward : gratis 1 P50 EDT — varian ditentukan sistem
- *
- *   4. BUY 1 GET 3 (buy_x_get_y)
- *      Syarat : beli 1 P50 EDP atau EXT (any variant)
- *      Reward : gratis 2 P30 EDT (travel size) — varian ditentukan sistem
+ *   2. POIN MEMBER (percentage / loyalty)
+ *      Akumulasi: Rp 10.000 = 1 Poin
+ *      Redeem   : 30 Poin → 1 Parfum P30 EDT + Botol (gratis)
  * ===============================================================
- *
- * Disesuaikan dengan migration 008:
- *   - discount_types: tambah start_time, end_time (nullable TIME)
- *   - discount_types: priority = unsignedTinyInteger (max 255, nilai 10-20 aman)
- *   - discount_types: value = decimal default 0, BUKAN nullable
- *   - discount_stores: unique(discount_type_id, store_id) — PostgreSQL
- *     menganggap NULL != NULL sehingga multiple NULL store_id boleh
- *   - discount_applicabilities FK: cascadeOnDelete (bukan nullOnDelete)
- *   - discount_requirements FK: cascadeOnDelete
  */
 class DiscountSeeder extends Seeder
 {
@@ -43,30 +32,27 @@ class DiscountSeeder extends Seeder
     {
         $now = now();
 
-        // ── Guard: pastikan master data sudah ada ─────────────────────────────
-        $size50 = DB::table('sizes')->where('volume_ml', 50)->first();
-        $size30 = DB::table('sizes')->where('volume_ml', 30)->first();
-        $intEDT = DB::table('intensities')->where('code', 'EDT')->first();
-        $intEDP = DB::table('intensities')->where('code', 'EDP')->first();
-        $intEXT = DB::table('intensities')->where('code', 'EXT')->first();
+        // ── Guard: master data ─────────────────────────────────────────────────
+        $size100 = DB::table('sizes')->where('volume_ml', 100)->first();
+        $size50  = DB::table('sizes')->where('volume_ml', 50)->first();
+        $size30  = DB::table('sizes')->where('volume_ml', 30)->first();
+        $intEDT  = DB::table('intensities')->where('code', 'EDT')->first();
+        $intEDP  = DB::table('intensities')->where('code', 'EDP')->first();
+        $intEXT  = DB::table('intensities')->where('code', 'EXT')->first();
 
-        if (! $size50 || ! $size30 || ! $intEDT || ! $intEDP || ! $intEXT) {
-            $this->command->error(
-                'Master data sizes/intensities belum ada. ' .
-                'Jalankan IntensitySeeder terlebih dahulu.'
-            );
+        if (!$size100 || !$size50 || !$size30 || !$intEDT) {
+            $this->command->error('Master data sizes/intensities belum ada. Jalankan IntensitySeeder terlebih dahulu.');
             return;
         }
 
-        $s50 = $size50->id;
-        $s30 = $size30->id;
-        $edt = $intEDT->id;
-        $edp = $intEDP->id;
-        $ext = $intEXT->id;
+        $s100 = $size100->id;
+        $s50  = $size50->id;
+        $s30  = $size30->id;
+        $edt  = $intEDT->id;
 
-        // ── Guard: skip jika sudah di-seed ────────────────────────────────────
+        // ── Guard: idempotent ─────────────────────────────────────────────────
         $existing = DB::table('discount_types')
-            ->whereIn('code', ['PLINKO-P50', 'B1G1-P50-INTENSE', 'B4G1-P50-ALL', 'B1G3-P50-TRAVEL'])
+            ->whereIn('code', ['SPINWHEEL', 'POIN-MEMBER'])
             ->count();
 
         if ($existing > 0) {
@@ -77,82 +63,93 @@ class DiscountSeeder extends Seeder
         DB::beginTransaction();
 
         try {
-
             // ==================================================================
-            // 1. PLINKO
+            // 1. SPIN WHEEL
             // ==================================================================
-            $dtPlinko = Str::uuid()->toString();
+            $dtSpin = Str::uuid()->toString();
 
             DB::table('discount_types')->insert([
-                'id'                    => $dtPlinko,
-                'code'                  => 'PLINKO-P50',
-                'name'                  => 'Plinko Spin — Beli 2 P50',
+                'id'                    => $dtSpin,
+                'code'                  => 'SPINWHEEL',
+                'name'                  => 'Spin Wheel',
                 'type'                  => 'game_reward',
-                // migration: value decimal default 0, NOT nullable
                 'value'                 => 0.00,
-                'buy_quantity'          => 2,
+                'buy_quantity'          => 1,
                 'get_quantity'          => 1,
                 'get_product_type'      => 'choose_from_pool',
                 'min_purchase_amount'   => null,
-                'min_purchase_quantity' => 2,
+                'min_purchase_quantity' => null,
                 'max_discount_amount'   => null,
                 'start_date'            => null,
                 'end_date'              => null,
-                // migration baru: start_time / end_time (TIME, nullable)
                 'start_time'            => null,
                 'end_time'              => null,
                 'is_game_reward'        => true,
                 'game_probability'      => 100,
-                // unsignedTinyInteger max 255
                 'priority'              => 10,
                 'is_combinable'         => false,
                 'is_active'             => true,
-                'description'           => 'Spin Plinko gratis untuk setiap pembelian minimal 2 botol P50 (semua intensitas & varian). Hadiah: travel size 10ml, atomizer, room spray, atau pengharum mobil.',
+                'description'           => 'Gratis 1x Spin Wheel untuk setiap: beli ≥3 botol P30, atau ≥2 botol P50, atau ≥1 botol P100 (semua intensitas & varian). Hadiah: P30 EDT (pilih varian + botol) atau P10 EDT (pilih varian + botol spray).',
                 'terms_conditions'      => json_encode([
-                    'Minimal pembelian 2 botol P50 (EDT / EDP / EXT, semua varian)',
-                    'Berlaku 1x spin Plinko per transaksi',
+                    'Syarat: beli ≥3 botol P30 ATAU ≥2 botol P50 ATAU ≥1 botol P100',
+                    'Berlaku semua intensitas (EDT/EDP/EXT) dan semua varian',
+                    'Gratis 1x spin Spin Wheel per transaksi yang memenuhi syarat',
+                    'Hadiah spin: P30 EDT pilih varian + Botol, atau P10 EDT pilih varian + Botol Spray',
                     'Hadiah tidak dapat ditukar uang tunai',
-                    'Jenis hadiah ditentukan hasil spin - tidak bisa dipilih',
                 ]),
                 'created_at'            => $now,
                 'updated_at'            => $now,
             ]);
 
-            // Applicability: P50 semua variant & intensity
-            DB::table('discount_applicabilities')->insert([
-                'id'               => Str::uuid(),
-                'discount_type_id' => $dtPlinko,
-                'variant_id'       => null,
-                'intensity_id'     => null,
-                'size_id'          => $s50,
-                'created_at'       => $now,
-                'updated_at'       => $now,
-            ]);
+            // Applicabilities: P30 (≥3), P50 (≥2), P100 (≥1)
+            $applicabilities = [
+                ['size_id' => $s30,  'intensity_id' => null],
+                ['size_id' => $s50,  'intensity_id' => null],
+                ['size_id' => $s100, 'intensity_id' => null],
+            ];
+            foreach ($applicabilities as $app) {
+                DB::table('discount_applicabilities')->insert([
+                    'id'               => Str::uuid(),
+                    'discount_type_id' => $dtSpin,
+                    'variant_id'       => null,
+                    'intensity_id'     => $app['intensity_id'],
+                    'size_id'          => $app['size_id'],
+                    'created_at'       => $now,
+                    'updated_at'       => $now,
+                ]);
+            }
 
-            // Requirement: min 2 pcs P50 apapun
-            DB::table('discount_requirements')->insert([
-                'id'                => Str::uuid(),
-                'discount_type_id'  => $dtPlinko,
-                'variant_id'        => null,
-                'intensity_id'      => null,
-                'size_id'           => $s50,
-                'required_quantity' => 2,
-                'matching_mode'     => 'all',
-                'group_key'         => 'P50-ANY',
-                'created_at'        => $now,
-                'updated_at'        => $now,
-            ]);
+            // Requirements — pakai group_key berbeda per syarat (OR antar group)
+            $requirements = [
+                ['size_id' => $s30,  'qty' => 3, 'group' => 'P30-3PCS'],
+                ['size_id' => $s50,  'qty' => 2, 'group' => 'P50-2PCS'],
+                ['size_id' => $s100, 'qty' => 1, 'group' => 'P100-1PCS'],
+            ];
+            foreach ($requirements as $req) {
+                DB::table('discount_requirements')->insert([
+                    'id'                => Str::uuid(),
+                    'discount_type_id'  => $dtSpin,
+                    'variant_id'        => null,
+                    'intensity_id'      => null,
+                    'size_id'           => $req['size_id'],
+                    'required_quantity' => $req['qty'],
+                    'matching_mode'     => 'all',
+                    'group_key'         => $req['group'],
+                    'created_at'        => $now,
+                    'updated_at'        => $now,
+                ]);
+            }
 
-            // Reward: 1x pool item (is_pool = true)
-            $rwPlinko = Str::uuid()->toString();
+            // Reward pool (spin wheel items)
+            $rwSpin = Str::uuid()->toString();
             DB::table('discount_rewards')->insert([
-                'id'                  => $rwPlinko,
-                'discount_type_id'    => $dtPlinko,
+                'id'                  => $rwSpin,
+                'discount_type_id'    => $dtSpin,
                 'variant_id'          => null,
                 'intensity_id'        => null,
                 'size_id'             => null,
                 'reward_quantity'     => 1,
-                'customer_can_choose' => false,
+                'customer_can_choose' => true,  // customer pilih varian
                 'is_pool'             => true,
                 'max_choices'         => 1,
                 'discount_percentage' => 100.00,
@@ -162,25 +159,21 @@ class DiscountSeeder extends Seeder
                 'updated_at'          => $now,
             ]);
 
-            // Pool items (equal probability 25 each)
-            $plinkoItems = [
-                ['label' => 'Travel Size Parfum 10ml', 'probability' => 25, 'sort_order' => 1],
-                ['label' => 'Atomizer Portable',        'probability' => 25, 'sort_order' => 2],
-                ['label' => 'Room Spray',               'probability' => 25, 'sort_order' => 3],
-                ['label' => 'Pengharum Mobil',          'probability' => 25, 'sort_order' => 4],
+            // Pool items: P30 EDT pilih varian + Botol (50%), P10 EDT pilih varian + Botol Spray (50%)
+            $spinItems = [
+                ['label' => 'P30 EDT (Pilih Varian + Botol)',        'probability' => 50, 'sort_order' => 1],
+                ['label' => 'P10 EDT (Pilih Varian + Botol Spray)',  'probability' => 50, 'sort_order' => 2],
             ];
-
-            foreach ($plinkoItems as $item) {
+            foreach ($spinItems as $item) {
                 DB::table('discount_reward_pools')->insert([
                     'id'                 => Str::uuid(),
-                    'discount_reward_id' => $rwPlinko,
+                    'discount_reward_id' => $rwSpin,
                     'product_id'         => null,
                     'variant_id'         => null,
-                    'intensity_id'       => null,
-                    'size_id'            => null,
+                    'intensity_id'       => $edt,
+                    'size_id'            => $item['sort_order'] === 1 ? $s30 : null, // P10 belum ada di sizes
                     'label'              => $item['label'],
                     'image_url'          => null,
-                    // migration: fixed_price nullable decimal(15,2)
                     'fixed_price'        => 0.00,
                     'probability'        => $item['probability'],
                     'is_active'          => true,
@@ -190,189 +183,35 @@ class DiscountSeeder extends Seeder
                 ]);
             }
 
-            $this->command->line('  [1/4] Plinko seeded');
-
-            // ==================================================================
-            // 2. BUY 1 GET 1
-            // ==================================================================
-            $dtB1G1 = Str::uuid()->toString();
-
-            DB::table('discount_types')->insert([
-                'id'                    => $dtB1G1,
-                'code'                  => 'B1G1-P50-INTENSE',
-                'name'                  => 'Buy 1 Get 1 — P50 Intense / Very Intense',
-                'type'                  => 'buy_x_get_y',
-                'value'                 => 0.00,
-                'buy_quantity'          => 1,
-                'get_quantity'          => 1,
-                'get_product_type'      => 'lower_intensity',
-                'min_purchase_amount'   => null,
-                'min_purchase_quantity' => 1,
-                'max_discount_amount'   => null,
-                'start_date'            => null,
-                'end_date'              => null,
-                'start_time'            => null,
-                'end_time'              => null,
-                'is_game_reward'        => false,
-                'game_probability'      => null,
-                'priority'              => 20,
-                'is_combinable'         => false,
-                'is_active'             => true,
-                'description'           => 'Beli 1 P50 Intense (EDP) atau Very Intense (EXT), gratis 1 P50 Reguler (EDT). Varian gratis ditentukan sistem (ws).',
-                'terms_conditions'      => json_encode([
-                    'Berlaku untuk P50 intensitas EDP atau EXT (semua varian)',
-                    'Produk gratis: P50 EDT — varian ditentukan sistem (WS)',
-                    'Customer tidak bisa memilih varian produk gratis',
-                    'Tidak dapat digabung dengan promo lain',
-                ]),
-                'created_at'            => $now,
-                'updated_at'            => $now,
-            ]);
-
-            // Applicabilities & Requirements: EDP OR EXT, P50
-            // group_key sama → dievaluasi OR di level aplikasi
-            foreach ([$edp, $ext] as $intId) {
-                DB::table('discount_applicabilities')->insert([
-                    'id'               => Str::uuid(),
-                    'discount_type_id' => $dtB1G1,
-                    'variant_id'       => null,
-                    'intensity_id'     => $intId,
-                    'size_id'          => $s50,
-                    'created_at'       => $now,
-                    'updated_at'       => $now,
-                ]);
-
-                DB::table('discount_requirements')->insert([
-                    'id'                => Str::uuid(),
-                    'discount_type_id'  => $dtB1G1,
-                    'variant_id'        => null,
-                    'intensity_id'      => $intId,
-                    'size_id'           => $s50,
-                    'required_quantity' => 1,
-                    'matching_mode'     => 'any',
-                    'group_key'         => 'P50-EDP-OR-EXT',
-                    'created_at'        => $now,
-                    'updated_at'        => $now,
-                ]);
-            }
-
-            // Reward: 1x P50 EDT (intensity spesifik, variant null = ws)
-            DB::table('discount_rewards')->insert([
-                'id'                  => Str::uuid(),
-                'discount_type_id'    => $dtB1G1,
-                'variant_id'          => null,
-                'intensity_id'        => $edt,
-                'size_id'             => $s50,
-                'reward_quantity'     => 1,
-                'customer_can_choose' => false,
-                'is_pool'             => false,
-                'max_choices'         => null,
-                'discount_percentage' => 100.00,
-                'fixed_price'         => null,
-                'priority'            => 1,
-                'created_at'          => $now,
-                'updated_at'          => $now,
-            ]);
-
-            $this->command->line('  [2/4] Buy 1 Get 1 seeded');
-
-            // ==================================================================
-            // 3. BUY 4 GET 1
-            // ==================================================================
-            $dtB4G1 = Str::uuid()->toString();
-
-            DB::table('discount_types')->insert([
-                'id'                    => $dtB4G1,
-                'code'                  => 'B4G1-P50-ALL',
-                'name'                  => 'Buy 4 Get 1 — P50 Semua Kategori',
-                'type'                  => 'buy_x_get_y',
-                'value'                 => 0.00,
-                'buy_quantity'          => 4,
-                'get_quantity'          => 1,
-                'get_product_type'      => 'lower_intensity',
-                'min_purchase_amount'   => null,
-                'min_purchase_quantity' => 4,
-                'max_discount_amount'   => null,
-                'start_date'            => null,
-                'end_date'              => null,
-                'start_time'            => null,
-                'end_time'              => null,
-                'is_game_reward'        => false,
-                'game_probability'      => null,
-                'priority'              => 15,
-                'is_combinable'         => false,
-                'is_active'             => true,
-                'description'           => 'Beli 4 botol P50 (semua intensitas & varian), gratis 1 botol P50 Reguler (EDT). Varian gratis ditentukan sistem.',
-                'terms_conditions'      => json_encode([
-                    'Berlaku untuk pembelian 4 botol P50 (EDT / EDP / EXT, semua varian)',
-                    'Produk gratis: P50 EDT — varian ditentukan sistem',
-                    'Customer tidak bisa memilih varian produk gratis',
-                    'Tidak dapat digabung dengan promo lain',
-                ]),
-                'created_at'            => $now,
-                'updated_at'            => $now,
-            ]);
-
-            DB::table('discount_applicabilities')->insert([
+            // Berlaku di semua toko
+            DB::table('discount_stores')->insert([
                 'id'               => Str::uuid(),
-                'discount_type_id' => $dtB4G1,
-                'variant_id'       => null,
-                'intensity_id'     => null,
-                'size_id'          => $s50,
+                'discount_type_id' => $dtSpin,
+                'store_id'         => null,
                 'created_at'       => $now,
                 'updated_at'       => $now,
             ]);
 
-            DB::table('discount_requirements')->insert([
-                'id'                => Str::uuid(),
-                'discount_type_id'  => $dtB4G1,
-                'variant_id'        => null,
-                'intensity_id'      => null,
-                'size_id'           => $s50,
-                'required_quantity' => 4,
-                'matching_mode'     => 'all',
-                'group_key'         => 'P50-ANY-4PCS',
-                'created_at'        => $now,
-                'updated_at'        => $now,
-            ]);
-
-            DB::table('discount_rewards')->insert([
-                'id'                  => Str::uuid(),
-                'discount_type_id'    => $dtB4G1,
-                'variant_id'          => null,
-                'intensity_id'        => $edt,
-                'size_id'             => $s50,
-                'reward_quantity'     => 1,
-                'customer_can_choose' => false,
-                'is_pool'             => false,
-                'max_choices'         => null,
-                'discount_percentage' => 100.00,
-                'fixed_price'         => null,
-                'priority'            => 1,
-                'created_at'          => $now,
-                'updated_at'          => $now,
-            ]);
-
-            $this->command->line('  [3/4] Buy 4 Get 1 seeded');
+            $this->command->line('  [1/2] Spin Wheel seeded');
 
             // ==================================================================
-            // 4. BUY 1 GET 3
-            //    get_quantity = 2 (2 botol P30 gratis)
-            //    "Get 3" = total diterima 3 botol (1 P50 beli + 2 P30 gratis)
+            // 2. POIN MEMBER
+            //    - Setiap kelipatan Rp 10.000 → +1 Poin
+            //    - 30 Poin → gratis 1 Parfum P30 EDT + Botol
             // ==================================================================
-            $dtB1G3 = Str::uuid()->toString();
+            $dtPoin = Str::uuid()->toString();
 
             DB::table('discount_types')->insert([
-                'id'                    => $dtB1G3,
-                'code'                  => 'B1G3-P50-TRAVEL',
-                'name'                  => 'Buy 1 Get 3 — P50 Intense + 2 Travel Size',
-                'type'                  => 'buy_x_get_y',
+                'id'                    => $dtPoin,
+                'code'                  => 'POIN-MEMBER',
+                'name'                  => 'Poin Member',
+                'type'                  => 'buy_x_get_y',   // loyalty redemption
                 'value'                 => 0.00,
-                'buy_quantity'          => 1,
-                'get_quantity'          => 2,
+                'buy_quantity'          => null,
+                'get_quantity'          => 1,
                 'get_product_type'      => 'specific',
-                'min_purchase_amount'   => null,
-                'min_purchase_quantity' => 1,
+                'min_purchase_amount'   => 10000.00,         // per Rp 10.000 = 1 Poin
+                'min_purchase_quantity' => null,
                 'max_discount_amount'   => null,
                 'start_date'            => null,
                 'end_date'              => null,
@@ -380,55 +219,42 @@ class DiscountSeeder extends Seeder
                 'end_time'              => null,
                 'is_game_reward'        => false,
                 'game_probability'      => null,
-                'priority'              => 18,
-                'is_combinable'         => false,
+                'priority'              => 5,
+                'is_combinable'         => true,              // poin bisa dipakai bersamaan dengan promo lain
                 'is_active'             => true,
-                'description'           => 'Beli 1 P50 Intense (EDP) atau Very Intense (EXT), gratis 2 botol Travel Size P30 (EDT). Varian travel size ditentukan sistem. Total dapat 3 botol.',
+                'description'           => 'Program loyalitas: setiap transaksi Rp 10.000 = 1 Poin. Kumpulkan 30 Poin, tukarkan dengan 1 Parfum P30 EDT + Botol gratis (pilih varian).',
                 'terms_conditions'      => json_encode([
-                    'Berlaku untuk P50 intensitas EDP atau EXT (semua varian)',
-                    'Produk gratis: 2 pcs P30 EDT (travel size) — varian ditentukan sistem',
-                    'Customer tidak bisa memilih varian produk gratis',
-                    'Total produk yang didapat: 1 P50 + 2 P30 = 3 botol',
-                    'Tidak dapat digabung dengan promo lain',
+                    'Setiap kelipatan Rp 10.000 dalam satu transaksi mendapat 1 Poin',
+                    'Akumulasi 30 Poin dapat ditukar 1 Parfum P30 EDT + Botol (gratis)',
+                    'Customer dapat memilih varian parfum P30 EDT',
+                    'Penukaran poin dilakukan di kasir — tunjukkan kartu/aplikasi member',
+                    'Poin tidak dapat ditukar uang tunai',
+                    'Poin hangus jika tidak digunakan dalam 12 bulan',
                 ]),
                 'created_at'            => $now,
                 'updated_at'            => $now,
             ]);
 
-            foreach ([$edp, $ext] as $intId) {
-                DB::table('discount_applicabilities')->insert([
-                    'id'               => Str::uuid(),
-                    'discount_type_id' => $dtB1G3,
-                    'variant_id'       => null,
-                    'intensity_id'     => $intId,
-                    'size_id'          => $s50,
-                    'created_at'       => $now,
-                    'updated_at'       => $now,
-                ]);
+            // Applicability: berlaku untuk semua produk (semua size/intensity/variant)
+            DB::table('discount_applicabilities')->insert([
+                'id'               => Str::uuid(),
+                'discount_type_id' => $dtPoin,
+                'variant_id'       => null,
+                'intensity_id'     => null,
+                'size_id'          => null,  // null = semua ukuran
+                'created_at'       => $now,
+                'updated_at'       => $now,
+            ]);
 
-                DB::table('discount_requirements')->insert([
-                    'id'                => Str::uuid(),
-                    'discount_type_id'  => $dtB1G3,
-                    'variant_id'        => null,
-                    'intensity_id'      => $intId,
-                    'size_id'           => $s50,
-                    'required_quantity' => 1,
-                    'matching_mode'     => 'any',
-                    'group_key'         => 'P50-EDP-OR-EXT-B1G3',
-                    'created_at'        => $now,
-                    'updated_at'        => $now,
-                ]);
-            }
-
-            // Reward: 2x P30 EDT
+            // Reward: 1x P30 EDT (customer pilih varian)
             DB::table('discount_rewards')->insert([
                 'id'                  => Str::uuid(),
-                'discount_type_id'    => $dtB1G3,
+                'discount_type_id'    => $dtPoin,
                 'variant_id'          => null,
                 'intensity_id'        => $edt,
                 'size_id'             => $s30,
-                'reward_quantity'     => 2,
-                'customer_can_choose' => false,
+                'reward_quantity'     => 1,
+                'customer_can_choose' => true,  // customer pilih varian
                 'is_pool'             => false,
                 'max_choices'         => null,
                 'discount_percentage' => 100.00,
@@ -438,29 +264,21 @@ class DiscountSeeder extends Seeder
                 'updated_at'          => $now,
             ]);
 
-            $this->command->line('  [4/4] Buy 1 Get 3 seeded');
+            // Berlaku di semua toko
+            DB::table('discount_stores')->insert([
+                'id'               => Str::uuid(),
+                'discount_type_id' => $dtPoin,
+                'store_id'         => null,
+                'created_at'       => $now,
+                'updated_at'       => $now,
+            ]);
 
-            // ==================================================================
-            // DISCOUNT STORES
-            // store_id = null → berlaku di semua toko
-            // uq_discount_store adalah UNIQUE(discount_type_id, store_id).
-            // Di PostgreSQL NULL != NULL, sehingga multiple NULL rows diperbolehkan
-            // pada satu discount_type_id yang berbeda.
-            // ==================================================================
-            foreach ([$dtPlinko, $dtB1G1, $dtB4G1, $dtB1G3] as $dtId) {
-                DB::table('discount_stores')->insert([
-                    'id'               => Str::uuid(),
-                    'discount_type_id' => $dtId,
-                    'store_id'         => null,
-                    'created_at'       => $now,
-                    'updated_at'       => $now,
-                ]);
-            }
+            $this->command->line('  [2/2] Poin Member seeded');
 
             DB::commit();
 
             $this->command->info('');
-            $this->command->info('✓ DiscountSeeder selesai — 4 program promo berhasil di-seed.');
+            $this->command->info('✓ DiscountSeeder selesai — 2 program promo (Spin Wheel + Poin Member).');
 
         } catch (\Exception $e) {
             DB::rollBack();
