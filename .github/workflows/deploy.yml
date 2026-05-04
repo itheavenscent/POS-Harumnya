@@ -1,30 +1,56 @@
-name: Deploy Laravel POS to VPS
+name: Deploy Laravel POS to VPS (Docker)
 
 on:
   push:
     branches: ["main"]
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
-  build-deploy:
+  build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
         with:
-          node-version: 20
-          cache: npm
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install & Build Assets (Vite)
-        run: |
-          npm ci
-          npm run build
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha
 
-      # Langkah 1: Sync Code & PHP Dependencies
-      - name: Deploy and Sync Code
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST }}
@@ -33,51 +59,40 @@ jobs:
           port: 22
           script: |
             set -e
-            # Folder domain utama sesuai setup Nginx terbaru
+            # Create project directory if it doesn't exist
+            mkdir -p /var/www/harumnya.cloud
             cd /var/www/harumnya.cloud
 
-            # Ambil alih kepemilikan agar git bisa update tanpa kendala permission
-            sudo chown -R ${{ secrets.USERNAME }}:${{ secrets.USERNAME }} .
-            git config --global --add safe.directory /var/www/harumnya.cloud
+            # Login to GHCR on the VPS
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Ambil update terbaru dari GitHub
-            git fetch origin main
-            git reset --hard origin/main
+            # Setup .env if it doesn't exist (using secrets)
+            if [ ! -f .env ]; then
+              echo "APP_NAME=Harumnya" > .env
+              echo "APP_ENV=production" >> .env
+              echo "APP_KEY=${{ secrets.APP_KEY }}" >> .env
+              echo "APP_URL=https://harumnya.cloud" >> .env
+              echo "DB_CONNECTION=mysql" >> .env
+              echo "DB_HOST=db" >> .env
+              echo "DB_PORT=3306" >> .env
+              echo "DB_DATABASE=point_of_sales" >> .env
+              echo "DB_USERNAME=root" >> .env
+              echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+              echo "DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}" >> .env
+            fi
 
-            # Install dependencies backend PHP 8.4
-            composer install --no-dev --no-interaction --optimize-autoloader
+            # Pull latest images
+            docker compose pull
 
-      # Langkah 2: Upload hasil build Vite (public/build)
-      - name: Upload Build Folder (Vite)
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          port: 22
-          source: "public/build"
-          target: "/var/www/harumnya.cloud"
-          overwrite: true
+            # Zero Downtime Deploy
+            docker compose up -d --remove-orphans
 
-      # Langkah 3: Finalisasi & Permissions (Tanpa Migrate)
-      - name: Finalize & Permissions
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          port: 22
-          script: |
-            set -e
-            cd /var/www/harumnya.cloud
+            # Run migrations
+            docker exec harumnya_app php artisan migrate --force
 
-            # Optimasi Cache Laravel agar aplikasi lebih cepat
-            php artisan optimize
-            php artisan view:cache
+            # Optimize Laravel
+            docker exec harumnya_app php artisan optimize
+            docker exec harumnya_app php artisan view:cache
 
-            # Setel ulang permission agar Nginx (www-data) bisa menulis log/cache
-            sudo chown -R ${{ secrets.USERNAME }}:www-data .
-            sudo chmod -R 775 storage bootstrap/cache public/build
-
-            # Reload PHP 8.4 FPM untuk menerapkan perubahan kode
-            sudo systemctl reload php8.4-fpm
+            # Clean up old images
+            docker image prune -f

@@ -12,6 +12,7 @@ import {
     IconUserPlus, IconPhone, IconMail,
     IconBox, IconStar, IconDroplet,
     IconBuildingStore, IconAdjustments, IconFlask2,
+    IconArrowLeft, IconShoppingBag, IconTrophy
 } from "@tabler/icons-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -210,7 +211,13 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                 {[{ n: 1, label: "Pilih Varian" }, { n: 2, label: "Komposisi & Harga" }].map(s => (
                     <React.Fragment key={s.n}>
                         <button
-                            onClick={() => { if (s.n < step || (s.n === 2 && selectedVariant)) setStep(s.n); }}
+                            onClick={() => { 
+                                if (s.n === 1 && step === 2 && initialVariant) {
+                                    onClose();
+                                } else if (s.n < step || (s.n === 2 && selectedVariant)) {
+                                    setStep(s.n); 
+                                }
+                            }}
                             className={`flex items-center gap-2 text-xs font-bold transition-colors ${
                                 step === s.n ? "text-amber-600 dark:text-amber-400" :
                                 step > s.n   ? "text-emerald-600 cursor-pointer hover:opacity-80" :
@@ -484,7 +491,10 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
 
                     {/* Footer */}
                     <div className="flex-shrink-0 border-t border-slate-100 dark:border-slate-800 p-4 flex gap-2">
-                        <button onClick={() => setStep(1)}
+                        <button onClick={() => {
+                            if (initialVariant) onClose();
+                            else setStep(1);
+                        }}
                             className="px-4 py-2.5 rounded-xl border-2 border-slate-200 dark:border-slate-700 font-bold text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 transition-colors">
                             ← Ganti Varian
                         </button>
@@ -714,6 +724,59 @@ function PackagingModal({ show, onClose, packagingMaterials = [], selectedPkgs =
     );
 }
 
+// ─── Promotion Modal ──────────────────────────────────────────────────────────
+function PromotionModal({ show, onClose, promo }) {
+    if (!promo) return null;
+    return (
+        <Modal show={show} onClose={onClose} maxW="max-w-md">
+            <div className="relative overflow-hidden">
+                {/* Decorative background */}
+                <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-amber-400 to-orange-600 opacity-20 -z-10" />
+                <div className="absolute -top-12 -right-12 w-40 h-40 bg-amber-300/30 rounded-full blur-3xl -z-10" />
+                
+                <div className="p-8 flex flex-col items-center text-center">
+                    <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-xl shadow-amber-500/30 mb-6 rotate-3">
+                        <IconTrophy size={40} className="text-white" />
+                    </div>
+                    
+                    <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-2 uppercase tracking-tight">
+                        🎉 {promo.name}!
+                    </h2>
+                    
+                    <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-6">
+                        {promo.description || "Selamat! Transaksi ini memenuhi syarat untuk mendapatkan promo spesial."}
+                    </p>
+                    
+                    <div className="w-full bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-5 border border-slate-100 dark:border-slate-700 mb-8">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Ketentuan Hadiah</p>
+                        <div className="space-y-2">
+                            {promo.terms && Array.isArray(promo.terms) ? promo.terms.map((term, i) => (
+                                <div key={i} className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                                    <IconCheck size={14} className="text-emerald-500" />
+                                    {term}
+                                </div>
+                            )) : (
+                                <p className="text-xs text-slate-500">Cek syarat dan ketentuan promo di meja kasir.</p>
+                            )}
+                        </div>
+                    </div>
+                    
+                    <button 
+                        onClick={onClose}
+                        className="w-full py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white font-black rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-slate-900/20"
+                    >
+                        SAYA MENGERTI
+                    </button>
+                    
+                    <p className="mt-4 text-[10px] text-slate-400 font-medium italic">
+                        Informasikan hal ini kepada pelanggan Anda.
+                    </p>
+                </div>
+            </div>
+        </Modal>
+    );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //  MAIN INDEX
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -723,12 +786,17 @@ export default function Index({
     paymentMethods = [], discounts = [],
     storeId = null, storeName = null, error = null,
     activeCashDrawer = null,
+    loyalty_reward_threshold = 30, loyalty_reward_description = "Free parfum P30 EDT + Botol",
+    autoPromo = null,
 }) {
-    // ── State: customer ────────────────────────────────────────────────────────
+    // ── State: customer & sales ────────────────────────────────────────────────
     const [selectedCustomer,     setSelectedCustomer]     = useState(null);
     const [customerSearch,       setCustomerSearch]       = useState("");
     const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
     const [showAddCustomer,      setShowAddCustomer]      = useState(false);
+    const [selectedSalesPerson,  setSelectedSalesPerson]  = useState(null);
+    const [salesSearch,          setSalesSearch]          = useState("");
+    const [showSalesDropdown,    setShowSalesDropdown]    = useState(false);
 
     // ── State: payment ─────────────────────────────────────────────────────────
     const [selectedDiscount,  setSelectedDiscount]  = useState(null);
@@ -739,6 +807,8 @@ export default function Index({
     const [showDiscountModal, setShowDiscountModal] = useState(false);
 
     // ── State: cart ────────────────────────────────────────────────────────────
+    const [custName,  setCustName]  = useState("");
+    const [custPhone, setCustPhone] = useState("");
     const [removingId,     setRemovingId]     = useState(null);
     const [updatingId,     setUpdatingId]     = useState(null);
     const [isHolding,      setIsHolding]      = useState(false);
@@ -776,14 +846,29 @@ export default function Index({
     // ── State: misc ────────────────────────────────────────────────────────────
     const [mobileView, setMobileView] = useState("catalog");
     const [leftTab,    setLeftTab]    = useState("parfum");
+    const [selectedCategory, setSelectedCategory] = useState(null); // null, 'parfum', 'packaging', 'paperbag'
 
     // ── State: auto promo ──────────────────────────────────────────────────────
-    const [autoPromo, setAutoPromo] = useState(null);
-    const [dismissedPromos, setDismissedPromos] = useState([]);
+    const [showPromoModal, setShowPromoModal] = useState(false);
+    const [lastTriggeredPromoId, setLastTriggeredPromoId] = useState(null);
 
     const customerRef = useRef(null);
 
     useEffect(() => { if (error) toast.error(error); }, [error]);
+
+    // Effect untuk trigger promo otomatis
+    useEffect(() => {
+        if (autoPromo && autoPromo.id !== lastTriggeredPromoId) {
+            setShowPromoModal(true);
+            setLastTriggeredPromoId(autoPromo.id);
+            
+            // Suara notif pendek jika diinginkan
+            // new Audio('/sounds/notification.mp3').play().catch(() => {});
+        } else if (!autoPromo) {
+            setLastTriggeredPromoId(null);
+            setShowPromoModal(false);
+        }
+    }, [autoPromo, lastTriggeredPromoId]);
     useEffect(() => {
         if (paymentMethods.length > 0 && !selectedPaymentId) setSelectedPaymentId(paymentMethods[0].id);
     }, [paymentMethods]);
@@ -810,39 +895,7 @@ export default function Index({
 
     useEffect(() => { if (!isCash) setCashInput(String(payable)); }, [isCash, payable]);
 
-    // ── Effect: Auto Promo Suggestion ──────────────────────────────────────────
-    useEffect(() => {
-        if (carts.length === 0 || payable <= 0) {
-            setAutoPromo(null);
-            return;
-        }
-
-        if (selectedDiscount) {
-            setAutoPromo(null);
-            return;
-        }
-
-        const totalCartQty = carts.reduce((acc, curr) => acc + curr.qty, 0) + cartPackagings.reduce((acc, curr) => acc + curr.qty, 0);
-
-        const eligible = (discounts || []).find(d => {
-            if (dismissedPromos.includes(d.id)) return false;
-            
-            let meetRequire = true;
-            if (Number(d.min_purchase_amount) > 0 && subtotal < Number(d.min_purchase_amount)) {
-                meetRequire = false;
-            }
-            if (Number(d.min_purchase_quantity) > 0 && totalCartQty < Number(d.min_purchase_quantity)) {
-                meetRequire = false;
-            }
-            return meetRequire;
-        });
-
-        if (eligible && (!autoPromo || autoPromo.id !== eligible.id)) {
-            setAutoPromo(eligible);
-        } else if (!eligible && autoPromo) {
-            setAutoPromo(null);
-        }
-    }, [carts, cartPackagings, subtotal, discounts, dismissedPromos, selectedDiscount, payable]);
+    // (Obsolete frontend auto-promo calculation removed in favor of backend-driven engine)
 
 
     // ── Fetch katalog varian POS ───────────────────────────────────────────────
@@ -910,6 +963,7 @@ export default function Index({
     const openCustomModalWithVariant = (variant) => {
         setCustomTabVariant(variant);
         setShowCustomModal(true);
+        if (customVariants.length === 0) fetchCustomVariants();
     };
 
     // Load katalog varian saat tab parfum aktif
@@ -944,28 +998,16 @@ export default function Index({
             size_id: size.id, qty: 1
         };
         
-        setPendingOrder({ type: "regular", payload });
         setSelectedPkgs([]);
-        setTimeout(() => setShowSizeModal(false), 50);
-
-        // Langsung tampilkan modal packaging sebelum beneran submit ke API
-        if (packagingMaterials.length > 0) {
-            setTimeout(() => setShowPackagingModal(true), 350);
-        } else {
-            submitPendingOrder({ type: "regular", payload });
-        }
+        setShowSizeModal(false);
+        submitPendingOrder({ type: "regular", payload });
     };
 
     // ── Custom order handler ───────────────────────────────────────────────────
     const handleCustomConfirm = (payload) => {
-        setPendingOrder({ type: "custom", payload });
         setSelectedPkgs([]);
-        
-        if (packagingMaterials.length > 0) {
-            setTimeout(() => setShowPackagingModal(true), 350);
-        } else {
-            submitPendingOrder({ type: "custom", payload });
-        }
+        setShowCustomModal(false);
+        submitPendingOrder({ type: "custom", payload });
     };
 
     const submitPendingOrder = (overrideOrder = null) => {
@@ -1064,12 +1106,35 @@ export default function Index({
         if (isCash && cash < payable) { toast.error("Jumlah bayar kurang dari total"); return; }
         setIsSubmitting(true);
         router.post(route("transactions.store"), {
-            customer_id: selectedCustomer?.id ?? null, sales_person_id: null,
+            customer_id: selectedCustomer?.id ?? null,
+            sales_person_id: selectedSalesPerson?.id ?? null,
             payment_method_id: selectedPaymentId,
             discount_type_id: selectedDiscount?.id !== "__manual__" ? (selectedDiscount?.id ?? null) : null,
             discount_amount: discountAmount, cash_amount: isCash ? cash : null,
             standalone_packagings: cartPackagings.map(p => ({ packaging_material_id: p.pkg.id, qty: p.qty })),
         }, { onError: (errs) => { setIsSubmitting(false); toast.error(errs?.message || "Gagal menyimpan transaksi"); } });
+    };
+
+    const handleStoreCustomer = (e) => {
+        e.preventDefault();
+        if (!custName) { toast.error("Nama pelanggan wajib diisi"); return; }
+        setIsSubmitting(true);
+        router.post(route("customers.store-ajax"), {
+            name: custName,
+            phone: custPhone,
+        }, {
+            onSuccess: () => {
+                setIsSubmitting(false);
+                setShowAddCustomer(false);
+                setCustName("");
+                setCustPhone("");
+                toast.success("Pelanggan berhasil ditambahkan");
+            },
+            onError: (errs) => {
+                setIsSubmitting(false);
+                toast.error(errs?.phone || errs?.name || "Gagal menambah pelanggan");
+            }
+        });
     };
 
     const getCartItemTotal = (item) => {
@@ -1090,7 +1155,6 @@ export default function Index({
             {/* Modals — alur baru: Varian → Intensitas → Ukuran → Kemasan */}
             <IntensityModal show={showIntensityModal} onClose={() => setShowIntensityModal(false)} variant={selectedVariant} intensities={availableIntensities} loading={loadingIntensities} onSelect={selectIntensity} onSelectCustom={openCustomModalWithVariant}/>
             <SizeModal show={showSizeModal} onClose={() => setShowSizeModal(false)} variant={selectedVariant} intensity={selectedIntensity} sizes={availableSizes} loading={loadingSizes} onSelect={selectSize}/>
-            <PackagingModal show={showPackagingModal} onClose={handleClosePackagingModal} packagingMaterials={packagingMaterials} selectedPkgs={selectedPkgs} onToggle={togglePkg} onAddStandalone={handleAddPkg} isPendingMode={!!pendingOrder} onSubmitPending={() => submitPendingOrder()} isSubmitting={addingToCart || addingCustomToCart}/>
             <CustomOrderModal
                 show={showCustomModal}
                 onClose={() => { setShowCustomModal(false); setCustomTabVariant(null); }}
@@ -1098,6 +1162,11 @@ export default function Index({
                 loading={loadingCustomVariants}
                 onConfirm={handleCustomConfirm}
                 initialVariant={customTabVariant}
+            />
+            <PromotionModal 
+                show={showPromoModal} 
+                onClose={() => setShowPromoModal(false)} 
+                promo={autoPromo} 
             />
 
             {/* Loading overlay */}
@@ -1127,32 +1196,83 @@ export default function Index({
                 <div className="flex-1 flex overflow-hidden">
                     {/* ── LEFT: Catalog ────────────────────────────────────── */}
                     <div className={`flex-1 flex flex-col overflow-hidden ${mobileView === "catalog" ? "flex" : "hidden lg:flex"}`}>
-                        <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 pt-4 pb-0">
-                            <div className="flex items-center justify-between mb-3">
-                                <div>
-                                    <h1 className="font-black text-slate-800 dark:text-white text-base">Katalog</h1>
-                                    <p className="text-[11px] text-slate-400 mt-0.5">Pilih varian → konsentrasi → ukuran, atau komposisi bebas</p>
+                        {/* ── Header & Back Button ── */}
+                        {selectedCategory && (
+                            <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <button 
+                                        onClick={() => setSelectedCategory(null)}
+                                        className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors"
+                                    >
+                                        <IconArrowLeft size={18}/>
+                                    </button>
+                                    <h1 className="font-black text-slate-800 dark:text-white text-base capitalize">
+                                        {selectedCategory === 'packaging' ? 'Kemasan' : selectedCategory}
+                                    </h1>
                                 </div>
-                                {storeName && (
-                                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl flex-shrink-0">
-                                        <IconBuildingStore size={12} className="text-slate-400"/>
-                                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 truncate max-w-[100px]">{storeName}</span>
-                                    </div>
-                                )}
+                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-lg">
+                                    Pilih Item
+                                </div>
                             </div>
-                            <div className="flex border-b border-slate-200 dark:border-slate-800 -mx-4 px-4">
-                                <button onClick={() => setLeftTab("parfum")} className={`flex items-center gap-1.5 px-1 pb-3 mr-5 text-sm font-bold border-b-2 transition-colors ${leftTab === "parfum" ? "text-primary-600 border-primary-500" : "text-slate-400 border-transparent hover:text-slate-600"}`}>
-                                    <IconFlask size={14}/> Parfum
-                                </button>
-                                <button onClick={() => setLeftTab("packaging")} className={`flex items-center gap-1.5 px-1 pb-3 text-sm font-bold border-b-2 transition-colors ${leftTab === "packaging" ? "text-orange-600 border-orange-500" : "text-slate-400 border-transparent hover:text-slate-600"}`}>
-                                    <IconPackage size={14}/> Kemasan Satuan
-                                    {pkgCartCount > 0 && <span className="px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 rounded-full text-[10px] font-black">{pkgCartCount}</span>}
-                                </button>
-                            </div>
-                        </div>
+                        )}
 
-                        {/* ── TAB PARFUM — Katalog Varian dengan gambar ── */}
-                        {leftTab === "parfum" && (
+                        {/* ── Category Selection View ── */}
+                        {!selectedCategory && (
+                            <div className="flex-1 overflow-y-auto p-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    {/* Card Parfum */}
+                                    <button 
+                                        onClick={() => setSelectedCategory('parfum')}
+                                        className="group relative p-8 rounded-[32px] border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-primary-500 hover:shadow-2xl hover:shadow-primary-500/10 transition-all duration-300 text-left overflow-hidden"
+                                    >
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-primary-500/10 transition-colors" />
+                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20 mb-6 group-hover:scale-110 transition-transform">
+                                            <IconFlask size={32} className="text-white" />
+                                        </div>
+                                        <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">Pilih Parfum</h3>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Pilih varian, konsentrasi, dan ukuran parfum favorit.</p>
+                                        <div className="mt-6 flex items-center gap-1.5 text-primary-600 font-bold text-sm">
+                                            Buka Katalog <IconChevronRight size={16} />
+                                        </div>
+                                    </button>
+
+                                    {/* Card Kemasan */}
+                                    <button 
+                                        onClick={() => setSelectedCategory('packaging')}
+                                        className="group relative p-8 rounded-[32px] border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-orange-500 hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-300 text-left overflow-hidden"
+                                    >
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-orange-500/10 transition-colors" />
+                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20 mb-6 group-hover:scale-110 transition-transform">
+                                            <IconBox size={32} className="text-white" />
+                                        </div>
+                                        <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">Kemasan</h3>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Botol, tutup spray, dan aksesoris kemasan lainnya.</p>
+                                        <div className="mt-6 flex items-center gap-1.5 text-orange-600 font-bold text-sm">
+                                            Buka Katalog <IconChevronRight size={16} />
+                                        </div>
+                                    </button>
+
+                                    {/* Card Paperbag */}
+                                    <button 
+                                        onClick={() => setSelectedCategory('paperbag')}
+                                        className="group relative p-8 rounded-[32px] border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-500 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300 text-left overflow-hidden"
+                                    >
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-emerald-500/10 transition-colors" />
+                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-6 group-hover:scale-110 transition-transform">
+                                            <IconShoppingBag size={32} className="text-white" />
+                                        </div>
+                                        <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">Paperbag</h3>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Pilihan tas kertas eksklusif untuk kemasan akhir.</p>
+                                        <div className="mt-6 flex items-center gap-1.5 text-emerald-600 font-bold text-sm">
+                                            Buka Katalog <IconChevronRight size={16} />
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── TAB PARFUM Content ── */}
+                        {selectedCategory === "parfum" && (
                             <div className="flex-1 overflow-y-auto p-4">
                                 {/* Search + filter gender */}
                                 <div className="flex gap-2 mb-3">
@@ -1254,84 +1374,150 @@ export default function Index({
                             </div>
                         )}
 
-                        {/* ── TAB KEMASAN SATUAN ── */}
-                        {leftTab === "packaging" && (
+                        {/* ── TAB KEMASAN / PAPERBAG Content ── */}
+                        {(selectedCategory === "packaging" || selectedCategory === "paperbag") && (
                             <div className="flex-1 overflow-y-auto p-4">
-                                {packagingMaterials.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-16">
-                                        <IconBox size={28} className="text-slate-300 dark:text-slate-600 mb-3"/>
-                                        <p className="font-semibold text-slate-500">Belum ada kemasan</p>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <p className="text-[11px] text-slate-400 mb-3">Klik kemasan untuk menambahkan langsung ke keranjang</p>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-                                            {packagingMaterials.map((pkg, i) => {
-                                                const bg     = ["bg-orange-500","bg-violet-500","bg-rose-500","bg-teal-500","bg-sky-500","bg-amber-500","bg-indigo-500"][i % 7];
-                                                const inCart = cartPackagings.find(p => p.pkg.id === pkg.id);
-                                                return (
-                                                    <button key={pkg.id} onClick={() => handleAddPkg(pkg)}
-                                                        className={`group relative p-4 rounded-2xl border-2 text-left transition-all ${inCart ? "border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-950/20" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300"}`}>
-                                                        <div className="flex items-start gap-3 mb-3">
-                                                            <div className={`w-11 h-11 rounded-xl ${bg} flex items-center justify-center shadow-sm flex-shrink-0`}><IconBox size={20} className="text-white"/></div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">{pkg.name}</p>
-                                                                {pkg.code && <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">{pkg.code}</span>}
-                                                            </div>
-                                                            {inCart && <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0"><span className="text-[10px] font-black text-white">{inCart.qty}</span></div>}
-                                                        </div>
-                                                        <div className="flex items-center justify-between">
-                                                            {pkg.is_free ? <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 text-xs font-black rounded-lg">GRATIS</span> : <span className="text-sm font-black text-orange-600">{fmt(pkg.selling_price)}</span>}
-                                                            <span className="text-[11px] text-slate-400 font-semibold">+ Tambah →</span>
-                                                        </div>
-                                                    </button>
-                                                );
-                                            })}
+                                {(() => {
+                                    const items = packagingMaterials.filter(pkg => {
+                                        const isPaperbag = pkg.name.toLowerCase().includes('paper bag') || pkg.name.toLowerCase().includes('paperbag');
+                                        return selectedCategory === 'paperbag' ? isPaperbag : !isPaperbag;
+                                    });
+
+                                    return items.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-16">
+                                            <IconBox size={28} className="text-slate-300 dark:text-slate-600 mb-3"/>
+                                            <p className="font-semibold text-slate-500">Belum ada item di kategori ini</p>
                                         </div>
-                                    </>
-                                )}
+                                    ) : (
+                                        <>
+                                            <p className="text-[11px] text-slate-400 mb-3 uppercase tracking-wider font-bold">
+                                                Klik item untuk menambahkan langsung ke keranjang
+                                            </p>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+                                                {items.map((pkg, i) => {
+                                                    const bg     = ["bg-orange-500","bg-violet-500","bg-rose-500","bg-teal-500","bg-sky-500","bg-amber-500","bg-indigo-500"][i % 7];
+                                                    const inCart = cartPackagings.find(p => p.pkg.id === pkg.id);
+                                                    return (
+                                                        <button key={pkg.id} onClick={() => handleAddPkg(pkg)}
+                                                            className={`group relative p-4 rounded-2xl border-2 text-left transition-all ${inCart ? "border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-950/20" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300"}`}>
+                                                            <div className="flex items-start gap-3 mb-3">
+                                                                <div className={`w-11 h-11 rounded-xl ${bg} flex items-center justify-center shadow-sm flex-shrink-0`}><IconBox size={20} className="text-white"/></div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">{pkg.name}</p>
+                                                                    {pkg.code && <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">{pkg.code}</span>}
+                                                                </div>
+                                                                {inCart && <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0"><span className="text-[10px] font-black text-white">{inCart.qty}</span></div>}
+                                                            </div>
+                                                            <div className="flex items-center justify-between">
+                                                                {pkg.is_free ? <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 text-xs font-black rounded-lg">GRATIS</span> : <span className="text-sm font-black text-orange-600">{fmt(pkg.selling_price)}</span>}
+                                                                <span className="text-[11px] text-slate-400 font-semibold">+ Tambah →</span>
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </>
+                                    );
+                                })()}
                             </div>
                         )}
                     </div>
 
                     {/* ── RIGHT: Cart ───────────────────────────────────────── */}
                     <div className={`w-full lg:w-[400px] xl:w-[460px] flex-shrink-0 flex flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 ${mobileView === "cart" ? "flex" : "hidden lg:flex"}`}>
-                        {/* Customer */}
-                        <div className="flex-shrink-0 border-b border-slate-100 dark:border-slate-800 px-3 py-2.5">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><IconUser size={10}/> Pelanggan</p>
-                            <div className="relative" ref={customerRef}>
-                                <div className="flex items-center gap-2">
+                        {/* Customer & Sales */}
+                        <div className="flex-shrink-0 border-b border-slate-100 dark:border-slate-800 px-3 py-2.5 space-y-2.5">
+                            {/* Sales Person Selector */}
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><IconUser size={10}/> Sales Person</p>
+                                <div className="relative">
                                     <div className="flex-1 relative">
                                         <IconSearch size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300"/>
                                         <input
-                                            type="text" placeholder="Cari nama / no. HP..."
-                                            value={selectedCustomer ? selectedCustomer.name : customerSearch}
-                                            onClick={() => { if (selectedCustomer) { setSelectedCustomer(null); setCustomerSearch(""); } setShowCustomerDropdown(true); }}
-                                            onChange={e => { setCustomerSearch(e.target.value); setShowCustomerDropdown(true); if (selectedCustomer) setSelectedCustomer(null); }}
+                                            type="text" placeholder="Pilih Sales..."
+                                            value={selectedSalesPerson ? selectedSalesPerson.name : salesSearch}
+                                            onClick={() => { if (selectedSalesPerson) { setSelectedSalesPerson(null); setSalesSearch(""); } setShowSalesDropdown(true); }}
+                                            onChange={e => { setSalesSearch(e.target.value); setShowSalesDropdown(true); if (selectedSalesPerson) setSelectedSalesPerson(null); }}
                                             className="w-full h-8 pl-8 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white"
                                         />
                                     </div>
-                                    <button onClick={() => setShowAddCustomer(true)} className="w-8 h-8 rounded-xl bg-primary-50 dark:bg-primary-950/30 text-primary-600 flex items-center justify-center hover:bg-primary-100 flex-shrink-0">
-                                        <IconUserPlus size={14}/>
-                                    </button>
+                                    {showSalesDropdown && !selectedSalesPerson && (
+                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 overflow-hidden max-h-40 overflow-y-auto">
+                                            {salesPeople.filter(s => s.name.toLowerCase().includes(salesSearch.toLowerCase())).map(s => (
+                                                <button key={s.id} onClick={() => { setSelectedSalesPerson(s); setShowSalesDropdown(false); setSalesSearch(""); }} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                                                    <p className="font-semibold text-xs text-slate-800 dark:text-white">{s.name}</p>
+                                                    <p className="text-[10px] text-slate-400">{s.code}</p>
+                                                </button>
+                                            ))}
+                                            {salesPeople.length === 0 && <p className="p-3 text-center text-xs text-slate-400">Belum ada sales</p>}
+                                        </div>
+                                    )}
                                 </div>
-                                {selectedCustomer && (
-                                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                        <p className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><IconCheck size={10}/> {selectedCustomer.name}</p>
-                                        {selectedCustomer.points > 0 && <span className="ml-auto text-[10px] text-amber-500 font-bold">{Number(selectedCustomer.points).toLocaleString("id-ID")} poin</span>}
+                            </div>
+
+                            {/* Customer Selector */}
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><IconUser size={10}/> Pelanggan</p>
+                                <div className="relative" ref={customerRef}>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1 relative">
+                                            <IconSearch size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300"/>
+                                            <input
+                                                type="text" placeholder="Cari nama / no. HP..."
+                                                value={selectedCustomer ? selectedCustomer.name : customerSearch}
+                                                onClick={() => { if (selectedCustomer) { setSelectedCustomer(null); setCustomerSearch(""); } setShowCustomerDropdown(true); }}
+                                                onChange={e => { setCustomerSearch(e.target.value); setShowCustomerDropdown(true); if (selectedCustomer) setSelectedCustomer(null); }}
+                                                className="w-full h-8 pl-8 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white"
+                                            />
+                                        </div>
+                                        <button onClick={() => setShowAddCustomer(true)} className="w-8 h-8 rounded-xl bg-primary-50 dark:bg-primary-950/30 text-primary-600 flex items-center justify-center hover:bg-primary-100 flex-shrink-0" title="Tambah Pelanggan Baru">
+                                            <IconUserPlus size={14}/>
+                                        </button>
                                     </div>
-                                )}
-                                {showCustomerDropdown && !selectedCustomer && (
-                                    <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 overflow-hidden max-h-48 overflow-y-auto">
-                                        <button onClick={() => { setSelectedCustomer({ id: null, name: "Pelanggan Umum" }); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2.5 text-sm text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800">👤 Pelanggan Umum (Walk-in)</button>
-                                        {filteredCustomers.map(c => (
-                                            <button key={c.id} onClick={() => { setSelectedCustomer(c); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800">
-                                                <p className="font-semibold text-sm text-slate-800 dark:text-white">{c.name}</p>
-                                                <p className="text-xs text-slate-400">{c.phone ?? c.code}</p>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
+                                    {selectedCustomer && (
+                                        <div className="mt-1 flex flex-col gap-1">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><IconCheck size={10}/> {selectedCustomer.name}</p>
+                                                {selectedCustomer.points > 0 && <span className="ml-auto text-[10px] text-amber-500 font-bold">{Number(selectedCustomer.points).toLocaleString("id-ID")} poin</span>}
+                                            </div>
+                                            
+                                            {/* Loyalty Reward Progress/Notification */}
+                                            {selectedCustomer.points >= loyalty_reward_threshold ? (
+                                                <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-2 flex items-center gap-2 animate-pulse shadow-sm">
+                                                    <IconGift size={16} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                                                    <div className="flex-1">
+                                                        <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 leading-tight">Reward Tersedia!</p>
+                                                        <p className="text-[9px] text-emerald-600 dark:text-emerald-500">{loyalty_reward_description}</p>
+                                                    </div>
+                                                </div>
+                                            ) : selectedCustomer.points > 0 && (
+                                                <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <p className="text-[9px] font-bold text-slate-500">Progress Reward</p>
+                                                        <p className="text-[9px] font-bold text-slate-500">{selectedCustomer.points} / {loyalty_reward_threshold}</p>
+                                                    </div>
+                                                    <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                        <div 
+                                                            className="h-full bg-amber-500 rounded-full transition-all" 
+                                                            style={{ width: `${Math.min((selectedCustomer.points / loyalty_reward_threshold) * 100, 100)}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                    {showCustomerDropdown && !selectedCustomer && (
+                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 overflow-hidden max-h-48 overflow-y-auto">
+                                            <button onClick={() => { setSelectedCustomer({ id: null, name: "Pelanggan Umum" }); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2.5 text-xs text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800">👤 Pelanggan Umum (Walk-in)</button>
+                                            {filteredCustomers.map(c => (
+                                                <button key={c.id} onClick={() => { setSelectedCustomer(c); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                                                    <p className="font-semibold text-xs text-slate-800 dark:text-white">{c.name}</p>
+                                                    <p className="text-[10px] text-slate-400">{c.phone ?? c.code}</p>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -1610,6 +1796,42 @@ export default function Index({
                         </button>
                     </div>
                 </div>
+            </Modal>
+
+            {/* ── Add Customer Modal ─────────────────────────────────────────── */}
+            <Modal show={showAddCustomer} onClose={() => setShowAddCustomer(false)} maxW="max-w-md">
+                <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <h3 className="font-black text-slate-800 dark:text-white flex items-center gap-2">
+                        <IconUserPlus size={18} className="text-primary-500"/>
+                        Tambah Pelanggan Baru
+                    </h3>
+                    <button onClick={() => setShowAddCustomer(false)} className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors"><IconX size={16}/></button>
+                </div>
+                <form onSubmit={handleStoreCustomer} className="p-5 space-y-4">
+                    <div>
+                        <label className="text-[10px] font-black text-slate-400 uppercase mb-1.5 block">Nama Lengkap *</label>
+                        <input
+                            type="text" value={custName} onChange={e => setCustName(e.target.value)}
+                            placeholder="Contoh: Budi Santoso"
+                            className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+                            autoFocus
+                        />
+                    </div>
+                    <div>
+                        <label className="text-[10px] font-black text-slate-400 uppercase mb-1.5 block">Nomor WhatsApp / HP</label>
+                        <input
+                            type="text" value={custPhone} onChange={e => setCustPhone(e.target.value)}
+                            placeholder="Contoh: 08123456789"
+                            className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+                        />
+                    </div>
+                    <div className="pt-2 flex gap-3">
+                        <button type="button" onClick={() => setShowAddCustomer(false)} className="flex-1 h-11 rounded-xl border-2 border-slate-100 font-bold text-slate-500 hover:bg-slate-50 transition-all text-sm">Batal</button>
+                        <button type="submit" disabled={isSubmitting || !custName} className="flex-[2] h-11 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-black text-sm transition-all shadow-lg shadow-primary-600/20 disabled:opacity-50">
+                            {isSubmitting ? "Menyimpan..." : "Simpan Pelanggan"}
+                        </button>
+                    </div>
+                </form>
             </Modal>
         </>
     );

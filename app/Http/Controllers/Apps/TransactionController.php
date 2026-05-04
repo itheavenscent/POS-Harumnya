@@ -352,7 +352,7 @@ class TransactionController extends Controller
         $storeId = $user->default_store_id;
 
         $query = Sale::with([
-            'items',
+            'items.packagings.packagingMaterial',
             'payments.paymentMethod',
             'customer:id,name,phone',
             'cashier:id,name',

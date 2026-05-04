@@ -21,7 +21,10 @@
     <!-- Scripts -->
     @routes
     @viteReactRefresh
-    @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
+    @vite(['resources/js/app.jsx'])
+    @if(!str_starts_with($page['component'], 'Errors/'))
+        @vite(["resources/js/Pages/{$page['component']}.jsx"])
+    @endif
     @inertiaHead
 
     <style>

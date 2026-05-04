@@ -28,6 +28,7 @@ use App\Http\Controllers\Apps\VariantController;
 use App\Http\Controllers\Apps\WarehouseController;
 use App\Http\Controllers\Apps\WarehouseStockController;
 use App\Http\Controllers\Apps\CashDrawerController;
+use App\Http\Controllers\Apps\POS\POSFeatureController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Laporan\LaporanKeuanganController;
 use App\Http\Controllers\Laporan\LaporanPenjualanController;
@@ -53,8 +54,19 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     // Dashboard
     // ─────────────────────────────────────────────────────────────────────────
 
-    Route::get('/', [DashboardController::class, 'index'])
-        ->middleware(['verified', 'permission:dashboard-access'])
+    Route::get('/', function () {
+        $user = auth()->user();
+        // Cashiers cannot access the dashboard — redirect them to POS immediately
+        if ($user && $user->hasRole('cashier') && !$user->hasRole('super-admin') && !$user->hasRole('admin')) {
+            return redirect()->route('transactions.index');
+        }
+        // Non-cashiers without dashboard access get 403 normally
+        if ($user && !$user->hasPermissionTo('dashboard-access')) {
+            abort(403);
+        }
+        return app(DashboardController::class)->index(request());
+    })
+        ->middleware('verified')
         ->name('dashboard');
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -525,6 +537,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::post('/open', [CashDrawerController::class, 'open'])->name('open')->middleware('permission:cash-drawers-open');
         Route::get('/{id}', [CashDrawerController::class, 'show'])->name('show')->middleware('permission:cash-drawers-access');
         Route::put('/close/{id}', [CashDrawerController::class, 'close'])->name('close')->middleware('permission:cash-drawers-close');
+        Route::post('/transaction', [CashDrawerController::class, 'storeTransaction'])->name('store-transaction')->middleware('permission:cash-drawers-access');
         Route::get('/print/{id}', [CashDrawerController::class, 'printRecap'])->name('print')->middleware('permission:cash-drawers-print');
     });
 
@@ -590,6 +603,14 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     // ─────────────────────────────────────────────────────────────────────────
     // Profil
     // ─────────────────────────────────────────────────────────────────────────
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // POS Specific Features (View Only for Cashiers)
+    // ─────────────────────────────────────────────────────────────────────────
+    Route::prefix('pos')->name('pos.')->group(function () {
+        Route::get('stock', [POSFeatureController::class, 'stock'])->name('stock')->middleware('permission:transactions-access');
+        Route::get('transactions', [POSFeatureController::class, 'transactions'])->name('transactions')->middleware('permission:transactions-access');
+    });
 
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');

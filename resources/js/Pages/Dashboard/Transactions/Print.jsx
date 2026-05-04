@@ -67,25 +67,22 @@ function buildReceipt(sale, saleItems, payments, change) {
     ep.init().lineSpacing(2);
 
     // ══ BRAND ══
-    // FIX: Jangan pakai size(2,x) untuk center karena printer budget sering salah hitung padding.
-    // Gunakan size(1,1) normal + padding manual agar benar-benar center.
-    // "HARUMNYA" = 8 char, padding = (32-8)/2 = 12 spasi di kiri
-    ep.align(1).bold(true)
-      .text("- HARUMNYA -").lf()   // 12 char, center otomatis via align(1)
-      .bold(false);
+    // Gunakan manual center dengan W=32 agar benar-benar konsisten di semua printer
+    ep.bold(true).center("- HARUMNYA -", W).lf().bold(false);
 
     // ══ INFO TOKO ══
-    // align(1) sudah aktif, pakai langsung text() agar printer handle centering
-    ep.bold(true).text(sale.store?.name ?? "PARFUM CUSTOM").lf().bold(false);
+    ep.bold(true).center(sale.store?.name ?? "PARFUM CUSTOM", W).lf().bold(false);
+    
     if (sale.store?.address) {
-        // Pecah per W karakter, align(1) tetap aktif → printer center sendiri
         const addr = String(sale.store.address);
-        for (let i = 0; i < addr.length; i += W) ep.text(addr.slice(i, i + W)).lf();
+        // Pecah dan center manual per baris
+        for (let i = 0; i < addr.length; i += W) {
+            ep.center(addr.slice(i, i + W).trim(), W).lf();
+        }
     }
-    if (sale.store?.phone) ep.text(String(sale.store.phone)).lf();
+    if (sale.store?.phone) ep.center(String(sale.store.phone), W).lf();
 
-    // Reset ke left setelah selesai center block
-    ep.align(0).divider(W).lf();
+    ep.divider(W).lf();
 
     // ══ INFO TRANSAKSI ══
     ep.row2(fmtDate(sale.sold_at), fmtTime(sale.sold_at), W).lf()
@@ -94,12 +91,11 @@ function buildReceipt(sale, saleItems, payments, change) {
     if (sale.customer?.name || sale.customer_name)
         ep.row2("Pelanggan", sale.customer?.name ?? sale.customer_name, W).lf();
 
-    // Sales — center & bold, bukan row2
+    // Sales — center & bold
     const salesNameEsc = sale.sales_person?.name ?? sale.salesperson?.name
         ?? sale.sales_person_name ?? sale.salesperson_name ?? sale.staff?.name ?? null;
     if (salesNameEsc) {
-        const label = "** Sales: " + salesNameEsc + " **";
-        ep.align(1).bold(true).text(label).lf().bold(false).align(0);
+        ep.bold(true).center(`** Sales: ${salesNameEsc} **`, W).lf().bold(false);
     }
 
     ep.thinLine(W).lf();
@@ -113,7 +109,7 @@ function buildReceipt(sale, saleItems, payments, change) {
                 .filter(Boolean).join(" ")
             ?? "Item");
 
-        if (idx > 0) { ep.thinLine(W).lf(); } // garis tipis pemisah antar item
+        if (idx > 0) { ep.thinLine(W).lf(); } 
         ep.bold(true);
         for (let i = 0; i < name.length; i += W) ep.text(name.slice(i, i + W)).lf();
         ep.bold(false);
@@ -148,9 +144,8 @@ function buildReceipt(sale, saleItems, payments, change) {
     if (Number(sale.points_earned) > 0) ep.row2("Poin diperoleh", "+"+sale.points_earned+" poin", W).lf();
 
     ep.divider(W).lf().lf()
-      .align(1)
-      .text("Terima kasih!").lf()
-      .text("-- Harumnya --").lf()
+      .center("Terima kasih!", W).lf()
+      .center("-- Harumnya --", W).lf()
       .lf(4).defaultSpacing().cut();
 
     return ep.toBuffer();
@@ -207,6 +202,28 @@ function useBluetooth() {
     const deviceRef = useRef(null);
     const supported = typeof navigator !== "undefined" && !!navigator.bluetooth;
 
+    // Load paired devices on mount to enable "Reconnect" without picker
+    useEffect(() => {
+        if (supported && navigator.bluetooth.getDevices) {
+            navigator.bluetooth.getDevices().then(devices => {
+                if (devices.length > 0) {
+                    // Try to find the one we used last, or just the first one
+                    const lastId = localStorage.getItem("bt_printer_id");
+                    const dev = devices.find(d => d.id === lastId) || devices[0];
+                    
+                    deviceRef.current = dev;
+                    setDevice(dev);
+                    setDevName(dev.name || "Printer BT");
+                    // Don't set status to connected yet, just ready to reconnect
+                    
+                    // Listen for disconnection even if not fully connected yet
+                    dev.removeEventListener("gattserverdisconnected", () => handleDisconnect(dev));
+                    dev.addEventListener("gattserverdisconnected", () => handleDisconnect(dev));
+                }
+            });
+        }
+    }, [supported]);
+
     const connectGatt = useCallback(async (dev) => {
         if (dev.gatt.connected && charRef.current) return true;
         const server = await dev.gatt.connect();
@@ -225,13 +242,20 @@ function useBluetooth() {
         charRef.current = null;
         if (deviceRef.current && deviceRef.current.id === dev.id) {
             setStatus("reconnecting");
-            let retries = 3;
+            let retries = 5; // Increase retries
             while (retries-- > 0) {
-                await new Promise(r => setTimeout(r, 1000));
-                try { await connectGatt(dev); setStatus("connected"); return; } catch(_) {}
+                await new Promise(r => setTimeout(r, 1500));
+                try { 
+                    if (!deviceRef.current?.gatt?.connected) {
+                        await connectGatt(dev); 
+                    }
+                    setStatus("connected"); 
+                    return; 
+                } catch(_) {}
             }
         }
-        setStatus("idle"); setDevice(null); deviceRef.current = null;
+        setStatus("idle"); 
+        // We keep the deviceRef so user can manually "Hubungkan Ulang" easily
     }, [connectGatt]);
 
     const connect = useCallback(async () => {
@@ -243,7 +267,10 @@ function useBluetooth() {
             await connectGatt(dev);
             deviceRef.current = dev; setDevice(dev);
             setDevName(dev.name || "Printer BT");
-            try { localStorage.setItem("bt_printer_name", dev.name || "Printer BT"); } catch(_) {}
+            try { 
+                localStorage.setItem("bt_printer_name", dev.name || "Printer BT");
+                localStorage.setItem("bt_printer_id", dev.id);
+            } catch(_) {}
             setStatus("connected");
         } catch(err) {
             if (err.name === "NotFoundError") setStatus("idle");

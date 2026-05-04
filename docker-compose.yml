@@ -1,0 +1,126 @@
+services:
+  # PHP Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/pos-harumnya-app:latest
+    container_name: harumnya_app
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - ./.docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    networks:
+      - harumnya-network
+    depends_on:
+      - db
+      - redis
+    healthcheck:
+      test: ["CMD", "php", "artisan", "help"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Nginx Web Server
+  web:
+    image: nginx:alpine
+    container_name: harumnya_web
+    restart: unless-stopped
+    volumes:
+      - ./:/var/www
+      - ./.docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - harumnya-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.harumnya.rule=Host(`harumnya.cloud`)"
+      - "traefik.http.routers.harumnya.entrypoints=websecure"
+      - "traefik.http.routers.harumnya.tls.certresolver=myresolver"
+      - "traefik.http.services.harumnya.loadbalancer.server.port=80"
+    depends_on:
+      app:
+        condition: service_healthy
+
+  # Database
+  db:
+    image: mysql:8.0
+    container_name: harumnya_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+    volumes:
+      - harumnya_db_data:/var/lib/mysql
+    networks:
+      - harumnya-network
+
+  # Redis
+  redis:
+    image: redis:alpine
+    container_name: harumnya_redis
+    restart: unless-stopped
+    networks:
+      - harumnya-network
+
+  # Traefik Reverse Proxy
+  traefik:
+    image: traefik:v2.10
+    container_name: harumnya_traefik
+    restart: unless-stopped
+    command:
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myresolver.acme.email=admin@harumnya.cloud"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      # Global redirect to HTTPS
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "harumnya_letsencrypt:/letsencrypt"
+    networks:
+      - harumnya-network
+
+  # Database Backup (Runs daily at midnight)
+  db-backup:
+    image: databack/mysql-backup
+    container_name: harumnya_db_backup
+    restart: unless-stopped
+    environment:
+      DB_DUMP_TARGET: /backups
+      DB_USER: root
+      DB_PASS: ${DB_ROOT_PASSWORD}
+      DB_HOST: db
+      DB_NAMES: ${DB_DATABASE}
+      # Backup daily at 00:00
+      SCHEDULE: "0 0 * * *"
+    volumes:
+      - harumnya_backups:/backups
+    networks:
+      - harumnya-network
+    depends_on:
+      - db
+
+networks:
+  harumnya-network:
+    driver: bridge
+
+volumes:
+  harumnya_db_data:
+  harumnya_letsencrypt:
+  harumnya_backups:

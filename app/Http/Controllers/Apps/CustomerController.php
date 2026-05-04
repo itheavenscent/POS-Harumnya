@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CustomerController extends Controller
@@ -126,5 +127,21 @@ class CustomerController extends Controller
             'Content-Type'        => 'text/csv',
             'Content-Disposition' => 'attachment; filename="customers_' . date('Ymd') . '.csv"',
         ]);
+    }
+
+    public function storeAjax(Request $request)
+    {
+        $validated = $request->validate([
+            'name'  => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20|unique:customers,phone',
+        ]);
+
+        $customer = Customer::create(array_merge($validated, [
+            'code'          => 'CUST-' . strtoupper(Str::random(6)),
+            'registered_at' => now(),
+            'is_active'     => true,
+        ]));
+
+        return back()->with('success', 'Pelanggan berhasil ditambahkan.');
     }
 }

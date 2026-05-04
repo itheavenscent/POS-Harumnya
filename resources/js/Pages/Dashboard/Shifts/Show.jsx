@@ -168,6 +168,99 @@ export default function Show({ drawer, summary }) {
                             </div>
                         </div>
 
+                        {/* Items Sold History */}
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+                                <h3 className="font-black text-slate-800 dark:text-white text-sm uppercase tracking-wider flex items-center gap-2">
+                                    History Barang Terjual
+                                </h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 text-[10px] font-black uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
+                                            <th className="px-5 py-3 text-left">Produk</th>
+                                            <th className="px-5 py-3 text-center">Qty</th>
+                                            <th className="px-5 py-3 text-right">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                                        {summary.items?.length > 0 ? (
+                                            summary.items.map((item, i) => (
+                                                <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                                                    <td className="px-5 py-3">
+                                                        <p className="font-bold text-slate-800 dark:text-white">{item.product_name}</p>
+                                                        <p className="text-[10px] text-slate-400 font-medium">
+                                                            {item.variant_name} {item.intensity_code ? `· ${item.intensity_code}` : ''} {item.size_ml ? `· ${item.size_ml}ml` : ''}
+                                                        </p>
+                                                    </td>
+                                                    <td className="px-5 py-3 text-center font-bold text-slate-600 dark:text-slate-400">
+                                                        {item.total_qty}
+                                                    </td>
+                                                    <td className="px-5 py-3 text-right font-black text-slate-800 dark:text-white">
+                                                        {fmt(item.total_amount)}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan="3" className="px-5 py-8 text-center text-slate-400 italic">Belum ada barang terjual</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Cash Transactions (In/Out) History */}
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+                                <h3 className="font-black text-slate-800 dark:text-white text-sm uppercase tracking-wider flex items-center gap-2">
+                                    History Cash In & Cash Out
+                                </h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 text-[10px] font-black uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
+                                            <th className="px-5 py-3 text-left">Waktu</th>
+                                            <th className="px-5 py-3 text-left">Keterangan</th>
+                                            <th className="px-5 py-3 text-center">Tipe</th>
+                                            <th className="px-5 py-3 text-right">Jumlah</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                                        {summary.cash_transactions?.length > 0 ? (
+                                            summary.cash_transactions.map((tr, i) => (
+                                                <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                                                    <td className="px-5 py-3 whitespace-nowrap">
+                                                        <p className="text-xs font-bold text-slate-800 dark:text-white">{new Date(tr.created_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}</p>
+                                                        <p className="text-[10px] text-slate-400 font-medium">{new Date(tr.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</p>
+                                                    </td>
+                                                    <td className="px-5 py-3">
+                                                        <p className="font-medium text-slate-700 dark:text-slate-300">{tr.description}</p>
+                                                        <p className="text-[10px] text-slate-400">Oleh: {tr.user?.name}</p>
+                                                    </td>
+                                                    <td className="px-5 py-3 text-center">
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${tr.type === 'cash_in' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                                                            {tr.type === 'cash_in' ? 'In' : 'Out'}
+                                                        </span>
+                                                    </td>
+                                                    <td className={`px-5 py-3 text-right font-black ${tr.type === 'cash_in' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                        {tr.type === 'cash_in' ? '+' : '-'} {fmt(tr.amount)}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan="4" className="px-5 py-8 text-center text-slate-400 italic">Tidak ada transaksi kas</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                         {/* Breakdown by Category */}
                         <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
                              <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
@@ -191,7 +284,6 @@ export default function Show({ drawer, summary }) {
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="font-black text-slate-800 dark:text-white">{fmt(cat.total)}</p>
-                                                    <IconChevronRight size={14} className="text-slate-300 ml-auto mt-1" />
                                                 </div>
                                             </div>
                                         ))

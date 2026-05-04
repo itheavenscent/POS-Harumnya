@@ -17,6 +17,8 @@ class AppSettingController extends Controller
         return Inertia::render('Dashboard/Settings/Index', [
             'settings' => AppSetting::all(),
             'loyalty_point_rate' => (int) AppSetting::getValue('loyalty_point_rate', 10000),
+            'loyalty_reward_threshold' => (int) AppSetting::getValue('loyalty_reward_threshold', 30),
+            'loyalty_reward_description' => AppSetting::getValue('loyalty_reward_description', 'Free parfum P30 EDT + Botol'),
         ]);
     }
 
@@ -27,10 +29,14 @@ class AppSettingController extends Controller
     {
         $request->validate([
             'loyalty_point_rate' => 'required|integer|min:0',
+            'loyalty_reward_threshold' => 'required|integer|min:1',
+            'loyalty_reward_description' => 'required|string|max:255',
         ]);
 
-        AppSetting::setValue('loyalty_point_rate', $request->loyalty_point_rate, 'loyalty', 'Nilai Kelipatan Poin', 'number');
+        AppSetting::setValue('loyalty_point_rate', $request->loyalty_point_rate, 'loyalty', 'Nilai Kelipatan Poin (Rp per 1 Poin)', 'number');
+        AppSetting::setValue('loyalty_reward_threshold', $request->loyalty_reward_threshold, 'loyalty', 'Ambang Batas Penukaran Poin', 'number');
+        AppSetting::setValue('loyalty_reward_description', $request->loyalty_reward_description, 'loyalty', 'Deskripsi Hadiah Poin', 'string');
 
-        return back()->with('success', 'Pengaturan berhasil diperbarui');
+        return back()->with('success', 'Pengaturan loyalty berhasil diperbarui');
     }
 }

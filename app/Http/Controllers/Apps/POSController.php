@@ -115,6 +115,9 @@ class POSController extends Controller
             'storeId' => $storeId,
             'storeName' => $store?->name,
             'error' => null,
+            'loyalty_reward_threshold' => (int) AppSetting::getValue('loyalty_reward_threshold', 30),
+            'loyalty_reward_description' => AppSetting::getValue('loyalty_reward_description', 'Free parfum P30 EDT + Botol'),
+            'autoPromo' => $this->checkAutoPromos($carts),
         ]);
     }
 
@@ -963,5 +966,58 @@ class POSController extends Controller
             $code = 'CUST-' . strtoupper(Str::random(6));
         } while (Customer::where('code', $code)->exists());
         return $code;
+    }
+
+    /**
+     * Cek promo otomatis (Spin Wheel dll) berdasarkan isi keranjang.
+     */
+    private function checkAutoPromos($carts): ?array
+    {
+        if ($carts->isEmpty()) return null;
+
+        // Ambil promo bertipe game_reward (Spin Wheel) yang aktif
+        $promos = DiscountType::where('type', 'game_reward')
+            ->where('is_active', true)
+            ->with('requirements')
+            ->get();
+
+        foreach ($promos as $promo) {
+            $requirements = $promo->requirements;
+            if ($requirements->isEmpty()) continue;
+
+            // Kelompokkan requirement berdasarkan group_key (OR logic antar group)
+            $grouped = $requirements->groupBy('group_key');
+            $anyGroupMatched = false;
+
+            foreach ($grouped as $group) {
+                $groupMatched = true; // Anggap cocok sampai terbukti tidak
+                
+                foreach ($group as $req) {
+                    // Hitung total qty di cart untuk kriteria ini
+                    $currentQty = $carts->where('size_id', $req->size_id)->sum('qty');
+                    
+                    if ($currentQty < $req->required_quantity) {
+                        $groupMatched = false;
+                        break;
+                    }
+                }
+
+                if ($groupMatched) {
+                    $anyGroupMatched = true;
+                    break;
+                }
+            }
+
+            if ($anyGroupMatched) {
+                return [
+                    'id' => $promo->id,
+                    'name' => $promo->name,
+                    'description' => $promo->description,
+                    'terms' => $promo->terms_conditions,
+                ];
+            }
+        }
+
+        return null;
     }
 }
