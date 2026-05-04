@@ -72,20 +72,19 @@ jobs:
               echo "APP_ENV=production" >> .env
               echo "APP_KEY=${{ secrets.APP_KEY }}" >> .env
               echo "APP_URL=https://harumnya.cloud" >> .env
-              echo "DB_CONNECTION=mysql" >> .env
+              echo "DB_CONNECTION=pgsql" >> .env
               echo "DB_HOST=db" >> .env
-              echo "DB_PORT=3306" >> .env
+              echo "DB_PORT=5432" >> .env
               echo "DB_DATABASE=point_of_sales" >> .env
-              echo "DB_USERNAME=root" >> .env
+              echo "DB_USERNAME=postgres" >> .env
               echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-              echo "DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}" >> .env
             fi
 
             # Pull latest images
-            docker compose pull
+            IMAGE_NAME=ghcr.io/${{ github.repository }} docker compose pull
 
             # Zero Downtime Deploy
-            docker compose up -d --remove-orphans
+            IMAGE_NAME=ghcr.io/${{ github.repository }} docker compose up -d --remove-orphans
 
             # Run migrations
             docker exec harumnya_app php artisan migrate --force

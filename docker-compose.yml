@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/pos-harumnya-app:latest
+    image: ${IMAGE_NAME:-pos-harumnya-app:latest}
     container_name: harumnya_app
     restart: unless-stopped
     tty: true
@@ -46,18 +46,17 @@ services:
       app:
         condition: service_healthy
 
-  # Database
+  # Database (PostgreSQL 17)
   db:
-    image: mysql:8.0
+    image: postgres:17-alpine
     container_name: harumnya_db
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_USER: ${DB_USERNAME}
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - harumnya_db_data:/var/lib/mysql
+      - harumnya_db_data:/var/lib/postgresql/data
     networks:
       - harumnya-network
 
@@ -96,19 +95,19 @@ services:
     networks:
       - harumnya-network
 
-  # Database Backup (Runs daily at midnight)
+  # Database Backup (PostgreSQL)
   db-backup:
-    image: databack/mysql-backup
+    image: prodrigestivill/postgres-backup-local
     container_name: harumnya_db_backup
     restart: unless-stopped
     environment:
-      DB_DUMP_TARGET: /backups
-      DB_USER: root
-      DB_PASS: ${DB_ROOT_PASSWORD}
-      DB_HOST: db
-      DB_NAMES: ${DB_DATABASE}
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       # Backup daily at 00:00
-      SCHEDULE: "0 0 * * *"
+      SCHEDULE: "@daily"
+      BACKUP_KEEP_DAYS: 7
     volumes:
       - harumnya_backups:/backups
     networks:
