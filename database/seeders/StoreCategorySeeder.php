@@ -72,7 +72,7 @@ class StoreCategorySeeder extends Seeder
 
         // ── Assign semua toko ke kategori M (default) ─────────────────────────
         DB::table('stores')
-            ->whereIn('code', ['STR-JATIM', 'STR-JATENG', 'STR-JABAR'])
+            ->whereIn('code', ['STR-JOMBANG1', 'STR-JOMBANG2', 'STR-JOMBANG3'])
             ->update(['store_category_id' => $catM, 'updated_at' => $now]);
 
         // ── Store Category Variants ───────────────────────────────────────────

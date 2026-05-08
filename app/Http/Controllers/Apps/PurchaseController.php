@@ -58,10 +58,15 @@ class PurchaseController extends Controller
     {
         $purchases = Purchase::query()
             ->with(['supplier:id,name,code', 'creator:id,name', 'items'])
-            ->when($request->search, fn ($q, $s) =>
-                $q->where('purchase_number', 'like', "%{$s}%")
-                  ->orWhereHas('supplier', fn ($q2) => $q2->where('name', 'like', "%{$s}%"))
-            )
+            ->when($request->search, function ($q, $s) {
+                $term = strtolower($s);
+                $q->where(function ($inner) use ($term) {
+                    $inner->whereRaw('LOWER(purchase_number) LIKE ?', ["%{$term}%"])
+                          ->orWhereHas('supplier', function ($q2) use ($term) {
+                              $q2->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"]);
+                          });
+                });
+            })
             ->when($request->status,           fn ($q, $s) => $q->where('status', $s))
             ->when($request->destination_type, fn ($q, $t) => $q->where('destination_type', $t))
             ->when($request->date_from,        fn ($q, $d) => $q->whereDate('purchase_date', '>=', $d))

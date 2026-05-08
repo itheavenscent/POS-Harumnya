@@ -123,13 +123,13 @@ class SalesSeeder extends Seeder
     private function loadMasterData(): void
     {
         // FIX: store codes konsisten dengan WarehouseStoreSeeder
-        $this->store1   = DB::table('stores')->where('code', 'STR-JATIM')->first();
-        $this->store2   = DB::table('stores')->where('code', 'STR-JATENG')->first();
+        $this->store1   = DB::table('stores')->where('code', 'STR-JOMBANG1')->first();
+        $this->store2   = DB::table('stores')->where('code', 'STR-JOMBANG2')->first();
 
         // FIX: cashier emails konsisten dengan UserSeeder
-        $this->cashier1 = DB::table('users')->where('email', 'kasir.jatim@harumnya.com')->first()
+        $this->cashier1 = DB::table('users')->where('email', 'kasir.jombang1@harumnya.com')->first()
                         ?? DB::table('users')->where('email', 'admin@harumnya.com')->first();
-        $this->cashier2 = DB::table('users')->where('email', 'kasir.jateng@harumnya.com')->first()
+        $this->cashier2 = DB::table('users')->where('email', 'kasir.jombang2@harumnya.com')->first()
                         ?? DB::table('users')->where('email', 'admin@harumnya.com')->first();
 
         foreach (DB::table('variants')->where('is_active', true)->get() as $v) {

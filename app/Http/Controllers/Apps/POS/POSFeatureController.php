@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Sale;
 use App\Models\StoreIngredientStock;
 use App\Models\StorePackagingStock;
+use App\Models\CashDrawer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -48,9 +49,16 @@ class POSFeatureController extends Controller
                 ->withQueryString();
         }
 
+        $activeCashDrawer = CashDrawer::where('store_id', $storeId)
+            ->where('cashier_id', $user->id)
+            ->where('status', 'open')
+            ->latest()
+            ->first();
+
         return Inertia::render('Dashboard/POS/Stock', [
             'stocks' => $stocks,
             'filters' => $request->only(['search', 'type']),
+            'activeCashDrawer' => $activeCashDrawer,
         ]);
     }
 
@@ -63,7 +71,11 @@ class POSFeatureController extends Controller
         $storeId = $user->default_store_id;
 
         $sales = Sale::with(['customer', 'salesPerson', 'items.packagings'])
+            ->withCount('items')
             ->where('store_id', $storeId)
+            ->when(!$user->hasRole('super-admin') && !$user->hasPermissionTo('transactions-all'), function ($query) use ($user) {
+                $query->where('cashier_id', $user->id);
+            })
             ->when($request->search, function ($query, $search) {
                 $query->where('sale_number', 'like', "%{$search}%")
                     ->orWhere('customer_name', 'like', "%{$search}%");
@@ -72,9 +84,16 @@ class POSFeatureController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        $activeCashDrawer = CashDrawer::where('store_id', $storeId)
+            ->where('cashier_id', $user->id)
+            ->where('status', 'open')
+            ->latest()
+            ->first();
+
         return Inertia::render('Dashboard/POS/Transactions', [
             'sales' => $sales,
             'filters' => $request->only(['search']),
+            'activeCashDrawer' => $activeCashDrawer,
         ]);
     }
 }

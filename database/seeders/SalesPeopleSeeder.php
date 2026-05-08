@@ -13,9 +13,9 @@ class SalesPeopleSeeder extends Seeder
         $now = now();
 
         // FIX: gunakan kode toko yang konsisten dengan WarehouseStoreSeeder
-        $storeJatim  = DB::table('stores')->where('code', 'STR-JATIM')->first();
-        $storeJateng = DB::table('stores')->where('code', 'STR-JATENG')->first();
-        $storeJabar  = DB::table('stores')->where('code', 'STR-JABAR')->first();
+        $storeJatim  = DB::table('stores')->where('code', 'STR-JOMBANG1')->first();
+        $storeJateng = DB::table('stores')->where('code', 'STR-JOMBANG2')->first();
+        $storeJabar  = DB::table('stores')->where('code', 'STR-JOMBANG3')->first();
 
         if (! $storeJatim || ! $storeJateng || ! $storeJabar) {
             $this->command->error('Stores belum ada. Jalankan WarehouseStoreSeeder terlebih dahulu.');
@@ -23,18 +23,18 @@ class SalesPeopleSeeder extends Seeder
         }
 
         $salesPeople = [
-            // ── Toko Jawa Timur ───────────────────────────────────────────────
-            ['store_id' => $storeJatim->id,  'code' => 'SP-JATIM-001', 'name' => 'Dewi Rahayu',      'phone' => '08111234561', 'email' => 'dewi.rahayu@harumnya.com',      'join_date' => '2023-01-15'],
-            ['store_id' => $storeJatim->id,  'code' => 'SP-JATIM-002', 'name' => 'Rina Susanti',      'phone' => '08111234562', 'email' => 'rina.susanti@harumnya.com',      'join_date' => '2023-03-01'],
-            ['store_id' => $storeJatim->id,  'code' => 'SP-JATIM-003', 'name' => 'Agus Prasetyo',     'phone' => '08111234563', 'email' => 'agus.prasetyo@harumnya.com',     'join_date' => '2023-06-10'],
+            // ── Toko Jombang 1 ───────────────────────────────────────────────
+            ['store_id' => $storeJatim->id,  'code' => 'SP-JOMBANG1-001', 'name' => 'Dewi Rahayu',      'phone' => '08111234561', 'email' => 'dewi.rahayu@harumnya.com',      'join_date' => '2023-01-15'],
+            ['store_id' => $storeJatim->id,  'code' => 'SP-JOMBANG1-002', 'name' => 'Rina Susanti',      'phone' => '08111234562', 'email' => 'rina.susanti@harumnya.com',      'join_date' => '2023-03-01'],
+            ['store_id' => $storeJatim->id,  'code' => 'SP-JOMBANG1-003', 'name' => 'Agus Prasetyo',     'phone' => '08111234563', 'email' => 'agus.prasetyo@harumnya.com',     'join_date' => '2023-06-10'],
 
-            // ── Toko Jawa Tengah ──────────────────────────────────────────────
-            ['store_id' => $storeJateng->id, 'code' => 'SP-JATENG-001','name' => 'Fitria Handayani',  'phone' => '08111234564', 'email' => 'fitria.handayani@harumnya.com',  'join_date' => '2023-02-01'],
-            ['store_id' => $storeJateng->id, 'code' => 'SP-JATENG-002','name' => 'Budi Kurniawan',    'phone' => '08111234565', 'email' => 'budi.kurniawan@harumnya.com',    'join_date' => '2023-04-15'],
+            // ── Toko Jombang 2 ──────────────────────────────────────────────
+            ['store_id' => $storeJateng->id, 'code' => 'SP-JOMBANG2-001','name' => 'Fitria Handayani',  'phone' => '08111234564', 'email' => 'fitria.handayani@harumnya.com',  'join_date' => '2023-02-01'],
+            ['store_id' => $storeJateng->id, 'code' => 'SP-JOMBANG2-002','name' => 'Budi Kurniawan',    'phone' => '08111234565', 'email' => 'budi.kurniawan@harumnya.com',    'join_date' => '2023-04-15'],
 
-            // ── Toko Jawa Barat ───────────────────────────────────────────────
-            ['store_id' => $storeJabar->id,  'code' => 'SP-JABAR-001', 'name' => 'Lestari Wulandari', 'phone' => '08111234566', 'email' => 'lestari.wulandari@harumnya.com', 'join_date' => '2023-07-01'],
-            ['store_id' => $storeJabar->id,  'code' => 'SP-JABAR-002', 'name' => 'Rudi Hartono',      'phone' => '08111234567', 'email' => 'rudi.hartono@harumnya.com',      'join_date' => '2023-08-01'],
+            // ── Toko Jombang 3 ───────────────────────────────────────────────
+            ['store_id' => $storeJabar->id,  'code' => 'SP-JOMBANG3-001', 'name' => 'Lestari Wulandari', 'phone' => '08111234566', 'email' => 'lestari.wulandari@harumnya.com', 'join_date' => '2023-07-01'],
+            ['store_id' => $storeJabar->id,  'code' => 'SP-JOMBANG3-002', 'name' => 'Rudi Hartono',      'phone' => '08111234567', 'email' => 'rudi.hartono@harumnya.com',      'join_date' => '2023-08-01'],
         ];
 
         $monthlyTargets = [

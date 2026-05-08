@@ -476,7 +476,7 @@ export default function Index({ ingredients, categories, filters }) {
                                                 {item.selling_price != null && parseFloat(item.selling_price) > 0 ? (
                                                     <div>
                                                         <span className="text-sm font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                                                            Rp {fmt(Math.round(item.selling_price))}
+                                                            Rp {fmt(item.selling_price)}
                                                         </span>
                                                         <span className="text-[10px] text-slate-400 ml-1">/{item.unit}</span>
                                                     </div>

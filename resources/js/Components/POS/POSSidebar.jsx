@@ -45,7 +45,7 @@ export default function POSSidebar({ onCashAction, onOpenShift, onCloseShift, ac
             active: component === "Dashboard/Shifts/Current",
         },
         {
-            title: "Riwayat Shift",
+            title: "Histori Shift",
             icon: <IconHistory size={20} />,
             href: route("cash-drawers.index"),
             active: component === "Dashboard/Shifts/Index",

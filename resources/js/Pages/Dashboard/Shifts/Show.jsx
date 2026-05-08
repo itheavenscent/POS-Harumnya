@@ -296,6 +296,41 @@ export default function Show({ drawer, summary }) {
                             </div>
                         </div>
 
+                        {/* Breakdown by Payment Method */}
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                             <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+                                <h3 className="font-black text-slate-800 dark:text-white text-base uppercase tracking-wider">
+                                    Penjualan per Metode Pembayaran
+                                </h3>
+                            </div>
+                            <div className="p-2">
+                                <div className="grid grid-cols-1 gap-1">
+                                    {summary.payments?.length > 0 ? (
+                                        summary.payments.map((pay, i) => (
+                                            <div key={i} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 group-hover:text-cyan-600 transition-colors">
+                                                        <IconCash size={18} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-slate-800 dark:text-white">{pay.name}</p>
+                                                        <p className="text-[11px] font-medium text-slate-500">{pay.count} Transaksi</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="font-black text-slate-800 dark:text-white">{fmt(pay.total)}</p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="py-12 text-center">
+                                            <p className="text-sm text-slate-500">Tidak ada data pembayaran</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Notes */}
                         {drawer.notes && (
                             <div className="bg-amber-50 dark:bg-amber-950/20 p-5 rounded-2xl border border-amber-100 dark:border-amber-900/50">

@@ -41,10 +41,13 @@ class StockMovementController extends Controller
     {
         $movements = StockMovement::query()
             ->with('creator:id,name')
-            ->when($request->search, fn ($q, $s) =>
-                $q->where('reference_number', 'like', "%{$s}%")
-                  ->orWhere('notes', 'like', "%{$s}%")
-            )
+            ->when($request->search, function ($q, $s) {
+                $term = strtolower($s);
+                $q->where(function ($inner) use ($term) {
+                    $inner->whereRaw('LOWER(reference_number) LIKE ?', ["%{$term}%"])
+                          ->orWhereRaw('LOWER(notes) LIKE ?', ["%{$term}%"]);
+                });
+            })
             ->when($request->movement_type, fn ($q, $t) => $q->where('movement_type', $t))
             ->when($request->location_type, fn ($q, $t) => $q->where('location_type', $t))
             ->when($request->location_id,   fn ($q, $id) => $q->where('location_id', $id))

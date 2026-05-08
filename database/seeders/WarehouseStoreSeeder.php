@@ -71,28 +71,28 @@ class WarehouseStoreSeeder extends Seeder
 
         $stores = [
             [
-                'code'         => 'STR-JATIM',
-                'name'         => 'Toko Jawa Timur',
-                'address'      => 'Jl. Tunjungan Plaza No. 1, Surabaya',
-                'phone'        => '031-5310001',
+                'code'         => 'STR-JOMBANG1',
+                'name'         => 'Toko Jombang 1',
+                'address'      => 'Jl. Wahid Hasyim No. 1, Jombang',
+                'phone'        => '0321-111111',
                 'manager_name' => 'Siti Aminah',
-                'email'        => 'toko.jatim@harumnya.com',
+                'email'        => 'toko.jombang1@harumnya.com',
             ],
             [
-                'code'         => 'STR-JATENG',
-                'name'         => 'Toko Jawa Tengah',
-                'address'      => 'Jl. Pemuda No. 10, Semarang',
-                'phone'        => '024-3512001',
+                'code'         => 'STR-JOMBANG2',
+                'name'         => 'Toko Jombang 2',
+                'address'      => 'Jl. Merdeka No. 10, Jombang',
+                'phone'        => '0321-222222',
                 'manager_name' => 'Hendra Wijaya',
-                'email'        => 'toko.jateng@harumnya.com',
+                'email'        => 'toko.jombang2@harumnya.com',
             ],
             [
-                'code'         => 'STR-JABAR',
-                'name'         => 'Toko Jawa Barat',
-                'address'      => 'Jl. Dago No. 20, Bandung',
-                'phone'        => '022-2501001',
+                'code'         => 'STR-JOMBANG3',
+                'name'         => 'Toko Jombang 3',
+                'address'      => 'Jl. Ahmad Yani No. 20, Jombang',
+                'phone'        => '0321-333333',
                 'manager_name' => 'Fitri Handayani',
-                'email'        => 'toko.jabar@harumnya.com',
+                'email'        => 'toko.jombang3@harumnya.com',
             ],
         ];
 
@@ -115,9 +115,9 @@ class WarehouseStoreSeeder extends Seeder
                 ['WH-JATIM',  'Gudang Jawa Timur',   'Warehouse'],
                 ['WH-JATENG', 'Gudang Jawa Tengah',  'Warehouse'],
                 ['WH-JABAR',  'Gudang Jawa Barat',   'Warehouse'],
-                ['STR-JATIM', 'Toko Jawa Timur',     'Store'],
-                ['STR-JATENG','Toko Jawa Tengah',    'Store'],
-                ['STR-JABAR', 'Toko Jawa Barat',     'Store'],
+                ['STR-JOMBANG1', 'Toko Jombang 1',     'Store'],
+                ['STR-JOMBANG2', 'Toko Jombang 2',     'Store'],
+                ['STR-JOMBANG3', 'Toko Jombang 3',     'Store'],
             ]
         );
     }

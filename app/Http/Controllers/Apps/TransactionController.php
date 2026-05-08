@@ -346,9 +346,15 @@ class TransactionController extends Controller
     // EXISTING ENDPOINTS (tidak berubah)
     // =========================================================================
 
-    public function history(Request $request): Response
+    public function history(Request $request)
     {
         $user = Auth::user();
+
+        // Redirect cashiers to POS history
+        if ($user && $user->hasRole('cashier') && !$user->hasRole('super-admin') && !$user->hasRole('admin')) {
+            return redirect()->route('pos.transactions');
+        }
+
         $storeId = $user->default_store_id;
 
         $query = Sale::with([
@@ -842,8 +848,8 @@ class TransactionController extends Controller
     {
         $request->validate([
             'payment_method_id' => 'required|uuid|exists:payment_methods,id',
-            'customer_id' => 'nullable|uuid|exists:customers,id',
-            'sales_person_id' => 'nullable|uuid|exists:sales_people,id',
+            'customer_id' => 'required|uuid|exists:customers,id',
+            'sales_person_id' => 'required|uuid|exists:sales_people,id',
             'discount_type_id' => 'nullable|uuid|exists:discount_types,id',
             'discount_amount' => 'nullable|numeric|min:0',
             'cash_amount' => 'nullable|numeric|min:0',

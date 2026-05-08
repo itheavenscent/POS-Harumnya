@@ -218,7 +218,7 @@ class StoreCategoryController extends Controller
     {
         // Ambil semua variant aktif
         $allVariants = Variant::where('is_active', true)
-            ->ordered()
+            ->orderBy('code')
             ->get(['id', 'code', 'name', 'gender', 'image']);
 
         // Ambil pivot whitelist kategori ini (satu query)

@@ -1,12 +1,293 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Head, Link } from "@inertiajs/react";
-import { IconArrowLeft, IconPrinter } from "@tabler/icons-react";
+import {
+    IconArrowLeft, IconPrinter, IconBluetooth, IconBluetoothOff,
+    IconBluetoothConnected, IconLoader2, IconAlertCircle, IconCheck
+} from "@tabler/icons-react";
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ESC/POS Builder
+// ═════════════════════════════════════════════════════════════════════════════
+class EscPos {
+    constructor() { this.buf = []; }
+    raw(bytes)    { this.buf.push(...bytes); return this; }
+    lf(n=1)       { for(let i=0;i<n;i++) this.buf.push(0x0A); return this; }
+    text(str) {
+        for (const ch of String(str)) {
+            const code = ch.charCodeAt(0);
+            this.buf.push(code < 0x80 ? code : 0x3F);
+        }
+        return this;
+    }
+    init()          { return this.raw([0x1B,0x40]); }
+    cut()           { return this.raw([0x1D,0x56,0x41,0x10]); }
+    bold(on)        { return this.raw([0x1B,0x45, on?1:0]); }
+    align(a)        { return this.raw([0x1B,0x61, a]); }
+    size(w,h)       { return this.raw([0x1D,0x21,(((w-1)&7)<<4)|((h-1)&7)]); }
+    lineSpacing(n)  { return this.raw([0x1B,0x33,n]); }
+    defaultSpacing(){ return this.raw([0x1B,0x32]); }
+    divider(w=32)   { return this.text("=".repeat(w)); }
+    thinLine(w=32)  { return this.text("-".repeat(w)); }
+    center(str,w=32) {
+        const s = String(str);
+        const p = Math.max(0, Math.floor((w - s.length) / 2));
+        return this.text(" ".repeat(p) + s);
+    }
+    row2(left, right, w=32) {
+        const l = String(left);
+        const r = String(right);
+        const gap = Math.max(1, w - l.length - r.length);
+        return this.text(l + " ".repeat(gap) + r);
+    }
+    toBuffer() { return new Uint8Array(this.buf).buffer; }
+}
+
+const BT_SERVICES = [
+    "000018f0-0000-1000-8000-00805f9b34fb",
+    "e7810a71-73ae-499d-8c15-faa9aef0c3f2",
+    "49535343-fe7d-4ae5-8fa9-9fafd205e455",
+    "0000ff00-0000-1000-8000-00805f9b34fb",
+    "0000ffe0-0000-1000-8000-00805f9b34fb",
+    "0000fff0-0000-1000-8000-00805f9b34fb",
+    "00001101-0000-1000-8000-00805f9b34fb",
+    "0000fef5-0000-1000-8000-00805f9b34fb",
+    "0000fee7-0000-1000-8000-00805f9b34fb",
+];
+
+async function findWritableChar(server) {
+    await new Promise(r => setTimeout(r, 400));
+    try {
+        const services = await server.getPrimaryServices();
+        for (const svc of services) {
+            try {
+                await new Promise(r => setTimeout(r, 80));
+                const chars = await svc.getCharacteristics();
+                const char  = chars.find(c => c.properties.writeWithoutResponse || c.properties.write);
+                if (char) return char;
+            } catch(_) {}
+        }
+    } catch(_) {}
+    for (const uuid of BT_SERVICES) {
+        try {
+            const svc   = await server.getPrimaryService(uuid);
+            await new Promise(r => setTimeout(r, 100));
+            const chars = await svc.getCharacteristics();
+            const char  = chars.find(c => c.properties.writeWithoutResponse || c.properties.write);
+            if (char) return char;
+        } catch(_) {}
+    }
+    return null;
+}
+
+function useBluetooth() {
+    const [device,  setDevice]  = useState(null);
+    const [status,  setStatus]  = useState("idle");
+    const [error,   setError]   = useState(null);
+    const [devName, setDevName] = useState(() => {
+        try { return localStorage.getItem("bt_printer_name") || null; } catch(_) { return null; }
+    });
+    const charRef   = useRef(null);
+    const deviceRef = useRef(null);
+    const supported = typeof navigator !== "undefined" && !!navigator.bluetooth;
+
+    useEffect(() => {
+        if (supported && navigator.bluetooth.getDevices) {
+            navigator.bluetooth.getDevices().then(devices => {
+                if (devices.length > 0) {
+                    const lastId = localStorage.getItem("bt_printer_id");
+                    const dev = devices.find(d => d.id === lastId) || devices[0];
+                    deviceRef.current = dev;
+                    setDevice(dev);
+                    setDevName(dev.name || "Printer BT");
+                    dev.removeEventListener("gattserverdisconnected", () => handleDisconnect(dev));
+                    dev.addEventListener("gattserverdisconnected", () => handleDisconnect(dev));
+                }
+            });
+        }
+    }, [supported]);
+
+    const connectGatt = useCallback(async (dev) => {
+        if (dev.gatt.connected && charRef.current) return true;
+        const server = await dev.gatt.connect();
+        await new Promise(r => setTimeout(r, 500));
+        const char = await findWritableChar(server);
+        if (!char) {
+            throw new Error("Printer tidak merespon. Matikan & nyalakan printer, lalu coba lagi.");
+        }
+        charRef.current = char;
+        return true;
+    }, []);
+
+    const handleDisconnect = useCallback(async (dev) => {
+        charRef.current = null;
+        if (deviceRef.current && deviceRef.current.id === dev.id) {
+            setStatus("reconnecting");
+            let retries = 5;
+            while (retries-- > 0) {
+                await new Promise(r => setTimeout(r, 1500));
+                try { 
+                    if (!deviceRef.current?.gatt?.connected) {
+                        await connectGatt(dev); 
+                    }
+                    setStatus("connected"); 
+                    return; 
+                } catch(_) {}
+            }
+        }
+        setStatus("idle"); 
+    }, [connectGatt]);
+
+    const connect = useCallback(async () => {
+        if (!supported) { setError("Butuh Chrome di Android/Desktop + HTTPS untuk Web Bluetooth."); setStatus("error"); return; }
+        setStatus("connecting"); setError(null);
+        try {
+            const dev = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: BT_SERVICES });
+            dev.addEventListener("gattserverdisconnected", () => handleDisconnect(dev));
+            await connectGatt(dev);
+            deviceRef.current = dev; setDevice(dev);
+            setDevName(dev.name || "Printer BT");
+            try { 
+                localStorage.setItem("bt_printer_name", dev.name || "Printer BT");
+                localStorage.setItem("bt_printer_id", dev.id);
+            } catch(_) {}
+            setStatus("connected");
+        } catch(err) {
+            if (err.name === "NotFoundError") setStatus("idle");
+            else { setError(err.message); setStatus("error"); }
+        }
+    }, [supported, connectGatt, handleDisconnect]);
+
+    const reconnect = useCallback(async () => {
+        if (!deviceRef.current) { connect(); return; }
+        setStatus("connecting"); setError(null);
+        try { await connectGatt(deviceRef.current); setStatus("connected"); }
+        catch(err) { setError(err.message); setStatus("error"); }
+    }, [connect, connectGatt]);
+
+    const disconnect = useCallback(() => {
+        charRef.current = null; deviceRef.current = null;
+        device?.gatt?.disconnect();
+        setDevice(null); setStatus("idle");
+    }, [device]);
+
+    const printBuffer = useCallback(async (buffer) => {
+        if (!charRef.current || !deviceRef.current?.gatt?.connected) {
+            if (deviceRef.current) await connectGatt(deviceRef.current);
+            else throw new Error("Printer belum terhubung. Tap 'Hubungkan' dulu.");
+        }
+        const data  = new Uint8Array(buffer);
+        const CHUNK = 512;
+        for (let i = 0; i < data.length; i += CHUNK) {
+            const chunk = data.slice(i, i + CHUNK);
+            try {
+                if (charRef.current.properties.writeWithoutResponse) await charRef.current.writeValueWithoutResponse(chunk);
+                else await charRef.current.writeValue(chunk);
+            } catch(writeErr) {
+                await connectGatt(deviceRef.current);
+                if (charRef.current.properties.writeWithoutResponse) await charRef.current.writeValueWithoutResponse(chunk);
+                else await charRef.current.writeValue(chunk);
+            }
+            await new Promise(r => setTimeout(r, 40));
+        }
+    }, [connectGatt]);
+
+    return { supported, device, devName, status, error, connect, reconnect, disconnect, printBuffer };
+}
+
+function buildShiftReceipt(drawer, summary) {
+    const W  = 32;
+    const ep = new EscPos();
+
+    ep.init().lineSpacing(2);
+
+    // ══ BRAND ══
+    ep.bold(true).center("- HARUMNYA -", W).lf().bold(false);
+    ep.bold(true).center(drawer.store?.name ?? "POS", W).lf().bold(false);
+    
+    if (drawer.store?.address) {
+        const addr = String(drawer.store.address);
+        for (let i = 0; i < addr.length; i += W) {
+            ep.center(addr.slice(i, i + W).trim(), W).lf();
+        }
+    }
+    
+    ep.divider(W).lf();
+    ep.center("LAPORAN REKAP SHIFT", W).lf();
+    ep.divider(W).lf();
+
+    // ══ INFO ══
+    ep.row2("Kasir", drawer.cashier?.name ?? "-", W).lf();
+    ep.row2("Buka", new Date(drawer.opened_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short" }), W).lf();
+    ep.row2("Tutup", drawer.closed_at ? new Date(drawer.closed_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short" }) : "-", W).lf();
+    ep.thinLine(W).lf();
+
+    // ══ SUMMARY ══
+    ep.row2("Modal Awal", "Rp " + Number(drawer.starting_cash).toLocaleString("id-ID"), W).lf();
+    ep.row2("Total Tunai", "Rp " + Number(drawer.total_cash_sales).toLocaleString("id-ID"), W).lf();
+    ep.row2("Total Non-Tunai", "Rp " + Number(drawer.total_non_cash_sales).toLocaleString("id-ID"), W).lf();
+    ep.thinLine(W).lf();
+
+    // ══ ITEMS ══
+    ep.bold(true).text("RINGKASAN ITEM").lf().bold(false);
+    summary.items?.forEach((item) => {
+        const name = String(item.product_name ?? "Item");
+        ep.text(name.slice(0, W)).lf();
+        ep.row2(`  ${item.total_qty}x`, "Rp " + Number(item.total_amount).toLocaleString("id-ID"), W).lf();
+    });
+    ep.thinLine(W).lf();
+
+    // ══ PAYMENTS ══
+    ep.bold(true).text("METODE PEMBAYARAN").lf().bold(false);
+    summary.payments?.forEach((p) => {
+        ep.row2(`${p.name} (${p.count}x)`, "Rp " + Number(p.total).toLocaleString("id-ID"), W).lf();
+    });
+    ep.thinLine(W).lf();
+
+    // ══ TOTALS ══
+    ep.row2("Ekspektasi", "Rp " + Number(drawer.expected_ending_cash).toLocaleString("id-ID"), W).lf();
+    ep.row2("Aktual", "Rp " + Number(drawer.actual_ending_cash).toLocaleString("id-ID"), W).lf();
+    ep.bold(true).row2("SELISIH", "Rp " + Number(drawer.difference).toLocaleString("id-ID"), W).lf().bold(false);
+
+    ep.divider(W).lf().lf()
+      .center("Terima kasih!", W).lf()
+      .center("-- Harumnya --", W).lf()
+      .lf(4).defaultSpacing().cut();
+
+    return ep.toBuffer();
+}
 
 export default function PrintShift({ drawer, summary }) {
+    const [printing,    setPrinting]    = useState(false);
+    const [printMsg,    setPrintMsg]    = useState(null);
+    const bt = useBluetooth();
+
     useEffect(() => {
         const timer = setTimeout(() => { window.print(); }, 800);
         return () => clearTimeout(timer);
     }, []);
+
+    const handleBtPrint = async () => {
+        setPrinting(true); setPrintMsg(null);
+        try {
+            const buf = buildShiftReceipt(drawer, summary);
+            await bt.printBuffer(buf);
+            setPrintMsg({ ok:true, text:"Berhasil dikirim ke printer!" });
+        } catch(err) {
+            setPrintMsg({ ok:false, text: err.message });
+        } finally { setPrinting(false); }
+    };
+
+    const BT_UI = {
+        idle:         { icon:<IconBluetooth size={15}/>,                          label: bt.devName ? `Hubungkan Ulang (${bt.devName})` : "Hubungkan Printer BT", cls:"bg-blue-500 hover:bg-blue-600 text-white" },
+        connecting:   { icon:<IconLoader2 size={15} className="animate-spin"/>,   label:"Menghubungkan...",    cls:"bg-blue-400 text-white cursor-wait" },
+        reconnecting: { icon:<IconLoader2 size={15} className="animate-spin"/>,   label:"Menyambung ulang...", cls:"bg-amber-400 text-white cursor-wait" },
+        connected:    { icon:<IconBluetoothConnected size={15}/>,                 label: bt.device?.name ?? bt.devName ?? "Terhubung", cls:"bg-emerald-500 hover:bg-emerald-600 text-white" },
+        error:        { icon:<IconBluetoothOff size={15}/>,                       label:"Gagal — Coba Lagi",   cls:"bg-red-500 hover:bg-red-600 text-white" },
+    }[bt.status] ?? { icon:<IconBluetooth size={15}/>, label:"Hubungkan", cls:"bg-blue-500 hover:bg-blue-600 text-white" };
+
+    const btOnClick = bt.status === "connected"          ? bt.disconnect
+                    : bt.status === "idle" && bt.devName ? bt.reconnect
+                    : bt.connect;
 
     const fmt = (number) => {
         return new Intl.NumberFormat("id-ID", {
@@ -110,13 +391,35 @@ export default function PrintShift({ drawer, summary }) {
                 </div>
             </div>
 
-            <div className="fixed bottom-6 right-6 flex gap-3 print:hidden">
-                <Link href={route("cash-drawers.index")} className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-xl shadow-lg">
+            <div className="fixed bottom-6 right-6 flex flex-wrap items-center gap-3 print:hidden">
+                {bt.status === "connected" && (
+                    <button onClick={handleBtPrint} disabled={printing}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-xl shadow-lg disabled:opacity-60">
+                        {printing
+                            ? <><IconLoader2 size={18} className="animate-spin"/> Mengirim...</>
+                            : <><IconPrinter size={18}/> Cetak Bluetooth</>}
+                    </button>
+                )}
+                
+                <button onClick={btOnClick}
+                    disabled={bt.status === "connecting" || bt.status === "reconnecting"}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl shadow-lg transition-colors ${BT_UI.cls}`}>
+                    {BT_UI.icon} {BT_UI.label}
+                </button>
+
+                <Link href={route("cash-drawers.index")} className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 border border-slate-200 rounded-xl shadow-lg">
                     <IconArrowLeft size={18} /> Kembali
                 </Link>
+                
                 <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl shadow-lg">
-                    <IconPrinter size={18} /> Cetak
+                    <IconPrinter size={18} /> Cetak Browser
                 </button>
+
+                {printMsg && (
+                    <span className={`text-xs px-3 py-1.5 rounded-lg ${printMsg.ok ? "text-emerald-700 bg-emerald-50" : "text-red-600 bg-red-50"}`}>
+                        {printMsg.ok ? "✓" : "✗"} {printMsg.text}
+                    </span>
+                )}
             </div>
         </div>
     );

@@ -18,9 +18,9 @@ class StockSeeder extends Seeder
         $now = now();
 
         $warehouse = DB::table('warehouses')->where('code', 'WH-PUSAT')->first();
-        $store1    = DB::table('stores')->where('code', 'STR-JATIM')->first();
-        $store2    = DB::table('stores')->where('code', 'STR-JATENG')->first();
-        $store3    = DB::table('stores')->where('code', 'STR-JABAR')->first();
+        $store1    = DB::table('stores')->where('code', 'STR-JOMBANG1')->first();
+        $store2    = DB::table('stores')->where('code', 'STR-JOMBANG2')->first();
+        $store3    = DB::table('stores')->where('code', 'STR-JOMBANG3')->first();
 
         if (! $warehouse) {
             $this->command->error('Warehouse belum ada.');

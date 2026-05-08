@@ -80,6 +80,7 @@ class POSController extends Controller
 
         $salesPeople = SalesPerson::select('id', 'name', 'code', 'phone')
             ->where('is_active', true)
+            ->where('store_id', $storeId)
             ->orderBy('name')
             ->get();
 

@@ -21,6 +21,14 @@ const fmt = (v = 0) =>
         style: "currency", currency: "IDR", minimumFractionDigits: 0,
     });
 
+const toRupiahDisplay = (val) => {
+    if (val === "" || val === null || val === undefined) return "";
+    const num = parseFloat(String(val).replace(/\./g, "").replace(",", "."));
+    if (isNaN(num)) return "";
+    return num.toLocaleString("id-ID");
+};
+const parseRupiah = (str) => str.replace(/\./g, "").replace(",", ".");
+
 const GENDER_LABEL = { male: "Pria", female: "Wanita", unisex: "Unisex" };
 const GENDER_COLOR = {
     male:   "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
@@ -427,8 +435,8 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</span>
                                 <input
                                     type="text" inputMode="numeric"
-                                    value={customPrice}
-                                    onChange={e => { setCustomPrice(e.target.value.replace(/\D/g, "")); setPriceOverride(true); }}
+                                    value={toRupiahDisplay(customPrice)}
+                                    onChange={e => { setCustomPrice(parseRupiah(e.target.value.replace(/[^0-9,.]/g, ""))); setPriceOverride(true); }}
                                     placeholder="0"
                                     className={`w-full h-12 pl-10 pr-16 rounded-xl border text-xl font-black focus:outline-none focus:ring-2 dark:bg-slate-900 dark:text-white ${
                                         errors.price
@@ -1103,6 +1111,8 @@ export default function Index({
     const handleCheckout = () => { if (!carts.length) { toast.error("Keranjang kosong"); return; } setShowPaymentModal(true); };
 
     const handleSubmit = () => {
+        if (!selectedCustomer?.id) { toast.error("Pelanggan wajib dipilih!"); return; }
+        if (!selectedSalesPerson?.id) { toast.error("Sales wajib dipilih!"); return; }
         if (isCash && cash < payable) { toast.error("Jumlah bayar kurang dari total"); return; }
         setIsSubmitting(true);
         router.post(route("transactions.store"), {
@@ -1484,7 +1494,7 @@ export default function Index({
                                             {/* Loyalty Reward Progress/Notification */}
                                             {selectedCustomer.points >= loyalty_reward_threshold ? (
                                                 <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-2 flex items-center gap-2 animate-pulse shadow-sm">
-                                                    <IconGift size={16} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                                                    <IconTrophy size={16} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                                                     <div className="flex-1">
                                                         <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 leading-tight">Reward Tersedia!</p>
                                                         <p className="text-[9px] text-emerald-600 dark:text-emerald-500">{loyalty_reward_description}</p>

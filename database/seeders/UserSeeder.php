@@ -57,9 +57,9 @@ class UserSeeder extends Seeder
 
         // ── Kasir per Toko ────────────────────────────────────────────────────
         $cashierMap = [
-            ['STR-JATIM',  'WH-JATIM',  'Kasir Jawa Timur',  'kasir.jatim@harumnya.com'],
-            ['STR-JATENG', 'WH-JATENG', 'Kasir Jawa Tengah', 'kasir.jateng@harumnya.com'],
-            ['STR-JABAR',  'WH-JABAR',  'Kasir Jawa Barat',  'kasir.jabar@harumnya.com'],
+            ['STR-JOMBANG1', 'WH-JATIM', 'Kasir Jombang 1', 'kasir.jombang1@harumnya.com'],
+            ['STR-JOMBANG2', 'WH-JATIM', 'Kasir Jombang 2', 'kasir.jombang2@harumnya.com'],
+            ['STR-JOMBANG3', 'WH-JATIM', 'Kasir Jombang 3', 'kasir.jombang3@harumnya.com'],
         ];
 
         foreach ($cashierMap as [$storeCode, $whCode, $nama, $email]) {
@@ -91,7 +91,7 @@ class UserSeeder extends Seeder
             
             // ── Contoh Direct Permission ──────────────────────────────────────
             // Kasir Jatim diberi akses refund (spesifik untuk user ini saja)
-            if ($email === 'kasir.jatim@harumnya.com') {
+            if ($email === 'kasir.jombang1@harumnya.com') {
                 $user->syncPermissions(['transactions-refund']);
             }
 

@@ -18,10 +18,11 @@ class CustomerController extends Controller
     {
         $customers = Customer::query()
             ->when($request->search, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('phone', 'like', "%{$search}%")
-                      ->orWhere('code', 'like', "%{$search}%");
+                $term = strtolower($search);
+                $query->where(function ($q) use ($term) {
+                    $q->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"])
+                      ->orWhereRaw('LOWER(phone) LIKE ?', ["%{$term}%"])
+                      ->orWhereRaw('LOWER(code) LIKE ?', ["%{$term}%"]);
                 });
             })
             ->when($request->segment, fn ($q, $s) => $q->segment($s))
