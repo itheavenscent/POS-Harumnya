@@ -188,7 +188,7 @@ class CashDrawerController extends Controller
         $query = CashDrawer::with(['cashier', 'store'])
             ->where('status', 'closed');
 
-        if (!$isSuperAdmin) {
+        if (!$isSuperAdmin && !$user->hasRole('admin')) {
             $query->where('store_id', $user->default_store_id);
         }
 
@@ -205,6 +205,7 @@ class CashDrawerController extends Controller
         return Inertia::render('Dashboard/Shifts/Index', [
             'drawers' => $drawers,
             'filters' => $request->only(['date_from', 'date_to']),
+            'isAdmin' => $isSuperAdmin || $user->hasRole('admin'),
         ]);
     }
 
@@ -216,6 +217,7 @@ class CashDrawerController extends Controller
         return Inertia::render('Dashboard/Shifts/Show', [
             'drawer' => $drawer,
             'summary' => $summary,
+            'isAdmin' => Auth::user()->hasRole('super-admin') || Auth::user()->hasRole('admin'),
         ]);
     }
 

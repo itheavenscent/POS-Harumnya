@@ -306,120 +306,163 @@ export default function PrintShift({ drawer, summary }) {
     };
 
     return (
-        <div className="min-h-screen bg-slate-100 flex justify-center py-8 print:py-0 print:bg-white">
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-950">
             <Head title="Cetak Rekap Shift" />
+            
+            <style>{`
+                @media print {
+                    body * { visibility:hidden !important; }
+                    #print-area, #print-area * { visibility:visible !important; }
+                    #print-area { position:fixed; inset:0; display:flex; justify-content:center; }
+                    .no-print { display:none !important; }
+                }
+            `}</style>
 
-            <div className="w-[80mm] bg-white p-4 text-[10px] font-mono text-black mx-auto">
-                <div className="text-center mb-4">
-                    <h1 className="font-bold text-sm mb-1 uppercase">{drawer.store?.name}</h1>
-                    <p className="text-[9px]">{drawer.store?.address}</p>
-                    <div className="mt-2 border-y border-dashed border-black py-1 font-bold">
-                        LAPORAN REKAP SHIFT
-                    </div>
-                </div>
-
-                <div className="mb-4 space-y-1">
-                    <div className="flex justify-between"><span>Kasir:</span> <span>{drawer.cashier?.name}</span></div>
-                    <div className="flex justify-between"><span>Buka:</span> <span>{formatDate(drawer.opened_at)}</span></div>
-                    <div className="flex justify-between"><span>Tutup:</span> <span>{formatDate(drawer.closed_at)}</span></div>
-                </div>
-
-                <div className="border-b border-dashed border-black pb-2 mb-2">
-                    <div className="flex justify-between"><span>Modal Awal:</span> <span>{fmt(drawer.starting_cash)}</span></div>
-                    <div className="flex justify-between"><span>Total Tunai:</span> <span>{fmt(drawer.total_cash_sales)}</span></div>
-                    <div className="flex justify-between"><span>Total Non-Tunai:</span> <span>{fmt(drawer.total_non_cash_sales)}</span></div>
-                </div>
-
-                {/* Items Summary */}
-                <div className="mb-4">
-                    <p className="font-bold border-b border-black mb-1">RINGKASAN ITEM</p>
-                    {summary.items?.map((item, i) => (
-                        <div key={i} className="mb-1">
-                            <div className="flex justify-between">
-                                <span className="flex-1 truncate">{item.product_name}</span>
-                                <span className="ml-2">{item.total_qty}x</span>
-                            </div>
-                            <div className="flex justify-between text-[8px] text-slate-600 italic">
-                                <span>{item.variant_name}</span>
-                                <span>{fmt(item.total_amount)}</span>
-                            </div>
+            {/* ── Sticky Top Bar ── */}
+            <div className="no-print sticky top-0 z-10 bg-white/80 backdrop-blur-md dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 shadow-sm">
+                <div className="max-w-2xl mx-auto px-4 py-3 space-y-2.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <Link href={route("cash-drawers.index")}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                <IconArrowLeft size={15}/> Kembali
+                            </Link>
                         </div>
-                    ))}
-                </div>
-
-                {/* Cash Transactions */}
-                {summary.cash_transactions?.length > 0 && (
-                    <div className="mb-4">
-                        <p className="font-bold border-b border-black mb-1">CASH IN / OUT</p>
-                        {summary.cash_transactions.map((tr, i) => (
-                            <div key={i} className="flex justify-between text-[9px]">
-                                <span>{tr.type === 'cash_in' ? '[IN]' : '[OUT]'} {tr.description}</span>
-                                <span>{tr.type === 'cash_in' ? '' : '-'}{fmt(tr.amount)}</span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* Payments Breakdown */}
-                <div className="mb-4">
-                    <p className="font-bold border-b border-black mb-1">METODE PEMBAYARAN</p>
-                    {summary.payments?.map((p, i) => (
-                        <div key={i} className="flex justify-between">
-                            <span>{p.name} ({p.count}x)</span>
-                            <span>{fmt(p.total)}</span>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => window.print()} title="Cetak via browser"
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700">
+                                <IconPrinter size={15}/>
+                            </button>
                         </div>
-                    ))}
-                </div>
-
-                <div className="border-t border-black pt-2 mb-4 space-y-1 font-bold">
-                    <div className="flex justify-between"><span>Ekspektasi:</span> <span>{fmt(drawer.expected_ending_cash)}</span></div>
-                    <div className="flex justify-between"><span>Aktual:</span> <span>{fmt(drawer.actual_ending_cash)}</span></div>
-                    <div className="flex justify-between pt-1 border-t border-dashed border-black">
-                        <span>SELISIH:</span> <span>{fmt(drawer.difference)}</span>
                     </div>
-                </div>
 
-                {drawer.notes && (
-                    <div className="mb-4 text-[9px] italic border-t border-dashed border-black pt-2">
-                        <p>Catatan: {drawer.notes}</p>
+                    <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        {bt.status !== "connected" && bt.supported && (
+                            <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                                <span className="text-base leading-none mt-0.5">📋</span>
+                                <div className="space-y-0.5">
+                                    <p className="font-semibold">Sebelum connect, pastikan sudah pairing dulu:</p>
+                                    <p>1. Buka <strong>Pengaturan → Bluetooth</strong> di tablet/HP</p>
+                                    <p>2. Cari nama printer → Tap <strong>Pasangkan</strong></p>
+                                    <p>3. Masukkan PIN: <strong>0000</strong> atau <strong>1234</strong></p>
+                                    <p>4. Kembali ke sini → tap <strong>Hubungkan Printer BT</strong></p>
+                                </div>
+                            </div>
+                        )}
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button onClick={btOnClick}
+                                disabled={bt.status === "connecting" || bt.status === "reconnecting"}
+                                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${BT_UI.cls}`}>
+                                {BT_UI.icon} {BT_UI.label}
+                            </button>
+                            {bt.status === "connected" && (
+                                <button onClick={handleBtPrint} disabled={printing}
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm font-semibold text-white disabled:opacity-60">
+                                    {printing
+                                        ? <><IconLoader2 size={14} className="animate-spin"/> Mengirim...</>
+                                        : <><IconPrinter size={14}/> Cetak Bluetooth</>}
+                                </button>
+                            )}
+                            {bt.error && (
+                                <div className="flex flex-col gap-1 w-full">
+                                    <span className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-3 py-1.5 rounded-lg">
+                                        <IconAlertCircle size={13}/> {bt.error}
+                                    </span>
+                                </div>
+                            )}
+                            {printMsg && (
+                                <span className={`text-xs px-3 py-1.5 rounded-lg ${printMsg.ok ? "text-emerald-700 bg-emerald-50" : "text-red-600 bg-red-50"}`}>
+                                    {printMsg.ok ? "✓" : "✗"} {printMsg.text}
+                                </span>
+                            )}
+                        </div>
                     </div>
-                )}
-
-                <div className="text-center mt-6 text-[9px]">
-                    <p>Dicetak: {formatDate(new Date())}</p>
-                    <p className="mt-2 font-bold">*** HARUMNYA POS ***</p>
                 </div>
             </div>
 
-            <div className="fixed bottom-6 right-6 flex flex-wrap items-center gap-3 print:hidden">
-                {bt.status === "connected" && (
-                    <button onClick={handleBtPrint} disabled={printing}
-                        className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-xl shadow-lg disabled:opacity-60">
-                        {printing
-                            ? <><IconLoader2 size={18} className="animate-spin"/> Mengirim...</>
-                            : <><IconPrinter size={18}/> Cetak Bluetooth</>}
-                    </button>
-                )}
-                
-                <button onClick={btOnClick}
-                    disabled={bt.status === "connecting" || bt.status === "reconnecting"}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl shadow-lg transition-colors ${BT_UI.cls}`}>
-                    {BT_UI.icon} {BT_UI.label}
-                </button>
+            {/* ── Receipt Preview ── */}
+            <div className="flex justify-center py-8 print:py-0">
+                <div id="print-area" className="w-[80mm] bg-white p-4 text-[10px] font-mono text-black mx-auto shadow-md print:shadow-none">
+                    <div className="text-center mb-4">
+                        <h1 className="font-bold text-sm mb-1 uppercase">{drawer.store?.name}</h1>
+                        <p className="text-[9px]">{drawer.store?.address}</p>
+                        <div className="mt-2 border-y border-dashed border-black py-1 font-bold">
+                            LAPORAN REKAP SHIFT
+                        </div>
+                    </div>
 
-                <Link href={route("cash-drawers.index")} className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 border border-slate-200 rounded-xl shadow-lg">
-                    <IconArrowLeft size={18} /> Kembali
-                </Link>
-                
-                <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl shadow-lg">
-                    <IconPrinter size={18} /> Cetak Browser
-                </button>
+                    <div className="mb-4 space-y-1">
+                        <div className="flex justify-between"><span>Kasir:</span> <span>{drawer.cashier?.name}</span></div>
+                        <div className="flex justify-between"><span>Buka:</span> <span>{formatDate(drawer.opened_at)}</span></div>
+                        <div className="flex justify-between"><span>Tutup:</span> <span>{formatDate(drawer.closed_at)}</span></div>
+                    </div>
 
-                {printMsg && (
-                    <span className={`text-xs px-3 py-1.5 rounded-lg ${printMsg.ok ? "text-emerald-700 bg-emerald-50" : "text-red-600 bg-red-50"}`}>
-                        {printMsg.ok ? "✓" : "✗"} {printMsg.text}
-                    </span>
-                )}
+                    <div className="border-b border-dashed border-black pb-2 mb-2">
+                        <div className="flex justify-between"><span>Modal Awal:</span> <span>{fmt(drawer.starting_cash)}</span></div>
+                        <div className="flex justify-between"><span>Total Tunai:</span> <span>{fmt(drawer.total_cash_sales)}</span></div>
+                        <div className="flex justify-between"><span>Total Non-Tunai:</span> <span>{fmt(drawer.total_non_cash_sales)}</span></div>
+                    </div>
+
+                    {/* Items Summary */}
+                    <div className="mb-4">
+                        <p className="font-bold border-b border-black mb-1">RINGKASAN ITEM</p>
+                        {summary.items?.map((item, i) => (
+                            <div key={i} className="mb-1">
+                                <div className="flex justify-between">
+                                    <span className="flex-1 truncate">{item.product_name}</span>
+                                    <span className="ml-2">{item.total_qty}x</span>
+                                </div>
+                                <div className="flex justify-between text-[8px] text-slate-600 italic">
+                                    <span>{item.variant_name}</span>
+                                    <span>{fmt(item.total_amount)}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Cash Transactions */}
+                    {summary.cash_transactions?.length > 0 && (
+                        <div className="mb-4">
+                            <p className="font-bold border-b border-black mb-1">CASH IN / OUT</p>
+                            {summary.cash_transactions.map((tr, i) => (
+                                <div key={i} className="flex justify-between text-[9px]">
+                                    <span>{tr.type === 'cash_in' ? '[IN]' : '[OUT]'} {tr.description}</span>
+                                    <span>{tr.type === 'cash_in' ? '' : '-'}{fmt(tr.amount)}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Payments Breakdown */}
+                    <div className="mb-4">
+                        <p className="font-bold border-b border-black mb-1">METODE PEMBAYARAN</p>
+                        {summary.payments?.map((p, i) => (
+                            <div key={i} className="flex justify-between">
+                                <span>{p.name} ({p.count}x)</span>
+                                <span>{fmt(p.total)}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="border-t border-black pt-2 mb-4 space-y-1 font-bold">
+                        <div className="flex justify-between"><span>Ekspektasi:</span> <span>{fmt(drawer.expected_ending_cash)}</span></div>
+                        <div className="flex justify-between"><span>Aktual:</span> <span>{fmt(drawer.actual_ending_cash)}</span></div>
+                        <div className="flex justify-between pt-1 border-t border-dashed border-black">
+                            <span>SELISIH:</span> <span>{fmt(drawer.difference)}</span>
+                        </div>
+                    </div>
+
+                    {drawer.notes && (
+                        <div className="mb-4 text-[9px] italic border-t border-dashed border-black pt-2">
+                            <p>Catatan: {drawer.notes}</p>
+                        </div>
+                    )}
+
+                    <div className="text-center mt-6 text-[9px]">
+                        <p>Dicetak: {formatDate(new Date())}</p>
+                        <p className="mt-2 font-bold">*** HARUMNYA POS ***</p>
+                    </div>
+                </div>
             </div>
         </div>
     );

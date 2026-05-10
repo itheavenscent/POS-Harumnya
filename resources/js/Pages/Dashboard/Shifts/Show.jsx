@@ -1,6 +1,7 @@
 import React from "react";
 import { Head, Link } from "@inertiajs/react";
 import POSLayout from "@/Layouts/POSLayout";
+import AppLayout from "@/Layouts/DashboardLayout";
 import {
     IconArrowLeft,
     IconPrinter,
@@ -14,7 +15,7 @@ import {
     IconFlask
 } from "@tabler/icons-react";
 
-export default function Show({ drawer, summary }) {
+export default function Show({ drawer, summary, isAdmin }) {
     const fmt = (v = 0) =>
         Number(v || 0).toLocaleString("id-ID", {
             style: "currency",
@@ -30,8 +31,10 @@ export default function Show({ drawer, summary }) {
             year: "numeric",
         }) + " at " + new Date(date).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
 
+    const Layout = isAdmin ? AppLayout : POSLayout;
+
     return (
-        <POSLayout>
+        <Layout>
             <Head title={`Detail Shift - ${drawer.cashier?.name}`} />
             <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden">
                 {/* Header Section */}
@@ -343,6 +346,6 @@ export default function Show({ drawer, summary }) {
                     </div>
                 </div>
             </div>
-        </POSLayout>
+        </Layout>
     );
 }

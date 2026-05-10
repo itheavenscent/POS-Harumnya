@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Head, Link, router } from "@inertiajs/react";
 import POSLayout from "@/Layouts/POSLayout";
+import AppLayout from "@/Layouts/DashboardLayout";
 import {
     IconCalendar,
     IconChevronRight,
@@ -12,7 +13,7 @@ import {
     IconEye
 } from "@tabler/icons-react";
 
-export default function Index({ drawers, filters }) {
+export default function Index({ drawers, filters, isAdmin }) {
     const [dateFrom, setDateFrom] = useState(filters.date_from || "");
     const [dateTo, setDateTo] = useState(filters.date_to || "");
 
@@ -34,8 +35,10 @@ export default function Index({ drawers, filters }) {
             minimumFractionDigits: 0,
         });
 
+    const Layout = isAdmin ? AppLayout : POSLayout;
+
     return (
-        <POSLayout>
+        <Layout>
             <Head title="Histori Shift" />
             <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden">
                 {/* Header Section */}
@@ -198,6 +201,6 @@ export default function Index({ drawers, filters }) {
                     )}
                 </div>
             </div>
-        </POSLayout>
+        </Layout>
     );
 }

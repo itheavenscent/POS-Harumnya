@@ -67,7 +67,6 @@ function buildReceipt(sale, saleItems, payments, change) {
     ep.init().lineSpacing(2);
 
     // ══ BRAND ══
-    // Gunakan manual center dengan W=32 agar benar-benar konsisten di semua printer
     ep.bold(true).center("- HARUMNYA -", W).lf().bold(false);
 
     // ══ INFO TOKO ══
@@ -75,7 +74,6 @@ function buildReceipt(sale, saleItems, payments, change) {
     
     if (sale.store?.address) {
         const addr = String(sale.store.address);
-        // Pecah dan center manual per baris
         for (let i = 0; i < addr.length; i += W) {
             ep.center(addr.slice(i, i + W).trim(), W).lf();
         }
@@ -91,7 +89,7 @@ function buildReceipt(sale, saleItems, payments, change) {
     if (sale.customer?.name || sale.customer_name)
         ep.row2("Pelanggan", sale.customer?.name ?? sale.customer_name, W).lf();
 
-    // Sales — center & bold
+    // Sales
     const salesNameEsc = sale.sales_person?.name ?? sale.salesperson?.name
         ?? sale.sales_person_name ?? sale.salesperson_name ?? sale.staff?.name ?? null;
     if (salesNameEsc) {
@@ -202,21 +200,17 @@ function useBluetooth() {
     const deviceRef = useRef(null);
     const supported = typeof navigator !== "undefined" && !!navigator.bluetooth;
 
-    // Load paired devices on mount to enable "Reconnect" without picker
     useEffect(() => {
         if (supported && navigator.bluetooth.getDevices) {
             navigator.bluetooth.getDevices().then(devices => {
                 if (devices.length > 0) {
-                    // Try to find the one we used last, or just the first one
                     const lastId = localStorage.getItem("bt_printer_id");
                     const dev = devices.find(d => d.id === lastId) || devices[0];
                     
                     deviceRef.current = dev;
                     setDevice(dev);
                     setDevName(dev.name || "Printer BT");
-                    // Don't set status to connected yet, just ready to reconnect
                     
-                    // Listen for disconnection even if not fully connected yet
                     dev.removeEventListener("gattserverdisconnected", () => handleDisconnect(dev));
                     dev.addEventListener("gattserverdisconnected", () => handleDisconnect(dev));
                 }
@@ -242,7 +236,7 @@ function useBluetooth() {
         charRef.current = null;
         if (deviceRef.current && deviceRef.current.id === dev.id) {
             setStatus("reconnecting");
-            let retries = 5; // Increase retries
+            let retries = 5;
             while (retries-- > 0) {
                 await new Promise(r => setTimeout(r, 1500));
                 try { 
@@ -255,7 +249,6 @@ function useBluetooth() {
             }
         }
         setStatus("idle"); 
-        // We keep the deviceRef so user can manually "Hubungkan Ulang" easily
     }, [connectGatt]);
 
     const connect = useCallback(async () => {
@@ -410,19 +403,19 @@ export default function Print({ sale, fromTransaction }) {
             <div className="min-h-screen bg-slate-100 dark:bg-slate-950">
 
                 {/* ── Sticky Top Bar ── */}
-                <div className="no-print sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm">
+                <div className="no-print sticky top-0 z-10 bg-white/80 backdrop-blur-md dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 shadow-sm">
                     <div className="max-w-2xl mx-auto px-4 py-3 space-y-2.5">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                                 {fromTransaction && (
                                     <Link href={route("transactions.index")}
-                                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-sm font-semibold text-white shadow shadow-primary-500/30">
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-sm font-semibold text-white shadow shadow-cyan-500/30 transition-colors">
                                         <IconShoppingBag size={15}/> Transaksi Baru
                                     </Link>
                                 )}
                                 <Link href={route("transactions.index")}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50">
-                                    <IconArrowLeft size={15}/> Riwayat
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                    <IconArrowLeft size={15}/> Kembali
                                 </Link>
                             </div>
                             <div className="flex items-center gap-2">
@@ -435,13 +428,13 @@ export default function Print({ sale, fromTransaction }) {
                                         <button key={key} onClick={() => setMode(key)}
                                             className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
                                                 mode===key ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow"
-                                                           : "text-slate-500 hover:text-slate-700"}`}>
+                                                           : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}`}>
                                             <Icon size={13}/> {label}
                                         </button>
                                     ))}
                                 </div>
                                 <button onClick={() => window.print()} title="Cetak via browser"
-                                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-600 hover:bg-slate-50">
+                                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700">
                                     <IconPrinter size={15}/>
                                 </button>
                             </div>
@@ -555,19 +548,20 @@ export default function Print({ sale, fromTransaction }) {
 // Receipt Preview
 // ═════════════════════════════════════════════════════════════════════════════
 function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
-    const fs   = is58 ? 10 : 12;
-    const fsSM = is58 ?  9 : 10;
-    const font = "'Courier New', Courier, monospace";
+    const fs   = is58 ? 11 : 13;
+    const fsSM = is58 ?  9 : 11;
+    const font = "Inter, system-ui, -apple-system, sans-serif";
+    const fontMono = "'JetBrains Mono', monospace";
 
-    const base = { fontFamily:font, fontSize:fs,   lineHeight:1.75, color:"#111" };
-    const dim  = { fontFamily:font, fontSize:fsSM, lineHeight:1.6,  color:"#666" };
+    const base = { fontFamily:font, fontSize:fs, lineHeight:1.6, color:"#1e293b" };
+    const dim  = { fontFamily:font, fontSize:fsSM, lineHeight:1.5, color:"#64748b" };
 
-    const Row2 = ({ left, right, bold=false, xl=false }) => (
+    const Row2 = ({ left, right, bold=false, xl=false, mono=false }) => (
         <div style={{
             display:"flex", justifyContent:"space-between", alignItems:"baseline",
-            fontFamily:font, fontSize: xl ? fs+3 : fs,
-            fontWeight: bold ? "bold" : "normal", color:"#111",
-            lineHeight: xl ? 2.2 : 1.75,
+            fontFamily: mono ? fontMono : font, fontSize: xl ? fs+3 : fs,
+            fontWeight: bold ? "700" : "400", color: xl ? "#0f172a" : "#1e293b",
+            lineHeight: xl ? 1.8 : 1.6,
         }}>
             <span style={{ flex:1, paddingRight:4 }}>{left}</span>
             <span style={{ flexShrink:0, textAlign:"right" }}>{right}</span>
@@ -575,43 +569,41 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
     );
 
     const Divider = ({ dashed=false }) => (
-        <div style={{ borderTop: dashed ? "1px dashed #ccc" : "1px solid #888", margin:"6px 0" }}/>
+        <div style={{ borderTop: dashed ? "1px dashed #e2e8f0" : "1px solid #cbd5e1", margin:"8px 0" }}/>
     );
 
     const Spacer = ({h=8}) => <div style={{height:h}}/>;
 
-    const pad = is58 ? "18px 14px" : "22px 18px";
-    const negMx = is58 ? { margin:"8px -14px", padding:"8px 14px" } : { margin:"8px -18px", padding:"8px 18px" };
+    const pad = is58 ? "24px 16px" : "32px 24px";
+    const negMx = is58 ? { margin:"10px -16px", padding:"10px 16px" } : { margin:"12px -24px", padding:"12px 24px" };
 
     return (
         <div style={{ padding:pad, ...base, background:"#fff" }}>
 
             {/* ══ BRAND ══ */}
-            <div style={{ textAlign:"center", marginBottom:8 }}>
-                <div style={{ ...dim, letterSpacing:3, marginBottom:4 }}>· · · · · · · · ·</div>
+            <div style={{ textAlign:"center", marginBottom:12 }}>
                 <div style={{
                     fontFamily:    font,
                     fontWeight:    "900",
-                    fontSize:      is58 ? 17 : 22,
-                    letterSpacing: 1,
-                    lineHeight:    1.3,
-                    color:         "#111",
-                    textAlign:     "center",
-                    display:       "block",
-                    width:         "100%",
+                    fontSize:      is58 ? 18 : 24,
+                    letterSpacing: "0.1em",
+                    lineHeight:    1.2,
+                    color:         "#0f172a",
+                    textTransform: "uppercase",
                 }}>
-                    — HARUMNYA —
+                    Harumnya
                 </div>
-                <div style={{ ...dim, letterSpacing:3, marginTop:4 }}>· · · · · · · · ·</div>
+                <div style={{ ...dim, letterSpacing:1, marginTop:2, textTransform:"uppercase", fontSize:fsSM-1 }}>
+                    Premium Perfume
+                </div>
             </div>
 
             {/* ══ INFO TOKO ══ */}
-            <div style={{ textAlign:"center", marginBottom:6 }}>
-                <div style={{ fontWeight:"bold", fontFamily:font, fontSize:fs }}>
+            <div style={{ textAlign:"center", marginBottom:8 }}>
+                <div style={{ fontWeight:"700", fontFamily:font, fontSize:fs, color:"#0f172a" }}>
                     {sale.store?.name ?? "PARFUM CUSTOM"}
                 </div>
                 {sale.store?.address && (
-                    // FIX: whiteSpace:normal + wordBreak:break-word agar wrap dan tetap center
                     <div style={{
                         ...dim, marginTop:2,
                         whiteSpace: "normal",
@@ -630,12 +622,13 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
             {/* ══ INFO TRANSAKSI ══ */}
             <Row2 left={fmtDate(sale.sold_at)} right={fmtTime(sale.sold_at)}/>
             <Divider dashed/>
-            <Row2 left="No. Struk" right={sale.sale_number}/>
+            <Row2 left="No. Struk" right={sale.sale_number} mono/>
             <Row2 left="Kasir"     right={sale.cashier?.name ?? sale.cashier_name ?? "-"}/>
             {(sale.customer?.name || sale.customer_name) && (
                 <Row2 left="Pelanggan" right={sale.customer?.name ?? sale.customer_name}/>
             )}
-            {/* Sales — CENTER & BOLD, menonjol */}
+            
+            {/* Sales */}
             {(() => {
                 const salesName = sale.sales_person?.name
                     ?? sale.salesperson?.name
@@ -646,18 +639,19 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                 return salesName ? (
                     <div style={{
                         textAlign:   "center",
-                        fontWeight:  "bold",
+                        fontWeight:  "700",
                         fontFamily:  font,
-                        fontSize:    fs,
-                        lineHeight:  1.9,
-                        marginTop:   5,
+                        fontSize:    fsSM,
+                        lineHeight:  1.6,
+                        marginTop:   6,
                         marginBottom:2,
-                        background:  "#f0f0f0",
-                        borderRadius:3,
-                        padding:     "3px 0",
-                        letterSpacing:0.5,
+                        background:  "#f8fafc",
+                        border:      "1px solid #e2e8f0",
+                        borderRadius:6,
+                        padding:     "4px 8px",
+                        color:       "#0f172a",
                     }}>
-                        ★ Sales: {salesName} ★
+                        Sales: {salesName}
                     </div>
                 ) : null;
             })()}
@@ -678,21 +672,21 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
 
                 return (
                     <div key={i} style={{
-                        paddingTop:    i === 0 ? 0 : 8,
-                        paddingBottom: 8,
-                        borderBottom:  i < saleItems.length - 1 ? "1px dashed #d0d0d0" : "none",
-                        marginBottom:  i < saleItems.length - 1 ? 0 : 2,
+                        paddingTop:    i === 0 ? 0 : 10,
+                        paddingBottom: 10,
+                        borderBottom:  i < saleItems.length - 1 ? "1px dashed #e2e8f0" : "none",
                     }}>
                         <div style={{
-                            fontWeight:"bold", fontFamily:font, fontSize:fs,
-                            lineHeight:1.5, wordBreak:"break-word", color:"#111",
-                            marginBottom:3,
+                            fontWeight:"700", fontFamily:font, fontSize:fs,
+                            lineHeight:1.4, wordBreak:"break-word", color:"#0f172a",
+                            marginBottom:2,
                         }}>
                             {name}
                         </div>
                         <Row2
                             left={`${qty}x @${isFree ? "GRATIS" : fmtN(item.unit_price)}`}
                             right={isFree ? "GRATIS" : fmtN(item.subtotal)}
+                            mono
                         />
                         {pkgs.map((p, j) => {
                             const pqty  = getQty(p);
@@ -701,12 +695,14 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                             return (
                                 <div key={j} style={{
                                     marginLeft:8, marginTop:4,
-                                    paddingLeft:7, borderLeft:"2px solid #ddd",
+                                    paddingLeft:8, borderLeft:"2px solid #e2e8f0",
                                 }}>
-                                    <div style={{ ...dim, fontWeight:"bold", marginBottom:2 }}>+ {pName}</div>
+                                    <div style={{ ...dim, fontWeight:"600", marginBottom:1, color:"#0f172a" }}>+ {pName}</div>
                                     <Row2
                                         left={`${pqty}x @${pFree ? "GRATIS" : fmtN(p.unit_price)}`}
                                         right={pFree ? "GRATIS" : fmtN(p.unit_price * pqty)}
+                                        mono
+                                        dim
                                     />
                                 </div>
                             );
@@ -720,58 +716,66 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
 
             {/* ══ SUMMARY ══ */}
             <Spacer h={4}/>
-            <Row2 left="Subtotal" right={"Rp " + fmtN(sale.subtotal_perfume ?? 0)}/>
+            <Row2 left="Subtotal" right={"Rp " + fmtN(sale.subtotal_perfume ?? 0)} mono/>
             {Number(sale.subtotal_packaging) > 0 && (
-                <Row2 left="Kemasan" right={"Rp " + fmtN(sale.subtotal_packaging)}/>
+                <Row2 left="Kemasan" right={"Rp " + fmtN(sale.subtotal_packaging)} mono/>
             )}
             {Number(sale.discount_amount) > 0 && (
-                <Row2 left="Diskon" right={"- Rp " + fmtN(sale.discount_amount)}/>
+                <Row2 left="Diskon" right={"- Rp " + fmtN(sale.discount_amount)} mono/>
             )}
             {Number(sale.points_redemption_value) > 0 && (
-                <Row2 left="Redeem Poin" right={"- Rp " + fmtN(sale.points_redemption_value)}/>
+                <Row2 left="Redeem Poin" right={"- Rp " + fmtN(sale.points_redemption_value)} mono/>
             )}
 
             {/* ══ TOTAL ══ */}
-            <div style={{ background:"#111", color:"#fff", borderRadius:4, ...negMx }}>
-                <Row2 left="TOTAL" right={"Rp " + fmtN(sale.total)} bold xl/>
+            <div style={{ background:"#0f172a", color:"#fff", borderRadius:8, ...negMx }}>
+                <div style={{
+                    display:"flex", justifyContent:"space-between", alignItems:"baseline",
+                    fontFamily:font, fontSize: fs+4,
+                    fontWeight: "900", color:"#fff",
+                }}>
+                    <span style={{ flex:1 }}>TOTAL</span>
+                    <span style={{ flexShrink:0, textAlign:"right", fontFamily:fontMono }}>Rp {fmtN(sale.total)}</span>
+                </div>
             </div>
 
-            <Spacer h={6}/>
+            <Spacer h={8}/>
 
             {/* ══ PEMBAYARAN ══ */}
             {payments.map((p, i) => (
                 <Row2 key={i}
                     left={String(p.payment_method?.name ?? p.payment_method_name ?? "Cash")}
                     right={"Rp " + fmtN(p.amount)}
+                    mono
                 />
             ))}
             {change > 0 && (
-                <div style={{ fontWeight:"bold", color:"#166534", marginTop:2 }}>
-                    <Row2 left="Kembalian" right={"Rp " + fmtN(change)} bold/>
+                <div style={{ fontWeight:"700", color:"#059669", marginTop:2 }}>
+                    <Row2 left="Kembalian" right={"Rp " + fmtN(change)} bold mono/>
                 </div>
             )}
             {Number(sale.points_earned) > 0 && (
                 <div style={{
-                    background:"#fffbeb", padding:"4px 8px", borderRadius:4, marginTop:6,
-                    fontFamily:font, fontSize:fsSM, color:"#92400e", textAlign:"center",
-                    border:"1px dashed #fcd34d",
+                    background:"#fef3c7", padding:"6px 10px", borderRadius:6, marginTop:8,
+                    fontFamily:font, fontSize:fsSM, color:"#b45309", textAlign:"center",
+                    border:"1px solid #fde68a", fontWeight:"600",
                 }}>
                     ⭐ Poin diperoleh: +{sale.points_earned} poin
                 </div>
             )}
 
-            <Spacer h={10}/>
+            <Spacer h={12}/>
             <Divider/>
 
             {/* ══ FOOTER ══ */}
-            <div style={{ textAlign:"center", fontFamily:font, fontSize:fsSM, color:"#555", lineHeight:2.2, marginTop:4 }}>
-                <div>Terima kasih sudah berbelanja!</div>
-                <div style={{ fontWeight:"bold", fontSize:fs, color:"#111", letterSpacing:1 }}>
-                    — HARUMNYA —
+            <div style={{ textAlign:"center", fontFamily:font, fontSize:fsSM, color:"#64748b", lineHeight:1.6, marginTop:6 }}>
+                <div>Terima kasih atas kunjungan Anda</div>
+                <div style={{ fontWeight:"700", fontSize:fs, color:"#0f172a", letterSpacing:1, textTransform:"uppercase", marginTop:2 }}>
+                    Harumnya
                 </div>
             </div>
 
-            <Spacer h={6}/>
+            <Spacer h={4}/>
         </div>
     );
 }

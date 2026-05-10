@@ -87,6 +87,7 @@ class TransactionController extends Controller
 
         $salesPeople = SalesPerson::select('id', 'name', 'code', 'phone')
             ->where('is_active', true)
+            ->where('store_id', $storeId)
             ->orderBy('name')
             ->get();
 
@@ -848,8 +849,8 @@ class TransactionController extends Controller
     {
         $request->validate([
             'payment_method_id' => 'required|uuid|exists:payment_methods,id',
-            'customer_id' => 'required|uuid|exists:customers,id',
-            'sales_person_id' => 'required|uuid|exists:sales_people,id',
+            'customer_id' => 'nullable|uuid|exists:customers,id',
+            'sales_person_id' => 'nullable|uuid|exists:sales_people,id',
             'discount_type_id' => 'nullable|uuid|exists:discount_types,id',
             'discount_amount' => 'nullable|numeric|min:0',
             'cash_amount' => 'nullable|numeric|min:0',
@@ -926,7 +927,7 @@ class TransactionController extends Controller
                 'sales_person_id' => $salesPerson?->id,
                 'sales_person_name' => $salesPerson?->name,
                 'customer_id' => $customer?->id,
-                'customer_name' => $customer?->name,
+                'customer_name' => $customer?->name ?? 'Pelanggan Umum',
                 'sold_at' => now(),
                 'subtotal_perfume' => $subtotalPerfume,
                 'subtotal_packaging' => $subtotalPackaging,
@@ -1088,7 +1089,8 @@ class TransactionController extends Controller
 
             // Loyalty Points
             if ($customer && $total > 0) {
-                $pointsEarned = (int) floor($total / 10000);
+                $pointRate = (int) \App\Models\AppSetting::getValue('loyalty_point_rate', 10000);
+                $pointsEarned = $pointRate > 0 ? (int) floor($total / $pointRate) : 0;
 
                 if ($pointsEarned > 0) {
                     $sale->update(['points_earned' => $pointsEarned]);

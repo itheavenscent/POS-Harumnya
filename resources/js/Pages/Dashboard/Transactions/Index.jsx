@@ -813,6 +813,11 @@ export default function Index({
     const [isSubmitting,      setIsSubmitting]      = useState(false);
     const [showPaymentModal,  setShowPaymentModal]  = useState(false);
     const [showDiscountModal, setShowDiscountModal] = useState(false);
+    const [localAutoPromo, setLocalAutoPromo] = useState(autoPromo);
+    
+    useEffect(() => {
+        setLocalAutoPromo(autoPromo);
+    }, [autoPromo]);
 
     // ── State: cart ────────────────────────────────────────────────────────────
     const [custName,  setCustName]  = useState("");
@@ -1173,11 +1178,7 @@ export default function Index({
                 onConfirm={handleCustomConfirm}
                 initialVariant={customTabVariant}
             />
-            <PromotionModal 
-                show={showPromoModal} 
-                onClose={() => setShowPromoModal(false)} 
-                promo={autoPromo} 
-            />
+
 
             {/* Loading overlay */}
             {(addingToCart || addingCustomToCart) && (
@@ -1762,9 +1763,9 @@ export default function Index({
             )}
 
             {/* ── Auto Promo Modal ───────────────────────────────────────────── */}
-            <Modal show={autoPromo !== null} onClose={() => {
-                if (autoPromo) setDismissedPromos(prev => [...prev, autoPromo.id]);
-                setAutoPromo(null);
+            <Modal show={localAutoPromo !== null} onClose={() => {
+                if (localAutoPromo) setDismissedPromos(prev => [...prev, localAutoPromo.id]);
+                setLocalAutoPromo(null);
             }} maxW="max-w-md">
                 <div className="p-6 text-center">
                     <div className="w-16 h-16 mx-auto bg-emerald-100 dark:bg-emerald-900/40 rounded-full flex items-center justify-center mb-4 shadow-sm border-4 border-white dark:border-slate-900">
@@ -1772,14 +1773,14 @@ export default function Index({
                     </div>
                     <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2 leading-tight">Selamat! Promo Tersedia 🎉</h2>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 px-4">
-                        Pelanggan telah memenuhi syarat untuk mendapatkan <span className="font-bold text-emerald-600 dark:text-emerald-400">{autoPromo?.name}</span>.
-                        {Number(autoPromo?.min_purchase_amount) > 0 && <span className="block mt-1 text-xs text-slate-400">Syarat minimal belanja {fmt(autoPromo?.min_purchase_amount)} telah tercapai.</span>}
+                        Pelanggan telah memenuhi syarat untuk mendapatkan <span className="font-bold text-emerald-600 dark:text-emerald-400">{localAutoPromo?.name}</span>.
+                        {Number(localAutoPromo?.min_purchase_amount) > 0 && <span className="block mt-1 text-xs text-slate-400">Syarat minimal belanja {fmt(localAutoPromo?.min_purchase_amount)} telah tercapai.</span>}
                     </p>
                     <div className="flex gap-3">
                         <button 
                             onClick={() => {
-                                if (autoPromo) setDismissedPromos(prev => [...prev, autoPromo.id]);
-                                setAutoPromo(null);
+                                if (localAutoPromo) setDismissedPromos(prev => [...prev, localAutoPromo.id]);
+                                setLocalAutoPromo(null);
                             }}
                             className="flex-1 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex justify-center items-center gap-2">
                             Abaikan
@@ -1787,19 +1788,19 @@ export default function Index({
                         <button 
                             onClick={() => {
                                 // Hitung amount dari diskon (disamakan dengan format selectedDiscount)
-                                let obj = { ...autoPromo };
-                                if (autoPromo?.type === 'percentage') {
-                                    obj.amount = (subtotal + pkgCartTotal) * (autoPromo.value / 100);
-                                    if (autoPromo.max_discount_amount > 0 && obj.amount > autoPromo.max_discount_amount) {
-                                        obj.amount = autoPromo.max_discount_amount;
+                                let obj = { ...localAutoPromo };
+                                if (localAutoPromo?.type === 'percentage') {
+                                    obj.amount = (subtotal + pkgCartTotal) * (localAutoPromo.value / 100);
+                                    if (localAutoPromo.max_discount_amount > 0 && obj.amount > localAutoPromo.max_discount_amount) {
+                                        obj.amount = localAutoPromo.max_discount_amount;
                                     }
                                 } else {
-                                    obj.amount = autoPromo?.value || 0;
+                                    obj.amount = localAutoPromo?.value || 0;
                                 }
                                 
                                 setSelectedDiscount(obj);
-                                setAutoPromo(null);
-                                toast.success(`Promo ${autoPromo?.name} berhasil diterapkan!`);
+                                setLocalAutoPromo(null);
+                                toast.success(`Promo ${localAutoPromo?.name} berhasil diterapkan!`);
                             }}
                             className="flex-1 py-3 rounded-xl font-black text-white bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/30 transition flex justify-center items-center gap-2">
                             Terapkan Promo

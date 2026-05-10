@@ -29,14 +29,26 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        $activeCashDrawer = null;
+
+        if ($user && $user->default_store_id) {
+            $activeCashDrawer = \App\Models\CashDrawer::where('store_id', $user->default_store_id)
+                ->where('cashier_id', $user->id)
+                ->where('status', 'open')
+                ->latest()
+                ->first();
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
-                'roles' => $request->user() ? $request->user()->getRoleNames() : [],
-                'permissions' => $request->user() ? $request->user()->getPermissions() : [],
-                'super' => $request->user() ? $request->user()->isSuperAdmin() : false,
+                'user' => $user,
+                'roles' => $user ? $user->getRoleNames() : [],
+                'permissions' => $user ? $user->getPermissions() : [],
+                'super' => $user ? $user->isSuperAdmin() : false,
             ],
+            'activeCashDrawer' => $activeCashDrawer,
         ];
     }
 }

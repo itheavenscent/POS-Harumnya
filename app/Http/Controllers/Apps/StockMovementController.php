@@ -45,7 +45,39 @@ class StockMovementController extends Controller
                 $term = strtolower($s);
                 $q->where(function ($inner) use ($term) {
                     $inner->whereRaw('LOWER(reference_number) LIKE ?', ["%{$term}%"])
-                          ->orWhereRaw('LOWER(notes) LIKE ?', ["%{$term}%"]);
+                          ->orWhereRaw('LOWER(notes) LIKE ?', ["%{$term}%"])
+                          
+                          // Search in Ingredients
+                          ->orWhere(function($sub) use ($term) {
+                              $sub->where('item_type', 'ingredient')
+                                  ->whereIn('item_id', function($query) use ($term) {
+                                      $query->select('id')->from('ingredients')->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"]);
+                                  });
+                          })
+                          
+                          // Search in Packaging Materials
+                          ->orWhere(function($sub) use ($term) {
+                              $sub->where('item_type', 'packaging')
+                                  ->whereIn('item_id', function($query) use ($term) {
+                                      $query->select('id')->from('packaging_materials')->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"]);
+                                  });
+                          })
+                          
+                          // Search in Stores
+                          ->orWhere(function($sub) use ($term) {
+                              $sub->where('location_type', 'store')
+                                  ->whereIn('location_id', function($query) use ($term) {
+                                      $query->select('id')->from('stores')->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"]);
+                                  });
+                          })
+                          
+                          // Search in Warehouses
+                          ->orWhere(function($sub) use ($term) {
+                              $sub->where('location_type', 'warehouse')
+                                  ->whereIn('location_id', function($query) use ($term) {
+                                      $query->select('id')->from('warehouses')->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"]);
+                                  });
+                          });
                 });
             })
             ->when($request->movement_type, fn ($q, $t) => $q->where('movement_type', $t))
