@@ -82,7 +82,7 @@ export default function Transactions({ sales, filters }) {
                                     </tr>
                                 ) : (
                                     sales.data.map((sale) => (
-                                        <tr key={sale.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                                        <tr key={sale.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer" onClick={() => setSelectedSale(sale)}>
                                             <td className="px-6 py-4">
                                                 <div>
                                                     <p className="text-sm font-black text-slate-800 dark:text-white leading-tight">
@@ -130,7 +130,7 @@ export default function Transactions({ sales, filters }) {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <div className="flex items-center justify-center gap-2">
+                                                <div className="flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
                                                     <button
                                                         onClick={() => setSelectedSale(sale)}
                                                         className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-cyan-600 hover:border-cyan-200 transition-all shadow-sm"

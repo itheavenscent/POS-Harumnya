@@ -209,7 +209,7 @@ function buildShiftReceipt(drawer, summary) {
     const W  = 32;
     const ep = new EscPos();
 
-    ep.init().lineSpacing(2);
+    ep.init().lineSpacing(2).lf(2);
 
     // ══ BRAND ══
     ep.bold(true).center("- HARUMNYA -", W).lf().bold(false);
@@ -262,7 +262,7 @@ function buildShiftReceipt(drawer, summary) {
     ep.divider(W).lf().lf()
       .center("Terima kasih!", W).lf()
       .center("-- Harumnya --", W).lf()
-      .lf(4).defaultSpacing().cut();
+      .lf(6).defaultSpacing().cut();
 
     return ep.toBuffer();
 }
@@ -393,7 +393,7 @@ export default function PrintShift({ drawer, summary }) {
 
             {/* ── Receipt Preview ── */}
             <div className="flex justify-center py-8 print:py-0">
-                <div id="print-area" className="w-[80mm] bg-white p-4 text-[10px] font-mono text-black mx-auto shadow-md print:shadow-none">
+                <div id="print-area" className="w-[80mm] bg-white p-4 print:pt-10 print:pb-10 text-[10px] font-mono text-black mx-auto shadow-md print:shadow-none">
                     <div className="text-center mb-4">
                         <h1 className="font-bold text-sm mb-1 uppercase">{drawer.store?.name}</h1>
                         <p className="text-[9px]">{drawer.store?.address}</p>
@@ -474,6 +474,28 @@ export default function PrintShift({ drawer, summary }) {
                         <p className="mt-2 font-bold">*** HARUMNYA POS ***</p>
                     </div>
                 </div>
+            </div>
+
+            {/* Floating Bluetooth Buttons */}
+            <div className="no-print fixed bottom-20 right-4 flex flex-col gap-2 z-20">
+                <button onClick={btOnClick}
+                    disabled={bt.status === "connecting" || bt.status === "reconnecting"}
+                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${BT_UI.cls} shadow-lg`}>
+                    {BT_UI.icon} {BT_UI.label}
+                </button>
+                {bt.status === "connected" && (
+                    <button onClick={handleBtPrint} disabled={printing}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm font-semibold text-white disabled:opacity-60 shadow-lg">
+                        {printing
+                            ? <><IconLoader2 size={14} className="animate-spin"/> Mengirim...</>
+                            : <><IconPrinter size={14}/> Cetak Bluetooth</>}
+                    </button>
+                )}
+                {printMsg && (
+                    <span className={`text-xs px-3 py-1.5 rounded-lg ${printMsg.ok ? "text-emerald-700 bg-emerald-50" : "text-red-600 bg-red-50"} shadow-sm`}>
+                        {printMsg.ok ? "✓" : "✗"} {printMsg.text}
+                    </span>
+                )}
             </div>
         </div>
     );

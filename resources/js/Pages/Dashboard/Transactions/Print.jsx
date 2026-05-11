@@ -64,7 +64,7 @@ function buildReceipt(sale, saleItems, payments, change) {
     const W  = 32;
     const ep = new EscPos();
 
-    ep.init().lineSpacing(2);
+    ep.init().lineSpacing(2).lf(2);
 
     // ══ BRAND ══
     ep.bold(true).center("- HARUMNYA -", W).lf().bold(false);
@@ -144,7 +144,7 @@ function buildReceipt(sale, saleItems, payments, change) {
     ep.divider(W).lf().lf()
       .center("Terima kasih!", W).lf()
       .center("-- Harumnya --", W).lf()
-      .lf(4).defaultSpacing().cut();
+      .lf(6).defaultSpacing().cut();
 
     return ep.toBuffer();
 }
@@ -535,7 +535,7 @@ export default function Print({ sale, fromTransaction }) {
                 )}
 
                 {/* Print Area */}
-                <div id="print-area" className="max-w-2xl mx-auto px-4 py-5">
+                <div id="print-area" className="max-w-2xl mx-auto px-4 py-5 print:pt-10 print:pb-10">
                     {mode === "invoice" && (
                         <InvoiceView sale={sale} saleItems={saleItems} payments={payments}
                             totalPaid={totalPaid} change={change} statusInfo={statusInfo}/>

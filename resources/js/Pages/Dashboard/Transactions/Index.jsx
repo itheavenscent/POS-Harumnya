@@ -1489,11 +1489,11 @@ export default function Index({
                                         <div className="mt-1 flex flex-col gap-1">
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <p className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><IconCheck size={10}/> {selectedCustomer.name}</p>
-                                                {selectedCustomer.points > 0 && <span className="ml-auto text-[10px] text-amber-500 font-bold">{Number(selectedCustomer.points).toLocaleString("id-ID")} poin</span>}
+                                                {Number(selectedCustomer.points ?? 0) > 0 && <span className="ml-auto text-[10px] text-amber-500 font-bold">{Number(selectedCustomer.points).toLocaleString("id-ID")} poin</span>}
                                             </div>
                                             
                                             {/* Loyalty Reward Progress/Notification */}
-                                            {selectedCustomer.points >= loyalty_reward_threshold ? (
+                                            {Number(selectedCustomer.points ?? 0) >= loyalty_reward_threshold ? (
                                                 <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-2 flex items-center gap-2 animate-pulse shadow-sm">
                                                     <IconTrophy size={16} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                                                     <div className="flex-1">
@@ -1501,7 +1501,7 @@ export default function Index({
                                                         <p className="text-[9px] text-emerald-600 dark:text-emerald-500">{loyalty_reward_description}</p>
                                                     </div>
                                                 </div>
-                                            ) : selectedCustomer.points > 0 && (
+                                            ) : Number(selectedCustomer.points ?? 0) > 0 && (
                                                 <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
                                                     <div className="flex justify-between items-center mb-1">
                                                         <p className="text-[9px] font-bold text-slate-500">Progress Reward</p>
