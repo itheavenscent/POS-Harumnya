@@ -23,7 +23,7 @@ const fmt = (v = 0) =>
 
 const toRupiahDisplay = (val) => {
     if (val === "" || val === null || val === undefined) return "";
-    const num = parseFloat(String(val).replace(/\./g, "").replace(",", "."));
+    const num = parseFloat(val);
     if (isNaN(num)) return "";
     return num.toLocaleString("id-ID");
 };

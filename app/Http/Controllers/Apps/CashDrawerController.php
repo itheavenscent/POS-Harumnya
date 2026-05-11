@@ -225,8 +225,8 @@ class CashDrawerController extends Controller
     {
         $drawer = CashDrawer::with(['store', 'cashier'])->findOrFail($id);
         
-        abort_if($drawer->status !== 'closed', 403, 'Shift belum ditutup.');
-        abort_if($drawer->cashier_id !== Auth::id() && !Auth::user()->hasRole('super-admin'), 403);
+        // Izinkan cetak rekap meskipun shift masih buka (X-Report)
+        abort_if($drawer->cashier_id !== Auth::id() && !Auth::user()->hasRole('super-admin') && !Auth::user()->hasRole('admin'), 403);
         
         $summary = $this->getSummaryData($drawer);
 

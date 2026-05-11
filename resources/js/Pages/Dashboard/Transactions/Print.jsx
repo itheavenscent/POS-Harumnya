@@ -213,10 +213,21 @@ function useBluetooth() {
                     
                     dev.removeEventListener("gattserverdisconnected", () => handleDisconnect(dev));
                     dev.addEventListener("gattserverdisconnected", () => handleDisconnect(dev));
+
+                    // Auto-connect if we have a saved device
+                    if (lastId && dev) {
+                        setStatus("connecting");
+                        connectGatt(dev).then(() => {
+                            setStatus("connected");
+                        }).catch(err => {
+                            console.error("Auto-connect failed:", err);
+                            setStatus("idle");
+                        });
+                    }
                 }
             });
         }
-    }, [supported]);
+    }, [supported, connectGatt, handleDisconnect]);
 
     const connectGatt = useCallback(async (dev) => {
         if (dev.gatt.connected && charRef.current) return true;

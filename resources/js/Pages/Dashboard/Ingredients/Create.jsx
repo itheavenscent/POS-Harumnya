@@ -28,7 +28,7 @@ const noScroll = (e) => e.target.blur();
 // Rupiah formatting helpers
 const toRupiahDisplay = (val) => {
     if (val === "" || val === null || val === undefined) return "";
-    const num = parseFloat(String(val).replace(/\./g, "").replace(",", "."));
+    const num = parseFloat(val);
     if (isNaN(num)) return "";
     return num.toLocaleString("id-ID");
 };

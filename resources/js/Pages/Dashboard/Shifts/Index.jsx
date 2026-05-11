@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Head, Link, router } from "@inertiajs/react";
+import { Head, Link, router, usePage } from "@inertiajs/react";
 import POSLayout from "@/Layouts/POSLayout";
 import AppLayout from "@/Layouts/DashboardLayout";
 import {
@@ -35,7 +35,9 @@ export default function Index({ drawers, filters, isAdmin }) {
             minimumFractionDigits: 0,
         });
 
-    const Layout = isAdmin ? AppLayout : POSLayout;
+    const { props: { auth } } = usePage();
+    const isUserCashier = auth.roles.includes('cashier') && !auth.super;
+    const Layout = !isUserCashier ? AppLayout : POSLayout;
 
     return (
         <Layout>

@@ -70,7 +70,7 @@ class POSFeatureController extends Controller
         $user = Auth::user();
         $storeId = $user->default_store_id;
 
-        $sales = Sale::with(['customer', 'salesPerson', 'items.packagings'])
+        $sales = Sale::with(['customer', 'salesPerson', 'items.packagings.packagingMaterial', 'payments.paymentMethod'])
             ->withCount('items')
             ->where('store_id', $storeId)
             ->when(!$user->hasRole('super-admin') && !$user->hasPermissionTo('transactions-all'), function ($query) use ($user) {
