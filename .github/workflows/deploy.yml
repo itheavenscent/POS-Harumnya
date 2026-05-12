@@ -103,11 +103,11 @@ jobs:
             IMAGE_NAME=ghcr.io/${{ github.repository }} docker compose up -d --remove-orphans
 
             # Run migrations
-            docker exec harumnya_app php artisan migrate --force
+            docker compose exec -T app php artisan migrate --force
 
             # Optimize Laravel
-            docker exec harumnya_app php artisan optimize
-            docker exec harumnya_app php artisan view:cache
+            docker compose exec -T app php artisan optimize
+            docker compose exec -T app php artisan view:cache
 
             # Clean up old images
             docker image prune -f

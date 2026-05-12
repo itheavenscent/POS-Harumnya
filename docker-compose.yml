@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     image: ${IMAGE_NAME:-pos-harumnya-app:latest}
-    container_name: harumnya_app
+
     restart: unless-stopped
     tty: true
     environment:
@@ -38,7 +38,7 @@ services:
   # Nginx Web Server
   web:
     image: nginx:alpine
-    container_name: harumnya_web
+
     restart: unless-stopped
     ports:
       - "80:80"
@@ -62,7 +62,7 @@ services:
   # Laravel Queue Worker
   worker:
     image: ${IMAGE_NAME:-pos-harumnya-app:latest}
-    container_name: harumnya_worker
+
     restart: unless-stopped
     command: php artisan queue:work --tries=3 --timeout=90
     working_dir: /var/www
@@ -84,7 +84,7 @@ services:
   # Database (PostgreSQL 17)
   db:
     image: postgres:17-alpine
-    container_name: harumnya_db
+
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_DATABASE}
@@ -104,7 +104,7 @@ services:
   # Redis
   redis:
     image: redis:alpine
-    container_name: harumnya_redis
+
     restart: unless-stopped
     networks:
       - harumnya-network
@@ -118,7 +118,7 @@ services:
   # Database Backup (PostgreSQL)
   db-backup:
     image: prodrigestivill/postgres-backup-local
-    container_name: harumnya_db_backup
+
     restart: unless-stopped
     environment:
       POSTGRES_HOST: db
