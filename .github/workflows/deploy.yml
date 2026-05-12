@@ -57,15 +57,16 @@ jobs:
           port: 22
           script: |
             mkdir -p /var/www/harumnya.cloud
+            rm -rf /var/www/harumnya.cloud/.docker
 
-      - name: Copy docker-compose.yml to VPS
+      - name: Copy files to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           port: 22
-          source: "docker-compose.yml"
+          source: "docker-compose.yml,.docker"
           target: "/var/www/harumnya.cloud"
 
       - name: Deploy via SSH
