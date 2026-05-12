@@ -241,7 +241,7 @@ export default function History({ sales, filters, summary = {} }) {
                                         const itemCount = sale.items_count ?? sale.sale_items_count ?? 0;
 
                                         return (
-                                            <tr key={sale.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                            <tr key={sale.id} onClick={() => setSelectedSale(sale)} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer">
                                                 <td className="px-4 py-4 text-sm text-slate-500">
                                                     {index + 1 + (currentPage - 1) * perPage}
                                                 </td>
@@ -331,13 +331,14 @@ export default function History({ sales, filters, summary = {} }) {
                                                 <td className="px-4 py-4 text-center">
                                                     <div className="flex items-center justify-center gap-1">
                                                         <button
-                                                            onClick={() => setSelectedSale(sale)}
+                                                            onClick={(e) => { e.stopPropagation(); setSelectedSale(sale); }}
                                                             className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-colors"
                                                             title="Detail Transaksi">
                                                             <IconEye size={18}/>
                                                         </button>
                                                         <Link
                                                             href={route("transactions.print", sale.sale_number)}
+                                                            onClick={(e) => e.stopPropagation()}
                                                             className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-500 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/50 transition-colors"
                                                             title="Cetak Struk">
                                                             <IconPrinter size={18}/>

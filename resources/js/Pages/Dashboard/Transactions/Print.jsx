@@ -379,6 +379,18 @@ export default function Print({ sale, fromTransaction }) {
     const handleBtPrint = async () => {
         setPrinting(true); setPrintMsg(null);
         try {
+            // Jika belum terhubung, coba hubungkan dulu
+            if (bt.status !== "connected") {
+                setPrintMsg({ ok: true, text: "Menghubungkan ke printer..." });
+                if (bt.devName) {
+                    await bt.reconnect();
+                } else {
+                    await bt.connect();
+                }
+                // Tunggu sebentar agar koneksi stabil
+                await new Promise(r => setTimeout(r, 1000));
+            }
+            
             const buf = buildReceipt(sale, saleItems, payments, change);
             await bt.printBuffer(buf);
             setPrintMsg({ ok:true, text:"Berhasil dikirim ke printer!" });

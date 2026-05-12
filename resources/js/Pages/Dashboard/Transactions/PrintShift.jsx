@@ -280,6 +280,18 @@ export default function PrintShift({ drawer, summary }) {
     const handleBtPrint = async () => {
         setPrinting(true); setPrintMsg(null);
         try {
+            // Jika belum terhubung, coba hubungkan dulu
+            if (bt.status !== "connected") {
+                setPrintMsg({ ok: true, text: "Menghubungkan ke printer..." });
+                if (bt.devName) {
+                    await bt.reconnect();
+                } else {
+                    await bt.connect();
+                }
+                // Tunggu sebentar agar koneksi stabil
+                await new Promise(r => setTimeout(r, 1000));
+            }
+            
             const buf = buildShiftReceipt(drawer, summary);
             await bt.printBuffer(buf);
             setPrintMsg({ ok:true, text:"Berhasil dikirim ke printer!" });
@@ -392,86 +404,96 @@ export default function PrintShift({ drawer, summary }) {
             </div>
 
             {/* ── Receipt Preview ── */}
-            <div className="flex justify-center py-8 print:py-0">
-                <div id="print-area" className="w-[80mm] bg-white p-4 print:pt-10 print:pb-10 text-[10px] font-mono text-black mx-auto shadow-md print:shadow-none">
-                    <div className="text-center mb-4">
-                        <h1 className="font-bold text-sm mb-1 uppercase">{drawer.store?.name}</h1>
-                        <p className="text-[9px]">{drawer.store?.address}</p>
-                        <div className="mt-2 border-y border-dashed border-black py-1 font-bold">
-                            LAPORAN REKAP SHIFT
+            <div className="flex justify-center py-8 print:py-0 bg-slate-50 dark:bg-slate-900/50">
+                <div id="print-area" className="w-[80mm] bg-white dark:bg-slate-900 p-6 print:pt-10 print:pb-10 text-[11px] font-sans text-slate-800 dark:text-slate-200 mx-auto shadow-xl border border-slate-100 dark:border-slate-800 rounded-2xl print:shadow-none print:border-none print:rounded-none">
+                    <div className="text-center mb-6">
+                        <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <span className="text-xl">🏪</span>
+                        </div>
+                        <h1 className="font-black text-sm mb-1 uppercase tracking-wider text-slate-900 dark:text-white">{drawer.store?.name || "TOKO HARUMNYA"}</h1>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400">{drawer.store?.address}</p>
+                        <div className="mt-3 inline-block bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full text-[9px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                            Laporan Rekap Shift
                         </div>
                     </div>
 
-                    <div className="mb-4 space-y-1">
-                        <div className="flex justify-between"><span>Kasir:</span> <span>{drawer.cashier?.name}</span></div>
+                    <div className="mb-4 space-y-1 text-slate-600 dark:text-slate-400">
+                        <div className="flex justify-between"><span>Kasir:</span> <span className="font-semibold text-slate-800 dark:text-white">{drawer.cashier?.name}</span></div>
                         <div className="flex justify-between"><span>Buka:</span> <span>{formatDate(drawer.opened_at)}</span></div>
                         <div className="flex justify-between"><span>Tutup:</span> <span>{formatDate(drawer.closed_at)}</span></div>
                     </div>
 
-                    <div className="border-b border-dashed border-black pb-2 mb-2">
-                        <div className="flex justify-between"><span>Modal Awal:</span> <span>{fmt(drawer.starting_cash)}</span></div>
-                        <div className="flex justify-between"><span>Total Tunai:</span> <span>{fmt(drawer.total_cash_sales)}</span></div>
-                        <div className="flex justify-between"><span>Total Non-Tunai:</span> <span>{fmt(drawer.total_non_cash_sales)}</span></div>
+                    <div className="border-t border-b border-dashed border-slate-200 dark:border-slate-700 py-3 mb-4 space-y-1.5">
+                        <div className="flex justify-between"><span>Modal Awal:</span> <span className="font-semibold">{fmt(drawer.starting_cash)}</span></div>
+                        <div className="flex justify-between"><span>Total Tunai:</span> <span className="font-semibold text-emerald-600">{fmt(drawer.total_cash_sales)}</span></div>
+                        <div className="flex justify-between"><span>Total Non-Tunai:</span> <span className="font-semibold text-blue-600">{fmt(drawer.total_non_cash_sales)}</span></div>
                     </div>
 
                     {/* Items Summary */}
                     <div className="mb-4">
-                        <p className="font-bold border-b border-black mb-1">RINGKASAN ITEM</p>
-                        {summary.items?.map((item, i) => (
-                            <div key={i} className="mb-1">
-                                <div className="flex justify-between">
-                                    <span className="flex-1 truncate">{item.product_name}</span>
-                                    <span className="ml-2">{item.total_qty}x</span>
+                        <p className="font-bold text-[10px] text-slate-400 uppercase tracking-wider mb-2">Ringkasan Item</p>
+                        <div className="space-y-2">
+                            {summary.items?.map((item, i) => (
+                                <div key={i} className="bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg">
+                                    <div className="flex justify-between items-baseline">
+                                        <span className="font-bold text-slate-800 dark:text-white truncate max-w-[150px]">{item.product_name}</span>
+                                        <span className="text-slate-500 font-medium text-[10px]">×{item.total_qty}</span>
+                                    </div>
+                                    <div className="flex justify-between text-[9px] text-slate-500 mt-0.5">
+                                        <span className="truncate max-w-[120px]">{item.variant_name}</span>
+                                        <span className="font-semibold text-slate-700 dark:text-slate-300">{fmt(item.total_amount)}</span>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between text-[8px] text-slate-600 italic">
-                                    <span>{item.variant_name}</span>
-                                    <span>{fmt(item.total_amount)}</span>
-                                </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
 
                     {/* Cash Transactions */}
                     {summary.cash_transactions?.length > 0 && (
                         <div className="mb-4">
-                            <p className="font-bold border-b border-black mb-1">CASH IN / OUT</p>
-                            {summary.cash_transactions.map((tr, i) => (
-                                <div key={i} className="flex justify-between text-[9px]">
-                                    <span>{tr.type === 'cash_in' ? '[IN]' : '[OUT]'} {tr.description}</span>
-                                    <span>{tr.type === 'cash_in' ? '' : '-'}{fmt(tr.amount)}</span>
-                                </div>
-                            ))}
+                            <p className="font-bold text-[10px] text-slate-400 uppercase tracking-wider mb-2">Cash In / Out</p>
+                            <div className="space-y-1">
+                                {summary.cash_transactions.map((tr, i) => (
+                                    <div key={i} className="flex justify-between text-[10px] bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-lg">
+                                        <span className="text-slate-600 dark:text-slate-400"><span className={`font-bold ${tr.type === 'cash_in' ? 'text-emerald-600' : 'text-red-500'}`}>{tr.type === 'cash_in' ? '[IN]' : '[OUT]'}</span> {tr.description}</span>
+                                        <span className={`font-semibold ${tr.type === 'cash_in' ? 'text-emerald-600' : 'text-red-500'}`}>{tr.type === 'cash_in' ? '' : '-'}{fmt(tr.amount)}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
 
                     {/* Payments Breakdown */}
                     <div className="mb-4">
-                        <p className="font-bold border-b border-black mb-1">METODE PEMBAYARAN</p>
-                        {summary.payments?.map((p, i) => (
-                            <div key={i} className="flex justify-between">
-                                <span>{p.name} ({p.count}x)</span>
-                                <span>{fmt(p.total)}</span>
-                            </div>
-                        ))}
+                        <p className="font-bold text-[10px] text-slate-400 uppercase tracking-wider mb-2">Metode Pembayaran</p>
+                        <div className="space-y-1">
+                            {summary.payments?.map((p, i) => (
+                                <div key={i} className="flex justify-between text-[10px] p-1.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                    <span className="text-slate-600 dark:text-slate-400">{p.name} <span className="text-slate-400">({p.count}x)</span></span>
+                                    <span className="font-semibold text-slate-800 dark:text-white">{fmt(p.total)}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
-                    <div className="border-t border-black pt-2 mb-4 space-y-1 font-bold">
-                        <div className="flex justify-between"><span>Ekspektasi:</span> <span>{fmt(drawer.expected_ending_cash)}</span></div>
-                        <div className="flex justify-between"><span>Aktual:</span> <span>{fmt(drawer.actual_ending_cash)}</span></div>
-                        <div className="flex justify-between pt-1 border-t border-dashed border-black">
-                            <span>SELISIH:</span> <span>{fmt(drawer.difference)}</span>
+                    <div className="border-t-2 border-dashed border-slate-200 dark:border-slate-700 pt-3 mb-4 space-y-1.5">
+                        <div className="flex justify-between text-slate-600 dark:text-slate-400"><span>Ekspektasi:</span> <span>{fmt(drawer.expected_ending_cash)}</span></div>
+                        <div className="flex justify-between text-slate-600 dark:text-slate-400"><span>Aktual:</span> <span>{fmt(drawer.actual_ending_cash)}</span></div>
+                        <div className="flex justify-between pt-2 border-t border-slate-100 dark:border-slate-800 font-bold text-sm">
+                            <span className="text-slate-800 dark:text-white">SELISIH:</span>
+                            <span className={drawer.difference >= 0 ? "text-emerald-600" : "text-red-500"}>{fmt(drawer.difference)}</span>
                         </div>
                     </div>
 
                     {drawer.notes && (
-                        <div className="mb-4 text-[9px] italic border-t border-dashed border-black pt-2">
-                            <p>Catatan: {drawer.notes}</p>
+                        <div className="mb-4 text-[9px] italic bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 p-2 rounded-lg">
+                            <p><strong>Catatan:</strong> {drawer.notes}</p>
                         </div>
                     )}
 
-                    <div className="text-center mt-6 text-[9px]">
+                    <div className="text-center mt-6 text-[9px] text-slate-400">
                         <p>Dicetak: {formatDate(new Date())}</p>
-                        <p className="mt-2 font-bold">*** HARUMNYA POS ***</p>
+                        <p className="mt-1 font-bold tracking-wider text-slate-500">*** HARUMNYA POS ***</p>
                     </div>
                 </div>
             </div>

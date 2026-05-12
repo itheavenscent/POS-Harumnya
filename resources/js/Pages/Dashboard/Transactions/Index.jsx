@@ -12,7 +12,7 @@ import {
     IconUserPlus, IconPhone, IconMail,
     IconBox, IconStar, IconDroplet,
     IconBuildingStore, IconAdjustments, IconFlask2,
-    IconArrowLeft, IconShoppingBag, IconTrophy
+    IconArrowLeft, IconShoppingBag
 } from "@tabler/icons-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -436,7 +436,7 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                                 <input
                                     type="text" inputMode="numeric"
                                     value={toRupiahDisplay(customPrice)}
-                                    onChange={e => { setCustomPrice(parseRupiah(e.target.value.replace(/[^0-9,.]/g, ""))); setPriceOverride(true); }}
+                                    onChange={e => { setCustomPrice(e.target.value.replace(/\D/g, "")); setPriceOverride(true); }}
                                     placeholder="0"
                                     className={`w-full h-12 pl-10 pr-16 rounded-xl border text-xl font-black focus:outline-none focus:ring-2 dark:bg-slate-900 dark:text-white ${
                                         errors.price
@@ -1495,10 +1495,10 @@ export default function Index({
                                             {/* Loyalty Reward Progress/Notification */}
                                             {Number(selectedCustomer.points ?? 0) >= loyalty_reward_threshold ? (
                                                 <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-2 flex items-center gap-2 animate-pulse shadow-sm">
-                                                    <IconTrophy size={16} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                                                    <span className="text-base flex-shrink-0">🏆</span>
                                                     <div className="flex-1">
                                                         <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 leading-tight">Reward Tersedia!</p>
-                                                        <p className="text-[9px] text-emerald-600 dark:text-emerald-500">{loyalty_reward_description}</p>
+                                                        <p className="text-[9px] text-emerald-600 dark:text-emerald-500">{loyalty_reward_description || "Reward diskon tersedia"}</p>
                                                     </div>
                                                 </div>
                                             ) : Number(selectedCustomer.points ?? 0) > 0 && (
@@ -1769,7 +1769,7 @@ export default function Index({
             }} maxW="max-w-md">
                 <div className="p-6 text-center">
                     <div className="w-16 h-16 mx-auto bg-emerald-100 dark:bg-emerald-900/40 rounded-full flex items-center justify-center mb-4 shadow-sm border-4 border-white dark:border-slate-900">
-                        <IconTag size={32} className="text-emerald-500" />
+                        <span className="text-3xl">🎁</span>
                     </div>
                     <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2 leading-tight">Selamat! Promo Tersedia 🎉</h2>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 px-4">
