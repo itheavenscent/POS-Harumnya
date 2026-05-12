@@ -23,15 +23,25 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     libicu-dev \
     libjpeg62-turbo-dev \
-    libfreetype6-dev
-
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+    libfreetype6-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg
-RUN docker-php-ext-install pdo_mysql pdo_pgsql mbstring exif pcntl bcmath gd zip intl opcache
-RUN pecl install redis && docker-php-ext-enable redis
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install \
+    pdo_mysql \
+    pdo_pgsql \
+    mbstring \
+    exif \
+    pcntl \
+    bcmath \
+    gd \
+    zip \
+    intl \
+    opcache \
+    && pecl install redis \
+    && docker-php-ext-enable redis
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -39,18 +49,25 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www
 
-# Copy existing application directory contents
+# Copy application source
 COPY . .
 
 # Copy built assets from Stage 1
 COPY --from=build /app/public/build ./public/build
 
-# Install dependencies
+# Install PHP dependencies (production only)
 RUN composer install --no-dev --no-interaction --optimize-autoloader
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+# Create storage directories in case they don't exist
+RUN mkdir -p storage/logs \
+    storage/framework/cache \
+    storage/framework/sessions \
+    storage/framework/views \
+    bootstrap/cache
 
-# Expose port 9000 and start php-fpm server
+# Set correct permissions
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
+    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+
 EXPOSE 9000
 CMD ["php-fpm"]

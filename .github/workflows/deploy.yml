@@ -48,7 +48,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Create project directory
+      - name: Create project directory & clean old configs
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST }}
@@ -80,35 +80,88 @@ jobs:
             set -e
             cd /var/www/harumnya.cloud
 
-            # Login to GHCR on the VPS
+            # ─── Login to GHCR ─────────────────────────────────────────────
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Setup .env if it doesn't exist (using secrets)
-            if [ ! -f .env ]; then
-              echo "APP_NAME=Harumnya" > .env
-              echo "APP_ENV=production" >> .env
-              echo "APP_KEY=${{ secrets.APP_KEY }}" >> .env
-              echo "APP_URL=https://harumnya.cloud" >> .env
-              echo "DB_CONNECTION=pgsql" >> .env
-              echo "DB_HOST=db" >> .env
-              echo "DB_PORT=5432" >> .env
-              echo "DB_DATABASE=point_of_sales" >> .env
-              echo "DB_USERNAME=postgres" >> .env
-              echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-            fi
+            # ─── Always write fresh .env (ensures secrets are up to date) ──
+            cat > .env << 'EOF'
+            APP_NAME=Harumnya
+            APP_ENV=production
+            APP_DEBUG=false
+            APP_KEY=${{ secrets.APP_KEY }}
+            APP_URL=https://harumnya.cloud
 
-            # Pull latest images
-            IMAGE_NAME=ghcr.io/${{ github.repository }} docker compose pull
+            LOG_CHANNEL=stack
+            LOG_LEVEL=error
 
-            # Zero Downtime Deploy
-            IMAGE_NAME=ghcr.io/${{ github.repository }} docker compose up -d --remove-orphans
+            DB_CONNECTION=pgsql
+            DB_HOST=db
+            DB_PORT=5432
+            DB_DATABASE=point_of_sales
+            DB_USERNAME=postgres
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
 
-            # Run migrations
+            CACHE_DRIVER=redis
+            SESSION_DRIVER=redis
+            QUEUE_CONNECTION=redis
+
+            REDIS_HOST=redis
+            REDIS_PORT=6379
+            EOF
+
+            # ─── Ensure db & redis are up first ────────────────────────────
+            IMAGE_NAME=ghcr.io/${{ github.repository }} \
+              docker compose up -d db redis
+
+            # ─── Wait for PostgreSQL to be healthy ─────────────────────────
+            echo "Waiting for PostgreSQL to be healthy..."
+            for i in $(seq 1 30); do
+              if docker compose exec -T db pg_isready -U postgres -d point_of_sales; then
+                echo "PostgreSQL is ready!"
+                break
+              fi
+              echo "Attempt $i/30 — retrying in 5s..."
+              sleep 5
+              if [ "$i" -eq 30 ]; then
+                echo "ERROR: PostgreSQL did not become healthy in time."
+                docker compose logs db
+                exit 1
+              fi
+            done
+
+            # ─── Pull latest app image ─────────────────────────────────────
+            IMAGE_NAME=ghcr.io/${{ github.repository }} \
+              docker compose pull app worker
+
+            # ─── Recreate only app-layer services (zero db downtime) ───────
+            IMAGE_NAME=ghcr.io/${{ github.repository }} \
+              docker compose up -d --no-deps --remove-orphans \
+              app worker web nginx-proxy acme-companion db-backup
+
+            # ─── Wait for app container to be healthy ──────────────────────
+            echo "Waiting for app container..."
+            for i in $(seq 1 20); do
+              STATUS=$(docker inspect --format='{{.State.Health.Status}}' harumnyacloud-app-1 2>/dev/null || echo "starting")
+              echo "App health: $STATUS (attempt $i/20)"
+              if [ "$STATUS" = "healthy" ]; then
+                break
+              fi
+              sleep 5
+              if [ "$i" -eq 20 ]; then
+                echo "ERROR: App container did not become healthy."
+                docker compose logs app
+                exit 1
+              fi
+            done
+
+            # ─── Run Laravel operations ────────────────────────────────────
             docker compose exec -T app php artisan migrate --force
-
-            # Optimize Laravel
+            docker compose exec -T app php artisan optimize:clear
             docker compose exec -T app php artisan optimize
             docker compose exec -T app php artisan view:cache
+            docker compose exec -T app php artisan storage:link || true
 
-            # Clean up old images
+            # ─── Clean up dangling images ──────────────────────────────────
             docker image prune -f
+
+            echo "✅ Deployment complete!"
