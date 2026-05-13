@@ -26,7 +26,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest
+          tags: ghcr.io/itheavenscent/pos-harumnya:latest
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
@@ -46,10 +46,10 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             # Pull image terbaru
-            docker pull ghcr.io/${{ github.repository }}:latest
+            docker pull ghcr.io/itheavenscent/pos-harumnya:latest
 
             # Ekstrak static assets dari image ke host (agar dibaca oleh nginx)
-            docker run --rm -v $(pwd)/public:/host-public ghcr.io/${{ github.repository }}:latest sh -c "rm -rf /host-public/build && cp -r /var/www/public/build /host-public/"
+            docker run --rm -v $(pwd)/public:/host-public ghcr.io/itheavenscent/pos-harumnya:latest sh -c "rm -rf /host-public/build && cp -r /var/www/public/build /host-public/"
 
             # Buat direktori yang dibutuhkan
             mkdir -p logs/nginx logs/nginx-proxy storage bootstrap/cache
