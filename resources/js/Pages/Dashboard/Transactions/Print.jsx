@@ -351,223 +351,6 @@ function useBluetooth() {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// Main
-// ═════════════════════════════════════════════════════════════════════════════
-export default function Print({ sale, fromTransaction }) {
-    const [mode,        setMode]        = useState("thermal58");
-    const [showSuccess, setShowSuccess] = useState(!!fromTransaction);
-    const [printing,    setPrinting]    = useState(false);
-    const [printMsg,    setPrintMsg]    = useState(null);
-    const bt = useBluetooth();
-
-    useEffect(() => {
-        if (fromTransaction) {
-            const t = setTimeout(() => setShowSuccess(false), 4000);
-            return () => clearTimeout(t);
-        }
-    }, [fromTransaction]);
-
-    if (!sale) return null;
-
-    const saleItems  = sale.sale_items ?? sale.items ?? [];
-    const payments   = sale.sale_payments ?? sale.payments ?? [];
-    const totalPaid  = payments.reduce((s,p) => s + Number(p.amount??0), 0);
-    const change     = Number(sale.change_amount??0) || Math.max(0, totalPaid - Number(sale.total??0));
-    const is58       = mode === "thermal58";
-    const statusInfo = STATUS_LABELS[sale.status] ?? { label:sale.status, cls:"bg-slate-100 text-slate-500" };
-
-    const handleBtPrint = async () => {
-        setPrinting(true); setPrintMsg(null);
-        try {
-            // Jika belum terhubung, coba hubungkan dulu
-            if (bt.status !== "connected") {
-                setPrintMsg({ ok: true, text: "Menghubungkan ke printer..." });
-                if (bt.devName) {
-                    await bt.reconnect();
-                } else {
-                    await bt.connect();
-                }
-                // Tunggu sebentar agar koneksi stabil
-                await new Promise(r => setTimeout(r, 1000));
-            }
-            
-            const buf = buildReceipt(sale, saleItems, payments, change);
-            await bt.printBuffer(buf);
-            setPrintMsg({ ok:true, text:"Berhasil dikirim ke printer!" });
-        } catch(err) {
-            setPrintMsg({ ok:false, text: err.message });
-        } finally { setPrinting(false); }
-    };
-
-    const BT_UI = {
-        idle:         { icon:<IconBluetooth size={15}/>,                          label: bt.devName ? `Hubungkan Ulang (${bt.devName})` : "Hubungkan Printer BT", cls:"bg-blue-500 hover:bg-blue-600 text-white" },
-        connecting:   { icon:<IconLoader2 size={15} className="animate-spin"/>,   label:"Menghubungkan...",    cls:"bg-blue-400 text-white cursor-wait" },
-        reconnecting: { icon:<IconLoader2 size={15} className="animate-spin"/>,   label:"Menyambung ulang...", cls:"bg-amber-400 text-white cursor-wait" },
-        connected:    { icon:<IconBluetoothConnected size={15}/>,                 label: bt.device?.name ?? bt.devName ?? "Terhubung", cls:"bg-emerald-500 hover:bg-emerald-600 text-white" },
-        error:        { icon:<IconBluetoothOff size={15}/>,                       label:"Gagal — Coba Lagi",   cls:"bg-red-500 hover:bg-red-600 text-white" },
-    }[bt.status] ?? { icon:<IconBluetooth size={15}/>, label:"Hubungkan", cls:"bg-blue-500 hover:bg-blue-600 text-white" };
-
-    const btOnClick = bt.status === "connected"          ? bt.disconnect
-                    : bt.status === "idle" && bt.devName ? bt.reconnect
-                    : bt.connect;
-
-    return (
-        <>
-            <Head title={`Struk ${sale.sale_number}`}/>
-            <style>{`
-                @media print {
-                    body * { visibility:hidden !important; }
-                    #print-area, #print-area * { visibility:visible !important; }
-                    #print-area { position:fixed; inset:0; display:flex; justify-content:center; }
-                    .no-print { display:none !important; }
-                }
-            `}</style>
-
-            <div className="min-h-screen bg-slate-100 dark:bg-slate-950">
-
-                {/* ── Sticky Top Bar ── */}
-                <div className="no-print sticky top-0 z-10 bg-white/80 backdrop-blur-md dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 shadow-sm">
-                    <div className="max-w-2xl mx-auto px-4 py-3 space-y-2.5">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                                {fromTransaction && (
-                                    <Link href={route("transactions.index")}
-                                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-sm font-semibold text-white shadow shadow-cyan-500/30 transition-colors">
-                                        <IconShoppingBag size={15}/> Transaksi Baru
-                                    </Link>
-                                )}
-                                <Link href={route("transactions.index")}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                    <IconArrowLeft size={15}/> Kembali
-                                </Link>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 gap-0.5">
-                                    {[
-                                        {key:"invoice",   label:"Invoice", Icon:IconFileInvoice},
-                                        {key:"thermal58", label:"58mm",    Icon:IconReceipt},
-                                        {key:"thermal80", label:"80mm",    Icon:IconReceipt},
-                                    ].map(({key,label,Icon}) => (
-                                        <button key={key} onClick={() => setMode(key)}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
-                                                mode===key ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow"
-                                                           : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}`}>
-                                            <Icon size={13}/> {label}
-                                        </button>
-                                    ))}
-                                </div>
-                                <button onClick={() => window.print()} title="Cetak via browser"
-                                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700">
-                                    <IconPrinter size={15}/>
-                                </button>
-                            </div>
-                        </div>
-
-                        {(mode === "thermal80" || mode === "thermal58") && (
-                            <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                                {bt.status !== "connected" && bt.supported && (
-                                    <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
-                                        <span className="text-base leading-none mt-0.5">📋</span>
-                                        <div className="space-y-0.5">
-                                            <p className="font-semibold">Sebelum connect, pastikan sudah pairing dulu:</p>
-                                            <p>1. Buka <strong>Pengaturan → Bluetooth</strong> di tablet/HP</p>
-                                            <p>2. Cari nama printer → Tap <strong>Pasangkan</strong></p>
-                                            <p>3. Masukkan PIN: <strong>0000</strong> atau <strong>1234</strong></p>
-                                            <p>4. Kembali ke sini → tap <strong>Hubungkan Printer BT</strong></p>
-                                        </div>
-                                    </div>
-                                )}
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <button onClick={btOnClick}
-                                        disabled={bt.status === "connecting" || bt.status === "reconnecting"}
-                                        className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${BT_UI.cls}`}>
-                                        {BT_UI.icon} {BT_UI.label}
-                                    </button>
-                                    {bt.status === "connected" && (
-                                        <button onClick={handleBtPrint} disabled={printing}
-                                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm font-semibold text-white disabled:opacity-60">
-                                            {printing
-                                                ? <><IconLoader2 size={14} className="animate-spin"/> Mengirim...</>
-                                                : <><IconPrinter size={14}/> Cetak Bluetooth</>}
-                                        </button>
-                                    )}
-                                    {bt.error && (
-                                        <div className="flex flex-col gap-1 w-full">
-                                            <span className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-3 py-1.5 rounded-lg">
-                                                <IconAlertCircle size={13}/> {bt.error}
-                                            </span>
-                                            <div className="text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-lg space-y-1">
-                                                <p>💡 <strong>Langkah troubleshoot:</strong></p>
-                                                <p>1. Settings Bluetooth Android → hapus/forget printer</p>
-                                                <p>2. Pairing ulang — masukkan PIN <strong>0000</strong> atau <strong>1234</strong></p>
-                                                <p>3. Pastikan lampu printer berkedip (mode pairing)</p>
-                                                <p>4. Klik tombol <strong>"Scan UUID"</strong> di bawah untuk cek service printer</p>
-                                            </div>
-                                            <button onClick={bt.scanUuids}
-                                                className="self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-xs font-medium text-slate-700">
-                                                🔍 Scan UUID Printer
-                                            </button>
-                                            {bt.foundUuids.length > 0 && (
-                                                <div className="text-xs bg-slate-800 text-green-400 px-3 py-2 rounded-lg font-mono">
-                                                    <p className="text-slate-400 mb-1">Services ditemukan:</p>
-                                                    {bt.foundUuids.map((u,i) => <p key={i}>{u}</p>)}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                    {printMsg && (
-                                        <span className={`text-xs px-3 py-1.5 rounded-lg ${printMsg.ok ? "text-emerald-700 bg-emerald-50" : "text-red-600 bg-red-50"}`}>
-                                            {printMsg.ok ? "✓" : "✗"} {printMsg.text}
-                                        </span>
-                                    )}
-                                    {!bt.supported && (
-                                        <span className="text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg">
-                                            ⚠️ Web Bluetooth butuh Chrome + HTTPS
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Success Banner */}
-                {showSuccess && (
-                    <div className="no-print max-w-2xl mx-auto px-4 pt-4">
-                        <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-emerald-50 border border-emerald-200">
-                            <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-                                <IconCheck size={16} className="text-white"/>
-                            </div>
-                            <div>
-                                <p className="font-semibold text-emerald-800 text-sm">Transaksi berhasil!</p>
-                                <p className="text-xs text-emerald-600">{sale.sale_number} · {fmt(sale.total)}</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Print Area */}
-                <div id="print-area" className="max-w-2xl mx-auto px-4 py-5 print:pt-10 print:pb-10">
-                    {mode === "invoice" && (
-                        <InvoiceView sale={sale} saleItems={saleItems} payments={payments}
-                            totalPaid={totalPaid} change={change} statusInfo={statusInfo}/>
-                    )}
-                    {(mode === "thermal80" || mode === "thermal58") && (
-                        <div className="flex justify-center py-2">
-                            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200"
-                                style={{ width: is58 ? 216 : 302 }}>
-                                <ReceiptPreview sale={sale} saleItems={saleItems}
-                                    payments={payments} change={change} is58={is58}/>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </>
-    );
-}
-
-// ═════════════════════════════════════════════════════════════════════════════
 // Receipt Preview
 // ═════════════════════════════════════════════════════════════════════════════
 function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
@@ -927,5 +710,222 @@ function IRow({ label, val, cls="" }) {
         <div className={`flex justify-between ${cls || "text-slate-500 dark:text-slate-400"}`}>
             <span>{label}</span><span>{val}</span>
         </div>
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Main
+// ═════════════════════════════════════════════════════════════════════════════
+export default function Print({ sale, fromTransaction }) {
+    const [mode,        setMode]        = useState("thermal58");
+    const [showSuccess, setShowSuccess] = useState(!!fromTransaction);
+    const [printing,    setPrinting]    = useState(false);
+    const [printMsg,    setPrintMsg]    = useState(null);
+    const bt = useBluetooth();
+
+    useEffect(() => {
+        if (fromTransaction) {
+            const t = setTimeout(() => setShowSuccess(false), 4000);
+            return () => clearTimeout(t);
+        }
+    }, [fromTransaction]);
+
+    if (!sale) return null;
+
+    const saleItems  = sale.sale_items ?? sale.items ?? [];
+    const payments   = sale.sale_payments ?? sale.payments ?? [];
+    const totalPaid  = payments.reduce((s,p) => s + Number(p.amount??0), 0);
+    const change     = Number(sale.change_amount??0) || Math.max(0, totalPaid - Number(sale.total??0));
+    const is58       = mode === "thermal58";
+    const statusInfo = STATUS_LABELS[sale.status] ?? { label:sale.status, cls:"bg-slate-100 text-slate-500" };
+
+    const handleBtPrint = async () => {
+        setPrinting(true); setPrintMsg(null);
+        try {
+            // Jika belum terhubung, coba hubungkan dulu
+            if (bt.status !== "connected") {
+                setPrintMsg({ ok: true, text: "Menghubungkan ke printer..." });
+                if (bt.devName) {
+                    await bt.reconnect();
+                } else {
+                    await bt.connect();
+                }
+                // Tunggu sebentar agar koneksi stabil
+                await new Promise(r => setTimeout(r, 1000));
+            }
+            
+            const buf = buildReceipt(sale, saleItems, payments, change);
+            await bt.printBuffer(buf);
+            setPrintMsg({ ok:true, text:"Berhasil dikirim ke printer!" });
+        } catch(err) {
+            setPrintMsg({ ok:false, text: err.message });
+        } finally { setPrinting(false); }
+    };
+
+    const BT_UI = {
+        idle:         { icon:<IconBluetooth size={15}/>,                          label: bt.devName ? `Hubungkan Ulang (${bt.devName})` : "Hubungkan Printer BT", cls:"bg-blue-500 hover:bg-blue-600 text-white" },
+        connecting:   { icon:<IconLoader2 size={15} className="animate-spin"/>,   label:"Menghubungkan...",    cls:"bg-blue-400 text-white cursor-wait" },
+        reconnecting: { icon:<IconLoader2 size={15} className="animate-spin"/>,   label:"Menyambung ulang...", cls:"bg-amber-400 text-white cursor-wait" },
+        connected:    { icon:<IconBluetoothConnected size={15}/>,                 label: bt.device?.name ?? bt.devName ?? "Terhubung", cls:"bg-emerald-500 hover:bg-emerald-600 text-white" },
+        error:        { icon:<IconBluetoothOff size={15}/>,                       label:"Gagal — Coba Lagi",   cls:"bg-red-500 hover:bg-red-600 text-white" },
+    }[bt.status] ?? { icon:<IconBluetooth size={15}/>, label:"Hubungkan", cls:"bg-blue-500 hover:bg-blue-600 text-white" };
+
+    const btOnClick = bt.status === "connected"          ? bt.disconnect
+                    : bt.status === "idle" && bt.devName ? bt.reconnect
+                    : bt.connect;
+
+    return (
+        <>
+            <Head title={`Struk ${sale.sale_number}`}/>
+            <style>{`
+                @media print {
+                    body * { visibility:hidden !important; }
+                    #print-area, #print-area * { visibility:visible !important; }
+                    #print-area { position:fixed; inset:0; display:flex; justify-content:center; }
+                    .no-print { display:none !important; }
+                }
+            `}</style>
+
+            <div className="min-h-screen bg-slate-100 dark:bg-slate-950">
+
+                {/* ── Sticky Top Bar ── */}
+                <div className="no-print sticky top-0 z-10 bg-white/80 backdrop-blur-md dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div className="max-w-2xl mx-auto px-4 py-3 space-y-2.5">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                                {fromTransaction && (
+                                    <Link href={route("transactions.index")}
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-sm font-semibold text-white shadow shadow-cyan-500/30 transition-colors">
+                                        <IconShoppingBag size={15}/> Transaksi Baru
+                                    </Link>
+                                )}
+                                <Link href={route("transactions.index")}
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                    <IconArrowLeft size={15}/> Kembali
+                                </Link>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 gap-0.5">
+                                    {[
+                                        {key:"invoice",   label:"Invoice", Icon:IconFileInvoice},
+                                        {key:"thermal58", label:"58mm",    Icon:IconReceipt},
+                                        {key:"thermal80", label:"80mm",    Icon:IconReceipt},
+                                    ].map(({key,label,Icon}) => (
+                                        <button key={key} onClick={() => setMode(key)}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
+                                                mode===key ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow"
+                                                           : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}`}>
+                                            <Icon size={13}/> {label}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button onClick={() => window.print()} title="Cetak via browser"
+                                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700">
+                                    <IconPrinter size={15}/>
+                                </button>
+                            </div>
+                        </div>
+
+                        {(mode === "thermal80" || mode === "thermal58") && (
+                            <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                                {bt.status !== "connected" && bt.supported && (
+                                    <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                                        <span className="text-base leading-none mt-0.5">📋</span>
+                                        <div className="space-y-0.5">
+                                            <p className="font-semibold">Sebelum connect, pastikan sudah pairing dulu:</p>
+                                            <p>1. Buka <strong>Pengaturan → Bluetooth</strong> di tablet/HP</p>
+                                            <p>2. Cari nama printer → Tap <strong>Pasangkan</strong></p>
+                                            <p>3. Masukkan PIN: <strong>0000</strong> atau <strong>1234</strong></p>
+                                            <p>4. Kembali ke sini → tap <strong>Hubungkan Printer BT</strong></p>
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <button onClick={btOnClick}
+                                        disabled={bt.status === "connecting" || bt.status === "reconnecting"}
+                                        className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${BT_UI.cls}`}>
+                                        {BT_UI.icon} {BT_UI.label}
+                                    </button>
+                                    {bt.status === "connected" && (
+                                        <button onClick={handleBtPrint} disabled={printing}
+                                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm font-semibold text-white disabled:opacity-60">
+                                            {printing
+                                                ? <><IconLoader2 size={14} className="animate-spin"/> Mengirim...</>
+                                                : <><IconPrinter size={14}/> Cetak Bluetooth</>}
+                                        </button>
+                                    )}
+                                    {bt.error && (
+                                        <div className="flex flex-col gap-1 w-full">
+                                            <span className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-3 py-1.5 rounded-lg">
+                                                <IconAlertCircle size={13}/> {bt.error}
+                                            </span>
+                                            <div className="text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-lg space-y-1">
+                                                <p>💡 <strong>Langkah troubleshoot:</strong></p>
+                                                <p>1. Settings Bluetooth Android → hapus/forget printer</p>
+                                                <p>2. Pairing ulang — masukkan PIN <strong>0000</strong> atau <strong>1234</strong></p>
+                                                <p>3. Pastikan lampu printer berkedip (mode pairing)</p>
+                                                <p>4. Klik tombol <strong>"Scan UUID"</strong> di bawah untuk cek service printer</p>
+                                            </div>
+                                            <button onClick={bt.scanUuids}
+                                                className="self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-xs font-medium text-slate-700">
+                                                🔍 Scan UUID Printer
+                                            </button>
+                                            {bt.foundUuids.length > 0 && (
+                                                <div className="text-xs bg-slate-800 text-green-400 px-3 py-2 rounded-lg font-mono">
+                                                    <p className="text-slate-400 mb-1">Services ditemukan:</p>
+                                                    {bt.foundUuids.map((u,i) => <p key={i}>{u}</p>)}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                    {printMsg && (
+                                        <span className={`text-xs px-3 py-1.5 rounded-lg ${printMsg.ok ? "text-emerald-700 bg-emerald-50" : "text-red-600 bg-red-50"}`}>
+                                            {printMsg.ok ? "✓" : "✗"} {printMsg.text}
+                                        </span>
+                                    )}
+                                    {!bt.supported && (
+                                        <span className="text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg">
+                                            ⚠️ Web Bluetooth butuh Chrome + HTTPS
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Success Banner */}
+                {showSuccess && (
+                    <div className="no-print max-w-2xl mx-auto px-4 pt-4">
+                        <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-emerald-50 border border-emerald-200">
+                            <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                                <IconCheck size={16} className="text-white"/>
+                            </div>
+                            <div>
+                                <p className="font-semibold text-emerald-800 text-sm">Transaksi berhasil!</p>
+                                <p className="text-xs text-emerald-600">{sale.sale_number} · {fmt(sale.total)}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Print Area */}
+                <div id="print-area" className="max-w-2xl mx-auto px-4 py-5 print:pt-10 print:pb-10">
+                    {mode === "invoice" && (
+                        <InvoiceView sale={sale} saleItems={saleItems} payments={payments}
+                            totalPaid={totalPaid} change={change} statusInfo={statusInfo}/>
+                    )}
+                    {(mode === "thermal80" || mode === "thermal58") && (
+                        <div className="flex justify-center py-2">
+                            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200"
+                                style={{ width: is58 ? 216 : 302 }}>
+                                <ReceiptPreview sale={sale} saleItems={saleItems}
+                                    payments={payments} change={change} is58={is58}/>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </>
     );
 }
