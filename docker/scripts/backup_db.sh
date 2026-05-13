@@ -3,19 +3,22 @@
 # Configuration
 BACKUP_DIR="./backups"
 TIMESTAMP=$(date +"%Y%m%d%H%M%S")
-DB_NAME="point_of_sales"
+# Load .env file if exists
+if [ -f .env ]; then
+    export $(cat .env | grep -v '#' | xargs)
+fi
+
+DB_NAME=${DB_DATABASE:-harumnya}
+DB_USER=${DB_USERNAME:-postgres}
+DB_PASS=${DB_PASSWORD:-postgre}
 
 # Create backup directory if it doesn't exist
 mkdir -p $BACKUP_DIR
 
-# Get password from docker-compose or .env
-# For security, you should use a .my.cnf file or environment variable
-# Here we use a standard docker compose exec approach
+echo "Starting backup for $DB_NAME..."
 
-echo "Starting zero-downtime backup for $DB_NAME..."
-
-# --single-transaction is the key for zero downtime on InnoDB tables
-docker compose exec -T db mysqldump -u root -psecret --single-transaction $DB_NAME > $BACKUP_DIR/backup_$TIMESTAMP.sql
+# Postgres backup
+docker compose exec -T db sh -c "PGPASSWORD=$DB_PASS pg_dump -U $DB_USER -d $DB_NAME" > $BACKUP_DIR/backup_$TIMESTAMP.sql
 
 # Compress the backup
 gzip $BACKUP_DIR/backup_$TIMESTAMP.sql

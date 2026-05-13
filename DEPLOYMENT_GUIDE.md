@@ -16,10 +16,12 @@ Dokumen ini menjelaskan alur kerja pengembangan (workflow), setup server (VPS), 
 
 ### Arsitektur Server (VPS)
 Kita menggunakan Docker Compose untuk menjalankan layanan berikut:
-- **Traefik**: Sebagai reverse proxy dan otomatisasi SSL (ACME/Let's Encrypt).
+- **nginx-proxy**: Sebagai reverse proxy otomatis berbasis Docker.
+- **acme-companion**: Untuk otomatisasi SSL (Let's Encrypt).
 - **App (Laravel)**: Container PHP-FPM untuk menjalankan logika aplikasi.
 - **Nginx**: Web server untuk melayani file statis dan meneruskan request ke PHP-FPM.
-- **DB (MySQL)**: Database untuk menyimpan data aplikasi.
+- **DB (PostgreSQL)**: Database untuk menyimpan data aplikasi.
+- **Redis**: Untuk caching dan session.
 
 ---
 
@@ -57,13 +59,13 @@ git clone <URL_REPO_GITHUB> POS-Harumnya
 
 ## 3. SSL Otomatis (ACME / Let's Encrypt)
 
-Kita menggunakan **Traefik** untuk mengelola SSL secara otomatis. Konfigurasi sudah ada di `docker-compose.yml`.
+Kita menggunakan **nginx-proxy** dan **acme-companion** untuk mengelola SSL secara otomatis. Konfigurasi sudah ada di `docker-compose.yml`.
 
 ### Cara Kerja:
-1. Traefik mendengarkan port 80 dan 443.
-2. Ketika ada request ke `harumnya.cloud`, Traefik akan meminta sertifikat SSL ke Let's Encrypt via protokol ACME.
-3. Sertifikat disimpan di file `./letsencrypt/acme.json`.
-4. Traefik otomatis me-redirect traffic HTTP (port 80) ke HTTPS (port 443).
+1. `nginx-proxy` mendengarkan port 80 dan 443 dan memindai container yang memiliki environment variable `VIRTUAL_HOST`.
+2. `acme-companion` mendeteksi environment variable `LETSENCRYPT_HOST` dan otomatis meminta sertifikat SSL ke Let's Encrypt.
+3. Sertifikat disimpan di volume Docker `certs`.
+4. `nginx-proxy` otomatis me-redirect traffic HTTP ke HTTPS.
 
 > [!IMPORTANT]
 > Pastikan DNS domain `harumnya.cloud` sudah diarahkan ke IP Publik VPS Anda sebelum menjalankan Docker Compose.
@@ -93,8 +95,8 @@ docker stack deploy -c docker-compose.yml harumnya
 
 ## 5. Backup Database (Zero Downtime)
 
-Sistem backup menggunakan `mysqldump` dengan flag `--single-transaction`. Flag ini sangat penting karena:
-- Membuat snapshot database tanpa mengunci tabel (untuk tabel InnoDB).
+Sistem backup menggunakan `pg_dump` yang secara inheren mendukung backup tanpa mengunci database (zero downtime).
+- Membuat snapshot database yang konsisten.
 - Aplikasi tetap bisa membaca dan menulis data saat backup berjalan.
 
 ### Menjalankan Backup
