@@ -190,6 +190,7 @@ async function findWritableChar(server) {
 }
 
 function useBluetooth() {
+    const supported = typeof navigator !== "undefined" && !!navigator.bluetooth;
     const [device,  setDevice]  = useState(null);
     const [status,  setStatus]  = useState("idle");
     const [error,   setError]   = useState(null);
@@ -198,8 +199,6 @@ function useBluetooth() {
     });
     const charRef   = useRef(null);
     const deviceRef = useRef(null);
-    const supported = typeof navigator !== "undefined" && !!navigator.bluetooth;
-
     useEffect(() => {
         if (supported && navigator.bluetooth.getDevices) {
             navigator.bluetooth.getDevices().then(devices => {
@@ -587,6 +586,14 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+function IRow({ label, val, cls="" }) {
+    return (
+        <div className={`flex justify-between ${cls || "text-slate-500 dark:text-slate-400"}`}>
+            <span>{label}</span><span>{val}</span>
+        </div>
+    );
+}
+
 // Invoice View
 // ═════════════════════════════════════════════════════════════════════════════
 function InvoiceView({ sale, saleItems, payments, totalPaid, change, statusInfo }) {
@@ -705,13 +712,6 @@ function InvoiceView({ sale, saleItems, payments, totalPaid, change, statusInfo 
     );
 }
 
-function IRow({ label, val, cls="" }) {
-    return (
-        <div className={`flex justify-between ${cls || "text-slate-500 dark:text-slate-400"}`}>
-            <span>{label}</span><span>{val}</span>
-        </div>
-    );
-}
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Main

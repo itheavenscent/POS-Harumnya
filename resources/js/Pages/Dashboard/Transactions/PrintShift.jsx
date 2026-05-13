@@ -96,6 +96,7 @@ async function findWritableChar(server) {
 }
 
 function useBluetooth() {
+    const supported = typeof navigator !== "undefined" && !!navigator.bluetooth;
     const [device,  setDevice]  = useState(null);
     const [status,  setStatus]  = useState("idle");
     const [error,   setError]   = useState(null);
@@ -104,7 +105,6 @@ function useBluetooth() {
     });
     const charRef   = useRef(null);
     const deviceRef = useRef(null);
-    const supported = typeof navigator !== "undefined" && !!navigator.bluetooth;
 
     useEffect(() => {
         if (supported && navigator.bluetooth.getDevices) {
