@@ -1,167 +1,27 @@
-name: Deploy Laravel POS to VPS (Docker)
+name: Deploy to Production
 
 on:
   push:
-    branches: ["main"]
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+    branches: [ main ]
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v3
 
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest
-            type=sha
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Create project directory & clean old configs
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          port: 22
-          script: |
-            mkdir -p /var/www/harumnya.cloud
-            rm -rf /var/www/harumnya.cloud/.docker
-
-      - name: Copy files to VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          port: 22
-          source: "docker-compose.yml,.docker"
-          target: "/var/www/harumnya.cloud"
-
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          port: 22
-          script: |
-            set -e
-            cd /var/www/harumnya.cloud
-
-            # ─── Login to GHCR ─────────────────────────────────────────────
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-            # ─── Always write fresh .env (ensures secrets are up to date) ──
-            cat > .env << 'EOF'
-            APP_NAME=Harumnya
-            APP_ENV=production
-            APP_DEBUG=false
-            APP_KEY=${{ secrets.APP_KEY }}
-            APP_URL=https://harumnya.cloud
-
-            LOG_CHANNEL=stack
-            LOG_LEVEL=error
-
-            DB_CONNECTION=pgsql
-            DB_HOST=db
-            DB_PORT=5432
-            DB_DATABASE=point_of_sales
-            DB_USERNAME=postgres
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-
-            CACHE_DRIVER=redis
-            SESSION_DRIVER=redis
-            QUEUE_CONNECTION=redis
-
-            REDIS_HOST=redis
-            REDIS_PORT=6379
-            EOF
-
-            # ─── Ensure db & redis are up first ────────────────────────────
-            IMAGE_NAME=ghcr.io/${{ github.repository }} \
-              docker compose up -d db redis
-
-            # ─── Wait for PostgreSQL to be healthy ─────────────────────────
-            echo "Waiting for PostgreSQL to be healthy..."
-            for i in $(seq 1 30); do
-              if docker compose exec -T db pg_isready -U postgres -d point_of_sales; then
-                echo "PostgreSQL is ready!"
-                break
-              fi
-              echo "Attempt $i/30 — retrying in 5s..."
-              sleep 5
-              if [ "$i" -eq 30 ]; then
-                echo "ERROR: PostgreSQL did not become healthy in time."
-                docker compose logs db
-                exit 1
-              fi
-            done
-
-            # ─── Pull latest app image ─────────────────────────────────────
-            IMAGE_NAME=ghcr.io/${{ github.repository }} \
-              docker compose pull app worker
-
-            # ─── Recreate only app-layer services (zero db downtime) ───────
-            IMAGE_NAME=ghcr.io/${{ github.repository }} \
-              docker compose up -d --no-deps --remove-orphans \
-              app worker web nginx-proxy acme-companion db-backup
-
-            # ─── Wait for app container to be healthy ──────────────────────
-            echo "Waiting for app container..."
-            for i in $(seq 1 20); do
-              STATUS=$(docker inspect --format='{{.State.Health.Status}}' harumnyacloud-app-1 2>/dev/null || echo "starting")
-              echo "App health: $STATUS (attempt $i/20)"
-              if [ "$STATUS" = "healthy" ]; then
-                break
-              fi
-              sleep 5
-              if [ "$i" -eq 20 ]; then
-                echo "ERROR: App container did not become healthy."
-                docker compose logs app
-                exit 1
-              fi
-            done
-
-            # ─── Run Laravel operations ────────────────────────────────────
-            docker compose exec -T app php artisan migrate --force
-            docker compose exec -T app php artisan optimize:clear
-            docker compose exec -T app php artisan optimize
-            docker compose exec -T app php artisan view:cache
-            docker compose exec -T app php artisan storage:link || true
-
-            # ─── Clean up dangling images ──────────────────────────────────
-            docker image prune -f
-
-            echo "✅ Deployment complete!"
+    - name: Deploy via SSH
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          cd /var/www/POS-Harumnya
+          git pull origin main
+          docker compose build app
+          docker compose up -d
+          docker compose exec -T app php artisan migrate --force
+          docker compose exec -T app php artisan config:cache
+          docker compose exec -T app php artisan route:cache
+          docker compose exec -T app php artisan view:cache
