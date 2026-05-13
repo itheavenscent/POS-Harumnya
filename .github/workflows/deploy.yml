@@ -19,9 +19,16 @@ jobs:
         script: |
           cd /var/www/POS-Harumnya
           git pull origin main
+
+          # Create required host directories BEFORE compose up
+          mkdir -p vhost.d logs/nginx
+
           docker compose build app
-          docker compose up -d
+          docker compose up -d --remove-orphans
+
+          # Wait for app container to be healthy
           docker compose exec -T app php artisan migrate --force
           docker compose exec -T app php artisan config:cache
           docker compose exec -T app php artisan route:cache
           docker compose exec -T app php artisan view:cache
+          docker compose exec -T app php artisan storage:link || true
