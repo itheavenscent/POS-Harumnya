@@ -12,12 +12,15 @@ use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web:      __DIR__ . '/../routes/web.php',
-        api:      __DIR__ . '/../routes/api.php',
+        web: __DIR__ . '/../routes/web.php',
+        api: __DIR__ . '/../routes/api.php',
         commands: __DIR__ . '/../routes/console.php',
-        health:   '/up',
+        health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Trust semua proxy — wajib karena ada nginx-proxy di depan container
+        $middleware->trustProxies(at: '*');
+
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
@@ -25,12 +28,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             // Spatie Permission
-            'role'               => RoleMiddleware::class,
-            'permission'         => PermissionMiddleware::class,
+            'role' => RoleMiddleware::class,
+            'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
 
             // POS: inject active_store ke request dari header X-Store-ID
-            'pos.store'          => \App\Http\Middleware\PosStoreMiddleware::class,
+            'pos.store' => \App\Http\Middleware\PosStoreMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
@@ -41,7 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthenticated.',
-                    'data'    => null,
+                    'data' => null,
                 ], 401);
             }
         });
@@ -54,17 +57,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'success' => false,
                     'message' => $message,
-                    'data'    => null,
+                    'data' => null,
                 ], 403);
             }
 
-            // Tampilkan halaman error 403 professional
             return \Inertia\Inertia::render('Errors/Error', [
                 'status' => 403
             ])->toResponse($request)->setStatusCode(403);
         });
 
-        // Tangkap response error HTTP generik (404, 500, dll) dan arahkan ke halaman Inertia
+        // Tangkap response error HTTP generik (404, 500, dll)
         $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response, \Throwable $exception, Request $request) {
             $status = $response->getStatusCode();
 

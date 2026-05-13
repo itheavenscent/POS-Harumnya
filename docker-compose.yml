@@ -52,7 +52,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: harumnya-app:latest
+    image: ghcr.io/itheavenscent/pos-harumnya:latest
     container_name: laravel_app
     restart: unless-stopped
     volumes:
