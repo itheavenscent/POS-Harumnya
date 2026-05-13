@@ -54,6 +54,22 @@ const BT_SERVICES = [
     "0000fee7-0000-1000-8000-00805f9b34fb",
 ];
 
+const fmt = (number) => {
+    return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(number);
+};
+
+const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    const d = new Date(dateString);
+    return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short" }) + " " + 
+           d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+};
+
 async function findWritableChar(server) {
     await new Promise(r => setTimeout(r, 400));
     try {
@@ -312,21 +328,6 @@ export default function PrintShift({ drawer, summary }) {
                     : bt.status === "idle" && bt.devName ? bt.reconnect
                     : bt.connect;
 
-    const fmt = (number) => {
-        return new Intl.NumberFormat("id-ID", {
-            style: "currency",
-            currency: "IDR",
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        }).format(number);
-    };
-
-    const formatDate = (dateString) => {
-        if (!dateString) return "-";
-        const d = new Date(dateString);
-        return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short" }) + " " + 
-               d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
-    };
 
     return (
         <div className="min-h-screen bg-slate-100 dark:bg-slate-950">

@@ -21,6 +21,7 @@ class Cart extends Model
         'product_id',
         'unit_price',
         'qty',
+        'is_free',
         'customer_id',
         'sales_person_id',
         'hold_id',
@@ -42,6 +43,7 @@ class Cart extends Model
     protected $casts = [
         'unit_price'             => 'decimal:2',
         'qty'                    => 'integer',
+        'is_free'                => 'boolean',
         'held_at'                => 'datetime',
         'cart_expires_at'        => 'datetime',
         // Custom order

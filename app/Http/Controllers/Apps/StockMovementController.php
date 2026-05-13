@@ -92,10 +92,12 @@ class StockMovementController extends Controller
             ->withQueryString();
 
         // Enrich: resolve nama lokasi & item, tambah direction
-        $movements->getCollection()->transform(function ($m) {
+        $movementTypeMap = collect($this->movementTypeOptions())->pluck('label', 'value')->toArray();
+        
+        $movements->getCollection()->transform(function ($m) use ($movementTypeMap) {
             $m->location_name       = $this->resolveLocationName($m->location_type, $m->location_id);
             $m->item_name           = $this->resolveItemName($m->item_type, $m->item_id);
-            $m->movement_type_label = $m->movement_type_label; // dari accessor model
+            $m->movement_type_label = $movementTypeMap[$m->movement_type] ?? $m->movement_type;
             // ★ qty_change positif = masuk, negatif = keluar
             $m->direction           = (int) $m->qty_change > 0 ? 'in' : 'out';
             return $m;
@@ -132,9 +134,11 @@ class StockMovementController extends Controller
     {
         $movement = StockMovement::with('creator:id,name')->findOrFail($id);
 
+        $movementTypeMap = collect($this->movementTypeOptions())->pluck('label', 'value')->toArray();
+
         $movement->location_name       = $this->resolveLocationName($movement->location_type, $movement->location_id);
         $movement->item_name           = $this->resolveItemName($movement->item_type, $movement->item_id);
-        $movement->movement_type_label = $movement->movement_type_label;
+        $movement->movement_type_label = $movementTypeMap[$movement->movement_type] ?? $movement->movement_type;
         $movement->direction           = (int) $movement->qty_change > 0 ? 'in' : 'out';
 
         return Inertia::render('Dashboard/StockMovements/Show', [

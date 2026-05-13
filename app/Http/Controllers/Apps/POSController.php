@@ -69,6 +69,8 @@ class POSController extends Controller
         $store = Store::with('storeCategory')->find($storeId);
 
         $carts = $this->getActiveCarts($user->id, $storeId);
+        $this->syncAutoPromos($carts, $user->id, $storeId);
+        $carts = $this->getActiveCarts($user->id, $storeId); // Reload
         $cartsTotal = $this->calcCartsTotal($carts);
         $heldCarts = $this->getHeldCarts($user->id, $storeId);
 
@@ -544,20 +546,23 @@ class POSController extends Controller
 
             // ── Sale items dari cart ───────────────────────────────────────────
             foreach ($carts as $cart) {
-                $itemSub = $cart->unit_price * $cart->qty;
+                $isFree = $cart->is_free;
+                $unitPrice = $isFree ? 0 : $cart->unit_price;
+                $itemSub = $unitPrice * $cart->qty;
                 $itemCogs = ($cart->product?->production_cost ?? 0) * $cart->qty;
                 $itemProfit = $itemSub - $itemCogs;
 
                 $saleItem = SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $cart->product_id,
-                    'product_name' => $this->buildProductName($cart),
+                    'product_name' => $this->buildProductName($cart) . ($isFree ? ' (Free)' : ''),
                     'product_sku' => $cart->product?->sku,
                     'variant_name' => $cart->variant?->name,
                     'intensity_code' => $cart->intensity?->code,
                     'size_ml' => $cart->size?->volume_ml,
                     'qty' => $cart->qty,
-                    'unit_price' => $cart->unit_price,
+                    'unit_price' => $unitPrice,
+                    'is_free' => $isFree,
                     'item_discount' => 0,
                     'subtotal' => $itemSub,
                     'cogs_per_unit' => $cart->product?->production_cost ?? 0,
@@ -1020,5 +1025,45 @@ class POSController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Sinkronisasi item gratis berdasarkan promo otomatis.
+     */
+    private function syncAutoPromos(Collection $carts, $userId, $storeId)
+    {
+        $promo = $this->checkAutoPromos($carts);
+        $hasFreeItem = $carts->contains('is_free', true);
+
+        if ($promo && !$hasFreeItem) {
+            // Syarat terpenuhi dan belum ada item free, tambahkan item free.
+            // Cari product untuk hadiah. Kita cari size 30ml sebagai default.
+            $size30 = Size::where('volume_ml', 30)->first();
+            
+            $product = Product::where('size_id', $size30?->id)
+                ->where('is_active', true)
+                ->first();
+
+            if ($product) {
+                Cart::create([
+                    'cashier_id' => $userId,
+                    'store_id' => $storeId,
+                    'variant_id' => $product->variant_id,
+                    'intensity_id' => $product->intensity_id,
+                    'size_id' => $product->size_id,
+                    'product_id' => $product->id,
+                    'unit_price' => 0,
+                    'qty' => 1,
+                    'is_free' => true,
+                    'notes' => 'Hadiah Promo: ' . $promo['name'],
+                ]);
+            }
+        } elseif (!$promo && $hasFreeItem) {
+            // Syarat tidak terpenuhi tapi ada item free, hapus item free.
+            Cart::where('cashier_id', $userId)
+                ->where('store_id', $storeId)
+                ->where('is_free', true)
+                ->delete();
+        }
     }
 }

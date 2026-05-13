@@ -21,6 +21,7 @@ class SaleItem extends Model
         'intensity_id_snapshot',
         'size_id_snapshot',
         'qty', 'unit_price', 'item_discount', 'subtotal',
+        'is_free',
         'cogs_per_unit', 'cogs_total',
         'line_gross_profit', 'line_gross_margin_pct',
         // ── Custom order fields ────────────────────────────────────────────
@@ -38,6 +39,7 @@ class SaleItem extends Model
 
     protected $casts = [
         'qty'                   => 'integer',
+        'is_free'                => 'boolean',
         'unit_price'            => 'decimal:2',
         'item_discount'         => 'decimal:2',
         'subtotal'              => 'decimal:2',
