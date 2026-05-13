@@ -732,53 +732,58 @@ function PackagingModal({ show, onClose, packagingMaterials = [], selectedPkgs =
     );
 }
 
-// ─── Promotion Modal ──────────────────────────────────────────────────────────
-function PromotionModal({ show, onClose, promo }) {
+// ─── Choose Reward Modal ──────────────────────────────────────────────────────
+function ChooseRewardModal({ show, onClose, promo, onApply }) {
     if (!promo) return null;
+    const rewards = promo.rewards || [
+        "P50 Selected Varian",
+        "Atomizer",
+        "Cashback",
+        "Luxury Fragrance Travel Size",
+        "Room Spray 100ml",
+        "Pengharum Mobil"
+    ];
+    const [selected, setSelected] = useState(rewards[0]);
+
     return (
         <Modal show={show} onClose={onClose} maxW="max-w-md">
-            <div className="relative overflow-hidden">
-                {/* Decorative background */}
-                <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-amber-400 to-orange-600 opacity-20 -z-10" />
-                <div className="absolute -top-12 -right-12 w-40 h-40 bg-amber-300/30 rounded-full blur-3xl -z-10" />
-                
-                <div className="p-8 flex flex-col items-center text-center">
-                    <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-xl shadow-amber-500/30 mb-6 rotate-3">
-                        <IconTrophy size={40} className="text-white" />
-                    </div>
-                    
-                    <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-2 uppercase tracking-tight">
-                        🎉 {promo.name}!
-                    </h2>
-                    
-                    <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-6">
-                        {promo.description || "Selamat! Transaksi ini memenuhi syarat untuk mendapatkan promo spesial."}
-                    </p>
-                    
-                    <div className="w-full bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-5 border border-slate-100 dark:border-slate-700 mb-8">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Ketentuan Hadiah</p>
-                        <div className="space-y-2">
-                            {promo.terms && Array.isArray(promo.terms) ? promo.terms.map((term, i) => (
-                                <div key={i} className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
-                                    <IconCheck size={14} className="text-emerald-500" />
-                                    {term}
-                                </div>
-                            )) : (
-                                <p className="text-xs text-slate-500">Cek syarat dan ketentuan promo di meja kasir.</p>
-                            )}
-                        </div>
-                    </div>
-                    
+            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
+                <h3 className="font-bold text-slate-800 dark:text-white text-lg">Choose Reward</h3>
+                <div className="flex gap-2">
                     <button 
-                        onClick={onClose}
-                        className="w-full py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white font-black rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-slate-900/20"
+                        onClick={() => { onApply(selected); onClose(); }} 
+                        className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold"
                     >
-                        SAYA MENGERTI
+                        Apply
                     </button>
-                    
-                    <p className="mt-4 text-[10px] text-slate-400 font-medium italic">
-                        Informasikan hal ini kepada pelanggan Anda.
-                    </p>
+                    <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors">
+                        <IconX size={16}/>
+                    </button>
+                </div>
+            </div>
+            <div className="p-5">
+                <div className="flex items-center gap-2 mb-4">
+                    <span className="text-xl">🎁</span>
+                    <div>
+                        <p className="font-bold text-slate-800 dark:text-white text-sm">Choose One of The Following Rewards</p>
+                        <p className="text-xs text-slate-500">There are {rewards.length} rewards for the selected promotion. Choose the desired reward and click button "Apply".</p>
+                    </div>
+                </div>
+                
+                <div className="space-y-2">
+                    {rewards.map((reward, i) => (
+                        <button
+                            key={i}
+                            onClick={() => setSelected(reward)}
+                            className={`w-full p-3.5 rounded-xl border-2 text-center font-semibold transition-all ${
+                                selected === reward
+                                    ? "border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
+                                    : "border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-800 text-slate-700 dark:text-slate-300"
+                            }`}
+                        >
+                            {reward}
+                        </button>
+                    ))}
                 </div>
             </div>
         </Modal>
@@ -1023,6 +1028,11 @@ export default function Index({
         submitPendingOrder({ type: "custom", payload });
     };
 
+    const handleApplyReward = (rewardName) => {
+        toast.success(`Reward "${rewardName}" selected!`);
+        // TODO: Implementasi simpan ke cart/backend
+    };
+
     const submitPendingOrder = (overrideOrder = null) => {
         if (!activeCashDrawer) {
             toast.error("Silakan buka shift terlebih dahulu!");
@@ -1177,6 +1187,13 @@ export default function Index({
                 loading={loadingCustomVariants}
                 onConfirm={handleCustomConfirm}
                 initialVariant={customTabVariant}
+            />
+
+            <ChooseRewardModal
+                show={showPromoModal}
+                onClose={() => setShowPromoModal(false)}
+                promo={autoPromo}
+                onApply={handleApplyReward}
             />
 
 

@@ -1020,6 +1020,14 @@ class POSController extends Controller
                     'name' => $promo->name,
                     'description' => $promo->description,
                     'terms' => $promo->terms_conditions,
+                    'rewards' => [
+                        'P50 Selected Varian',
+                        'Atomizer',
+                        'Cashback',
+                        'Luxury Fragrance Travel Size',
+                        'Room Spray 100ml',
+                        'Pengharum Mobil'
+                    ]
                 ];
             }
         }
@@ -1036,10 +1044,9 @@ class POSController extends Controller
         $hasFreeItem = $carts->contains('is_free', true);
 
         if ($promo && !$hasFreeItem) {
-            // Syarat terpenuhi dan belum ada item free, tambahkan item free.
-            // Cari product untuk hadiah. Kita cari size 30ml sebagai default.
+            // DISABLED: Sekarang kasir memilih hadiah via UI "Choose Reward"
+            /*
             $size30 = Size::where('volume_ml', 30)->first();
-            
             $product = Product::where('size_id', $size30?->id)
                 ->where('is_active', true)
                 ->first();
@@ -1058,6 +1065,7 @@ class POSController extends Controller
                     'notes' => 'Hadiah Promo: ' . $promo['name'],
                 ]);
             }
+            */
         } elseif (!$promo && $hasFreeItem) {
             // Syarat tidak terpenuhi tapi ada item free, hapus item free.
             Cart::where('cashier_id', $userId)
