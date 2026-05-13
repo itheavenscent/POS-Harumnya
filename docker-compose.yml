@@ -26,6 +26,10 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
       - web
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
 
   app:
     build:
@@ -57,6 +61,7 @@ services:
     deploy:
       labels:
         - "traefik.enable=true"
+        - "traefik.docker.network=harumnya_web"
         - "traefik.http.routers.laravel.rule=Host(`harumnya.cloud`)"
         - "traefik.http.routers.laravel.entrypoints=websecure"
         - "traefik.http.routers.laravel.tls.certresolver=myresolver"
