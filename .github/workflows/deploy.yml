@@ -2,33 +2,59 @@ name: Deploy to Production
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Deploy via SSH
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USERNAME }}
-        key: ${{ secrets.VPS_SSH_KEY }}
-        script: |
-          cd /var/www/POS-Harumnya
-          git pull origin main
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
 
-          # Create required host directories BEFORE compose up
-          mkdir -p vhost.d logs/nginx
+            cd /var/www/POS-Harumnya
 
-          docker compose build app
-          docker compose up -d --remove-orphans
+            # Pull kode terbaru
+            git pull origin main
 
-          # Wait for app container to be healthy
-          docker compose exec -T app php artisan migrate --force
-          docker compose exec -T app php artisan config:cache
-          docker compose exec -T app php artisan route:cache
-          docker compose exec -T app php artisan view:cache
-          docker compose exec -T app php artisan storage:link || true
+            # Buat direktori yang dibutuhkan
+            mkdir -p logs/nginx logs/nginx-proxy storage bootstrap/cache
+            mkdir -p storage/app/public storage/framework/cache/data \
+                     storage/framework/sessions storage/framework/views \
+                     storage/logs
+
+            # Pastikan .env ada
+            if [ ! -f .env ]; then
+              echo "ERROR: .env file not found!" && exit 1
+            fi
+
+            # Build image baru (termasuk npm build di dalam Docker)
+            docker compose build --no-cache app
+
+            # Hapus container lama dan naikan semua service
+            docker compose down --remove-orphans
+            docker compose up -d
+
+            # Tunggu DB siap
+            echo "Waiting for database..."
+            sleep 15
+
+            # Setup Laravel
+            docker compose exec -T app php artisan key:generate --force
+            docker compose exec -T app php artisan migrate --force
+            docker compose exec -T app php artisan storage:link --force
+            docker compose exec -T app php artisan optimize:clear
+            docker compose exec -T app php artisan optimize
+            docker compose exec -T app chown -R www-data:www-data \
+              /var/www/storage /var/www/bootstrap/cache
+
+            echo "Deploy selesai!"
+            docker compose ps
