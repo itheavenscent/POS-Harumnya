@@ -7,19 +7,19 @@ import {
 } from "@tabler/icons-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fmt     = (v=0) => Number(v||0).toLocaleString("id-ID",{style:"currency",currency:"IDR",minimumFractionDigits:0});
-const fmtN    = (v=0) => Number(v||0).toLocaleString("id-ID",{minimumFractionDigits:0});
-const fmtDT   = (s)   => s ? new Date(s).toLocaleString("id-ID",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}) : "-";
-const fmtDate = (s)   => s ? new Date(s).toLocaleDateString("id-ID",{day:"2-digit",month:"long",year:"numeric"}) : "-";
-const fmtTime = (s)   => s ? new Date(s).toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"}) : "-";
-const getQty  = (x)   => x.qty ?? x.quantity ?? 1;
+const fmt = (v = 0) => Number(v || 0).toLocaleString("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 });
+const fmtN = (v = 0) => Number(v || 0).toLocaleString("id-ID", { minimumFractionDigits: 0 });
+const fmtDT = (s) => s ? new Date(s).toLocaleString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "-";
+const fmtDate = (s) => s ? new Date(s).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" }) : "-";
+const fmtTime = (s) => s ? new Date(s).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "-";
+const getQty = (x) => x.qty ?? x.quantity ?? 1;
 
 const STATUS_LABELS = {
-    completed:{ label:"Selesai",    cls:"bg-emerald-100 text-emerald-700" },
-    cancelled: { label:"Dibatalkan", cls:"bg-red-100 text-red-700" },
-    refunded:  { label:"Refund",     cls:"bg-amber-100 text-amber-700" },
-    pending:   { label:"Pending",    cls:"bg-blue-100 text-blue-700" },
-    draft:     { label:"Draft",      cls:"bg-slate-100 text-slate-500" },
+    completed: { label: "Selesai", cls: "bg-emerald-100 text-emerald-700" },
+    cancelled: { label: "Dibatalkan", cls: "bg-red-100 text-red-700" },
+    refunded: { label: "Refund", cls: "bg-amber-100 text-amber-700" },
+    pending: { label: "Pending", cls: "bg-blue-100 text-blue-700" },
+    draft: { label: "Draft", cls: "bg-slate-100 text-slate-500" },
 };
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -27,8 +27,8 @@ const STATUS_LABELS = {
 // ═════════════════════════════════════════════════════════════════════════════
 class EscPos {
     constructor() { this.buf = []; }
-    raw(bytes)    { this.buf.push(...bytes); return this; }
-    lf(n=1)       { for(let i=0;i<n;i++) this.buf.push(0x0A); return this; }
+    raw(bytes) { this.buf.push(...bytes); return this; }
+    lf(n = 1) { for (let i = 0; i < n; i++) this.buf.push(0x0A); return this; }
     text(str) {
         for (const ch of String(str)) {
             const code = ch.charCodeAt(0);
@@ -36,21 +36,21 @@ class EscPos {
         }
         return this;
     }
-    init()          { return this.raw([0x1B,0x40]); }
-    cut()           { return this.raw([0x1D,0x56,0x41,0x10]); }
-    bold(on)        { return this.raw([0x1B,0x45, on?1:0]); }
-    align(a)        { return this.raw([0x1B,0x61, a]); }
-    size(w,h)       { return this.raw([0x1D,0x21,(((w-1)&7)<<4)|((h-1)&7)]); }
-    lineSpacing(n)  { return this.raw([0x1B,0x33,n]); }
-    defaultSpacing(){ return this.raw([0x1B,0x32]); }
-    divider(w=32)   { return this.text("=".repeat(w)); }
-    thinLine(w=32)  { return this.text("-".repeat(w)); }
-    center(str,w=32) {
+    init() { return this.raw([0x1B, 0x40]); }
+    cut() { return this.raw([0x1D, 0x56, 0x41, 0x10]); }
+    bold(on) { return this.raw([0x1B, 0x45, on ? 1 : 0]); }
+    align(a) { return this.raw([0x1B, 0x61, a]); }
+    size(w, h) { return this.raw([0x1D, 0x21, (((w - 1) & 7) << 4) | ((h - 1) & 7)]); }
+    lineSpacing(n) { return this.raw([0x1B, 0x33, n]); }
+    defaultSpacing() { return this.raw([0x1B, 0x32]); }
+    divider(w = 32) { return this.text("=".repeat(w)); }
+    thinLine(w = 32) { return this.text("-".repeat(w)); }
+    center(str, w = 32) {
         const s = String(str);
         const p = Math.max(0, Math.floor((w - s.length) / 2));
         return this.text(" ".repeat(p) + s);
     }
-    row2(left, right, w=32) {
+    row2(left, right, w = 32) {
         const l = String(left);
         const r = String(right);
         const gap = Math.max(1, w - l.length - r.length);
@@ -61,7 +61,7 @@ class EscPos {
 
 // ─── Build ESC/POS receipt ────────────────────────────────────────────────────
 function buildReceipt(sale, saleItems, payments, change) {
-    const W  = 32;
+    const W = 32;
     const ep = new EscPos();
 
     ep.init().lineSpacing(2).lf(2);
@@ -71,7 +71,7 @@ function buildReceipt(sale, saleItems, payments, change) {
 
     // ══ INFO TOKO ══
     ep.bold(true).center(sale.store?.name ?? "PARFUM CUSTOM", W).lf().bold(false);
-    
+
     if (sale.store?.address) {
         const addr = String(sale.store.address);
         for (let i = 0; i < addr.length; i += W) {
@@ -84,8 +84,8 @@ function buildReceipt(sale, saleItems, payments, change) {
 
     // ══ INFO TRANSAKSI ══
     ep.row2(fmtDate(sale.sold_at), fmtTime(sale.sold_at), W).lf()
-      .row2("No", sale.sale_number, W).lf()
-      .row2("Kasir", sale.cashier?.name ?? sale.cashier_name ?? "-", W).lf();
+        .row2("No", sale.sale_number, W).lf()
+        .row2("Kasir", sale.cashier?.name ?? sale.cashier_name ?? "-", W).lf();
     if (sale.customer?.name || sale.customer_name)
         ep.row2("Pelanggan", sale.customer?.name ?? sale.customer_name, W).lf();
 
@@ -100,14 +100,14 @@ function buildReceipt(sale, saleItems, payments, change) {
 
     // ══ ITEMS ══
     saleItems.forEach((item, idx) => {
-        const qty    = getQty(item);
+        const qty = getQty(item);
         const isFree = Number(item.unit_price) === 0;
-        const name   = String(item.product_name
-            ?? [item.variant_name, item.intensity_code, item.size_ml ? item.size_ml+"ml" : null]
+        const name = String(item.product_name
+            ?? [item.variant_name, item.intensity_code, item.size_ml ? item.size_ml + "ml" : null]
                 .filter(Boolean).join(" ")
             ?? "Item");
 
-        if (idx > 0) { ep.thinLine(W).lf(); } 
+        if (idx > 0) { ep.thinLine(W).lf(); }
         ep.bold(true);
         for (let i = 0; i < name.length; i += W) ep.text(name.slice(i, i + W)).lf();
         ep.bold(false);
@@ -115,7 +115,7 @@ function buildReceipt(sale, saleItems, payments, change) {
 
         const pkgs = item.packagings ?? item.sale_item_packagings ?? [];
         pkgs.forEach(p => {
-            const pqty  = getQty(p);
+            const pqty = getQty(p);
             const pFree = Number(p.unit_price) === 0;
             const pName = String(p.packaging_name ?? p.packaging_material?.name ?? "Kemasan");
             ep.text("  + " + pName).lf();
@@ -126,25 +126,25 @@ function buildReceipt(sale, saleItems, payments, change) {
     ep.thinLine(W).lf();
 
     // ══ SUMMARY ══
-    ep.row2("Subtotal", "Rp "+fmtN(sale.subtotal_perfume ?? 0), W).lf();
-    if (Number(sale.subtotal_packaging) > 0) ep.row2("Kemasan", "Rp "+fmtN(sale.subtotal_packaging), W).lf();
-    if (Number(sale.discount_amount) > 0)    ep.row2("Diskon", "- Rp "+fmtN(sale.discount_amount), W).lf();
-    if (Number(sale.points_redemption_value) > 0) ep.row2("Redeem Poin", "- Rp "+fmtN(sale.points_redemption_value), W).lf();
+    ep.row2("Subtotal", "Rp " + fmtN(sale.subtotal_perfume ?? 0), W).lf();
+    if (Number(sale.subtotal_packaging) > 0) ep.row2("Kemasan", "Rp " + fmtN(sale.subtotal_packaging), W).lf();
+    if (Number(sale.discount_amount) > 0) ep.row2("Diskon", "- Rp " + fmtN(sale.discount_amount), W).lf();
+    if (Number(sale.points_redemption_value) > 0) ep.row2("Redeem Poin", "- Rp " + fmtN(sale.points_redemption_value), W).lf();
 
     ep.divider(W).lf();
-    ep.bold(true).size(1,2).row2("TOTAL", "Rp "+fmtN(sale.total), W).lf().size(1,1).bold(false);
+    ep.bold(true).size(1, 2).row2("TOTAL", "Rp " + fmtN(sale.total), W).lf().size(1, 1).bold(false);
     ep.thinLine(W).lf();
 
     payments.forEach(p => {
-        ep.row2(String(p.payment_method?.name ?? p.payment_method_name ?? "Cash"), "Rp "+fmtN(p.amount), W).lf();
+        ep.row2(String(p.payment_method?.name ?? p.payment_method_name ?? "Cash"), "Rp " + fmtN(p.amount), W).lf();
     });
-    if (change > 0) ep.bold(true).row2("Kembalian", "Rp "+fmtN(change), W).lf().bold(false);
-    if (Number(sale.points_earned) > 0) ep.row2("Poin diperoleh", "+"+sale.points_earned+" poin", W).lf();
+    if (change > 0) ep.bold(true).row2("Kembalian", "Rp " + fmtN(change), W).lf().bold(false);
+    if (Number(sale.points_earned) > 0) ep.row2("Poin diperoleh", "+" + sale.points_earned + " poin", W).lf();
 
     ep.divider(W).lf().lf()
-      .center("Terima kasih!", W).lf()
-      .center("-- Harumnya --", W).lf()
-      .lf(6).defaultSpacing().cut();
+        .center("Terima kasih!", W).lf()
+        .center("-- Harumnya --", W).lf()
+        .lf(6).defaultSpacing().cut();
 
     return ep.toBuffer();
 }
@@ -172,62 +172,47 @@ async function findWritableChar(server) {
             try {
                 await new Promise(r => setTimeout(r, 80));
                 const chars = await svc.getCharacteristics();
-                const char  = chars.find(c => c.properties.writeWithoutResponse || c.properties.write);
+                const char = chars.find(c => c.properties.writeWithoutResponse || c.properties.write);
                 if (char) return char;
-            } catch(_) {}
+            } catch (_) { }
         }
-    } catch(_) {}
+    } catch (_) { }
     for (const uuid of BT_SERVICES) {
         try {
-            const svc   = await server.getPrimaryService(uuid);
+            const svc = await server.getPrimaryService(uuid);
             await new Promise(r => setTimeout(r, 100));
             const chars = await svc.getCharacteristics();
-            const char  = chars.find(c => c.properties.writeWithoutResponse || c.properties.write);
+            const char = chars.find(c => c.properties.writeWithoutResponse || c.properties.write);
             if (char) return char;
-        } catch(_) {}
+        } catch (_) { }
     }
     return null;
 }
 
+// ─── FIX: useBluetooth ───────────────────────────────────────────────────────
+// Root cause of TDZ error: useEffect referenced `connectGatt` and
+// `handleDisconnect` via deps array before they were initialized (circular
+// useCallback references).  Fix: define connectGatt first, keep a stable ref
+// (connectGattRef) so handleDisconnect can call the latest version without
+// adding it as a dependency, then place useEffect after both are defined.
 function useBluetooth() {
     const supported = typeof navigator !== "undefined" && !!navigator.bluetooth;
-    const [device,  setDevice]  = useState(null);
-    const [status,  setStatus]  = useState("idle");
-    const [error,   setError]   = useState(null);
+
+    const [device, setDevice] = useState(null);
+    const [status, setStatus] = useState("idle");
+    const [error, setError] = useState(null);
+    const [foundUuids, setFoundUuids] = useState([]);
     const [devName, setDevName] = useState(() => {
-        try { return localStorage.getItem("bt_printer_name") || null; } catch(_) { return null; }
+        try { return localStorage.getItem("bt_printer_name") || null; } catch (_) { return null; }
     });
-    const charRef   = useRef(null);
+
+    const charRef = useRef(null);
     const deviceRef = useRef(null);
-    useEffect(() => {
-        if (supported && navigator.bluetooth.getDevices) {
-            navigator.bluetooth.getDevices().then(devices => {
-                if (devices.length > 0) {
-                    const lastId = localStorage.getItem("bt_printer_id");
-                    const dev = devices.find(d => d.id === lastId) || devices[0];
-                    
-                    deviceRef.current = dev;
-                    setDevice(dev);
-                    setDevName(dev.name || "Printer BT");
-                    
-                    dev.removeEventListener("gattserverdisconnected", () => handleDisconnect(dev));
-                    dev.addEventListener("gattserverdisconnected", () => handleDisconnect(dev));
+    // Stable ref so callbacks can always reach the latest connectGatt
+    // without creating circular deps in useCallback dependency arrays.
+    const connectGattRef = useRef(null);
 
-                    // Auto-connect if we have a saved device
-                    if (lastId && dev) {
-                        setStatus("connecting");
-                        connectGatt(dev).then(() => {
-                            setStatus("connected");
-                        }).catch(err => {
-                            console.error("Auto-connect failed:", err);
-                            setStatus("idle");
-                        });
-                    }
-                }
-            });
-        }
-    }, [supported, connectGatt, handleDisconnect]);
-
+    // ── 1. connectGatt — defined FIRST ───────────────────────────────────────
     const connectGatt = useCallback(async (dev) => {
         if (dev.gatt.connected && charRef.current) return true;
         const server = await dev.gatt.connect();
@@ -235,13 +220,24 @@ function useBluetooth() {
         const char = await findWritableChar(server);
         if (!char) {
             let hint = "";
-            try { const svcs = await server.getPrimaryServices(); hint = " | Services: " + svcs.map(s => s.uuid.slice(4,8)).join(", "); } catch(_) {}
-            throw new Error("Printer tidak merespon" + hint + ". Matikan & nyalakan printer, lalu coba lagi.");
+            try {
+                const svcs = await server.getPrimaryServices();
+                hint = " | Services: " + svcs.map(s => s.uuid.slice(4, 8)).join(", ");
+            } catch (_) { }
+            throw new Error(
+                "Printer tidak merespon" + hint +
+                ". Matikan & nyalakan printer, lalu coba lagi."
+            );
         }
         charRef.current = char;
         return true;
-    }, []);
+    }, []); // no deps — only uses refs and the arg `dev`
 
+    // Keep ref in sync after every render so other callbacks always have
+    // the latest stable version.
+    connectGattRef.current = connectGatt;
+
+    // ── 2. handleDisconnect — defined AFTER connectGatt ──────────────────────
     const handleDisconnect = useCallback(async (dev) => {
         charRef.current = null;
         if (deviceRef.current && deviceRef.current.id === dev.id) {
@@ -249,78 +245,140 @@ function useBluetooth() {
             let retries = 5;
             while (retries-- > 0) {
                 await new Promise(r => setTimeout(r, 1500));
-                try { 
+                try {
                     if (!deviceRef.current?.gatt?.connected) {
-                        await connectGatt(dev); 
+                        // Use the ref — avoids circular dep with connectGatt
+                        await connectGattRef.current(dev);
                     }
-                    setStatus("connected"); 
-                    return; 
-                } catch(_) {}
+                    setStatus("connected");
+                    return;
+                } catch (_) { }
             }
         }
-        setStatus("idle"); 
-    }, [connectGatt]);
+        setStatus("idle");
+    }, []); // no deps — uses only refs
 
+    // ── 3. useEffect — defined AFTER both callbacks ───────────────────────────
+    useEffect(() => {
+        if (supported && navigator.bluetooth.getDevices) {
+            navigator.bluetooth.getDevices().then(devices => {
+                if (devices.length === 0) return;
+
+                const lastId = localStorage.getItem("bt_printer_id");
+                const dev = devices.find(d => d.id === lastId) || devices[0];
+
+                deviceRef.current = dev;
+                setDevice(dev);
+                setDevName(dev.name || "Printer BT");
+
+                // Re-attach listener (safe to call multiple times; browser dedupes)
+                dev.addEventListener("gattserverdisconnected", () => handleDisconnect(dev));
+
+                if (lastId && dev) {
+                    setStatus("connecting");
+                    // Access via ref — connectGatt is NOT in the dep array
+                    connectGattRef.current(dev)
+                        .then(() => setStatus("connected"))
+                        .catch(err => {
+                            console.error("Auto-connect failed:", err);
+                            setStatus("idle");
+                        });
+                }
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [supported, handleDisconnect]);
+    // connectGatt intentionally omitted — accessed via stable connectGattRef
+
+    // ── connect ───────────────────────────────────────────────────────────────
     const connect = useCallback(async () => {
-        if (!supported) { setError("Butuh Chrome di Android/Desktop + HTTPS untuk Web Bluetooth."); setStatus("error"); return; }
-        setStatus("connecting"); setError(null);
+        if (!supported) {
+            setError("Butuh Chrome di Android/Desktop + HTTPS untuk Web Bluetooth.");
+            setStatus("error");
+            return;
+        }
+        setStatus("connecting");
+        setError(null);
         try {
-            const dev = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: BT_SERVICES });
+            const dev = await navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: BT_SERVICES,
+            });
             dev.addEventListener("gattserverdisconnected", () => handleDisconnect(dev));
-            await connectGatt(dev);
-            deviceRef.current = dev; setDevice(dev);
+            await connectGattRef.current(dev);
+            deviceRef.current = dev;
+            setDevice(dev);
             setDevName(dev.name || "Printer BT");
-            try { 
+            try {
                 localStorage.setItem("bt_printer_name", dev.name || "Printer BT");
                 localStorage.setItem("bt_printer_id", dev.id);
-            } catch(_) {}
+            } catch (_) { }
             setStatus("connected");
-        } catch(err) {
+        } catch (err) {
             if (err.name === "NotFoundError") setStatus("idle");
             else { setError(err.message); setStatus("error"); }
         }
-    }, [supported, connectGatt, handleDisconnect]);
+    }, [supported, handleDisconnect]);
 
+    // ── reconnect ─────────────────────────────────────────────────────────────
     const reconnect = useCallback(async () => {
         if (!deviceRef.current) { connect(); return; }
-        setStatus("connecting"); setError(null);
-        try { await connectGatt(deviceRef.current); setStatus("connected"); }
-        catch(err) { setError(err.message); setStatus("error"); }
-    }, [connect, connectGatt]);
+        setStatus("connecting");
+        setError(null);
+        try {
+            await connectGattRef.current(deviceRef.current);
+            setStatus("connected");
+        } catch (err) {
+            setError(err.message);
+            setStatus("error");
+        }
+    }, [connect]);
 
+    // ── disconnect ────────────────────────────────────────────────────────────
     const disconnect = useCallback(() => {
-        charRef.current = null; deviceRef.current = null;
+        charRef.current = null;
+        deviceRef.current = null;
         device?.gatt?.disconnect();
-        setDevice(null); setStatus("idle");
+        setDevice(null);
+        setStatus("idle");
     }, [device]);
 
+    // ── printBuffer ───────────────────────────────────────────────────────────
     const printBuffer = useCallback(async (buffer) => {
         if (!charRef.current || !deviceRef.current?.gatt?.connected) {
-            if (deviceRef.current) await connectGatt(deviceRef.current);
+            if (deviceRef.current) await connectGattRef.current(deviceRef.current);
             else throw new Error("Printer belum terhubung. Tap 'Hubungkan' dulu.");
         }
-        const data  = new Uint8Array(buffer);
+        const data = new Uint8Array(buffer);
         const CHUNK = 512;
         for (let i = 0; i < data.length; i += CHUNK) {
             const chunk = data.slice(i, i + CHUNK);
             try {
-                if (charRef.current.properties.writeWithoutResponse) await charRef.current.writeValueWithoutResponse(chunk);
-                else await charRef.current.writeValue(chunk);
-            } catch(writeErr) {
-                await connectGatt(deviceRef.current);
-                if (charRef.current.properties.writeWithoutResponse) await charRef.current.writeValueWithoutResponse(chunk);
-                else await charRef.current.writeValue(chunk);
+                if (charRef.current.properties.writeWithoutResponse)
+                    await charRef.current.writeValueWithoutResponse(chunk);
+                else
+                    await charRef.current.writeValue(chunk);
+            } catch (_) {
+                // Reconnect once on write error then retry
+                await connectGattRef.current(deviceRef.current);
+                if (charRef.current.properties.writeWithoutResponse)
+                    await charRef.current.writeValueWithoutResponse(chunk);
+                else
+                    await charRef.current.writeValue(chunk);
             }
             await new Promise(r => setTimeout(r, 40));
         }
-    }, [connectGatt]);
+    }, []); // no deps — uses only refs
 
-    const [foundUuids, setFoundUuids] = useState([]);
+    // ── scanUuids ─────────────────────────────────────────────────────────────
     const scanUuids = useCallback(async () => {
         if (!supported) return;
         setError(null);
         try {
-            const dev = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: BT_SERVICES });
+            const dev = await navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: BT_SERVICES,
+            });
             const server = await dev.gatt.connect();
             await new Promise(r => setTimeout(r, 500));
             const svcs = await server.getPrimaryServices();
@@ -333,106 +391,114 @@ function useBluetooth() {
                     result.push(svc.uuid + flag);
                     if (writableChar && !charRef.current) {
                         dev.addEventListener("gattserverdisconnected", () => handleDisconnect(dev));
-                        charRef.current = writableChar; deviceRef.current = dev;
-                        setDevice(dev); setDevName(dev.name || "Printer BT"); setStatus("connected");
-                        try { localStorage.setItem("bt_printer_name", dev.name||"Printer BT"); } catch(_) {}
+                        charRef.current = writableChar;
+                        deviceRef.current = dev;
+                        setDevice(dev);
+                        setDevName(dev.name || "Printer BT");
+                        setStatus("connected");
+                        try { localStorage.setItem("bt_printer_name", dev.name || "Printer BT"); } catch (_) { }
                     }
-                } catch(_) { result.push(svc.uuid + " (char error)"); }
+                } catch (_) {
+                    result.push(svc.uuid + " (char error)");
+                }
             }
             setFoundUuids(result);
-            if (result.length === 0) setError("Tidak ada service ditemukan. Printer mungkin belum di-pair.");
-        } catch(err) {
+            if (result.length === 0)
+                setError("Tidak ada service ditemukan. Printer mungkin belum di-pair.");
+        } catch (err) {
             if (err.name !== "NotFoundError") setError(err.message);
         }
     }, [supported, handleDisconnect]);
 
-    return { supported, device, devName, status, error, connect, reconnect, disconnect, printBuffer, scanUuids, foundUuids };
+    return {
+        supported, device, devName, status, error,
+        connect, reconnect, disconnect, printBuffer, scanUuids, foundUuids,
+    };
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Receipt Preview
 // ═════════════════════════════════════════════════════════════════════════════
 function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
-    const fs   = is58 ? 11 : 13;
-    const fsSM = is58 ?  9 : 11;
+    const fs = is58 ? 11 : 13;
+    const fsSM = is58 ? 9 : 11;
     const font = "Inter, system-ui, -apple-system, sans-serif";
     const fontMono = "'JetBrains Mono', monospace";
 
-    const base = { fontFamily:font, fontSize:fs, lineHeight:1.6, color:"#1e293b" };
-    const dim  = { fontFamily:font, fontSize:fsSM, lineHeight:1.5, color:"#64748b" };
+    const base = { fontFamily: font, fontSize: fs, lineHeight: 1.6, color: "#1e293b" };
+    const dim = { fontFamily: font, fontSize: fsSM, lineHeight: 1.5, color: "#64748b" };
 
-    const Row2 = ({ left, right, bold=false, xl=false, mono=false }) => (
+    const Row2 = ({ left, right, bold = false, xl = false, mono = false }) => (
         <div style={{
-            display:"flex", justifyContent:"space-between", alignItems:"baseline",
-            fontFamily: mono ? fontMono : font, fontSize: xl ? fs+3 : fs,
-            fontWeight: bold ? "700" : "400", color: xl ? "#0f172a" : "#1e293b",
+            display: "flex", justifyContent: "space-between", alignItems: "baseline",
+            fontFamily: mono ? fontMono : font,
+            fontSize: xl ? fs + 3 : fs,
+            fontWeight: bold ? "700" : "400",
+            color: xl ? "#0f172a" : "#1e293b",
             lineHeight: xl ? 1.8 : 1.6,
         }}>
-            <span style={{ flex:1, paddingRight:4 }}>{left}</span>
-            <span style={{ flexShrink:0, textAlign:"right" }}>{right}</span>
+            <span style={{ flex: 1, paddingRight: 4 }}>{left}</span>
+            <span style={{ flexShrink: 0, textAlign: "right" }}>{right}</span>
         </div>
     );
 
-    const Divider = ({ dashed=false }) => (
-        <div style={{ borderTop: dashed ? "1px dashed #e2e8f0" : "1px solid #cbd5e1", margin:"8px 0" }}/>
+    const Divider = ({ dashed = false }) => (
+        <div style={{ borderTop: dashed ? "1px dashed #e2e8f0" : "1px solid #cbd5e1", margin: "8px 0" }} />
     );
 
-    const Spacer = ({h=8}) => <div style={{height:h}}/>;
+    const Spacer = ({ h = 8 }) => <div style={{ height: h }} />;
 
     const pad = is58 ? "24px 16px" : "32px 24px";
-    const negMx = is58 ? { margin:"10px -16px", padding:"10px 16px" } : { margin:"12px -24px", padding:"12px 24px" };
+    const negMx = is58
+        ? { margin: "10px -16px", padding: "10px 16px" }
+        : { margin: "12px -24px", padding: "12px 24px" };
 
     return (
-        <div style={{ padding:pad, ...base, background:"#fff" }}>
+        <div style={{ padding: pad, ...base, background: "#fff" }}>
 
             {/* ══ BRAND ══ */}
-            <div style={{ textAlign:"center", marginBottom:12 }}>
+            <div style={{ textAlign: "center", marginBottom: 12 }}>
                 <div style={{
-                    fontFamily:    font,
-                    fontWeight:    "900",
-                    fontSize:      is58 ? 18 : 24,
+                    fontFamily: font,
+                    fontWeight: "900",
+                    fontSize: is58 ? 18 : 24,
                     letterSpacing: "0.1em",
-                    lineHeight:    1.2,
-                    color:         "#0f172a",
+                    lineHeight: 1.2,
+                    color: "#0f172a",
                     textTransform: "uppercase",
                 }}>
                     Harumnya
                 </div>
-                <div style={{ ...dim, letterSpacing:1, marginTop:2, textTransform:"uppercase", fontSize:fsSM-1 }}>
+                <div style={{ ...dim, letterSpacing: 1, marginTop: 2, textTransform: "uppercase", fontSize: fsSM - 1 }}>
                     Premium Perfume
                 </div>
             </div>
 
             {/* ══ INFO TOKO ══ */}
-            <div style={{ textAlign:"center", marginBottom:8 }}>
-                <div style={{ fontWeight:"700", fontFamily:font, fontSize:fs, color:"#0f172a" }}>
+            <div style={{ textAlign: "center", marginBottom: 8 }}>
+                <div style={{ fontWeight: "700", fontFamily: font, fontSize: fs, color: "#0f172a" }}>
                     {sale.store?.name ?? "PARFUM CUSTOM"}
                 </div>
                 {sale.store?.address && (
-                    <div style={{
-                        ...dim, marginTop:2,
-                        whiteSpace: "normal",
-                        wordBreak:  "break-word",
-                        textAlign:  "center",
-                    }}>
+                    <div style={{ ...dim, marginTop: 2, whiteSpace: "normal", wordBreak: "break-word", textAlign: "center" }}>
                         {sale.store.address}
                     </div>
                 )}
-                {sale.store?.phone && <div style={{ ...dim, marginTop:1 }}>{sale.store.phone}</div>}
+                {sale.store?.phone && <div style={{ ...dim, marginTop: 1 }}>{sale.store.phone}</div>}
             </div>
 
-            <Divider/>
-            <Spacer h={4}/>
+            <Divider />
+            <Spacer h={4} />
 
             {/* ══ INFO TRANSAKSI ══ */}
-            <Row2 left={fmtDate(sale.sold_at)} right={fmtTime(sale.sold_at)}/>
-            <Divider dashed/>
-            <Row2 left="No. Struk" right={sale.sale_number} mono/>
-            <Row2 left="Kasir"     right={sale.cashier?.name ?? sale.cashier_name ?? "-"}/>
+            <Row2 left={fmtDate(sale.sold_at)} right={fmtTime(sale.sold_at)} />
+            <Divider dashed />
+            <Row2 left="No. Struk" right={sale.sale_number} mono />
+            <Row2 left="Kasir" right={sale.cashier?.name ?? sale.cashier_name ?? "-"} />
             {(sale.customer?.name || sale.customer_name) && (
-                <Row2 left="Pelanggan" right={sale.customer?.name ?? sale.customer_name}/>
+                <Row2 left="Pelanggan" right={sale.customer?.name ?? sale.customer_name} />
             )}
-            
+
             {/* Sales */}
             {(() => {
                 const salesName = sale.sales_person?.name
@@ -443,48 +509,47 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                     ?? null;
                 return salesName ? (
                     <div style={{
-                        textAlign:   "center",
-                        fontWeight:  "700",
-                        fontFamily:  font,
-                        fontSize:    fsSM,
-                        lineHeight:  1.6,
-                        marginTop:   6,
-                        marginBottom:2,
-                        background:  "#f8fafc",
-                        border:      "1px solid #e2e8f0",
-                        borderRadius:6,
-                        padding:     "4px 8px",
-                        color:       "#0f172a",
+                        textAlign: "center",
+                        fontWeight: "700",
+                        fontFamily: font,
+                        fontSize: fsSM,
+                        lineHeight: 1.6,
+                        marginTop: 6,
+                        marginBottom: 2,
+                        background: "#f8fafc",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: 6,
+                        padding: "4px 8px",
+                        color: "#0f172a",
                     }}>
                         Sales: {salesName}
                     </div>
                 ) : null;
             })()}
 
-            <Spacer h={8}/>
-            <Divider/>
-            <Spacer h={6}/>
+            <Spacer h={8} />
+            <Divider />
+            <Spacer h={6} />
 
             {/* ══ ITEMS ══ */}
             {saleItems.map((item, i) => {
-                const qty    = getQty(item);
+                const qty = getQty(item);
                 const isFree = Number(item.unit_price) === 0;
-                const pkgs   = item.packagings ?? item.sale_item_packagings ?? [];
-                const name   = String(item.product_name
-                    ?? [item.variant_name, item.intensity_code, item.size_ml ? item.size_ml+"ml" : null]
+                const pkgs = item.packagings ?? item.sale_item_packagings ?? [];
+                const name = String(item.product_name
+                    ?? [item.variant_name, item.intensity_code, item.size_ml ? item.size_ml + "ml" : null]
                         .filter(Boolean).join(" ")
                     ?? "Item");
 
                 return (
                     <div key={i} style={{
-                        paddingTop:    i === 0 ? 0 : 10,
+                        paddingTop: i === 0 ? 0 : 10,
                         paddingBottom: 10,
-                        borderBottom:  i < saleItems.length - 1 ? "1px dashed #e2e8f0" : "none",
+                        borderBottom: i < saleItems.length - 1 ? "1px dashed #e2e8f0" : "none",
                     }}>
                         <div style={{
-                            fontWeight:"700", fontFamily:font, fontSize:fs,
-                            lineHeight:1.4, wordBreak:"break-word", color:"#0f172a",
-                            marginBottom:2,
+                            fontWeight: "700", fontFamily: font, fontSize: fs,
+                            lineHeight: 1.4, wordBreak: "break-word", color: "#0f172a", marginBottom: 2,
                         }}>
                             {name}
                         </div>
@@ -494,20 +559,21 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                             mono
                         />
                         {pkgs.map((p, j) => {
-                            const pqty  = getQty(p);
+                            const pqty = getQty(p);
                             const pFree = Number(p.unit_price) === 0;
                             const pName = String(p.packaging_name ?? p.packaging_material?.name ?? "Kemasan");
                             return (
                                 <div key={j} style={{
-                                    marginLeft:8, marginTop:4,
-                                    paddingLeft:8, borderLeft:"2px solid #e2e8f0",
+                                    marginLeft: 8, marginTop: 4,
+                                    paddingLeft: 8, borderLeft: "2px solid #e2e8f0",
                                 }}>
-                                    <div style={{ ...dim, fontWeight:"600", marginBottom:1, color:"#0f172a" }}>+ {pName}</div>
+                                    <div style={{ ...dim, fontWeight: "600", marginBottom: 1, color: "#0f172a" }}>
+                                        + {pName}
+                                    </div>
                                     <Row2
                                         left={`${pqty}x @${pFree ? "GRATIS" : fmtN(p.unit_price)}`}
                                         right={pFree ? "GRATIS" : fmtN(p.unit_price * pqty)}
                                         mono
-                                        dim
                                     />
                                 </div>
                             );
@@ -516,35 +582,36 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                 );
             })}
 
-            <Spacer h={2}/>
-            <Divider/>
+            <Spacer h={2} />
+            <Divider />
 
             {/* ══ SUMMARY ══ */}
-            <Spacer h={4}/>
-            <Row2 left="Subtotal" right={"Rp " + fmtN(sale.subtotal_perfume ?? 0)} mono/>
+            <Spacer h={4} />
+            <Row2 left="Subtotal" right={"Rp " + fmtN(sale.subtotal_perfume ?? 0)} mono />
             {Number(sale.subtotal_packaging) > 0 && (
-                <Row2 left="Kemasan" right={"Rp " + fmtN(sale.subtotal_packaging)} mono/>
+                <Row2 left="Kemasan" right={"Rp " + fmtN(sale.subtotal_packaging)} mono />
             )}
             {Number(sale.discount_amount) > 0 && (
-                <Row2 left="Diskon" right={"- Rp " + fmtN(sale.discount_amount)} mono/>
+                <Row2 left="Diskon" right={"- Rp " + fmtN(sale.discount_amount)} mono />
             )}
             {Number(sale.points_redemption_value) > 0 && (
-                <Row2 left="Redeem Poin" right={"- Rp " + fmtN(sale.points_redemption_value)} mono/>
+                <Row2 left="Redeem Poin" right={"- Rp " + fmtN(sale.points_redemption_value)} mono />
             )}
 
             {/* ══ TOTAL ══ */}
-            <div style={{ background:"#0f172a", color:"#fff", borderRadius:8, ...negMx }}>
+            <div style={{ background: "#0f172a", color: "#fff", borderRadius: 8, ...negMx }}>
                 <div style={{
-                    display:"flex", justifyContent:"space-between", alignItems:"baseline",
-                    fontFamily:font, fontSize: fs+4,
-                    fontWeight: "900", color:"#fff",
+                    display: "flex", justifyContent: "space-between", alignItems: "baseline",
+                    fontFamily: font, fontSize: fs + 4, fontWeight: "900", color: "#fff",
                 }}>
-                    <span style={{ flex:1 }}>TOTAL</span>
-                    <span style={{ flexShrink:0, textAlign:"right", fontFamily:fontMono }}>Rp {fmtN(sale.total)}</span>
+                    <span style={{ flex: 1 }}>TOTAL</span>
+                    <span style={{ flexShrink: 0, textAlign: "right", fontFamily: fontMono }}>
+                        Rp {fmtN(sale.total)}
+                    </span>
                 </div>
             </div>
 
-            <Spacer h={8}/>
+            <Spacer h={8} />
 
             {/* ══ PEMBAYARAN ══ */}
             {payments.map((p, i) => (
@@ -555,38 +622,43 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                 />
             ))}
             {change > 0 && (
-                <div style={{ fontWeight:"700", color:"#059669", marginTop:2 }}>
-                    <Row2 left="Kembalian" right={"Rp " + fmtN(change)} bold mono/>
+                <div style={{ fontWeight: "700", color: "#059669", marginTop: 2 }}>
+                    <Row2 left="Kembalian" right={"Rp " + fmtN(change)} bold mono />
                 </div>
             )}
             {Number(sale.points_earned) > 0 && (
                 <div style={{
-                    background:"#fef3c7", padding:"6px 10px", borderRadius:6, marginTop:8,
-                    fontFamily:font, fontSize:fsSM, color:"#b45309", textAlign:"center",
-                    border:"1px solid #fde68a", fontWeight:"600",
+                    background: "#fef3c7", padding: "6px 10px", borderRadius: 6, marginTop: 8,
+                    fontFamily: font, fontSize: fsSM, color: "#b45309", textAlign: "center",
+                    border: "1px solid #fde68a", fontWeight: "600",
                 }}>
                     ⭐ Poin diperoleh: +{sale.points_earned} poin
                 </div>
             )}
 
-            <Spacer h={12}/>
-            <Divider/>
+            <Spacer h={12} />
+            <Divider />
 
             {/* ══ FOOTER ══ */}
-            <div style={{ textAlign:"center", fontFamily:font, fontSize:fsSM, color:"#64748b", lineHeight:1.6, marginTop:6 }}>
+            <div style={{ textAlign: "center", fontFamily: font, fontSize: fsSM, color: "#64748b", lineHeight: 1.6, marginTop: 6 }}>
                 <div>Terima kasih atas kunjungan Anda</div>
-                <div style={{ fontWeight:"700", fontSize:fs, color:"#0f172a", letterSpacing:1, textTransform:"uppercase", marginTop:2 }}>
+                <div style={{
+                    fontWeight: "700", fontSize: fs, color: "#0f172a",
+                    letterSpacing: 1, textTransform: "uppercase", marginTop: 2,
+                }}>
                     Harumnya
                 </div>
             </div>
 
-            <Spacer h={4}/>
+            <Spacer h={4} />
         </div>
     );
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-function IRow({ label, val, cls="" }) {
+// Shared row helper
+// ═════════════════════════════════════════════════════════════════════════════
+function IRow({ label, val, cls = "" }) {
     return (
         <div className={`flex justify-between ${cls || "text-slate-500 dark:text-slate-400"}`}>
             <span>{label}</span><span>{val}</span>
@@ -594,6 +666,7 @@ function IRow({ label, val, cls="" }) {
     );
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
 // Invoice View
 // ═════════════════════════════════════════════════════════════════════════════
 function InvoiceView({ sale, saleItems, payments, totalPaid, change, statusInfo }) {
@@ -608,11 +681,16 @@ function InvoiceView({ sale, saleItems, payments, totalPaid, change, statusInfo 
                     </div>
                     <div className="text-right">
                         <p className="font-bold">{sale.store?.name ?? "-"}</p>
-                        {sale.store?.address && <p className="text-xs text-slate-400 mt-0.5 max-w-[180px]">{sale.store.address}</p>}
-                        <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mt-1 ${statusInfo.cls}`}>{statusInfo.label}</span>
+                        {sale.store?.address && (
+                            <p className="text-xs text-slate-400 mt-0.5 max-w-[180px]">{sale.store.address}</p>
+                        )}
+                        <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mt-1 ${statusInfo.cls}`}>
+                            {statusInfo.label}
+                        </span>
                     </div>
                 </div>
             </div>
+
             <div className="grid grid-cols-2 gap-4 px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-sm">
                 <div>
                     <p className="text-xs text-slate-400 mb-0.5">Kasir</p>
@@ -624,7 +702,8 @@ function InvoiceView({ sale, saleItems, payments, totalPaid, change, statusInfo 
                     {sale.customer?.phone && <p className="text-xs text-slate-400">{sale.customer.phone}</p>}
                 </div>
                 {(() => {
-                    const sn = sale.sales_person?.name ?? sale.salesperson?.name ?? sale.sales_person_name ?? sale.salesperson_name ?? sale.staff?.name ?? null;
+                    const sn = sale.sales_person?.name ?? sale.salesperson?.name
+                        ?? sale.sales_person_name ?? sale.salesperson_name ?? sale.staff?.name ?? null;
                     return sn ? (
                         <div>
                             <p className="text-xs text-slate-400 mb-0.5">Sales</p>
@@ -633,14 +712,16 @@ function InvoiceView({ sale, saleItems, payments, totalPaid, change, statusInfo 
                     ) : null;
                 })()}
             </div>
+
             <div className="px-6 py-4 space-y-3">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Item Pembelian</p>
                 {saleItems.map((item, i) => {
-                    const qty    = getQty(item);
+                    const qty = getQty(item);
                     const isFree = Number(item.unit_price) === 0;
-                    const pkgs   = item.packagings ?? item.sale_item_packagings ?? [];
-                    const name   = item.product_name
-                        ?? [item.variant_name, item.intensity_code, item.size_ml ? item.size_ml+"ml" : null].filter(Boolean).join(" - ")
+                    const pkgs = item.packagings ?? item.sale_item_packagings ?? [];
+                    const name = item.product_name
+                        ?? [item.variant_name, item.intensity_code, item.size_ml ? item.size_ml + "ml" : null]
+                            .filter(Boolean).join(" - ")
                         ?? "Item";
                     return (
                         <div key={i} className="rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
@@ -648,7 +729,11 @@ function InvoiceView({ sale, saleItems, payments, totalPaid, change, statusInfo 
                                 <div className="flex-1 min-w-0">
                                     <p className="font-semibold text-sm">{name}</p>
                                     <p className="text-xs text-slate-500 mt-0.5">
-                                        {qty} × {isFree ? <span className="text-emerald-600 font-semibold">GRATIS</span> : fmt(item.unit_price)}
+                                        {qty} ×{" "}
+                                        {isFree
+                                            ? <span className="text-emerald-600 font-semibold">GRATIS</span>
+                                            : fmt(item.unit_price)
+                                        }
                                     </p>
                                 </div>
                                 <p className="font-bold text-sm flex-shrink-0">{fmt(item.subtotal)}</p>
@@ -656,12 +741,14 @@ function InvoiceView({ sale, saleItems, payments, totalPaid, change, statusInfo 
                             {pkgs.length > 0 && (
                                 <div className="px-4 py-2 space-y-1 border-t border-slate-100 dark:border-slate-800">
                                     {pkgs.map((p, j) => {
-                                        const pqty  = getQty(p);
+                                        const pqty = getQty(p);
                                         const pFree = Number(p.unit_price) === 0;
                                         return (
                                             <div key={j} className="flex justify-between text-xs text-slate-500">
                                                 <span>📦 {p.packaging_name ?? p.packaging_material?.name ?? "Kemasan"} ×{pqty}</span>
-                                                <span className={pFree?"text-emerald-600 font-semibold":""}>{pFree?"GRATIS":fmt(p.unit_price*pqty)}</span>
+                                                <span className={pFree ? "text-emerald-600 font-semibold" : ""}>
+                                                    {pFree ? "GRATIS" : fmt(p.unit_price * pqty)}
+                                                </span>
                                             </div>
                                         );
                                     })}
@@ -671,17 +758,30 @@ function InvoiceView({ sale, saleItems, payments, totalPaid, change, statusInfo 
                     );
                 })}
             </div>
+
             <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 space-y-2 text-sm">
-                {Number(sale.subtotal_perfume)  > 0 && <IRow label="Sub Parfum"  val={fmt(sale.subtotal_perfume)}/>}
-                {Number(sale.subtotal_packaging)> 0 && <IRow label="Sub Kemasan" val={fmt(sale.subtotal_packaging)}/>}
-                {Number(sale.discount_amount)   > 0 && <IRow label={`Diskon${sale.discount_type_name?` (${sale.discount_type_name})`:""}`} val={`− ${fmt(sale.discount_amount)}`} cls="text-red-500"/>}
-                {Number(sale.points_redemption_value) > 0 && <IRow label="Redeem Poin" val={`− ${fmt(sale.points_redemption_value)}`} cls="text-amber-600"/>}
+                {Number(sale.subtotal_perfume) > 0 && <IRow label="Sub Parfum" val={fmt(sale.subtotal_perfume)} />}
+                {Number(sale.subtotal_packaging) > 0 && <IRow label="Sub Kemasan" val={fmt(sale.subtotal_packaging)} />}
+                {Number(sale.discount_amount) > 0 && (
+                    <IRow
+                        label={`Diskon${sale.discount_type_name ? ` (${sale.discount_type_name})` : ""}`}
+                        val={`− ${fmt(sale.discount_amount)}`}
+                        cls="text-red-500"
+                    />
+                )}
+                {Number(sale.points_redemption_value) > 0 && (
+                    <IRow label="Redeem Poin" val={`− ${fmt(sale.points_redemption_value)}`} cls="text-amber-600" />
+                )}
                 <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-700">
                     <span className="font-bold text-base">Total</span>
                     <span className="font-bold text-xl">{fmt(sale.total)}</span>
                 </div>
-                {payments.map((p,i) => (
-                    <IRow key={i} label={`Bayar (${p.payment_method?.name ?? p.payment_method_name ?? "Cash"})`} val={fmt(p.amount)} cls="text-slate-500"/>
+                {payments.map((p, i) => (
+                    <IRow key={i}
+                        label={`Bayar (${p.payment_method?.name ?? p.payment_method_name ?? "Cash"})`}
+                        val={fmt(p.amount)}
+                        cls="text-slate-500"
+                    />
                 ))}
                 {change > 0 && (
                     <div className="flex justify-between font-semibold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl">
@@ -689,22 +789,29 @@ function InvoiceView({ sale, saleItems, payments, totalPaid, change, statusInfo 
                     </div>
                 )}
             </div>
+
             {Number(sale.cogs_total) > 0 && (
                 <div className="mx-6 mb-4 px-4 py-3 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 text-xs text-slate-400 space-y-1.5">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Internal — HPP</p>
-                    {Number(sale.cogs_perfume)  > 0 && <IRow label="HPP Parfum"  val={fmt(sale.cogs_perfume)}/>}
-                    {Number(sale.cogs_packaging)> 0 && <IRow label="HPP Kemasan" val={fmt(sale.cogs_packaging)}/>}
-                    <IRow label="Total HPP"    val={fmt(sale.cogs_total)}   cls="font-semibold text-slate-500 border-t border-slate-200 pt-1"/>
-                    <IRow label="Gross Profit" val={`${fmt(sale.gross_profit)} (${parseFloat(sale.gross_margin_pct??0).toFixed(1)}%)`}
-                        cls={`font-bold ${Number(sale.gross_profit)>=0?"text-emerald-600":"text-red-500"}`}/>
+                    {Number(sale.cogs_perfume) > 0 && <IRow label="HPP Parfum" val={fmt(sale.cogs_perfume)} />}
+                    {Number(sale.cogs_packaging) > 0 && <IRow label="HPP Kemasan" val={fmt(sale.cogs_packaging)} />}
+                    <IRow label="Total HPP" val={fmt(sale.cogs_total)}
+                        cls="font-semibold text-slate-500 border-t border-slate-200 pt-1" />
+                    <IRow
+                        label="Gross Profit"
+                        val={`${fmt(sale.gross_profit)} (${parseFloat(sale.gross_margin_pct ?? 0).toFixed(1)}%)`}
+                        cls={`font-bold ${Number(sale.gross_profit) >= 0 ? "text-emerald-600" : "text-red-500"}`}
+                    />
                 </div>
             )}
+
             {Number(sale.points_earned) > 0 && (
                 <div className="mx-6 mb-4 flex justify-between items-center px-4 py-2.5 bg-amber-50 rounded-xl border border-amber-100 text-sm">
                     <span className="text-amber-700">⭐ Poin diperoleh</span>
                     <span className="font-bold text-amber-700">+{sale.points_earned} poin</span>
                 </div>
             )}
+
             <div className="px-6 py-4 text-center border-t border-slate-100 dark:border-slate-800">
                 <p className="text-xs text-slate-400 uppercase tracking-widest">Terima kasih telah berbelanja 🌸</p>
             </div>
@@ -712,15 +819,14 @@ function InvoiceView({ sale, saleItems, payments, totalPaid, change, statusInfo 
     );
 }
 
-
 // ═════════════════════════════════════════════════════════════════════════════
-// Main
+// Main Page
 // ═════════════════════════════════════════════════════════════════════════════
 export default function Print({ sale, fromTransaction }) {
-    const [mode,        setMode]        = useState("thermal58");
+    const [mode, setMode] = useState("thermal58");
     const [showSuccess, setShowSuccess] = useState(!!fromTransaction);
-    const [printing,    setPrinting]    = useState(false);
-    const [printMsg,    setPrintMsg]    = useState(null);
+    const [printing, setPrinting] = useState(false);
+    const [printMsg, setPrintMsg] = useState(null);
     const bt = useBluetooth();
 
     useEffect(() => {
@@ -732,51 +838,48 @@ export default function Print({ sale, fromTransaction }) {
 
     if (!sale) return null;
 
-    const saleItems  = sale.sale_items ?? sale.items ?? [];
-    const payments   = sale.sale_payments ?? sale.payments ?? [];
-    const totalPaid  = payments.reduce((s,p) => s + Number(p.amount??0), 0);
-    const change     = Number(sale.change_amount??0) || Math.max(0, totalPaid - Number(sale.total??0));
-    const is58       = mode === "thermal58";
-    const statusInfo = STATUS_LABELS[sale.status] ?? { label:sale.status, cls:"bg-slate-100 text-slate-500" };
+    const saleItems = sale.sale_items ?? sale.items ?? [];
+    const payments = sale.sale_payments ?? sale.payments ?? [];
+    const totalPaid = payments.reduce((s, p) => s + Number(p.amount ?? 0), 0);
+    const change = Number(sale.change_amount ?? 0) || Math.max(0, totalPaid - Number(sale.total ?? 0));
+    const is58 = mode === "thermal58";
+    const statusInfo = STATUS_LABELS[sale.status] ?? { label: sale.status, cls: "bg-slate-100 text-slate-500" };
 
     const handleBtPrint = async () => {
-        setPrinting(true); setPrintMsg(null);
+        setPrinting(true);
+        setPrintMsg(null);
         try {
-            // Jika belum terhubung, coba hubungkan dulu
             if (bt.status !== "connected") {
                 setPrintMsg({ ok: true, text: "Menghubungkan ke printer..." });
-                if (bt.devName) {
-                    await bt.reconnect();
-                } else {
-                    await bt.connect();
-                }
-                // Tunggu sebentar agar koneksi stabil
+                if (bt.devName) await bt.reconnect();
+                else await bt.connect();
                 await new Promise(r => setTimeout(r, 1000));
             }
-            
             const buf = buildReceipt(sale, saleItems, payments, change);
             await bt.printBuffer(buf);
-            setPrintMsg({ ok:true, text:"Berhasil dikirim ke printer!" });
-        } catch(err) {
-            setPrintMsg({ ok:false, text: err.message });
-        } finally { setPrinting(false); }
+            setPrintMsg({ ok: true, text: "Berhasil dikirim ke printer!" });
+        } catch (err) {
+            setPrintMsg({ ok: false, text: err.message });
+        } finally {
+            setPrinting(false);
+        }
     };
 
     const BT_UI = {
-        idle:         { icon:<IconBluetooth size={15}/>,                          label: bt.devName ? `Hubungkan Ulang (${bt.devName})` : "Hubungkan Printer BT", cls:"bg-blue-500 hover:bg-blue-600 text-white" },
-        connecting:   { icon:<IconLoader2 size={15} className="animate-spin"/>,   label:"Menghubungkan...",    cls:"bg-blue-400 text-white cursor-wait" },
-        reconnecting: { icon:<IconLoader2 size={15} className="animate-spin"/>,   label:"Menyambung ulang...", cls:"bg-amber-400 text-white cursor-wait" },
-        connected:    { icon:<IconBluetoothConnected size={15}/>,                 label: bt.device?.name ?? bt.devName ?? "Terhubung", cls:"bg-emerald-500 hover:bg-emerald-600 text-white" },
-        error:        { icon:<IconBluetoothOff size={15}/>,                       label:"Gagal — Coba Lagi",   cls:"bg-red-500 hover:bg-red-600 text-white" },
-    }[bt.status] ?? { icon:<IconBluetooth size={15}/>, label:"Hubungkan", cls:"bg-blue-500 hover:bg-blue-600 text-white" };
+        idle: { icon: <IconBluetooth size={15} />, label: bt.devName ? `Hubungkan Ulang (${bt.devName})` : "Hubungkan Printer BT", cls: "bg-blue-500 hover:bg-blue-600 text-white" },
+        connecting: { icon: <IconLoader2 size={15} className="animate-spin" />, label: "Menghubungkan...", cls: "bg-blue-400 text-white cursor-wait" },
+        reconnecting: { icon: <IconLoader2 size={15} className="animate-spin" />, label: "Menyambung ulang...", cls: "bg-amber-400 text-white cursor-wait" },
+        connected: { icon: <IconBluetoothConnected size={15} />, label: bt.device?.name ?? bt.devName ?? "Terhubung", cls: "bg-emerald-500 hover:bg-emerald-600 text-white" },
+        error: { icon: <IconBluetoothOff size={15} />, label: "Gagal — Coba Lagi", cls: "bg-red-500 hover:bg-red-600 text-white" },
+    }[bt.status] ?? { icon: <IconBluetooth size={15} />, label: "Hubungkan", cls: "bg-blue-500 hover:bg-blue-600 text-white" };
 
-    const btOnClick = bt.status === "connected"          ? bt.disconnect
-                    : bt.status === "idle" && bt.devName ? bt.reconnect
-                    : bt.connect;
+    const btOnClick = bt.status === "connected" ? bt.disconnect
+        : bt.status === "idle" && bt.devName ? bt.reconnect
+            : bt.connect;
 
     return (
         <>
-            <Head title={`Struk ${sale.sale_number}`}/>
+            <Head title={`Struk ${sale.sale_number}`} />
             <style>{`
                 @media print {
                     body * { visibility:hidden !important; }
@@ -796,32 +899,33 @@ export default function Print({ sale, fromTransaction }) {
                                 {fromTransaction && (
                                     <Link href={route("transactions.index")}
                                         className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-sm font-semibold text-white shadow shadow-cyan-500/30 transition-colors">
-                                        <IconShoppingBag size={15}/> Transaksi Baru
+                                        <IconShoppingBag size={15} /> Transaksi Baru
                                     </Link>
                                 )}
                                 <Link href={route("transactions.index")}
                                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                    <IconArrowLeft size={15}/> Kembali
+                                    <IconArrowLeft size={15} /> Kembali
                                 </Link>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 gap-0.5">
                                     {[
-                                        {key:"invoice",   label:"Invoice", Icon:IconFileInvoice},
-                                        {key:"thermal58", label:"58mm",    Icon:IconReceipt},
-                                        {key:"thermal80", label:"80mm",    Icon:IconReceipt},
-                                    ].map(({key,label,Icon}) => (
+                                        { key: "invoice", label: "Invoice", Icon: IconFileInvoice },
+                                        { key: "thermal58", label: "58mm", Icon: IconReceipt },
+                                        { key: "thermal80", label: "80mm", Icon: IconReceipt },
+                                    ].map(({ key, label, Icon }) => (
                                         <button key={key} onClick={() => setMode(key)}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
-                                                mode===key ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow"
-                                                           : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}`}>
-                                            <Icon size={13}/> {label}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${mode === key
+                                                    ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow"
+                                                    : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                                                }`}>
+                                            <Icon size={13} /> {label}
                                         </button>
                                     ))}
                                 </div>
                                 <button onClick={() => window.print()} title="Cetak via browser"
                                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700">
-                                    <IconPrinter size={15}/>
+                                    <IconPrinter size={15} />
                                 </button>
                             </div>
                         </div>
@@ -850,14 +954,15 @@ export default function Print({ sale, fromTransaction }) {
                                         <button onClick={handleBtPrint} disabled={printing}
                                             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm font-semibold text-white disabled:opacity-60">
                                             {printing
-                                                ? <><IconLoader2 size={14} className="animate-spin"/> Mengirim...</>
-                                                : <><IconPrinter size={14}/> Cetak Bluetooth</>}
+                                                ? <><IconLoader2 size={14} className="animate-spin" /> Mengirim...</>
+                                                : <><IconPrinter size={14} /> Cetak Bluetooth</>
+                                            }
                                         </button>
                                     )}
                                     {bt.error && (
                                         <div className="flex flex-col gap-1 w-full">
                                             <span className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-3 py-1.5 rounded-lg">
-                                                <IconAlertCircle size={13}/> {bt.error}
+                                                <IconAlertCircle size={13} /> {bt.error}
                                             </span>
                                             <div className="text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-lg space-y-1">
                                                 <p>💡 <strong>Langkah troubleshoot:</strong></p>
@@ -873,7 +978,7 @@ export default function Print({ sale, fromTransaction }) {
                                             {bt.foundUuids.length > 0 && (
                                                 <div className="text-xs bg-slate-800 text-green-400 px-3 py-2 rounded-lg font-mono">
                                                     <p className="text-slate-400 mb-1">Services ditemukan:</p>
-                                                    {bt.foundUuids.map((u,i) => <p key={i}>{u}</p>)}
+                                                    {bt.foundUuids.map((u, i) => <p key={i}>{u}</p>)}
                                                 </div>
                                             )}
                                         </div>
@@ -899,7 +1004,7 @@ export default function Print({ sale, fromTransaction }) {
                     <div className="no-print max-w-2xl mx-auto px-4 pt-4">
                         <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-emerald-50 border border-emerald-200">
                             <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-                                <IconCheck size={16} className="text-white"/>
+                                <IconCheck size={16} className="text-white" />
                             </div>
                             <div>
                                 <p className="font-semibold text-emerald-800 text-sm">Transaksi berhasil!</p>
@@ -912,15 +1017,21 @@ export default function Print({ sale, fromTransaction }) {
                 {/* Print Area */}
                 <div id="print-area" className="max-w-2xl mx-auto px-4 py-5 print:pt-10 print:pb-10">
                     {mode === "invoice" && (
-                        <InvoiceView sale={sale} saleItems={saleItems} payments={payments}
-                            totalPaid={totalPaid} change={change} statusInfo={statusInfo}/>
+                        <InvoiceView
+                            sale={sale} saleItems={saleItems} payments={payments}
+                            totalPaid={totalPaid} change={change} statusInfo={statusInfo}
+                        />
                     )}
                     {(mode === "thermal80" || mode === "thermal58") && (
                         <div className="flex justify-center py-2">
-                            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200"
-                                style={{ width: is58 ? 216 : 302 }}>
-                                <ReceiptPreview sale={sale} saleItems={saleItems}
-                                    payments={payments} change={change} is58={is58}/>
+                            <div
+                                className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200"
+                                style={{ width: is58 ? 216 : 302 }}
+                            >
+                                <ReceiptPreview
+                                    sale={sale} saleItems={saleItems}
+                                    payments={payments} change={change} is58={is58}
+                                />
                             </div>
                         </div>
                     )}
