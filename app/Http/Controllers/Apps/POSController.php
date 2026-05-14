@@ -619,9 +619,12 @@ class POSController extends Controller
                 if ($discountType) {
                     DiscountUsage::create([
                         'discount_type_id' => $discountType->id,
-                        'user_id' => $user->id,
                         'order_id' => $sale->id,
-                        'amount_saved' => (int) $discountAmount,
+                        'store_id' => $storeId,
+                        'customer_id' => $customer?->id,
+                        'discount_amount' => (int) $discountAmount,
+                        'original_amount' => (int) $subtotal,
+                        'final_amount' => (int) $total,
                         'used_at' => now(),
                     ]);
                 }
@@ -984,7 +987,7 @@ class POSController extends Controller
         // Ambil promo bertipe game_reward (Spin Wheel) yang aktif
         $promos = DiscountType::where('type', 'game_reward')
             ->where('is_active', true)
-            ->with('requirements')
+            ->with(['requirements', 'rewards.variant', 'rewards.size', 'rewards.pools'])
             ->get();
 
         foreach ($promos as $promo) {
@@ -1015,19 +1018,48 @@ class POSController extends Controller
             }
 
             if ($anyGroupMatched) {
+                // Ambil reward dari database jika disetting
+                $dbRewards = [];
+                foreach ($promo->rewards as $reward) {
+                    if ($reward->is_pool) {
+                        foreach ($reward->pools as $pool) {
+                            if ($pool->label) {
+                                $dbRewards[] = $pool->label;
+                            }
+                        }
+                    } else {
+                        if ($reward->variant) {
+                            $name = $reward->variant->name;
+                            if ($reward->size) {
+                                $name .= ' ' . $reward->size->volume_ml . 'ml';
+                            }
+                            $dbRewards[] = $name;
+                        } elseif ($reward->discount_percentage > 0) {
+                            $dbRewards[] = 'Diskon ' . $reward->discount_percentage . '%';
+                        } elseif ($reward->fixed_price > 0) {
+                            $dbRewards[] = 'Harga Khusus ' . number_format($reward->fixed_price, 0, ',', '.');
+                        } else {
+                            $dbRewards[] = 'Reward #' . substr($reward->id, 0, 8);
+                        }
+                    }
+                }
+
+                // Fallback ke reward default jika belum disetting di database
+                $rewards = count($dbRewards) > 0 ? $dbRewards : [
+                    'P50 Selected Varian',
+                    'Atomizer',
+                    'Cashback',
+                    'Luxury Fragrance Travel Size',
+                    'Room Spray 100ml',
+                    'Pengharum Mobil'
+                ];
+
                 return [
                     'id' => $promo->id,
                     'name' => $promo->name,
                     'description' => $promo->description,
                     'terms' => $promo->terms_conditions,
-                    'rewards' => [
-                        'P50 Selected Varian',
-                        'Atomizer',
-                        'Cashback',
-                        'Luxury Fragrance Travel Size',
-                        'Room Spray 100ml',
-                        'Pengharum Mobil'
-                    ]
+                    'rewards' => $rewards
                 ];
             }
         }

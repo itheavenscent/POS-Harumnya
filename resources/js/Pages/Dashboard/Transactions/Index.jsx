@@ -734,8 +734,7 @@ function PackagingModal({ show, onClose, packagingMaterials = [], selectedPkgs =
 
 // ─── Choose Reward Modal ──────────────────────────────────────────────────────
 function ChooseRewardModal({ show, onClose, promo, onApply }) {
-    if (!promo) return null;
-    const rewards = promo.rewards || [
+    const rewards = promo?.rewards || [
         "P50 Selected Varian",
         "Atomizer",
         "Cashback",
@@ -785,6 +784,96 @@ function ChooseRewardModal({ show, onClose, promo, onApply }) {
                         </button>
                     ))}
                 </div>
+            </div>
+        </Modal>
+    );
+}
+
+// ─── Discount Modal ───────────────────────────────────────────────────────────
+function DiscountModal({ show, onClose, discounts = [], subtotal = 0, onSelect }) {
+    const [search, setSearch] = useState("");
+    const [manualAmount, setManualAmount] = useState("");
+
+    const filtered = useMemo(() => {
+        if (!search) return discounts;
+        return discounts.filter(d => 
+            d.name.toLowerCase().includes(search.toLowerCase()) || 
+            (d.code ?? "").toLowerCase().includes(search.toLowerCase())
+        );
+    }, [discounts, search]);
+
+    return (
+        <Modal show={show} onClose={onClose} maxW="max-w-md">
+            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
+                <h3 className="font-bold text-slate-800 dark:text-white text-lg flex items-center gap-2">
+                    <IconTag size={20} className="text-emerald-500"/> Pilih Diskon
+                </h3>
+                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors"><IconX size={16}/></button>
+            </div>
+            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
+                <div className="relative">
+                    <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
+                    <input type="text" placeholder="Cari diskon atau voucher..." value={search} onChange={e => setSearch(e.target.value)} className="w-full h-9 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"/>
+                </div>
+            </div>
+            <div className="overflow-y-auto p-4 flex-1 space-y-2">
+                {/* Manual Nominal Diskon */}
+                <div className="p-4 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 mb-4">
+                    <label className="text-xs font-bold text-slate-600 dark:text-slate-400 block mb-2">Input Diskon Manual (Rp)</label>
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</span>
+                            <input type="text" inputMode="numeric" value={manualAmount} onChange={e => setManualAmount(e.target.value.replace(/\D/g, ""))} placeholder="0" className="w-full h-10 pl-10 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"/>
+                        </div>
+                        <button 
+                            onClick={() => {
+                                const amt = Number(manualAmount) || 0;
+                                if (amt > 0) {
+                                    onSelect({ id: "__manual__", name: "Diskon Manual", amount: amt });
+                                    onClose();
+                                }
+                            }}
+                            disabled={!manualAmount || Number(manualAmount) <= 0}
+                            className="px-4 bg-slate-800 dark:bg-slate-700 text-white font-bold rounded-xl disabled:opacity-50 text-sm"
+                        >Terapkan</button>
+                    </div>
+                </div>
+
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Diskon & Promo Tersedia</p>
+                {filtered.length === 0 ? (
+                    <div className="py-8 text-center text-slate-400 text-sm">Tidak ada diskon</div>
+                ) : (
+                    filtered.map(d => {
+                        let calcAmount = 0;
+                        if (d.type === 'percentage') {
+                            calcAmount = subtotal * (d.value / 100);
+                            if (d.max_discount_amount > 0 && calcAmount > d.max_discount_amount) {
+                                calcAmount = d.max_discount_amount;
+                            }
+                        } else {
+                            calcAmount = d.value;
+                        }
+
+                        const eligible = !d.min_purchase_amount || subtotal >= d.min_purchase_amount;
+
+                        return (
+                            <button key={d.id} disabled={!eligible} onClick={() => {
+                                onSelect({ ...d, amount: calcAmount });
+                                onClose();
+                            }} className={`group flex items-start gap-3 p-3.5 rounded-xl border-2 text-left transition-all w-full ${eligible ? "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-emerald-400" : "border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 opacity-60 cursor-not-allowed"}`}>
+                                <div className={`w-10 h-10 rounded-xl ${eligible ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40" : "bg-slate-200 text-slate-400 dark:bg-slate-700"} flex items-center justify-center flex-shrink-0`}><IconTag size={18}/></div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-slate-800 dark:text-white text-sm truncate">{d.name}</p>
+                                    <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-2">{d.description || (d.type === 'percentage' ? `Diskon ${d.value}%` : `Potongan Rp ${d.value}`)}</p>
+                                    {!eligible && <p className="text-[10px] text-red-500 mt-1 font-bold">Minimal belanja: {fmt(d.min_purchase_amount)}</p>}
+                                </div>
+                                {eligible && <div className="text-right flex-shrink-0">
+                                    <p className="text-xs font-black text-emerald-600">-{fmt(calcAmount)}</p>
+                                </div>}
+                            </button>
+                        );
+                    })
+                )}
             </div>
         </Modal>
     );
@@ -1194,6 +1283,14 @@ export default function Index({
                 onClose={() => setShowPromoModal(false)}
                 promo={autoPromo}
                 onApply={handleApplyReward}
+            />
+
+            <DiscountModal 
+                show={showDiscountModal} 
+                onClose={() => setShowDiscountModal(false)} 
+                discounts={discounts} 
+                subtotal={subtotal + pkgCartTotal} 
+                onSelect={setSelectedDiscount} 
             />
 
 
