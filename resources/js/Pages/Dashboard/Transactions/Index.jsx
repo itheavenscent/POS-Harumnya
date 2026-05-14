@@ -227,12 +227,12 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                                 }
                             }}
                             className={`flex items-center gap-2 text-xs font-bold transition-colors ${step === s.n ? "text-amber-600 dark:text-amber-400" :
-                                    step > s.n ? "text-emerald-600 cursor-pointer hover:opacity-80" :
-                                        "text-slate-400 cursor-not-allowed"
+                                step > s.n ? "text-emerald-600 cursor-pointer hover:opacity-80" :
+                                    "text-slate-400 cursor-not-allowed"
                                 }`}>
                             <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${step === s.n ? "bg-amber-500 text-white" :
-                                    step > s.n ? "bg-emerald-500 text-white" :
-                                        "bg-slate-200 dark:bg-slate-700 text-slate-400"
+                                step > s.n ? "bg-emerald-500 text-white" :
+                                    "bg-slate-200 dark:bg-slate-700 text-slate-400"
                                 }`}>
                                 {step > s.n ? <IconCheck size={11} /> : s.n}
                             </span>
@@ -366,8 +366,8 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                                     }}
                                     placeholder="cth: 27"
                                     className={`w-full h-11 px-3 rounded-xl border text-center text-lg font-black focus:outline-none focus:ring-2 dark:bg-slate-900 dark:text-white ${compositionErrors.oil
-                                            ? "border-red-400 bg-red-50 dark:bg-red-950/20 focus:ring-red-400/30"
-                                            : "border-slate-200 dark:border-slate-700 bg-slate-50 focus:ring-amber-500/30 focus:border-amber-500"
+                                        ? "border-red-400 bg-red-50 dark:bg-red-950/20 focus:ring-red-400/30"
+                                        : "border-slate-200 dark:border-slate-700 bg-slate-50 focus:ring-amber-500/30 focus:border-amber-500"
                                         }`}
                                 />
                                 {compositionErrors.oil && <p className="text-xs text-red-500 mt-1">{compositionErrors.oil}</p>}
@@ -387,8 +387,8 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                                     }}
                                     placeholder="cth: 3"
                                     className={`w-full h-11 px-3 rounded-xl border text-center text-lg font-black focus:outline-none focus:ring-2 dark:bg-slate-900 dark:text-white ${compositionErrors.alcohol
-                                            ? "border-red-400 bg-red-50 dark:bg-red-950/20 focus:ring-red-400/30"
-                                            : "border-slate-200 dark:border-slate-700 bg-slate-50 focus:ring-blue-500/30 focus:border-blue-400"
+                                        ? "border-red-400 bg-red-50 dark:bg-red-950/20 focus:ring-red-400/30"
+                                        : "border-slate-200 dark:border-slate-700 bg-slate-50 focus:ring-blue-500/30 focus:border-blue-400"
                                         }`}
                                 />
                                 {compositionErrors.alcohol && <p className="text-xs text-red-500 mt-1">{compositionErrors.alcohol}</p>}
@@ -435,16 +435,16 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                                     onChange={e => { setCustomPrice(e.target.value.replace(/\D/g, "")); setPriceOverride(true); }}
                                     placeholder="0"
                                     className={`w-full h-12 pl-10 pr-16 rounded-xl border text-xl font-black focus:outline-none focus:ring-2 dark:bg-slate-900 dark:text-white ${errors.price
-                                            ? "border-red-400 bg-red-50 focus:ring-red-400/30"
-                                            : !priceOverride && customPrice
-                                                ? "border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/10 focus:ring-amber-500/30 focus:border-amber-500"
-                                                : "border-slate-200 dark:border-slate-700 bg-slate-50 focus:ring-amber-500/30 focus:border-amber-500"
+                                        ? "border-red-400 bg-red-50 focus:ring-red-400/30"
+                                        : !priceOverride && customPrice
+                                            ? "border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/10 focus:ring-amber-500/30 focus:border-amber-500"
+                                            : "border-slate-200 dark:border-slate-700 bg-slate-50 focus:ring-amber-500/30 focus:border-amber-500"
                                         }`}
                                 />
                                 {customPrice && (
                                     <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold px-1.5 py-0.5 rounded ${priceOverride
-                                            ? "bg-slate-100 dark:bg-slate-700 text-slate-500"
-                                            : "bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400"
+                                        ? "bg-slate-100 dark:bg-slate-700 text-slate-500"
+                                        : "bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400"
                                         }`}>
                                         {priceOverride ? "manual" : "auto"}
                                     </span>
@@ -504,8 +504,8 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                             onClick={handleConfirm}
                             disabled={!isCompositionValid || finalPrice <= 0}
                             className={`flex-1 py-2.5 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all ${isCompositionValid && finalPrice > 0
-                                    ? "bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/25"
-                                    : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
+                                ? "bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/25"
+                                : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
                                 }`}>
                             <IconShoppingCart size={15} />
                             Tambah ke Keranjang {finalPrice > 0 && `· ${fmt(finalPrice * qty)}`}
@@ -725,8 +725,46 @@ function PackagingModal({ show, onClose, packagingMaterials = [], selectedPkgs =
     );
 }
 
+// ─── Eligible Promo Pop-up Modal ─────────────────────────────────────────────
+function EligiblePromoModal({ show, promos = [], onClose, onPickReward, onAddDiscount }) {
+    if (!show || promos.length === 0) return null;
+    const promo = promos[0];
+    const isRewardType = promo?.type === 'game_reward' || promo?.type === 'buy_x_get_y';
+    return (
+        <Modal show={show} onClose={onClose} maxW="max-w-md">
+            <div className="p-6 text-center">
+                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                    <span className="text-3xl">{promo?.trigger === 'loyalty_points' ? '🏆' : '🎡'}</span>
+                </div>
+                <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">Selamat! Promo Tersedia 🎉</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
+                    Transaksi ini memenuhi syarat untuk:
+                </p>
+                <p className="text-base font-black text-amber-600 dark:text-amber-400 mb-4">{promo?.name}</p>
+                {promo?.trigger === 'loyalty_points' && (
+                    <p className="text-xs text-slate-400 mb-4">
+                        Poin customer: <span className="font-bold text-amber-500">{promo.customer_points}</span> / {promo.points_needed} poin
+                    </p>
+                )}
+                <p className="text-xs text-slate-400 mb-6">{promo?.description}</p>
+                <div className="flex gap-3">
+                    <button onClick={onClose}
+                        className="flex-1 py-3 rounded-xl font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition">
+                        Abaikan
+                    </button>
+                    <button
+                        onClick={() => { onClose(); if (isRewardType) onPickReward(promo); else onAddDiscount(promo); }}
+                        className="flex-1 py-3 rounded-xl font-black text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-lg shadow-amber-500/30 transition">
+                        {isRewardType ? 'Pilih Reward 🎁' : 'Ambil Promo'}
+                    </button>
+                </div>
+            </div>
+        </Modal>
+    );
+}
+
 // ─── Choose Reward Modal ──────────────────────────────────────────────────────
-function ChooseRewardModal({ show, onClose, promo, onApply }) {
+function ChooseRewardModal({ show, onClose, promo, variants = [], loadingVariants = false, onAddFreeItem }) {
     const rewards = promo?.rewards || [
         "P50 Selected Varian",
         "Atomizer",
@@ -735,56 +773,97 @@ function ChooseRewardModal({ show, onClose, promo, onApply }) {
         "Room Spray 100ml",
         "Pengharum Mobil"
     ];
-    const [selected, setSelected] = useState(rewards[0]);
+    const [selectedVariant, setSelectedVariant] = useState(null);
+    const [search, setSearch] = useState("");
+    const reward = promo?.rewards?.[0];
+    const rewardLabel = reward?.intensity_code
+        ? `P${reward.size_ml} ${reward.intensity_code} (pilih varian)`
+        : promo?.name || 'Reward Gratis';
+
+    const filtered = useMemo(() => {
+        if (!search) return variants;
+        return variants.filter(v => v.name.toLowerCase().includes(search.toLowerCase()) ||
+            (v.code ?? '').toLowerCase().includes(search.toLowerCase()));
+    }, [variants, search]);
+
+    useEffect(() => { if (!show) { setSelectedVariant(null); setSearch(''); } }, [show]);
 
     return (
         <Modal show={show} onClose={onClose} maxW="max-w-md">
             <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
-                <h3 className="font-bold text-slate-800 dark:text-white text-lg">Choose Reward</h3>
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => { onApply(selected); onClose(); }}
-                        className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold"
-                    >
-                        Apply
-                    </button>
-                    <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors">
-                        <IconX size={16} />
-                    </button>
+                <div>
+                    <p className="text-xs text-slate-400 mb-0.5">Reward Gratis</p>
+                    <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <span className="text-lg">🎁</span> {promo?.name}
+                    </h3>
+                </div>
+                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors">
+                    <IconX size={16} />
+                </button>
+            </div>
+            <div className="px-5 py-3 bg-amber-50 dark:bg-amber-950/20 border-b border-amber-100 dark:border-amber-900/40 flex-shrink-0">
+                <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold">
+                    Hadiah: <span className="font-black">{rewardLabel}</span> — GRATIS!
+                </p>
+            </div>
+            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
+                <div className="relative">
+                    <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input type="text" placeholder="Cari varian parfum..." value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        className="w-full h-9 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/30" />
                 </div>
             </div>
-            <div className="p-5">
-                <div className="flex items-center gap-2 mb-4">
-                    <span className="text-xl">🎁</span>
-                    <div>
-                        <p className="font-bold text-slate-800 dark:text-white text-sm">Choose One of The Following Rewards</p>
-                        <p className="text-xs text-slate-500">There are {rewards.length} rewards for the selected promotion. Choose the desired reward and click button "Apply".</p>
+            <div className="overflow-y-auto p-4 flex-1 space-y-2">
+                {loadingVariants ? (
+                    <div className="py-10 flex flex-col items-center gap-3 text-slate-400">
+                        <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-sm">Memuat varian...</span>
                     </div>
-                </div>
-
-                <div className="space-y-2">
-                    {rewards.map((reward, i) => (
-                        <button
-                            key={i}
-                            onClick={() => setSelected(reward)}
-                            className={`w-full p-3.5 rounded-xl border-2 text-center font-semibold transition-all ${selected === reward
-                                    ? "border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
-                                    : "border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-800 text-slate-700 dark:text-slate-300"
-                                }`}
-                        >
-                            {reward}
+                ) : filtered.length === 0 ? (
+                    <div className="py-8 text-center text-slate-400 text-sm">Tidak ada varian</div>
+                ) : (
+                    filtered.map((v, idx) => (
+                        <button key={v.id} onClick={() => setSelectedVariant(v)}
+                            className={`group w-full flex items-center gap-3 p-3.5 rounded-xl border-2 text-left transition-all ${
+                                selectedVariant?.id === v.id
+                                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/20'
+                                    : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-amber-300'
+                            }`}>
+                            <div className={`w-10 h-10 rounded-xl ${INTENSITY_COLORS[idx % INTENSITY_COLORS.length].bg} flex items-center justify-center flex-shrink-0`}>
+                                <IconDroplet size={16} className="text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="font-bold text-slate-800 dark:text-white text-sm truncate">{v.name}</p>
+                                {v.code && <p className="text-[10px] text-slate-400 font-mono">{v.code}</p>}
+                            </div>
+                            {selectedVariant?.id === v.id && <IconCheck size={16} className="text-amber-500 flex-shrink-0" />}
                         </button>
-                    ))}
-                </div>
+                    ))
+                )}
+            </div>
+            <div className="flex-shrink-0 border-t border-slate-100 dark:border-slate-800 p-4">
+                <button
+                    onClick={() => { if (selectedVariant) { onAddFreeItem(selectedVariant, promo); onClose(); } }}
+                    disabled={!selectedVariant}
+                    className={`w-full h-12 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all ${
+                        selectedVariant
+                            ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/25'
+                            : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
+                    }`}>
+                    <IconShoppingCart size={16} />
+                    {selectedVariant ? `Tambah "${selectedVariant.name}" ke Keranjang (GRATIS)` : 'Pilih Varian Dulu'}
+                </button>
             </div>
         </Modal>
     );
 }
 
 // ─── Discount Modal ───────────────────────────────────────────────────────────
-function DiscountModal({ show, onClose, discounts = [], subtotal = 0, onSelect }) {
+function DiscountModal({ show, onClose, discounts = [], subtotal = 0, onSelect, eligiblePromos = [], onPickReward }) {
     const [search, setSearch] = useState("");
     const [manualAmount, setManualAmount] = useState("");
+    const eligibleIds = useMemo(() => new Set((eligiblePromos || []).map(p => p.id)), [eligiblePromos]);
 
     const filtered = useMemo(() => {
         if (!search) return discounts;
@@ -809,7 +888,6 @@ function DiscountModal({ show, onClose, discounts = [], subtotal = 0, onSelect }
                 </div>
             </div>
             <div className="overflow-y-auto p-4 flex-1 space-y-2">
-                {/* Manual Nominal Diskon */}
                 <div className="p-4 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 mb-4">
                     <label className="text-xs font-bold text-slate-600 dark:text-slate-400 block mb-2">Input Diskon Manual (Rp)</label>
                     <div className="flex gap-2">
@@ -817,17 +895,7 @@ function DiscountModal({ show, onClose, discounts = [], subtotal = 0, onSelect }
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</span>
                             <input type="text" inputMode="numeric" value={toRupiahDisplay(manualAmount)} onChange={e => setManualAmount(parseRupiah(e.target.value).replace(/\D/g, ""))} placeholder="0" className="w-full h-10 pl-10 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
                         </div>
-                        <button
-                            onClick={() => {
-                                const amt = Number(manualAmount) || 0;
-                                if (amt > 0) {
-                                    onSelect({ id: "__manual__", name: "Diskon Manual", amount: amt });
-                                    onClose();
-                                }
-                            }}
-                            disabled={!manualAmount || Number(manualAmount) <= 0}
-                            className="px-4 bg-slate-800 dark:bg-slate-700 text-white font-bold rounded-xl disabled:opacity-50 text-sm"
-                        >Terapkan</button>
+                        <button onClick={() => { const amt = Number(manualAmount) || 0; if (amt > 0) { onSelect({ id: "__manual__", name: "Diskon Manual", amount: amt }); onClose(); } }} disabled={!manualAmount || Number(manualAmount) <= 0} className="px-4 bg-slate-800 dark:bg-slate-700 text-white font-bold rounded-xl disabled:opacity-50 text-sm">Terapkan</button>
                     </div>
                 </div>
 
@@ -836,27 +904,31 @@ function DiscountModal({ show, onClose, discounts = [], subtotal = 0, onSelect }
                     <div className="py-8 text-center text-slate-400 text-sm">Tidak ada diskon</div>
                 ) : (
                     filtered.map(d => {
+                        const isEligible = eligibleIds.has(d.id);
+                        const isRewardType = d.type === 'game_reward' || d.type === 'buy_x_get_y';
                         let calcAmount = 0;
-                        if (d.type === 'percentage') {
-                            calcAmount = subtotal * (d.value / 100);
-                            if (d.max_discount_amount > 0 && calcAmount > d.max_discount_amount) {
-                                calcAmount = d.max_discount_amount;
-                            }
-                        } else {
-                            calcAmount = d.value;
+                        if (!isRewardType) {
+                            if (d.type === 'percentage') {
+                                calcAmount = subtotal * (d.value / 100);
+                                if (d.max_discount_amount > 0 && calcAmount > d.max_discount_amount) calcAmount = d.max_discount_amount;
+                            } else { calcAmount = d.value; }
                         }
-
-                        const eligible = !d.min_purchase_amount || subtotal >= d.min_purchase_amount;
-
+                        const eligible = isEligible || (!d.min_purchase_amount || subtotal >= d.min_purchase_amount);
+                        const eligiblePromo = (eligiblePromos || []).find(p => p.id === d.id);
                         return (
                             <button key={d.id} disabled={!eligible} onClick={() => {
-                                onSelect({ ...d, amount: calcAmount });
-                                onClose();
-                            }} className={`group flex items-start gap-3 p-3.5 rounded-xl border-2 text-left transition-all w-full ${eligible ? "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-emerald-400" : "border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 opacity-60 cursor-not-allowed"}`}>
-                                <div className={`w-10 h-10 rounded-xl ${eligible ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40" : "bg-slate-200 text-slate-400 dark:bg-slate-700"} flex items-center justify-center flex-shrink-0`}><IconTag size={18} /></div>
+                                if (isRewardType && isEligible && eligiblePromo) { onClose(); onPickReward && onPickReward(eligiblePromo); }
+                                else if (!isRewardType) { onSelect({ ...d, amount: calcAmount }); onClose(); }
+                            }} className={`group relative flex items-start gap-3 p-3.5 rounded-xl border-2 text-left transition-all w-full ${
+                                isEligible ? 'border-amber-400 dark:border-amber-600 bg-amber-50/50 dark:bg-amber-950/20 hover:border-amber-500 shadow-sm'
+                                : eligible ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-emerald-400'
+                                : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 opacity-60 cursor-not-allowed'
+                            }`}>
+                                {isEligible && <span className="absolute -top-2 right-3 px-2 py-0.5 bg-amber-500 text-white text-[9px] font-black rounded-full animate-pulse">✓ ELIGIBLE</span>}
+                                <div className={`w-10 h-10 rounded-xl ${isEligible ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40' : eligible ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40' : 'bg-slate-200 text-slate-400 dark:bg-slate-700'} flex items-center justify-center flex-shrink-0`}><IconTag size={18} /></div>
                                 <div className="flex-1 min-w-0">
                                     <p className="font-bold text-slate-800 dark:text-white text-sm truncate">{d.name}</p>
-                                    <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-2">{d.description || (d.type === 'percentage' ? `Diskon ${d.value}%` : `Potongan Rp ${d.value}`)}</p>
+                                    <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-2">{d.description || (isRewardType ? 'Item Gratis' : d.type === 'percentage' ? `Diskon ${d.value}%` : `Potongan Rp ${d.value}`)}</p>
                                     {!eligible && <p className="text-[10px] text-red-500 mt-1 font-bold">Minimal belanja: {fmt(d.min_purchase_amount)}</p>}
                                 </div>
                                 {eligible && <div className="text-right flex-shrink-0">
@@ -945,8 +1017,17 @@ export default function Index({
     // ── State: misc ────────────────────────────────────────────────────────────
     const [mobileView, setMobileView] = useState("catalog");
     const [leftTab, setLeftTab] = useState("parfum");
-    const [selectedCategory, setSelectedCategory] = useState(null); // null, 'parfum', 'packaging', 'paperbag'
-    const [pendingReward, setSelectedReward] = useState(null); // { name: string, is_free: boolean }
+    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [pendingReward, setSelectedReward] = useState(null);
+
+    // ── State: eligible promo / reward ─────────────────────────────────────────
+    const [eligiblePromos, setEligiblePromos] = useState([]);
+    const [showEligibleModal, setShowEligibleModal] = useState(false);
+    const [shownEligibleIds, setShownEligibleIds] = useState(new Set());
+    const [showChooseRewardModal, setShowChooseRewardModal] = useState(false);
+    const [activePromoForReward, setActivePromoForReward] = useState(null);
+    const [rewardVariants, setRewardVariants] = useState([]);
+    const [loadingRewardVariants, setLoadingRewardVariants] = useState(false);
 
     // ── State: auto promo ──────────────────────────────────────────────────────
     const [showPromoModal, setShowPromoModal] = useState(false);
@@ -997,6 +1078,27 @@ export default function Index({
 
     // (Obsolete frontend auto-promo calculation removed in favor of backend-driven engine)
 
+
+    // ── Effect: check eligible discounts when cart or customer changes ──────────
+    useEffect(() => {
+        if (carts.length === 0) { setEligiblePromos([]); return; }
+        const params = {};
+        if (selectedCustomer?.id) params.customer_id = selectedCustomer.id;
+        axios.get(route('transactions.check-eligible-discounts'), { params })
+            .then(res => {
+                if (res.data.success) {
+                    const newEligible = res.data.data || [];
+                    setEligiblePromos(newEligible);
+                    // Show pop-up for first new eligible promo not yet shown
+                    const newPromo = newEligible.find(p => !shownEligibleIds.has(p.id));
+                    if (newPromo) {
+                        setShowEligibleModal(true);
+                        setShownEligibleIds(prev => new Set([...prev, newPromo.id]));
+                    }
+                }
+            })
+            .catch(() => {});
+    }, [carts.length, selectedCustomer?.id]);
 
     // ── Fetch katalog varian POS ───────────────────────────────────────────────
     const fetchCatalogVariants = async () => {
@@ -1066,6 +1168,40 @@ export default function Index({
         if (customVariants.length === 0) fetchCustomVariants();
     };
 
+    // ── Reward picker helpers ──────────────────────────────────────────────────
+    const handleOpenRewardPicker = async (promo) => {
+        setActivePromoForReward(promo);
+        setShowChooseRewardModal(true);
+        // Load variants if not already loaded (reuse catalog or fetch fresh)
+        if (catalogVariants.length > 0) {
+            setRewardVariants(catalogVariants);
+        } else {
+            setLoadingRewardVariants(true);
+            try {
+                const res = await axios.get(route('transactions.get-variants-pos'));
+                if (res.data.success) setRewardVariants(res.data.data);
+            } catch { toast.error('Gagal memuat varian'); }
+            finally { setLoadingRewardVariants(false); }
+        }
+    };
+
+    const handleAddFreeItem = (variant, promo) => {
+        if (!variant || !promo) return;
+        const reward = promo?.rewards?.[0];
+        const label = `${promo.name} - ${variant.name}`;
+        router.post(route('transactions.add-reward-to-cart'), {
+            discount_type_id: promo.id,
+            variant_id: variant.id,
+            intensity_id: reward?.intensity_id ?? null,
+            size_id: reward?.size_id ?? null,
+            reward_label: label,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => toast.success(`✅ Item reward "${variant.name}" ditambahkan ke keranjang (GRATIS)!`),
+            onError: (err) => toast.error(Object.values(err)[0] ?? 'Gagal menambahkan reward'),
+        });
+    };
+
     // Load katalog varian saat tab parfum aktif
     useEffect(() => {
         if (leftTab === "parfum" && catalogVariants.length === 0) fetchCatalogVariants();
@@ -1112,7 +1248,7 @@ export default function Index({
 
     const handleApplyReward = (rewardName) => {
         const name = rewardName.toLowerCase();
-        
+
         // 1. Jika reward mengandung "Spin Wheel", buka modal spin
         if (name.includes("spin wheel")) {
             toast.success("Silakan lakukan Spin Wheel! 🎡");
@@ -1143,8 +1279,8 @@ export default function Index({
         if (!order) return;
 
         const isCustom = order.type === "custom";
-        const finalPayload = { 
-            ...order.payload, 
+        const finalPayload = {
+            ...order.payload,
             packaging_ids: selectedPkgs,
             is_free: pendingReward?.is_free || false
         };
@@ -1786,11 +1922,17 @@ export default function Index({
                         {/* Summary + checkout */}
                         <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 space-y-2.5">
                             <button onClick={() => setShowDiscountModal(true)}
-                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border-2 transition-all ${selectedDiscount ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30" : "border-dashed border-slate-200 dark:border-slate-700 hover:border-primary-300 hover:bg-primary-50/50"}`}>
+                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border-2 transition-all relative ${selectedDiscount ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30" : "border-dashed border-slate-200 dark:border-slate-700 hover:border-primary-300 hover:bg-primary-50/50"}`}>
+                                {eligiblePromos.length > 0 && !selectedDiscount && (
+                                    <span className="absolute -top-2 -right-2 w-5 h-5 bg-amber-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg shadow-amber-500/40 animate-bounce">
+                                        {eligiblePromos.length}
+                                    </span>
+                                )}
                                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${selectedDiscount ? "bg-emerald-100 dark:bg-emerald-900/50" : "bg-slate-100 dark:bg-slate-800"}`}><IconTag size={13} className={selectedDiscount ? "text-emerald-600" : "text-slate-400"} /></div>
                                 <div className="flex-1 text-left min-w-0">
                                     <p className={`text-xs font-bold truncate ${selectedDiscount ? "text-emerald-700 dark:text-emerald-400" : "text-slate-500"}`}>{selectedDiscount ? selectedDiscount.name : "Tambah Diskon / Voucher"}</p>
                                     {selectedDiscount && <p className="text-[10px] text-emerald-600 font-semibold">-{fmt(selectedDiscount.amount)}</p>}
+                                    {eligiblePromos.length > 0 && !selectedDiscount && <p className="text-[9px] text-amber-600 font-black animate-pulse">PROMO TERSEDIA!</p>}
                                 </div>
                                 {selectedDiscount ? <button onClick={e => { e.stopPropagation(); setSelectedDiscount(null); }} className="p-0.5 text-slate-400 hover:text-red-500 flex-shrink-0"><IconX size={13} /></button> : <IconChevronRight size={13} className="text-slate-300 flex-shrink-0" />}
                             </button>
@@ -1891,6 +2033,41 @@ export default function Index({
                     </div>
                 </div>
             )}
+            {/* ── Eligible Promo & Reward Modals ────────────────────────────── */}
+            <EligiblePromoModal
+                show={showEligibleModal}
+                promos={eligiblePromos}
+                onClose={() => setShowEligibleModal(false)}
+                onPickReward={handleOpenRewardPicker}
+                onAddDiscount={(promo) => {
+                    let obj = { ...promo };
+                    if (promo.type === 'percentage') {
+                        obj.amount = subtotal * (promo.value / 100);
+                        if (promo.max_discount_amount > 0 && obj.amount > promo.max_discount_amount) obj.amount = promo.max_discount_amount;
+                    } else { obj.amount = promo.value || 0; }
+                    setSelectedDiscount(obj);
+                    toast.success(`Promo "${promo.name}" diterapkan!`);
+                }}
+            />
+
+            <ChooseRewardModal
+                show={showChooseRewardModal}
+                onClose={() => setShowChooseRewardModal(false)}
+                promo={activePromoForReward}
+                variants={rewardVariants}
+                loadingVariants={loadingRewardVariants}
+                onAddFreeItem={handleAddFreeItem}
+            />
+
+            <DiscountModal
+                show={showDiscountModal}
+                onClose={() => setShowDiscountModal(false)}
+                discounts={discounts}
+                subtotal={subtotal}
+                onSelect={setSelectedDiscount}
+                eligiblePromos={eligiblePromos}
+                onPickReward={handleOpenRewardPicker}
+            />
 
             {/* ── Auto Promo Modal ───────────────────────────────────────────── */}
             <Modal show={localAutoPromo !== null} onClose={() => {

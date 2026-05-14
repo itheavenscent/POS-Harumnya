@@ -512,6 +512,10 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::get('/get-variants-custom', [TransactionController::class, 'getVariantsForCustom'])->name('get-variants-custom')->middleware('permission:transactions-access');
         Route::get('/get-custom-price', [TransactionController::class, 'getCustomPrice'])->name('get-custom-price')->middleware('permission:transactions-access');
 
+        // 2b. Eligible Discounts & Reward
+        Route::get('/check-eligible-discounts', [TransactionController::class, 'checkEligibleDiscounts'])->name('check-eligible-discounts')->middleware('permission:transactions-access');
+        Route::post('/add-reward-to-cart', [TransactionController::class, 'addRewardToCart'])->name('add-reward-to-cart')->middleware('permission:transactions-create');
+
         // 3. Cart
         Route::post('/add-to-cart', [TransactionController::class, 'addToCart'])->name('add-to-cart')->middleware('permission:transactions-create');
         Route::post('/add-custom-to-cart', [TransactionController::class, 'addCustomToCart'])->name('add-custom-to-cart')->middleware('permission:transactions-create');

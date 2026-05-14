@@ -148,6 +148,8 @@ class TransactionController extends Controller
             'storeId' => $storeId,
             'storeName' => $store?->name,
             'error' => null,
+            'loyalty_reward_threshold' => (int)\App\Models\AppSetting::getValue('loyalty_reward_threshold', 30),
+            'loyalty_reward_description' => \App\Models\AppSetting::getValue('loyalty_reward_description', 'Free parfum P30 EDT + Botol'),
         ]);
     }
 
@@ -1137,6 +1139,219 @@ class TransactionController extends Controller
         return redirect()->route('transactions.print', ['saleNumber' => str_replace('/', '-', $sale->sale_number)])
             ->with('success', 'Transaksi berhasil disimpan!')
             ->with('from_transaction', true);
+    }
+
+    // =========================================================================
+    // CHECK ELIGIBLE DISCOUNTS (AJAX)
+    // GET /dashboard/transactions/check-eligible-discounts
+    //
+    // Evaluates active discounts against the current cart + customer points.
+    // Returns a list of eligible promos with their reward details.
+    // =========================================================================
+    public function checkEligibleDiscounts(Request $request): JsonResponse
+    {
+        $request->validate([
+            'customer_id' => 'nullable|uuid|exists:customers,id',
+        ]);
+
+        $user    = Auth::user();
+        $storeId = $user->default_store_id;
+
+        if (!$storeId) {
+            return response()->json(['success' => true, 'data' => []]);
+        }
+
+        $carts = $this->getActiveCarts($user->id, $storeId);
+
+        if ($carts->isEmpty()) {
+            return response()->json(['success' => true, 'data' => []]);
+        }
+
+        $customer = $request->customer_id ? Customer::find($request->customer_id) : null;
+        $customerPoints = (int) ($customer?->points ?? 0);
+
+        // Load all active discounts with their requirements & rewards
+        $discounts = DiscountType::where('is_active', true)
+            ->where(fn($q) => $q->whereNull('start_date')->orWhereDate('start_date', '<=', today()))
+            ->where(fn($q) => $q->whereNull('end_date')->orWhereDate('end_date', '>=', today()))
+            ->where(fn($q) => $q->whereDoesntHave('stores')
+                ->orWhereHas('stores', fn($sq) => $sq->where('store_id', $storeId)))
+            ->with(['requirements', 'rewards.pools', 'rewards.intensity', 'rewards.size'])
+            ->orderByDesc('priority')
+            ->get();
+
+        // Build cart quantity map: size_id -> total qty
+        $cartSizeQty = [];
+        foreach ($carts as $cart) {
+            if ($cart->size_id) {
+                $cartSizeQty[$cart->size_id] = ($cartSizeQty[$cart->size_id] ?? 0) + (int)$cart->qty;
+            }
+        }
+
+        $eligible = [];
+
+        foreach ($discounts as $discount) {
+            // --- POIN MEMBER: check customer points ---
+            if ($discount->code === 'POIN-MEMBER') {
+                $threshold = \App\Models\AppSetting::getValue('loyalty_reward_threshold', 30);
+                if ($customer && $customerPoints >= (int)$threshold) {
+                    $rewardData = $this->buildRewardData($discount);
+                    $eligible[] = [
+                        'id'          => $discount->id,
+                        'code'        => $discount->code,
+                        'name'        => $discount->name,
+                        'type'        => $discount->type,
+                        'description' => $discount->description,
+                        'trigger'     => 'loyalty_points',
+                        'points_needed' => (int)$threshold,
+                        'customer_points' => $customerPoints,
+                        'rewards'     => $rewardData,
+                    ];
+                }
+                continue;
+            }
+
+            // --- SPIN WHEEL: check cart requirements (OR between groups) ---
+            if ($discount->requirements->isEmpty()) {
+                continue;
+            }
+
+            // Group requirements by group_key; each group is an AND condition;
+            // discount is eligible if ANY group is satisfied (OR logic)
+            $groups = $discount->requirements->groupBy('group_key');
+            $anyGroupMet = false;
+            $metGroup    = null;
+
+            foreach ($groups as $groupKey => $reqs) {
+                $groupMet = true;
+                foreach ($reqs as $req) {
+                    if ($req->size_id) {
+                        $cartQty = $cartSizeQty[$req->size_id] ?? 0;
+                        if ($cartQty < $req->required_quantity) {
+                            $groupMet = false;
+                            break;
+                        }
+                    }
+                }
+                if ($groupMet) {
+                    $anyGroupMet = true;
+                    $metGroup    = $groupKey;
+                    break;
+                }
+            }
+
+            if ($anyGroupMet) {
+                $rewardData = $this->buildRewardData($discount);
+                $eligible[] = [
+                    'id'          => $discount->id,
+                    'code'        => $discount->code,
+                    'name'        => $discount->name,
+                    'type'        => $discount->type,
+                    'description' => $discount->description,
+                    'trigger'     => 'cart_quantity',
+                    'met_group'   => $metGroup,
+                    'rewards'     => $rewardData,
+                ];
+            }
+        }
+
+        return response()->json(['success' => true, 'data' => $eligible]);
+    }
+
+    /**
+     * Build reward data array from a DiscountType (with eager-loaded rewards & pools).
+     */
+    private function buildRewardData(DiscountType $discount): array
+    {
+        $rewardData = [];
+        foreach ($discount->rewards as $reward) {
+            $item = [
+                'id'                  => $reward->id,
+                'reward_quantity'     => $reward->reward_quantity,
+                'customer_can_choose' => $reward->customer_can_choose,
+                'is_pool'             => $reward->is_pool,
+                'discount_percentage' => (float)$reward->discount_percentage,
+                'intensity_code'      => $reward->intensity?->code,
+                'size_ml'             => $reward->size?->volume_ml,
+                'intensity_id'        => $reward->intensity_id,
+                'size_id'             => $reward->size_id,
+            ];
+
+            if ($reward->is_pool) {
+                $item['pools'] = $reward->pools->map(fn($p) => [
+                    'id'          => $p->id,
+                    'label'       => $p->label,
+                    'probability' => $p->probability,
+                    'intensity_id'=> $p->intensity_id,
+                    'size_id'     => $p->size_id,
+                ])->values()->all();
+            }
+
+            $rewardData[] = $item;
+        }
+        return $rewardData;
+    }
+
+    // =========================================================================
+    // ADD REWARD (FREE ITEM) TO CART
+    // POST /dashboard/transactions/add-reward-to-cart
+    //
+    // Adds a free parfum item to the cart as a reward.
+    // Supported reward types from DiscountSeeder:
+    //   - P30 EDT (customer pilih varian) => variant_id + intensity_id + size_id
+    //   - P10 EDT (pool) => just label, added as notes-only custom
+    // =========================================================================
+    public function addRewardToCart(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'discount_type_id' => 'required|uuid|exists:discount_types,id',
+            'variant_id'       => 'required|uuid|exists:variants,id',
+            'intensity_id'     => 'nullable|uuid|exists:intensities,id',
+            'size_id'          => 'nullable|uuid|exists:sizes,id',
+            'reward_label'     => 'nullable|string|max:200',
+        ]);
+
+        $user    = Auth::user();
+        $storeId = $user->default_store_id;
+
+        abort_unless((bool)$storeId, 422, 'Toko default tidak ditemukan.');
+
+        $activeCashDrawer = CashDrawer::where('store_id', $storeId)
+            ->where('cashier_id', $user->id)
+            ->where('status', 'open')
+            ->first();
+
+        abort_unless((bool)$activeCashDrawer, 422, 'Silakan buka shift terlebih dahulu.');
+
+        $discount = DiscountType::findOrFail($request->discount_type_id);
+
+        // Determine price (reward = 100% discount => price 0)
+        $price = 0;
+
+        // If size is provided, try to get the size/intensity price to snapshot it
+        if ($request->intensity_id && $request->size_id) {
+            $normalPrice = IntensitySizePrice::where('intensity_id', $request->intensity_id)
+                ->where('size_id', $request->size_id)
+                ->where('is_active', true)
+                ->value('price') ?? 0;
+        }
+
+        DB::transaction(function () use ($request, $user, $storeId, $discount, $price) {
+            Cart::create([
+                'cashier_id'   => $user->id,
+                'store_id'     => $storeId,
+                'variant_id'   => $request->variant_id,
+                'intensity_id' => $request->intensity_id,
+                'size_id'      => $request->size_id,
+                'product_id'   => null,
+                'unit_price'   => $price,  // gratis
+                'qty'          => 1,
+                'is_free'      => true,
+                'notes'        => 'Reward: ' . ($request->reward_label ?? $discount->name),
+            ]);
+        });
+
+        return back();
     }
 
     // =========================================================================
