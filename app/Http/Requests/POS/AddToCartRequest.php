@@ -22,6 +22,8 @@ class AddToCartRequest extends FormRequest
             'qty'             => ['required', 'integer', 'min:1', 'max:99'],
             'packaging_ids'   => ['nullable', 'array'],
             'packaging_ids.*' => ['uuid', 'exists:packaging_materials,id'],
+            'is_free'         => ['nullable', 'boolean'],
+            'notes'           => ['nullable', 'string', 'max:255'],
         ];
     }
 

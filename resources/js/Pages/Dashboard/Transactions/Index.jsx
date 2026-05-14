@@ -823,7 +823,7 @@ function DiscountModal({ show, onClose, discounts = [], subtotal = 0, onSelect }
                     <div className="flex gap-2">
                         <div className="relative flex-1">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</span>
-                            <input type="text" inputMode="numeric" value={manualAmount} onChange={e => setManualAmount(e.target.value.replace(/\D/g, ""))} placeholder="0" className="w-full h-10 pl-10 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"/>
+                            <input type="text" inputMode="numeric" value={toRupiahDisplay(manualAmount)} onChange={e => setManualAmount(parseRupiah(e.target.value).replace(/\D/g, ""))} placeholder="0" className="w-full h-10 pl-10 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"/>
                         </div>
                         <button 
                             onClick={() => {
@@ -850,6 +850,17 @@ function DiscountModal({ show, onClose, discounts = [], subtotal = 0, onSelect }
                             if (d.max_discount_amount > 0 && calcAmount > d.max_discount_amount) {
                                 calcAmount = d.max_discount_amount;
                             }
+                        } else if (d.code === 'POIN-MEMBER') {
+                            // Cari item P30 EDT di cart untuk dijadikan diskon 100%
+                            const rewardItem = carts.find(item => 
+                                item.size?.volume_ml === 30 && 
+                                item.intensity?.code === 'EDT'
+                            );
+                            if (rewardItem) {
+                                calcAmount = Number(rewardItem.unit_price) * Number(rewardItem.qty);
+                            } else {
+                                calcAmount = 0;
+                            }
                         } else {
                             calcAmount = d.value;
                         }
@@ -866,6 +877,9 @@ function DiscountModal({ show, onClose, discounts = [], subtotal = 0, onSelect }
                                     <p className="font-bold text-slate-800 dark:text-white text-sm truncate">{d.name}</p>
                                     <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-2">{d.description || (d.type === 'percentage' ? `Diskon ${d.value}%` : `Potongan Rp ${d.value}`)}</p>
                                     {!eligible && <p className="text-[10px] text-red-500 mt-1 font-bold">Minimal belanja: {fmt(d.min_purchase_amount)}</p>}
+                                    {eligible && d.code === 'POIN-MEMBER' && calcAmount === 0 && (
+                                        <p className="text-[10px] text-orange-600 mt-1 font-bold italic">Tambahkan 1 Parfum P30 EDT ke keranjang untuk menukar poin</p>
+                                    )}
                                 </div>
                                 {eligible && <div className="text-right flex-shrink-0">
                                     <p className="text-xs font-black text-emerald-600">-{fmt(calcAmount)}</p>
@@ -979,6 +993,20 @@ export default function Index({
     useEffect(() => {
         if (paymentMethods.length > 0 && !selectedPaymentId) setSelectedPaymentId(paymentMethods[0].id);
     }, [paymentMethods]);
+
+    // Auto-popup jika poin customer >= 30
+    useEffect(() => {
+        if (selectedCustomer && selectedCustomer.points >= 30 && !dismissedPromos.includes('POIN-MEMBER')) {
+            const poinPromo = (discounts || []).find(d => d.code === 'POIN-MEMBER');
+            if (poinPromo && !selectedDiscount) {
+                setLocalAutoPromo({
+                    ...poinPromo,
+                    name: "Redeem 30 Poin Member 🎁",
+                    description: "Pelanggan memiliki 30 poin! Tambahkan 1 Parfum P30 EDT ke keranjang untuk mendapatkan gratis."
+                });
+            }
+        }
+    }, [selectedCustomer, discounts, selectedDiscount, dismissedPromos]);
     useEffect(() => {
         const handler = (e) => {
             if (customerRef.current && !customerRef.current.contains(e.target)) setShowCustomerDropdown(false);

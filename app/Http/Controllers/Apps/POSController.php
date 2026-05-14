@@ -850,7 +850,7 @@ class POSController extends Controller
             ->where(fn($q) => $q->whereNull('end_date')
                 ->orWhereDate('end_date', '>=', today()))
             ->where(fn($q) => $q->whereDoesntHave('stores')
-                ->orWhereHas('stores', fn($sq) => $sq->where('store_id', $storeId)))
+                ->orWhereHas('stores', fn($sq) => $sq->where('store_id', $storeId)->orWhereNull('store_id')))
             ->with(['requirements', 'applicabilities'])
             ->orderByDesc('priority')
             ->get([

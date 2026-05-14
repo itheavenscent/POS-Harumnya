@@ -719,14 +719,15 @@ class TransactionController extends Controller
             ->where('is_active', true)
             ->first();
 
-        $price = (int) (IntensitySizePrice::where('intensity_id', $request->intensity_id)
+        $isFree = $request->boolean('is_free');
+        $price = $isFree ? 0 : (int) (IntensitySizePrice::where('intensity_id', $request->intensity_id)
             ->where('size_id', $request->size_id)
             ->where('is_active', true)
             ->value('price')
             ?? $product?->selling_price
             ?? 0);
 
-        DB::transaction(function () use ($request, $user, $storeId, $product, $price) {
+        DB::transaction(function () use ($request, $user, $storeId, $product, $price, $isFree) {
             $cart = Cart::create([
                 'cashier_id' => $user->id,
                 'store_id' => $storeId,
@@ -736,14 +737,16 @@ class TransactionController extends Controller
                 'product_id' => $product?->id,
                 'unit_price' => $price,
                 'qty' => $request->qty,
+                'is_free' => $isFree,
+                'notes' => $request->notes,
             ]);
 
             if ($request->filled('packaging_ids')) {
                 PackagingMaterial::whereIn('id', $request->packaging_ids)
                     ->where('is_active', true)
                     ->get()
-                    ->each(function ($pkg) use ($cart) {
-                        $effectivePrice = $pkg->is_free ? 0 : (int) ($pkg->selling_price ?? 0);
+                    ->each(function ($pkg) use ($cart, $isFree) {
+                        $effectivePrice = ($pkg->is_free || $isFree) ? 0 : (int) ($pkg->selling_price ?? 0);
                         CartPackaging::create([
                             'cart_id' => $cart->id,
                             'packaging_material_id' => $pkg->id,
