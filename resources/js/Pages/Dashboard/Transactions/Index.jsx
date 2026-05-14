@@ -790,7 +790,7 @@ function ChooseRewardModal({ show, onClose, promo, onApply }) {
 }
 
 // ─── Discount Modal ───────────────────────────────────────────────────────────
-function DiscountModal({ show, onClose, discounts = [], subtotal = 0, onSelect }) {
+function DiscountModal({ show, onClose, discounts = [], subtotal = 0, onSelect, carts = [] }) {
     const [search, setSearch] = useState("");
     const [manualAmount, setManualAmount] = useState("");
 
@@ -1320,6 +1320,7 @@ export default function Index({
                 discounts={discounts} 
                 subtotal={subtotal + pkgCartTotal} 
                 onSelect={setSelectedDiscount} 
+                carts={carts}
             />
 
 
