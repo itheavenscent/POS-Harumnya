@@ -972,6 +972,7 @@ export default function Index({
     // ── State: auto promo ──────────────────────────────────────────────────────
     const [showPromoModal, setShowPromoModal] = useState(false);
     const [lastTriggeredPromoId, setLastTriggeredPromoId] = useState(null);
+    const [dismissedPromos, setDismissedPromos] = useState([]);
 
     const customerRef = useRef(null);
 
