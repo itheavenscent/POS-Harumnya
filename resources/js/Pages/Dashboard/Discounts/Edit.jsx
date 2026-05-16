@@ -69,27 +69,33 @@ const normaliseRequirements = (items = []) =>
 
 const normaliseRewards = (items = []) =>
     items.map((item) => ({
+        reward_type:         item.reward_type         ?? "variant",
         variant_id:          toId(item.variant_id),
         intensity_id:        toId(item.intensity_id),
         size_id:             toId(item.size_id),
-        reward_quantity:     item.reward_quantity ?? 1,
+        reward_item_id:      toId(item.reward_item_id) ?? null,
+        points_amount:       item.points_amount       ?? null,
+        reward_quantity:     item.reward_quantity     ?? 1,
         customer_can_choose: Boolean(item.customer_can_choose),
         is_pool:             Boolean(item.is_pool),
-        max_choices:         item.max_choices ?? 1,
+        max_choices:         item.max_choices         ?? 1,
         discount_percentage: item.discount_percentage ?? 100,
-        fixed_price:         item.fixed_price ?? null,
-        priority:            item.priority ?? 0,
+        fixed_price:         item.fixed_price         ?? null,
+        priority:            item.priority            ?? 0,
         pools: (item.pools ?? []).map((p) => ({
-            product_id:   toId(p.product_id),
-            variant_id:   toId(p.variant_id),
-            intensity_id: toId(p.intensity_id),
-            size_id:      toId(p.size_id),
-            label:        p.label,
-            image_url:    p.image_url ?? null,
-            fixed_price:  p.fixed_price ?? 0,
-            probability:  p.probability ?? null,
-            is_active:    p.is_active ?? true,
-            sort_order:   p.sort_order ?? 0,
+            reward_type:    p.reward_type    ?? "variant",
+            product_id:     toId(p.product_id),
+            variant_id:     toId(p.variant_id),
+            intensity_id:   toId(p.intensity_id),
+            size_id:        toId(p.size_id),
+            reward_item_id: toId(p.reward_item_id) ?? null,
+            points_amount:  p.points_amount  ?? null,
+            label:          p.label,
+            image_url:      p.image_url      ?? null,
+            fixed_price:    p.fixed_price    ?? 0,
+            probability:    p.probability    ?? null,
+            is_active:      p.is_active      ?? true,
+            sort_order:     p.sort_order     ?? 0,
         })),
     }));
 
@@ -286,7 +292,7 @@ function DeleteModal({ show, onConfirm, onClose, loading, name }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function Edit({ discount, stores, variants, intensities, sizes }) {
+export default function Edit({ discount, stores, variants, intensities, sizes, rewardItems = [] }) {
     const [showDelete, setShowDelete] = React.useState(false);
     const [deleting, setDeleting]     = React.useState(false);
 
@@ -532,7 +538,7 @@ export default function Edit({ discount, stores, variants, intensities, sizes })
 
                             <ApplicabilitiesSection items={data.applicabilities} onChange={(v) => setData("applicabilities", v)} variants={variants} intensities={intensities} sizes={sizes} />
                             <RequirementsSection items={data.requirements} onChange={(v) => setData("requirements", v)} variants={variants} intensities={intensities} sizes={sizes} />
-                            <RewardsSection items={data.rewards} onChange={(v) => setData("rewards", v)} variants={variants} intensities={intensities} sizes={sizes} />
+                            <RewardsSection items={data.rewards} onChange={(v) => setData("rewards", v)} variants={variants} intensities={intensities} sizes={sizes} rewardItems={rewardItems} />
                         </div>
 
                         {/* ── Sidebar ── */}

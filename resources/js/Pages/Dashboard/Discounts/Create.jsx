@@ -206,7 +206,7 @@ function ErrorBanner({ errors }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function Create({ stores, variants, intensities, sizes }) {
+export default function Create({ stores, variants, intensities, sizes, rewardItems = [] }) {
     const { data, setData, post, processing, errors } = useForm({
         code:                   "",
         name:                   "",
@@ -453,7 +453,7 @@ export default function Create({ stores, variants, intensities, sizes }) {
 
                             <ApplicabilitiesSection items={data.applicabilities} onChange={(v) => setData("applicabilities", v)} variants={variants} intensities={intensities} sizes={sizes} />
                             <RequirementsSection items={data.requirements} onChange={(v) => setData("requirements", v)} variants={variants} intensities={intensities} sizes={sizes} />
-                            <RewardsSection items={data.rewards} onChange={(v) => setData("rewards", v)} variants={variants} intensities={intensities} sizes={sizes} />
+                            <RewardsSection items={data.rewards} onChange={(v) => setData("rewards", v)} variants={variants} intensities={intensities} sizes={sizes} rewardItems={rewardItems} />
                         </div>
 
                         {/* ── Sidebar ── */}

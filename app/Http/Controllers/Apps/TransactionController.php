@@ -882,6 +882,7 @@ class TransactionController extends Controller
             'variant:id,name,code',
             'intensity:id,name,code',
             'size:id,name,volume_ml',
+            'rewardItem',
         ])
             ->where('cashier_id', $user->id)
             ->where('store_id', $storeId)
@@ -953,17 +954,27 @@ class TransactionController extends Controller
                 'status' => 'completed',
             ]);
 
+            $rewardPoints = 0;
             $saleItemIds = [];
 
             foreach ($carts as $cart) {
+                if ($cart->points_amount) {
+                    $rewardPoints += $cart->points_amount;
+                    continue;
+                }
+
                 /** @var \App\Models\Cart $cart */
                 $isCustom = (bool) ($cart->is_custom_order ?? false);
                 $itemSub = $cart->unit_price * $cart->qty;
 
-                // HPP oil
-                $cogsPerUnit = $isCustom
-                    ? $this->calcCustomOilCogs($cart)
-                    : ($cart->product?->production_cost ?? 0);
+                // HPP oil / reward
+                if ($cart->reward_item_id && $cart->rewardItem) {
+                    $cogsPerUnit = $cart->rewardItem->cost_price ?? 0;
+                } else {
+                    $cogsPerUnit = $isCustom
+                        ? $this->calcCustomOilCogs($cart)
+                        : ($cart->product?->production_cost ?? 0);
+                }
                 $itemCogs = $cogsPerUnit * $cart->qty;
 
                 // HPP alkohol (gratis ke customer, tetap masuk COGS)
@@ -978,8 +989,11 @@ class TransactionController extends Controller
                 $saleItem = SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $cart->product_id,
-                    'product_name' => $this->buildProductName($cart),
-                    'product_sku' => $cart->product?->sku,
+                    'reward_item_id' => $cart->reward_item_id,
+                    'product_name' => $cart->reward_item_id && $cart->rewardItem 
+                        ? '[Hadiah] ' . $cart->rewardItem->name 
+                        : $this->buildProductName($cart),
+                    'product_sku' => $cart->product?->sku ?? ($cart->rewardItem?->name ? 'RWD-'.strtoupper(substr($cart->rewardItem->name, 0, 3)) : null),
                     'variant_name' => $cart->variant?->name,
                     'intensity_code' => $cart->intensity?->code,
                     'size_ml' => $isCustom
@@ -1093,21 +1107,23 @@ class TransactionController extends Controller
             ]);
 
             // Loyalty Points
-            if ($customer && $total > 0) {
+            if ($customer && ($total > 0 || $rewardPoints > 0)) {
                 $pointRate = (int) \App\Models\AppSetting::getValue('loyalty_point_rate', 10000);
                 $pointsEarned = $pointRate > 0 ? (int) floor($total / $pointRate) : 0;
+                
+                $totalPointsEarned = $pointsEarned + $rewardPoints;
 
-                if ($pointsEarned > 0) {
-                    $sale->update(['points_earned' => $pointsEarned]);
-                    $customer->increment('points', $pointsEarned);
-                    $customer->increment('lifetime_points_earned', $pointsEarned);
+                if ($totalPointsEarned > 0) {
+                    $sale->update(['points_earned' => $totalPointsEarned]);
+                    $customer->increment('points', $totalPointsEarned);
+                    $customer->increment('lifetime_points_earned', $totalPointsEarned);
                     $customer->increment('lifetime_spending', (int) $total);
                     $customer->increment('total_transactions');
 
                     CustomerPointLedger::create([
                         'customer_id' => $customer->id,
                         'type' => 'earned',
-                        'points' => $pointsEarned,
+                        'points' => $totalPointsEarned,
                         'balance_after' => $customer->fresh()->points,
                         'reference_type' => Sale::class,
                         'reference_id' => $sale->id,
@@ -1268,6 +1284,9 @@ class TransactionController extends Controller
         foreach ($discount->rewards as $reward) {
             $item = [
                 'id'                  => $reward->id,
+                'reward_type'         => $reward->reward_type ?? 'variant',
+                'reward_item_id'      => $reward->reward_item_id,
+                'points_amount'       => $reward->points_amount,
                 'reward_quantity'     => $reward->reward_quantity,
                 'customer_can_choose' => $reward->customer_can_choose,
                 'is_pool'             => $reward->is_pool,
@@ -1278,13 +1297,22 @@ class TransactionController extends Controller
                 'size_id'             => $reward->size_id,
             ];
 
+            if ($item['reward_type'] === 'reward_item' && $reward->rewardItem) {
+                $item['reward_item_name'] = $reward->rewardItem->name;
+                $item['reward_item_cost'] = $reward->rewardItem->cost_price;
+            }
+
             if ($reward->is_pool) {
                 $item['pools'] = $reward->pools->map(fn($p) => [
-                    'id'          => $p->id,
-                    'label'       => $p->label,
-                    'probability' => $p->probability,
-                    'intensity_id'=> $p->intensity_id,
-                    'size_id'     => $p->size_id,
+                    'id'            => $p->id,
+                    'label'         => $p->label,
+                    'probability'   => $p->probability,
+                    'reward_type'   => $p->reward_type ?? 'variant',
+                    'reward_item_id'=> $p->reward_item_id,
+                    'points_amount' => $p->points_amount,
+                    'intensity_id'  => $p->intensity_id,
+                    'size_id'       => $p->size_id,
+                    'reward_item_name' => $p->reward_type === 'reward_item' && $p->rewardItem ? $p->rewardItem->name : null,
                 ])->values()->all();
             }
 
@@ -1306,9 +1334,12 @@ class TransactionController extends Controller
     {
         $request->validate([
             'discount_type_id' => 'required|uuid|exists:discount_types,id',
-            'variant_id'       => 'required|uuid|exists:variants,id',
+            'reward_type'      => 'nullable|in:variant,points,reward_item',
+            'variant_id'       => 'nullable|uuid|exists:variants,id',
             'intensity_id'     => 'nullable|uuid|exists:intensities,id',
             'size_id'          => 'nullable|uuid|exists:sizes,id',
+            'reward_item_id'   => 'nullable|uuid|exists:reward_items,id',
+            'points_amount'    => 'nullable|integer|min:1',
             'reward_label'     => 'nullable|string|max:200',
         ]);
 
@@ -1339,16 +1370,18 @@ class TransactionController extends Controller
 
         DB::transaction(function () use ($request, $user, $storeId, $discount, $price) {
             Cart::create([
-                'cashier_id'   => $user->id,
-                'store_id'     => $storeId,
-                'variant_id'   => $request->variant_id,
-                'intensity_id' => $request->intensity_id,
-                'size_id'      => $request->size_id,
-                'product_id'   => null,
-                'unit_price'   => $price,  // gratis
-                'qty'          => 1,
-                'is_free'      => true,
-                'notes'        => 'Reward: ' . ($request->reward_label ?? $discount->name),
+                'cashier_id'     => $user->id,
+                'store_id'       => $storeId,
+                'variant_id'     => $request->variant_id,
+                'intensity_id'   => $request->intensity_id,
+                'size_id'        => $request->size_id,
+                'product_id'     => null,
+                'reward_item_id' => $request->reward_item_id,
+                'points_amount'  => $request->points_amount,
+                'unit_price'     => $price,  // gratis
+                'qty'            => 1,
+                'is_free'        => true,
+                'notes'          => 'Reward: ' . ($request->reward_label ?? $discount->name),
             ]);
         });
 
@@ -1570,7 +1603,11 @@ class TransactionController extends Controller
 
             $sp += $cart->unit_price * $cart->qty;
 
-            if ($isCustom) {
+            if ($cart->points_amount) {
+                // points cost nothing
+            } elseif ($cart->reward_item_id && $cart->rewardItem) {
+                $cp += ($cart->rewardItem->cost_price ?? 0) * $cart->qty;
+            } elseif ($isCustom) {
                 $oilCogs = $this->calcCustomOilCogs($cart) * $cart->qty;
                 $cp += $oilCogs;
 

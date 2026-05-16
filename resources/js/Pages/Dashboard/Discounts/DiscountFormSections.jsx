@@ -19,6 +19,9 @@ import {
     IconX,
     IconChevronDown,
     IconAlertCircle,
+    IconStar,
+    IconCoins,
+    IconSparkles,
 } from "@tabler/icons-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -392,13 +395,77 @@ function EmptyState({ text }) {
 
 // ─── PoolItems ────────────────────────────────────────────────────────────────
 
-function PoolItems({ pools, onChange }) {
+const REWARD_TYPES = [
+    { value: "variant",     label: "Parfum / Varian",   icon: <IconSparkles size={13} /> },
+    { value: "points",      label: "Poin Member",        icon: <IconCoins size={13} /> },
+    { value: "reward_item", label: "Hadiah Lainnya",     icon: <IconStar size={13} /> },
+];
+
+function RewardTypeSelect({ value, onChange }) {
+    return (
+        <div>
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
+                Jenis Reward
+            </label>
+            <div className="flex gap-1">
+                {REWARD_TYPES.map(t => (
+                    <button
+                        key={t.value}
+                        type="button"
+                        onClick={() => onChange(t.value)}
+                        className={`flex-1 flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all border ${
+                            value === t.value
+                                ? "bg-indigo-600 text-white border-indigo-600 shadow-md"
+                                : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-indigo-300 hover:text-indigo-600"
+                        }`}
+                    >
+                        {t.icon} {t.label}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function RewardItemSelect({ value, onChange, rewardItems = [] }) {
+    const selected = rewardItems.find(r => r.id === value) ?? null;
+    return (
+        <div>
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
+                Pilih Hadiah
+            </label>
+            <select
+                value={value ?? ""}
+                onChange={e => onChange(e.target.value || null)}
+                className="w-full text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-700 focus:border-transparent py-2 px-3 transition-all"
+            >
+                <option value="">-- Pilih hadiah --</option>
+                {rewardItems.map(r => (
+                    <option key={r.id} value={r.id}>
+                        {r.name} ({r.code}) — HPP: Rp{Number(r.cost_price).toLocaleString("id-ID")}
+                    </option>
+                ))}
+            </select>
+            {selected && (
+                <p className="text-[10px] text-slate-400 mt-1">
+                    HPP: <span className="text-red-500 font-semibold">Rp{Number(selected.cost_price).toLocaleString("id-ID")}</span>
+                    {selected.selling_value ? ` | Nilai: Rp${Number(selected.selling_value).toLocaleString("id-ID")}` : ""}
+                </p>
+            )}
+        </div>
+    );
+}
+
+function PoolItems({ pools, onChange, rewardItems }) {
     const def = {
+        reward_type:   "variant",
         label: "",
         product_id:   null,
         variant_id:   null,
         intensity_id: null,
         size_id:      null,
+        reward_item_id: null,
+        points_amount:  null,
         fixed_price:  0,
         probability:  null,
         image_url:    null,
@@ -429,30 +496,58 @@ function PoolItems({ pools, onChange }) {
             {pools.map((pool, i) => (
                 <div
                     key={i}
-                    className="flex gap-2 items-start p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
+                    className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 space-y-2"
                 >
-                    <div className="grid grid-cols-3 gap-2 flex-1">
-                        <TextInput
-                            label="Label"
-                            value={pool.label}
-                            onChange={(v) => update(i, "label", v)}
-                            placeholder="Travel Size 10ml"
-                        />
-                        <NumberInput
-                            label="Harga (0=gratis)"
-                            value={pool.fixed_price}
-                            onChange={(v) => update(i, "fixed_price", v)}
-                            min={0}
-                        />
-                        <NumberInput
-                            label="Bobot Plinko"
-                            value={pool.probability}
-                            onChange={(v) => update(i, "probability", v)}
-                            min={1}
-                            placeholder="1–100"
-                        />
+                    {/* Reward type selector */}
+                    <RewardTypeSelect
+                        value={pool.reward_type ?? "variant"}
+                        onChange={(v) => update(i, "reward_type", v)}
+                    />
+
+                    <div className="flex gap-2 items-start">
+                        <div className="grid grid-cols-3 gap-2 flex-1">
+                            <TextInput
+                                label="Label"
+                                value={pool.label}
+                                onChange={(v) => update(i, "label", v)}
+                                placeholder="Travel Size 10ml"
+                            />
+                            <NumberInput
+                                label="Harga (0=gratis)"
+                                value={pool.fixed_price}
+                                onChange={(v) => update(i, "fixed_price", v)}
+                                min={0}
+                            />
+                            <NumberInput
+                                label="Bobot Plinko"
+                                value={pool.probability}
+                                onChange={(v) => update(i, "probability", v)}
+                                min={1}
+                                placeholder="1–100"
+                            />
+                        </div>
+                        <RemoveBtn onClick={() => remove(i)} />
                     </div>
-                    <RemoveBtn onClick={() => remove(i)} />
+
+                    {/* Points field */}
+                    {pool.reward_type === "points" && (
+                        <NumberInput
+                            label="Jumlah Poin"
+                            value={pool.points_amount}
+                            onChange={(v) => update(i, "points_amount", v)}
+                            min={1}
+                            placeholder="mis: 10"
+                        />
+                    )}
+
+                    {/* Reward item field */}
+                    {pool.reward_type === "reward_item" && (
+                        <RewardItemSelect
+                            value={pool.reward_item_id}
+                            onChange={(v) => update(i, "reward_item_id", v)}
+                            rewardItems={rewardItems}
+                        />
+                    )}
                 </div>
             ))}
         </div>
@@ -592,11 +687,14 @@ export function RequirementsSection({ items, onChange, variants, intensities, si
 
 // ─── RewardsSection ───────────────────────────────────────────────────────────
 
-export function RewardsSection({ items, onChange, variants, intensities, sizes }) {
+export function RewardsSection({ items, onChange, variants, intensities, sizes, rewardItems = [] }) {
     const def = {
+        reward_type:          "variant",
         variant_id:           null,
         intensity_id:         null,
         size_id:              null,
+        reward_item_id:       null,
+        points_amount:        null,
         reward_quantity:      1,
         customer_can_choose:  false,
         is_pool:              false,
@@ -613,9 +711,9 @@ export function RewardsSection({ items, onChange, variants, intensities, sizes }
 
     return (
         <SectionCard
-            title="Reward / Produk Gratis"
+            title="Reward / Hadiah"
             icon={<IconGift size={15} className="text-slate-400" />}
-            description="Produk gratis jika syarat terpenuhi. Kosongkan variant untuk mengikuti produk yang dibeli."
+            description="Tentukan jenis reward: parfum gratis, poin member, atau hadiah merchandise."
             onAdd={add}
             addLabel="Tambah Reward"
         >
@@ -625,14 +723,52 @@ export function RewardsSection({ items, onChange, variants, intensities, sizes }
                 <div className="space-y-3">
                     {items.map((item, i) => (
                         <Row key={i}>
-                            <DimensionFilters
-                                item={item}
-                                index={i}
-                                onUpdate={update}
-                                variants={variants}
-                                intensities={intensities}
-                                sizes={sizes}
+                            {/* Reward Type Selector */}
+                            <RewardTypeSelect
+                                value={item.reward_type ?? "variant"}
+                                onChange={(v) => update(i, "reward_type", v)}
                             />
+
+                            {/* === VARIANT REWARD === */}
+                            {(item.reward_type ?? "variant") === "variant" && (
+                                <DimensionFilters
+                                    item={item}
+                                    index={i}
+                                    onUpdate={update}
+                                    variants={variants}
+                                    intensities={intensities}
+                                    sizes={sizes}
+                                />
+                            )}
+
+                            {/* === POINTS REWARD === */}
+                            {item.reward_type === "points" && (
+                                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 flex items-center gap-3">
+                                    <IconCoins size={20} className="text-amber-500 flex-shrink-0" />
+                                    <div className="flex-1">
+                                        <label className="block text-[11px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-1">
+                                            Jumlah Poin yang Diberikan
+                                        </label>
+                                        <NumberInput
+                                            value={item.points_amount}
+                                            onChange={(v) => update(i, "points_amount", v)}
+                                            min={1}
+                                            placeholder="mis: 10"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* === OTHER REWARD ITEM === */}
+                            {item.reward_type === "reward_item" && (
+                                <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                                    <RewardItemSelect
+                                        value={item.reward_item_id}
+                                        onChange={(v) => update(i, "reward_item_id", v)}
+                                        rewardItems={rewardItems}
+                                    />
+                                </div>
+                            )}
 
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
                                 <NumberInput
@@ -701,6 +837,7 @@ export function RewardsSection({ items, onChange, variants, intensities, sizes }
                                 <PoolItems
                                     pools={item.pools ?? []}
                                     onChange={(pools) => update(i, "pools", pools)}
+                                    rewardItems={rewardItems}
                                 />
                             )}
                         </Row>

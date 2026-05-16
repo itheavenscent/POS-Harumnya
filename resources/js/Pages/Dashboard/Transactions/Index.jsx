@@ -1172,6 +1172,17 @@ export default function Index({
 
     // ── Reward picker helpers ──────────────────────────────────────────────────
     const handleOpenRewardPicker = async (promo) => {
+        const reward = promo?.rewards?.[0];
+        
+        // If it's a direct reward (points or merchandise without pool), apply immediately
+        if (reward && !reward.is_pool && reward.reward_type !== 'variant') {
+            handleAddDirectReward(reward, promo);
+            return;
+        }
+
+        // If it's a pool, or a variant reward, show modal
+        // Note: For now, the modal only supports variants or selecting a label.
+        // We will just show the modal and let the cashier pick.
         setActivePromoForReward(promo);
         setShowChooseRewardModal(true);
         // Load variants if not already loaded (reuse catalog or fetch fresh)
@@ -1185,6 +1196,26 @@ export default function Index({
             } catch { toast.error('Gagal memuat varian'); }
             finally { setLoadingRewardVariants(false); }
         }
+    };
+
+    const handleAddDirectReward = (rewardOrPool, promo) => {
+        if (!promo) return;
+        const type = rewardOrPool?.reward_type;
+        const label = type === 'points' 
+            ? `${promo.name} - ${rewardOrPool.points_amount} Poin` 
+            : `${promo.name} - ${rewardOrPool.reward_item_name || 'Merchandise'}`;
+
+        router.post(route('transactions.add-reward-to-cart'), {
+            discount_type_id: promo.id,
+            reward_type: type,
+            reward_item_id: rewardOrPool?.reward_item_id ?? null,
+            points_amount: rewardOrPool?.points_amount ?? null,
+            reward_label: label,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => toast.success(`✅ Reward "${label}" berhasil ditambahkan!`),
+            onError: (err) => toast.error(Object.values(err)[0] ?? 'Gagal menambahkan reward'),
+        });
     };
 
     const handleAddFreeItem = (variant, promo) => {

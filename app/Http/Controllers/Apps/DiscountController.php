@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Apps;
 
 use App\Http\Controllers\Controller;
 use App\Models\DiscountType;
+use App\Models\RewardItem;
 use App\Models\Store;
 use App\Models\Variant;
 use App\Models\Intensity;
@@ -259,9 +260,12 @@ class DiscountController extends Controller
 
             // ── Rewards ───────────────────────────────────────────────────────
             'rewards'                            => ['nullable', 'array'],
+            'rewards.*.reward_type'              => ['in:variant,points,reward_item'],
             'rewards.*.variant_id'               => ['nullable', 'uuid', 'exists:variants,id'],
             'rewards.*.intensity_id'             => ['nullable', 'uuid', 'exists:intensities,id'],
             'rewards.*.size_id'                  => ['nullable', 'uuid', 'exists:sizes,id'],
+            'rewards.*.reward_item_id'           => ['nullable', 'uuid', 'exists:reward_items,id'],
+            'rewards.*.points_amount'            => ['nullable', 'integer', 'min:1'],
             'rewards.*.reward_quantity'          => ['required_with:rewards.*', 'integer', 'min:1'],
             'rewards.*.customer_can_choose'      => ['boolean'],
             'rewards.*.is_pool'                  => ['boolean'],
@@ -272,11 +276,14 @@ class DiscountController extends Controller
 
             // ── Reward Pools ──────────────────────────────────────────────────
             'rewards.*.pools'                    => ['nullable', 'array'],
+            'rewards.*.pools.*.reward_type'      => ['nullable', 'in:variant,points,reward_item'],
             'rewards.*.pools.*.label'            => ['required_with:rewards.*.pools.*', 'string', 'max:255'],
             'rewards.*.pools.*.product_id'       => ['nullable', 'uuid', 'exists:products,id'],
             'rewards.*.pools.*.variant_id'       => ['nullable', 'uuid', 'exists:variants,id'],
             'rewards.*.pools.*.intensity_id'     => ['nullable', 'uuid', 'exists:intensities,id'],
             'rewards.*.pools.*.size_id'          => ['nullable', 'uuid', 'exists:sizes,id'],
+            'rewards.*.pools.*.reward_item_id'   => ['nullable', 'uuid', 'exists:reward_items,id'],
+            'rewards.*.pools.*.points_amount'    => ['nullable', 'integer', 'min:1'],
             'rewards.*.pools.*.image_url'        => ['nullable', 'string', 'max:500'],
             'rewards.*.pools.*.fixed_price'      => ['nullable', 'numeric', 'min:0'],
             'rewards.*.pools.*.probability'      => ['nullable', 'integer', 'min:1', 'max:100'],
@@ -316,6 +323,11 @@ class DiscountController extends Controller
             'sizes'       => Size::select('id', 'name', 'volume_ml')
                                 ->where('is_active', true)
                                 ->orderBy('sort_order')
+                                ->get(),
+            'rewardItems' => RewardItem::select('id', 'code', 'name', 'category', 'cost_price', 'selling_value', 'stock_qty')
+                                ->where('is_active', true)
+                                ->orderBy('sort_order')
+                                ->orderBy('name')
                                 ->get(),
         ];
     }
@@ -387,9 +399,12 @@ class DiscountController extends Controller
     {
         foreach ($rewards as $index => $rewardData) {
             $reward = $discount->rewards()->create([
+                'reward_type'         => $rewardData['reward_type']         ?? 'variant',
                 'variant_id'          => $rewardData['variant_id']          ?? null,
                 'intensity_id'        => $rewardData['intensity_id']        ?? null,
                 'size_id'             => $rewardData['size_id']             ?? null,
+                'reward_item_id'      => $rewardData['reward_item_id']      ?? null,
+                'points_amount'       => $rewardData['points_amount']       ?? null,
                 'reward_quantity'     => $rewardData['reward_quantity']     ?? 1,
                 'customer_can_choose' => (bool) ($rewardData['customer_can_choose'] ?? false),
                 'is_pool'             => (bool) ($rewardData['is_pool']             ?? false),
@@ -404,16 +419,19 @@ class DiscountController extends Controller
             if (! empty($rewardData['is_pool']) && ! empty($pools)) {
                 foreach ($pools as $i => $poolItem) {
                     $reward->pools()->create([
-                        'product_id'   => $poolItem['product_id']   ?? null,
-                        'variant_id'   => $poolItem['variant_id']   ?? null,
-                        'intensity_id' => $poolItem['intensity_id'] ?? null,
-                        'size_id'      => $poolItem['size_id']      ?? null,
-                        'label'        => $poolItem['label'],
-                        'image_url'    => $poolItem['image_url']    ?? null,
-                        'fixed_price'  => $poolItem['fixed_price']  ?? 0,
-                        'probability'  => $poolItem['probability']  ?? null,
-                        'is_active'    => (bool) ($poolItem['is_active']  ?? true),
-                        'sort_order'   => $poolItem['sort_order']   ?? $i,
+                        'reward_type'   => $poolItem['reward_type']   ?? 'variant',
+                        'product_id'    => $poolItem['product_id']    ?? null,
+                        'variant_id'    => $poolItem['variant_id']    ?? null,
+                        'intensity_id'  => $poolItem['intensity_id']  ?? null,
+                        'size_id'       => $poolItem['size_id']       ?? null,
+                        'reward_item_id'=> $poolItem['reward_item_id']?? null,
+                        'points_amount' => $poolItem['points_amount'] ?? null,
+                        'label'         => $poolItem['label'],
+                        'image_url'     => $poolItem['image_url']     ?? null,
+                        'fixed_price'   => $poolItem['fixed_price']   ?? 0,
+                        'probability'   => $poolItem['probability']   ?? null,
+                        'is_active'     => (bool) ($poolItem['is_active']  ?? true),
+                        'sort_order'    => $poolItem['sort_order']    ?? $i,
                     ]);
                 }
             }

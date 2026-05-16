@@ -15,9 +15,12 @@ class DiscountReward extends Model
 
     protected $fillable = [
         'discount_type_id',
+        'reward_type',
         'variant_id',
         'intensity_id',
         'size_id',
+        'reward_item_id',
+        'points_amount',
         'reward_quantity',
         'customer_can_choose',
         'is_pool',
@@ -37,6 +40,7 @@ class DiscountReward extends Model
         // decimal(15,2): override harga reward (rupiah); null = tidak override
         'fixed_price'         => 'decimal:2',
         'priority'            => 'integer',
+        'points_amount'       => 'integer',
     ];
 
     // -------------------------------------------------------------------------
@@ -61,6 +65,11 @@ class DiscountReward extends Model
     public function size(): BelongsTo
     {
         return $this->belongsTo(Size::class, 'size_id');
+    }
+
+    public function rewardItem(): BelongsTo
+    {
+        return $this->belongsTo(RewardItem::class, 'reward_item_id');
     }
 
     /**

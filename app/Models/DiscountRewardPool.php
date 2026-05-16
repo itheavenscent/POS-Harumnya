@@ -14,10 +14,13 @@ class DiscountRewardPool extends Model
 
     protected $fillable = [
         'discount_reward_id',
+        'reward_type',
         'product_id',
         'variant_id',
         'intensity_id',
         'size_id',
+        'reward_item_id',
+        'points_amount',
         'label',
         'image_url',
         'fixed_price',
@@ -28,11 +31,12 @@ class DiscountRewardPool extends Model
 
     protected $casts = [
         // decimal(15,2): 0.00 = gratis; null = ikut discount_rewards.fixed_price
-        'fixed_price' => 'decimal:2',
+        'fixed_price'   => 'decimal:2',
         // unsignedTinyInteger: bobot Plinko 1–100; null = equal weight
-        'probability' => 'integer',
-        'is_active'   => 'boolean',
-        'sort_order'  => 'integer',
+        'probability'   => 'integer',
+        'is_active'     => 'boolean',
+        'sort_order'    => 'integer',
+        'points_amount' => 'integer',
     ];
 
     // -------------------------------------------------------------------------
@@ -62,5 +66,10 @@ class DiscountRewardPool extends Model
     public function size(): BelongsTo
     {
         return $this->belongsTo(Size::class, 'size_id');
+    }
+
+    public function rewardItem(): BelongsTo
+    {
+        return $this->belongsTo(RewardItem::class, 'reward_item_id');
     }
 }

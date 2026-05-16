@@ -48,6 +48,9 @@ class StockDeductionService
             } elseif ($saleItem->intensity_id_snapshot && $saleItem->size_id_snapshot) {
                 // ── JALUR REGULAR ───────────────────────────────────────────────
                 $this->deductIngredients($sale, $storeId, $saleItem);
+            } elseif ($saleItem->reward_item_id) {
+                // ── JALUR REWARD MERCHANDISE ────────────────────────────────────
+                $this->deductRewardItem($sale, $storeId, $saleItem);
             } else {
                 Log::info('[StockDeduction] SaleItem dilewati (bukan item parfum / snapshot null)', [
                     'sale_number'           => $sale->sale_number,
@@ -280,6 +283,47 @@ class StockDeductionService
                 Log::warning('[StockDeduction] Alcohol ingredient tidak ditemukan untuk custom order');
             }
         }
+    }
+
+    private function deductRewardItem(Sale $sale, string $storeId, SaleItem $saleItem): void
+    {
+        $rewardItem = \App\Models\RewardItem::find($saleItem->reward_item_id);
+        if (!$rewardItem) return;
+
+        $qtyBefore = $rewardItem->stock_qty;
+        $qtyDeduct = $saleItem->qty;
+        $qtyAfter = $qtyBefore - $qtyDeduct;
+
+        $rewardItem->update(['stock_qty' => max(0, $qtyAfter)]);
+
+        Log::info('[StockDeduction] deductRewardItem EXECUTE', [
+            'sale_number' => $sale->sale_number,
+            'reward_id'   => $rewardItem->id,
+            'qty_before'  => $qtyBefore,
+            'qty_deduct'  => $qtyDeduct,
+            'qty_after'   => $qtyAfter,
+        ]);
+        
+        StockMovement::create([
+            'location_type'    => 'store', // Or 'global' if you prefer, but sticking to store is fine
+            'location_id'      => $storeId,
+            'movement_type'    => 'sale_deduction',
+            'item_type'        => 'reward_item',
+            'item_id'          => $rewardItem->id,
+            'qty_change'       => -$qtyDeduct,
+            'qty_before'       => $qtyBefore,
+            'qty_after'        => $qtyAfter,
+            'unit_cost'        => $rewardItem->cost_price,
+            'total_cost'       => round($qtyDeduct * $rewardItem->cost_price, 2),
+            'avg_cost_before'  => $rewardItem->cost_price,
+            'avg_cost_after'   => $rewardItem->cost_price,
+            'reference_type'   => Sale::class,
+            'reference_id'     => $sale->id,
+            'reference_number' => $sale->sale_number,
+            'movement_date'    => $sale->sold_at->toDateString(),
+            'created_by'       => Auth::id(),
+            'notes'            => "Penjualan {$sale->sale_number} (Hadiah: {$rewardItem->name})",
+        ]);
     }
 
     private function resolveOilIngredient(?string $variantId): ?object

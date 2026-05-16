@@ -19,6 +19,8 @@ class Cart extends Model
         'intensity_id',       // nullable untuk custom order
         'size_id',            // nullable untuk custom order
         'product_id',
+        'reward_item_id',
+        'points_amount',
         'unit_price',
         'qty',
         'is_free',
@@ -44,6 +46,7 @@ class Cart extends Model
         'unit_price'             => 'decimal:2',
         'qty'                    => 'integer',
         'is_free'                => 'boolean',
+        'points_amount'          => 'integer',
         'held_at'                => 'datetime',
         'cart_expires_at'        => 'datetime',
         // Custom order
@@ -84,6 +87,11 @@ class Cart extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    public function rewardItem(): BelongsTo
+    {
+        return $this->belongsTo(RewardItem::class, 'reward_item_id');
     }
 
     public function customer(): BelongsTo

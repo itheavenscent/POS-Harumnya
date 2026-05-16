@@ -24,6 +24,7 @@ class SaleItem extends Model
         'is_free',
         'cogs_per_unit', 'cogs_total',
         'line_gross_profit', 'line_gross_margin_pct',
+        'reward_item_id',
         // ── Custom order fields ────────────────────────────────────────────
         'is_custom_order',
         'custom_oil_qty',
@@ -67,6 +68,11 @@ class SaleItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    public function rewardItem(): BelongsTo
+    {
+        return $this->belongsTo(RewardItem::class, 'reward_item_id');
     }
 
     public function packagings(): HasMany

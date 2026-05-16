@@ -13,6 +13,7 @@ use App\Http\Controllers\Apps\ProductController;
 use App\Http\Controllers\Apps\PurchaseController;
 use App\Http\Controllers\Apps\RepackController;
 use App\Http\Controllers\Apps\RecipeController;
+use App\Http\Controllers\Apps\RewardItemController;
 use App\Http\Controllers\Apps\SalesPersonController;
 use App\Http\Controllers\Apps\SizeController;
 use App\Http\Controllers\Apps\StockAdjustmentController;
@@ -482,6 +483,26 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
             'store' => 'permission:discounts-create',
             'edit' => 'permission:discounts-edit',
             'update' => 'permission:discounts-edit',
+            'destroy' => 'permission:discounts-delete',
+        ]);
+
+    // ── Reward Items (Master Hadiah) ────────────────────────────────────
+    // ! ATURAN URUTAN: /toggle & /api-list SEBELUM resource()
+
+    Route::patch('reward-items/{rewardItem}/toggle', [RewardItemController::class, 'toggle'])
+        ->middleware('permission:discounts-edit')
+        ->name('reward-items.toggle');
+
+    Route::get('reward-items/api-list', [RewardItemController::class, 'apiList'])
+        ->middleware('permission:discounts-access')
+        ->name('reward-items.api-list');
+
+    Route::resource('reward-items', RewardItemController::class)
+        ->except(['show', 'create', 'edit'])
+        ->middleware([
+            'index'   => 'permission:discounts-access',
+            'store'   => 'permission:discounts-create',
+            'update'  => 'permission:discounts-edit',
             'destroy' => 'permission:discounts-delete',
         ]);
 

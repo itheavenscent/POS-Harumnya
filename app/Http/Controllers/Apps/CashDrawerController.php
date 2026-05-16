@@ -209,7 +209,8 @@ class CashDrawerController extends Controller
             ->selectRaw('
                 COUNT(DISTINCT sales.id) as total_transactions,
                 SUM(sale_items.qty) as total_items_sold,
-                SUM(sale_items.subtotal) as gross_sales
+                SUM(sale_items.subtotal) as gross_sales,
+                SUM(sale_items.cogs_total) as total_cogs
             ')
             ->first();
 
@@ -218,11 +219,11 @@ class CashDrawerController extends Controller
             ->where('sales.cash_drawer_id', $drawer->id)
             ->where('sales.status', 'completed')
             ->select(
-                DB::raw("CASE WHEN sale_items.variant_name IS NOT NULL THEN 'Parfum' ELSE 'Kemasan & Lainnya' END as name"),
+                DB::raw("CASE WHEN sale_items.variant_name IS NOT NULL THEN 'Parfum' WHEN sale_items.reward_item_id IS NOT NULL THEN 'Hadiah / Promo' ELSE 'Kemasan & Lainnya' END as name"),
                 DB::raw('SUM(sale_items.qty) as qty'),
                 DB::raw('SUM(sale_items.subtotal) as total')
             )
-            ->groupBy(DB::raw("CASE WHEN sale_items.variant_name IS NOT NULL THEN 'Parfum' ELSE 'Kemasan & Lainnya' END"))
+            ->groupBy(DB::raw("CASE WHEN sale_items.variant_name IS NOT NULL THEN 'Parfum' WHEN sale_items.reward_item_id IS NOT NULL THEN 'Hadiah / Promo' ELSE 'Kemasan & Lainnya' END"))
             ->get();
 
         $itemsSold = DB::table('sale_items')
@@ -262,6 +263,7 @@ class CashDrawerController extends Controller
             'transactions' => $salesSummary->total_transactions ?? 0,
             'items_sold' => (int)($salesSummary->total_items_sold ?? 0),
             'gross_sales' => (float)($salesSummary->gross_sales ?? 0),
+            'total_cogs' => (float)($salesSummary->total_cogs ?? 0),
             'categories' => $categorySummary,
             'items' => $itemsSold,
             'cash_transactions' => $cashTransactions,
