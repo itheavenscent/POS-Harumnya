@@ -26,48 +26,11 @@ class CashDrawerController extends Controller
             return Inertia::render('Dashboard/Shifts/NoActiveShift');
         }
 
-        // Calculate current sales for the active drawer
-        $salesSummary = DB::table('sale_items')
-            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->where('sales.cash_drawer_id', $drawer->id)
-            ->where('sales.status', 'completed')
-            ->selectRaw('
-                COUNT(DISTINCT sales.id) as total_transactions,
-                SUM(sale_items.qty) as total_items_sold,
-                SUM(sale_items.subtotal) as gross_sales
-            ')
-            ->first();
-
-        $cashSales = DB::table('sale_payments')
-            ->join('sales', 'sale_payments.sale_id', '=', 'sales.id')
-            ->where('sales.cash_drawer_id', $drawer->id)
-            ->where('sales.status', 'completed')
-            ->where('sale_payments.payment_method_type', 'cash')
-            ->sum('sale_payments.amount');
-
-        $nonCashSales = DB::table('sale_payments')
-            ->join('sales', 'sale_payments.sale_id', '=', 'sales.id')
-            ->where('sales.cash_drawer_id', $drawer->id)
-            ->where('sales.status', 'completed')
-            ->where('sale_payments.payment_method_type', '!=', 'cash')
-            ->sum('sale_payments.amount');
-
-        $cashTransactions = CashDrawerTransaction::where('cash_drawer_id', $drawer->id)->get();
-        $totalCashIn = $cashTransactions->where('type', 'cash_in')->sum('amount');
-        $totalCashOut = $cashTransactions->where('type', 'cash_out')->sum('amount');
+        $summary = $this->getSummaryData($drawer);
 
         return Inertia::render('Dashboard/Shifts/Current', [
             'drawer' => $drawer,
-            'summary' => [
-                'transactions' => $salesSummary->total_transactions ?? 0,
-                'items_sold' => (int)($salesSummary->total_items_sold ?? 0),
-                'gross_sales' => (float)($salesSummary->gross_sales ?? 0),
-                'cash_sales' => (float)$cashSales,
-                'non_cash_sales' => (float)$nonCashSales,
-                'total_cash_in' => (float)$totalCashIn,
-                'total_cash_out' => (float)$totalCashOut,
-                'cash_transactions' => $cashTransactions,
-            ],
+            'summary' => $summary,
         ]);
     }
 
@@ -107,7 +70,7 @@ class CashDrawerController extends Controller
     public function close(Request $request, $id)
     {
         $request->validate([
-            'actual_ending_cash' => 'required|numeric|min:0',
+            'actual_ending_cash' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string'
         ]);
 
@@ -139,12 +102,13 @@ class CashDrawerController extends Controller
             ->sum('amount');
 
         $expected = $drawer->starting_cash + $cashSales + $totalCashIn - $totalCashOut;
-        $difference = $request->actual_ending_cash - $expected;
+        $actual = $request->input('actual_ending_cash', $expected);
+        $difference = $actual - $expected;
 
         $drawer->update([
             'closed_at' => now(),
             'expected_ending_cash' => $expected,
-            'actual_ending_cash' => $request->actual_ending_cash,
+            'actual_ending_cash' => $actual,
             'difference' => $difference,
             'total_cash_sales' => $cashSales,
             'total_non_cash_sales' => $nonCashSales,
@@ -301,6 +265,8 @@ class CashDrawerController extends Controller
             'categories' => $categorySummary,
             'items' => $itemsSold,
             'cash_transactions' => $cashTransactions,
+            'total_cash_in' => (float)$cashTransactions->where('type', 'cash_in')->sum('amount'),
+            'total_cash_out' => (float)$cashTransactions->where('type', 'cash_out')->sum('amount'),
             'payments' => $paymentSummary,
         ];
     }

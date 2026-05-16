@@ -128,14 +128,13 @@ class VariantSeeder extends Seeder
         ];
 
         foreach ($variants as $v) {
-            $brand = $v[2];
-            $name  = $brand ? $brand . ' ' . $v[1] : $v[1];
+            $name = $v[1];
             DB::table('variants')->insert([
                 'id'          => Str::uuid(),
                 'code'        => $v[0],
                 'name'        => $name,
                 'gender'      => $v[3],
-                'description' => $brand ? 'Brand: ' . $brand : null,
+                'description' => null,
                 'is_active'   => true,
                 'created_at'  => $now,
                 'updated_at'  => $now,

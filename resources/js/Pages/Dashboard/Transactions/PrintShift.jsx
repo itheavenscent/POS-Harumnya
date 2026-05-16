@@ -326,6 +326,17 @@ function buildShiftReceipt(drawer, summary) {
         ep.row2(`  ${item.total_qty}x`, "Rp " + Number(item.total_amount).toLocaleString("id-ID"), W).lf();
     });
     ep.thinLine(W).lf();
+    
+    // ══ CASH IN/OUT ══
+    if (summary.cash_transactions?.length > 0) {
+        ep.bold(true).text("CASH IN / OUT").lf().bold(false);
+        summary.cash_transactions.forEach((tx) => {
+            const desc = `${tx.type === 'cash_in' ? '[IN]' : '[OUT]'} ${tx.description}`;
+            ep.text(desc.slice(0, W)).lf();
+            ep.row2(" ", (tx.type === 'cash_in' ? "" : "-") + "Rp " + Number(tx.amount).toLocaleString("id-ID"), W).lf();
+        });
+        ep.thinLine(W).lf();
+    }
 
     // ══ PAYMENTS ══
     ep.bold(true).text("METODE PEMBAYARAN").lf().bold(false);
@@ -335,9 +346,9 @@ function buildShiftReceipt(drawer, summary) {
     ep.thinLine(W).lf();
 
     // ══ TOTALS ══
-    ep.row2("Ekspektasi", "Rp " + Number(drawer.expected_ending_cash).toLocaleString("id-ID"), W).lf();
-    ep.row2("Aktual", "Rp " + Number(drawer.actual_ending_cash).toLocaleString("id-ID"), W).lf();
-    ep.bold(true).row2("SELISIH", "Rp " + Number(drawer.difference).toLocaleString("id-ID"), W).lf().bold(false);
+    ep.row2("Total Penjualan", "Rp " + Number(summary.gross_sales).toLocaleString("id-ID"), W).lf();
+    ep.row2("Total Cash In", "Rp " + Number(summary.total_cash_in).toLocaleString("id-ID"), W).lf();
+    ep.row2("Total Cash Out", "Rp " + Number(summary.total_cash_out).toLocaleString("id-ID"), W).lf();
 
     ep.divider(W).lf().lf()
         .center("Terima kasih!", W).lf()
@@ -552,14 +563,9 @@ export default function PrintShift({ drawer, summary }) {
                     </div>
 
                     <div className="border-t-2 border-dashed border-slate-200 dark:border-slate-700 pt-3 mb-4 space-y-1.5">
-                        <div className="flex justify-between text-slate-600 dark:text-slate-400"><span>Ekspektasi:</span> <span>{fmt(drawer.expected_ending_cash)}</span></div>
-                        <div className="flex justify-between text-slate-600 dark:text-slate-400"><span>Aktual:</span>     <span>{fmt(drawer.actual_ending_cash)}</span></div>
-                        <div className="flex justify-between pt-2 border-t border-slate-100 dark:border-slate-800 font-bold text-sm">
-                            <span className="text-slate-800 dark:text-white">SELISIH:</span>
-                            <span className={drawer.difference >= 0 ? "text-emerald-600" : "text-red-500"}>
-                                {fmt(drawer.difference)}
-                            </span>
-                        </div>
+                        <div className="flex justify-between text-slate-800 dark:text-white font-bold"><span>Total Penjualan:</span> <span>{fmt(summary.gross_sales)}</span></div>
+                        <div className="flex justify-between text-slate-600 dark:text-slate-400"><span>Total Cash In:</span>     <span className="text-emerald-600">+{fmt(summary.total_cash_in)}</span></div>
+                        <div className="flex justify-between text-slate-600 dark:text-slate-400"><span>Total Cash Out:</span>    <span className="text-red-500">-{fmt(summary.total_cash_out)}</span></div>
                     </div>
 
                     {drawer.notes && (

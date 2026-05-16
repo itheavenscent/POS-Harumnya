@@ -18,6 +18,8 @@ export default function Current({ drawer, summary }) {
     const { props } = usePage();
     const { auth } = props;
     const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+    const [isItemsModalOpen, setIsItemsModalOpen] = useState(false);
+    const [isCashModalOpen, setIsCashModalOpen] = useState(false);
 
     const fmt = (v = 0) =>
         Number(v || 0).toLocaleString("id-ID", {
@@ -112,10 +114,13 @@ export default function Current({ drawer, summary }) {
                                             <span className="text-slate-600 dark:text-slate-400 font-medium">Mulai Shift</span>
                                             <span className="text-slate-800 dark:text-white font-bold">{formatDate(drawer.opened_at)}</span>
                                         </div>
-                                        <div className="flex items-center justify-between text-sm hover:bg-slate-100 dark:hover:bg-slate-800/50 p-2 rounded-lg cursor-pointer transition-colors group">
+                                        <div 
+                                            onClick={() => setIsCashModalOpen(true)}
+                                            className="flex items-center justify-between text-sm hover:bg-slate-100 dark:hover:bg-slate-800/50 p-2 rounded-lg cursor-pointer transition-colors group"
+                                        >
                                             <span className="text-slate-600 dark:text-slate-400 font-medium">Kas Keluar / Kas Masuk</span>
                                             <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-white">
-                                                <span>0</span>
+                                                <span>{summary.cash_transactions?.length || 0}</span>
                                                 <IconChevronRight size={16} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
                                             </div>
                                         </div>
@@ -125,7 +130,10 @@ export default function Current({ drawer, summary }) {
                                 <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
                                     <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Detil Pemesanan (KECUALI MOKA ORDER DELIVERY)</h3>
                                     <div className="space-y-4 px-2">
-                                        <div className="flex items-center justify-between text-sm hover:bg-slate-100 dark:hover:bg-slate-800/50 p-2 rounded-lg cursor-pointer transition-colors group">
+                                        <div 
+                                            onClick={() => setIsItemsModalOpen(true)}
+                                            className="flex items-center justify-between text-sm hover:bg-slate-100 dark:hover:bg-slate-800/50 p-2 rounded-lg cursor-pointer transition-colors group"
+                                        >
                                             <span className="text-slate-600 dark:text-slate-400 font-medium">Produk Terjual</span>
                                             <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-white">
                                                 <span>{summary.items_sold}</span>
@@ -161,6 +169,91 @@ export default function Current({ drawer, summary }) {
                     onClose={() => setIsCloseModalOpen(false)}
                     activeCashDrawer={drawer}
                 />
+            )}
+
+            {/* Modal Detail Produk Terjual */}
+            {isItemsModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                            <h2 className="text-xl font-black text-slate-800 dark:text-white">Detail Produk Terjual</h2>
+                            <button onClick={() => setIsItemsModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+                                <IconArrowLeft size={20} />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-auto p-6">
+                            {summary.items?.length > 0 ? (
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
+                                            <th className="pb-3">Produk</th>
+                                            <th className="pb-3 text-center">Qty</th>
+                                            <th className="pb-3 text-right">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                                        {summary.items.map((item, idx) => (
+                                            <tr key={idx} className="text-sm">
+                                                <td className="py-4">
+                                                    <p className="font-bold text-slate-800 dark:text-white">{item.product_name}</p>
+                                                    <p className="text-[10px] text-slate-500 uppercase tracking-tight">
+                                                        {item.variant_name} • {item.intensity_code} • {item.size_ml}ml
+                                                    </p>
+                                                </td>
+                                                <td className="py-4 text-center font-bold text-slate-600 dark:text-slate-400">{item.total_qty}</td>
+                                                <td className="py-4 text-right font-black text-blue-600">{fmt(item.total_amount)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <div className="py-12 text-center">
+                                    <p className="text-slate-500 italic">Belum ada produk terjual</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Detail Kas Masuk/Keluar */}
+            {isCashModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                            <h2 className="text-xl font-black text-slate-800 dark:text-white">Detail Transaksi Kas</h2>
+                            <button onClick={() => setIsCashModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+                                <IconArrowLeft size={20} />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-auto p-6">
+                            {summary.cash_transactions?.length > 0 ? (
+                                <div className="space-y-4">
+                                    {summary.cash_transactions.map((tx, idx) => (
+                                        <div key={idx} className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${tx.type === 'cash_in' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                                                <IconCash size={20} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-bold text-slate-800 dark:text-white truncate">{tx.description}</p>
+                                                <p className="text-[10px] text-slate-500 font-medium">{new Date(tx.created_at).toLocaleTimeString()}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className={`font-black ${tx.type === 'cash_in' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                    {tx.type === 'cash_in' ? '+' : '-'}{fmt(tx.amount)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="py-12 text-center">
+                                    <p className="text-slate-500 italic">Belum ada transaksi kas</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
             )}
         </POSLayout>
     );

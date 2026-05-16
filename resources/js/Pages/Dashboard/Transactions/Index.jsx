@@ -980,6 +980,8 @@ export default function Index({
     // ── State: cart ────────────────────────────────────────────────────────────
     const [custName, setCustName] = useState("");
     const [custPhone, setCustPhone] = useState("");
+    const [custBirthDate, setCustBirthDate] = useState("");
+    const [custGender, setCustGender] = useState("");
     const [removingId, setRemovingId] = useState(null);
     const [updatingId, setUpdatingId] = useState(null);
     const [isHolding, setIsHolding] = useState(false);
@@ -1389,12 +1391,16 @@ export default function Index({
         router.post(route("customers.store-ajax"), {
             name: custName,
             phone: custPhone,
+            birth_date: custBirthDate,
+            gender: custGender,
         }, {
             onSuccess: () => {
                 setIsSubmitting(false);
                 setShowAddCustomer(false);
                 setCustName("");
                 setCustPhone("");
+                setCustBirthDate("");
+                setCustGender("");
                 toast.success("Pelanggan berhasil ditambahkan");
             },
             onError: (errs) => {
@@ -1590,7 +1596,7 @@ export default function Index({
                                             <p className="font-semibold text-slate-500 text-sm">Tidak ada varian ditemukan</p>
                                         </div>
                                     ) : (
-                                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3">
                                             {filtered.map((variant, idx) => {
                                                 const genderColor = variant.gender === "male"
                                                     ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
@@ -1600,30 +1606,20 @@ export default function Index({
                                                 const accentBg = INTENSITY_COLORS[idx % INTENSITY_COLORS.length].bg;
                                                 return (
                                                     <button key={variant.id} onClick={() => selectCatalogVariant(variant)}
-                                                        className="group flex flex-col rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-primary-400 dark:hover:border-primary-600 hover:shadow-md transition-all duration-200 overflow-hidden text-left">
-                                                        {/* Gambar varian */}
-                                                        <div className="relative w-full aspect-square bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
-                                                            {variant.image_url ? (
-                                                                <img src={variant.image_url} alt={variant.name}
-                                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                                                            ) : (
-                                                                <div className={`w-14 h-14 rounded-2xl ${accentBg} flex items-center justify-center`}>
-                                                                    <IconDroplet size={26} className="text-white" />
-                                                                </div>
-                                                            )}
+                                                        className="group relative p-4 rounded-2xl border-2 text-left transition-all border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-primary-400 dark:hover:border-primary-600 hover:shadow-md">
+                                                        <div className="flex items-start gap-2 mb-3">
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">{variant.name}</p>
+                                                                {variant.code && <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">{variant.code}</span>}
+                                                            </div>
                                                             {variant.gender && (
-                                                                <span className={`absolute top-2 left-2 px-1.5 py-0.5 rounded text-[9px] font-black ${genderColor}`}>
+                                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black flex-shrink-0 ${genderColor}`}>
                                                                     {GENDER_LABEL[variant.gender] ?? variant.gender}
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        {/* Info */}
-                                                        <div className="p-2.5">
-                                                            <p className="font-black text-slate-800 dark:text-white text-xs leading-tight line-clamp-2">{variant.name}</p>
-                                                            {variant.code && <p className="text-[10px] text-slate-400 font-mono mt-0.5">{variant.code}</p>}
-                                                            <div className="mt-1.5 flex items-center justify-between">
-                                                                <span className="text-[10px] text-primary-600 dark:text-primary-400 font-bold">Pilih →</span>
-                                                            </div>
+                                                        <div className="flex items-center justify-end">
+                                                            <span className="text-[11px] text-slate-400 font-semibold">+ Pilih →</span>
                                                         </div>
                                                     </button>
                                                 );
@@ -1631,18 +1627,18 @@ export default function Index({
 
                                             {/* Card Custom Order */}
                                             <button onClick={openCustomModal}
-                                                className="group flex flex-col rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-all duration-200 overflow-hidden text-left">
-                                                <div className="w-full aspect-square bg-amber-100/50 dark:bg-amber-900/20 flex items-center justify-center">
-                                                    <div className="w-14 h-14 rounded-2xl bg-amber-500 flex items-center justify-center shadow-sm">
-                                                        <IconAdjustments size={26} className="text-white" />
+                                                className="group relative p-4 rounded-2xl border-2 border-dashed text-left transition-all border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20 hover:border-amber-400 dark:hover:border-amber-600 hover:shadow-md">
+                                                <div className="flex items-start gap-2 mb-3">
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-black text-amber-800 dark:text-amber-200 text-sm leading-tight">Komposisi Bebas</p>
+                                                        <span className="text-[10px] text-amber-600/70 font-mono mt-0.5 block">CUSTOM</span>
+                                                    </div>
+                                                    <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center shadow-sm flex-shrink-0">
+                                                        <IconAdjustments size={16} className="text-white" />
                                                     </div>
                                                 </div>
-                                                <div className="p-2.5">
-                                                    <p className="font-black text-amber-800 dark:text-amber-200 text-xs leading-tight">Komposisi Bebas</p>
-                                                    <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-black mt-1 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">CUSTOM</span>
-                                                    <div className="mt-1.5">
-                                                        <span className="text-[10px] text-amber-500 font-bold group-hover:text-amber-600">Buat →</span>
-                                                    </div>
+                                                <div className="flex items-center justify-end">
+                                                    <span className="text-[11px] text-amber-500 font-semibold">+ Buat →</span>
                                                 </div>
                                             </button>
                                         </div>
@@ -1670,24 +1666,39 @@ export default function Index({
                                             <p className="text-[11px] text-slate-400 mb-3 uppercase tracking-wider font-bold">
                                                 Klik item untuk menambahkan langsung ke keranjang
                                             </p>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+                                            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                                                 {items.map((pkg, i) => {
                                                     const bg = ["bg-orange-500", "bg-violet-500", "bg-rose-500", "bg-teal-500", "bg-sky-500", "bg-amber-500", "bg-indigo-500"][i % 7];
                                                     const inCart = cartPackagings.find(p => p.pkg.id === pkg.id);
                                                     return (
                                                         <button key={pkg.id} onClick={() => handleAddPkg(pkg)}
-                                                            className={`group relative p-4 rounded-2xl border-2 text-left transition-all ${inCart ? "border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-950/20" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300"}`}>
-                                                            <div className="flex items-start gap-3 mb-3">
-                                                                <div className={`w-11 h-11 rounded-xl ${bg} flex items-center justify-center shadow-sm flex-shrink-0`}><IconBox size={20} className="text-white" /></div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">{pkg.name}</p>
-                                                                    {pkg.code && <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">{pkg.code}</span>}
-                                                                </div>
-                                                                {inCart && <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0"><span className="text-[10px] font-black text-white">{inCart.qty}</span></div>}
+                                                            className={`group flex flex-col rounded-2xl border-2 overflow-hidden text-left transition-all duration-200 ${inCart ? "border-orange-400 dark:border-orange-600 shadow-md ring-2 ring-orange-500/20" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-orange-400 dark:hover:border-orange-600 hover:shadow-md"}`}>
+                                                            <div className="relative w-full aspect-square bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
+                                                                {pkg.image_url ? (
+                                                                    <img src={pkg.image_url} alt={pkg.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                                                ) : (
+                                                                    <div className={`w-14 h-14 rounded-2xl ${bg} flex items-center justify-center`}>
+                                                                        <IconBox size={26} className="text-white" />
+                                                                    </div>
+                                                                )}
+                                                                {inCart && (
+                                                                    <span className="absolute top-2 right-2 w-6 h-6 bg-orange-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg">
+                                                                        {inCart.qty}
+                                                                    </span>
+                                                                )}
+                                                                {pkg.is_free && (
+                                                                    <span className="absolute top-2 left-2 px-1.5 py-0.5 bg-emerald-500 text-white text-[9px] font-black rounded-lg shadow-lg">
+                                                                        GRATIS
+                                                                    </span>
+                                                                )}
                                                             </div>
-                                                            <div className="flex items-center justify-between">
-                                                                {pkg.is_free ? <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 text-xs font-black rounded-lg">GRATIS</span> : <span className="text-sm font-black text-orange-600">{fmt(pkg.selling_price)}</span>}
-                                                                <span className="text-[11px] text-slate-400 font-semibold">+ Tambah →</span>
+                                                            <div className={`p-2.5 flex-1 flex flex-col ${inCart ? "bg-orange-50 dark:bg-orange-950/20" : ""}`}>
+                                                                <p className="font-black text-slate-800 dark:text-white text-xs leading-tight line-clamp-2">{pkg.name}</p>
+                                                                {pkg.code && <p className="text-[10px] text-slate-400 font-mono mt-0.5">{pkg.code}</p>}
+                                                                <div className="mt-auto pt-1.5 flex items-center justify-between">
+                                                                    {!pkg.is_free && <span className="text-xs font-black text-orange-600">{fmt(pkg.selling_price)}</span>}
+                                                                    <span className="text-[10px] text-orange-500 font-bold ml-auto">+ Tambah →</span>
+                                                                </div>
                                                             </div>
                                                         </button>
                                                     );
@@ -2148,6 +2159,26 @@ export default function Index({
                             placeholder="Contoh: 08123456789"
                             className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30"
                         />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-[10px] font-black text-slate-400 uppercase mb-1.5 block">Tgl Lahir</label>
+                            <input
+                                type="date" value={custBirthDate} onChange={e => setCustBirthDate(e.target.value)}
+                                className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black text-slate-400 uppercase mb-1.5 block">Jenis Kelamin</label>
+                            <select
+                                value={custGender} onChange={e => setCustGender(e.target.value)}
+                                className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white"
+                            >
+                                <option value="">Pilih...</option>
+                                <option value="male">Laki-laki</option>
+                                <option value="female">Perempuan</option>
+                            </select>
+                        </div>
                     </div>
                     <div className="pt-2 flex gap-3">
                         <button type="button" onClick={() => setShowAddCustomer(false)} className="flex-1 h-11 rounded-xl border-2 border-slate-100 font-bold text-slate-500 hover:bg-slate-50 transition-all text-sm">Batal</button>

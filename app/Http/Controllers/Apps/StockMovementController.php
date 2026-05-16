@@ -37,56 +37,14 @@ class StockMovementController extends Controller
     // INDEX
     // =========================================================================
 
-    public function index(Request $request)
+    public function index(Request $request): \Inertia\Response
     {
-        $movements = StockMovement::query()
-            ->with('creator:id,name')
-            ->when($request->search, function ($q, $s) {
-                $term = strtolower($s);
-                $q->where(function ($inner) use ($term) {
-                    $inner->whereRaw('LOWER(reference_number) LIKE ?', ["%{$term}%"])
-                          ->orWhereRaw('LOWER(notes) LIKE ?', ["%{$term}%"])
-                          
-                          // Search in Ingredients
-                          ->orWhere(function($sub) use ($term) {
-                              $sub->where('item_type', 'ingredient')
-                                  ->whereIn('item_id', function($query) use ($term) {
-                                      $query->select('id')->from('ingredients')->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"]);
-                                  });
-                          })
-                          
-                          // Search in Packaging Materials
-                          ->orWhere(function($sub) use ($term) {
-                              $sub->where('item_type', 'packaging')
-                                  ->whereIn('item_id', function($query) use ($term) {
-                                      $query->select('id')->from('packaging_materials')->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"]);
-                                  });
-                          })
-                          
-                          // Search in Stores
-                          ->orWhere(function($sub) use ($term) {
-                              $sub->where('location_type', 'store')
-                                  ->whereIn('location_id', function($query) use ($term) {
-                                      $query->select('id')->from('stores')->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"]);
-                                  });
-                          })
-                          
-                          // Search in Warehouses
-                          ->orWhere(function($sub) use ($term) {
-                              $sub->where('location_type', 'warehouse')
-                                  ->whereIn('location_id', function($query) use ($term) {
-                                      $query->select('id')->from('warehouses')->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"]);
-                                  });
-                          });
-                });
-            })
-            ->when($request->movement_type, fn ($q, $t) => $q->where('movement_type', $t))
-            ->when($request->location_type, fn ($q, $t) => $q->where('location_type', $t))
-            ->when($request->location_id,   fn ($q, $id) => $q->where('location_id', $id))
-            ->when($request->item_type,     fn ($q, $t) => $q->where('item_type', $t))
-            ->when($request->date_from,     fn ($q, $d) => $q->whereDate('movement_date', '>=', $d))
-            ->when($request->date_to,       fn ($q, $d) => $q->whereDate('movement_date', '<=', $d))
-            ->orderByDesc('movement_date')
+        /** @var \Illuminate\Database\Eloquent\Builder $query */
+        $query = StockMovement::query()->with('creator:id,name');
+
+        $this->applyFilters($query, $request);
+
+        $movements = $query->orderByDesc('movement_date')
             ->orderByDesc('created_at')
             ->paginate(20)
             ->withQueryString();
@@ -149,6 +107,56 @@ class StockMovementController extends Controller
     // =========================================================================
     // PRIVATE HELPERS
     // =========================================================================
+
+    private function applyFilters(\Illuminate\Database\Eloquent\Builder $query, Request $request): void
+    {
+        $query->when($request->search, function ($q, $s) {
+            $term = strtolower($s);
+            $q->where(function ($inner) use ($term) {
+                $inner->whereRaw('LOWER(reference_number) LIKE ?', ["%{$term}%"])
+                      ->orWhereRaw('LOWER(notes) LIKE ?', ["%{$term}%"])
+                      
+                      // Search in Ingredients
+                      ->orWhere(function($sub) use ($term) {
+                          $sub->where('item_type', 'ingredient')
+                              ->whereIn('item_id', function($query) use ($term) {
+                                  $query->select('id')->from('ingredients')->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"]);
+                              });
+                      })
+                      
+                      // Search in Packaging Materials
+                      ->orWhere(function($sub) use ($term) {
+                          $sub->where('item_type', 'packaging')
+                              ->whereIn('item_id', function($query) use ($term) {
+                                  $query->select('id')->from('packaging_materials')->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"]);
+                              });
+                      })
+                      
+                      // Search in Stores
+                      ->orWhere(function($sub) use ($term) {
+                          $sub->where('location_type', 'store')
+                              ->whereIn('location_id', function($query) use ($term) {
+                                  $query->select('id')->from('stores')->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"]);
+                              });
+                      })
+                      
+                      // Search in Warehouses
+                      ->orWhere(function($sub) use ($term) {
+                          $sub->where('location_type', 'warehouse')
+                              ->whereIn('location_id', function($query) use ($term) {
+                                  $query->select('id')->from('warehouses')->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"]);
+                              });
+                      });
+            });
+        });
+
+        $query->when($request->movement_type, fn ($q, $t) => $q->where('movement_type', $t))
+              ->when($request->location_type, fn ($q, $t) => $q->where('location_type', $t))
+              ->when($request->location_id,   fn ($q, $id) => $q->where('location_id', $id))
+              ->when($request->item_type,     fn ($q, $t) => $q->where('item_type', $t))
+              ->when($request->date_from,     fn ($q, $d) => $q->whereDate('movement_date', '>=', $d))
+              ->when($request->date_to,       fn ($q, $d) => $q->whereDate('movement_date', '<=', $d));
+    }
 
     private function resolveLocationName(string $type, string $id): string
     {

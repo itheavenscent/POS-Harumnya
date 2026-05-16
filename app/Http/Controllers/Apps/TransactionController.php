@@ -1191,6 +1191,7 @@ class TransactionController extends Controller
         $eligible = [];
 
         foreach ($discounts as $discount) {
+            /** @var \App\Models\DiscountType $discount */
             // --- POIN MEMBER: check customer points ---
             if ($discount->code === 'POIN-MEMBER') {
                 $threshold = \App\Models\AppSetting::getValue('loyalty_reward_threshold', 30);

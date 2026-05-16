@@ -49,80 +49,37 @@ export default function CloseShiftModal({ isOpen, onClose, activeCashDrawer }) {
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                    {/* Shift Info Card */}
-                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
-                        <div className="flex justify-between items-center text-xs">
-                            <span className="text-slate-500">Waktu Buka:</span>
-                            <span className="text-slate-800 dark:text-slate-200 font-bold">
+                <div className="p-6 space-y-6">
+                    <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-2xl flex items-start gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white flex-shrink-0 shadow-lg shadow-emerald-500/20">
+                            <IconCheck size={20} />
+                        </div>
+                        <div>
+                            <p className="text-sm font-black text-emerald-800 dark:text-emerald-400">Konfirmasi Tutup Shift</p>
+                            <p className="text-xs text-emerald-600/80 dark:text-emerald-500/80 mt-0.5 leading-relaxed">
+                                Anda akan menutup shift saat ini. Semua data transaksi akan direkapitulasi dan Anda dapat mencetak laporan setelah ini.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center py-2 border-b border-slate-50 dark:border-slate-800/50">
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Waktu Buka</span>
+                            <span className="text-sm font-black text-slate-700 dark:text-slate-200">
                                 {new Date(activeCashDrawer.opened_at).toLocaleString('id-ID', { 
                                     day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
                                 })}
                             </span>
                         </div>
-                        <div className="flex justify-between items-center text-xs">
-                            <span className="text-slate-500">Modal Awal:</span>
-                            <span className="text-slate-800 dark:text-slate-200 font-bold">
+                        <div className="flex justify-between items-center py-2 border-b border-slate-50 dark:border-slate-800/50">
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Modal Awal</span>
+                            <span className="text-sm font-black text-slate-700 dark:text-slate-200">
                                 Rp {parseFloat(activeCashDrawer.starting_cash).toLocaleString('id-ID')}
                             </span>
                         </div>
                     </div>
-                    
-                    <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
-                        <IconAlertTriangle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
-                        <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
-                            Silakan hitung total uang tunai fisik yang ada di laci saat ini (termasuk modal awal) dan masukkan nominalnya di bawah ini.
-                        </p>
-                    </div>
 
-                    {/* Actual Cash Input */}
-                    <div>
-                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
-                            Total Uang Tunai di Laci (Rp)
-                        </label>
-                        <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
-                            <input
-                                type="text"
-                                value={data.actual_ending_cash ? new Intl.NumberFormat("id-ID").format(data.actual_ending_cash) : ""}
-                                onChange={(e) => {
-                                    const val = e.target.value.replace(/\D/g, "");
-                                    setData("actual_ending_cash", val ? parseInt(val) : 0);
-                                }}
-                                className={`w-full h-14 pl-12 pr-4 rounded-xl border-2 dark:bg-slate-950 dark:text-white text-xl font-black focus:outline-none transition-all ${
-                                    errors.actual_ending_cash
-                                        ? "border-red-500 ring-red-500/20"
-                                        : "border-slate-100 dark:border-slate-800 focus:border-emerald-500"
-                                }`}
-                                placeholder="0"
-                                required
-                                autoFocus
-                            />
-                        </div>
-                        {errors.actual_ending_cash && <p className="mt-1 text-xs text-red-500 font-medium">{errors.actual_ending_cash}</p>}
-                    </div>
-
-                    {/* Notes */}
-                    <div>
-                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider flex items-center gap-1.5">
-                            <IconNotes size={14} />
-                            Catatan (Opsional)
-                        </label>
-                        <textarea
-                            value={data.notes}
-                            onChange={(e) => setData("notes", e.target.value)}
-                            rows={2}
-                            className={`w-full px-4 py-3 rounded-xl border-2 dark:bg-slate-950 dark:text-white text-sm font-medium focus:outline-none transition-all resize-none ${
-                                errors.notes
-                                    ? "border-red-500 ring-red-500/20"
-                                    : "border-slate-100 dark:border-slate-800 focus:border-emerald-500"
-                            }`}
-                            placeholder="Contoh: Ada selisih karena pembulatan..."
-                        />
-                    </div>
-
-                    {/* Footer Actions */}
-                    <div className="pt-2 flex gap-3">
+                    <div className="flex gap-3">
                         <button
                             type="button"
                             onClick={onClose}
@@ -131,7 +88,7 @@ export default function CloseShiftModal({ isOpen, onClose, activeCashDrawer }) {
                             Batal
                         </button>
                         <button
-                            type="submit"
+                            onClick={handleSubmit}
                             disabled={processing}
                             className="flex-[2] h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm transition-all shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2 disabled:opacity-50"
                         >
@@ -140,12 +97,12 @@ export default function CloseShiftModal({ isOpen, onClose, activeCashDrawer }) {
                             ) : (
                                 <>
                                     <IconCheck size={18} />
-                                    Tutup Shift & Cetak Rekap
+                                    Tutup Shift Sekarang
                                 </>
                             )}
                         </button>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     );

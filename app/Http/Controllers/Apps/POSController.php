@@ -479,6 +479,11 @@ class POSController extends Controller
             ->whereNull('hold_id')
             ->get();
 
+        $activeDrawer = \App\Models\CashDrawer::where('store_id', $storeId)
+            ->where('cashier_id', $user->id)
+            ->where('status', 'open')
+            ->first();
+
         if ($carts->isEmpty()) {
             return back()->withErrors(['message' => 'Keranjang kosong']);
         }
@@ -499,7 +504,7 @@ class POSController extends Controller
             }
         }
 
-        DB::transaction(function () use ($carts, $standalonePkgs, $request, $user, $storeId, $paymentMethod, $customer, $salesPerson, $discountType) {
+        DB::transaction(function () use ($carts, $standalonePkgs, $request, $user, $storeId, $paymentMethod, $customer, $salesPerson, $discountType, $activeDrawer) {
             [$subtotalPerfume, $subtotalPackaging, $cogsPerfume, $cogsPackaging]
                 = $this->calcSubtotals($carts, $standalonePkgs);
 
@@ -521,6 +526,7 @@ class POSController extends Controller
                 'store_id' => $storeId,
                 'cashier_id' => $user->id,
                 'cashier_name' => $user->name,
+                'cash_drawer_id' => $activeDrawer?->id,
                 'sales_person_id' => $salesPerson?->id,
                 'sales_person_name' => $salesPerson?->name,
                 'customer_id' => $customer?->id,
