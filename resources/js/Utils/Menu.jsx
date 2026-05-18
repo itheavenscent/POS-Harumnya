@@ -34,6 +34,7 @@ import {
     IconUserSquare,
     IconUsers,
     IconUsersPlus,
+    IconGift,
 } from "@tabler/icons-react";
 import hasAnyPermission from "./Permission";
 import React from "react";
@@ -251,6 +252,13 @@ export default function Menu() {
                     href: route("discounts.index"),
                     active: url.startsWith("/dashboard/discounts"),
                     icon: <IconTicket size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["discounts-access"]),
+                },
+                {
+                    title: "Hadiah / Reward",
+                    href: route("reward-items.index"),
+                    active: url.startsWith("/dashboard/reward-items"),
+                    icon: <IconGift size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["discounts-access"]),
                 },
             ],

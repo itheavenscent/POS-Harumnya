@@ -859,6 +859,274 @@ function ChooseRewardModal({ show, onClose, promo, variants = [], loadingVariant
     );
 }
 
+// ─── Game / Spin Wheel Modal ──────────────────────────────────────────────────
+function GameRewardModal({ show, onClose, promo, onAddDirectReward, onOpenVariantPicker }) {
+    const [isSpinning, setIsSpinning] = useState(false);
+    const [hasSpun, setHasSpun] = useState(false);
+    const [winningIndex, setWinningIndex] = useState(null);
+    const [angle, setAngle] = useState(0);
+    const [viewMode, setViewMode] = useState("wheel"); // "wheel" or "manual"
+
+    // Reset when modal opens/closes
+    useEffect(() => {
+        if (!show) {
+            setIsSpinning(false);
+            setHasSpun(false);
+            setWinningIndex(null);
+            setAngle(0);
+            setViewMode("wheel");
+        }
+    }, [show]);
+
+    // Build wheel slices/options from promo rewards details
+    const wheelItems = useMemo(() => {
+        if (!promo) return [];
+        const details = promo.rewards_details || [];
+        const list = [];
+        details.forEach(reward => {
+            if (reward.is_pool && reward.pools && reward.pools.length > 0) {
+                reward.pools.forEach(pool => {
+                    list.push({
+                        ...pool,
+                        parentReward: reward
+                    });
+                });
+            } else {
+                list.push({
+                    ...reward,
+                    label: reward.reward_type === 'points' 
+                        ? `${reward.points_amount} Poin`
+                        : reward.reward_type === 'reward_item' 
+                            ? reward.reward_item_name || 'Merchandise'
+                            : `Varian Parfum (P${reward.size_ml || '30'} ${reward.intensity_code || 'EDT'})`
+                });
+            }
+        });
+        return list;
+    }, [promo]);
+
+    const N = wheelItems.length;
+
+    const slices = useMemo(() => {
+        if (N === 0) return [];
+        return wheelItems.map((item, idx) => {
+            const angleStart = (idx * 360) / N;
+            const angleEnd = ((idx + 1) * 360) / N;
+            const radStart = ((angleStart - 90) * Math.PI) / 180;
+            const radEnd = ((angleEnd - 90) * Math.PI) / 180;
+            
+            const x1 = 100 + 100 * Math.cos(radStart);
+            const y1 = 100 + 100 * Math.sin(radStart);
+            const x2 = 100 + 100 * Math.cos(radEnd);
+            const y2 = 100 + 100 * Math.sin(radEnd);
+            
+            const largeArc = angleEnd - angleStart > 180 ? 1 : 0;
+            const pathData = `M 100 100 L ${x1} ${y1} A 100 100 0 ${largeArc} 1 ${x2} ${y2} Z`;
+            
+            const midRad = (((angleStart + angleEnd) / 2 - 90) * Math.PI) / 180;
+            const tx = 100 + 60 * Math.cos(midRad);
+            const ty = 100 + 60 * Math.sin(midRad);
+            
+            const colors = [
+                "fill-amber-500", "fill-violet-600", "fill-emerald-500", "fill-blue-500",
+                "fill-rose-500", "fill-orange-500", "fill-pink-500", "fill-teal-500"
+            ];
+            
+            return {
+                pathData,
+                tx,
+                ty,
+                angleMid: (angleStart + angleEnd) / 2,
+                colorClass: colors[idx % colors.length],
+                label: item.label
+            };
+        });
+    }, [wheelItems, N]);
+
+    const handleSpin = () => {
+        if (isSpinning || N === 0) return;
+
+        // Weighted random selection based on probability weight (default 10)
+        let totalProb = wheelItems.reduce((acc, item) => acc + (item.probability || 10), 0);
+        let randomVal = Math.random() * totalProb;
+        let winner = 0;
+        let sum = 0;
+        for (let i = 0; i < N; i++) {
+            sum += (wheelItems[i].probability || 10);
+            if (randomVal <= sum) {
+                winner = i;
+                break;
+            }
+        }
+
+        setWinningIndex(winner);
+        
+        // Angle to rotate: 5 full turns (1800deg) + land on winning slice
+        const sliceAngle = 360 / N;
+        const targetAngle = 360 * 5 + (360 - (winner * sliceAngle) - (sliceAngle / 2));
+        
+        setAngle(targetAngle);
+        setIsSpinning(true);
+
+        setTimeout(() => {
+            setIsSpinning(false);
+            setHasSpun(true);
+        }, 4000);
+    };
+
+    const handleClaim = (selectedItem = null) => {
+        const item = selectedItem || wheelItems[winningIndex];
+        if (!item) return;
+
+        if (item.reward_type === 'variant') {
+            onOpenVariantPicker(promo, item);
+        } else {
+            onAddDirectReward(item, promo);
+        }
+        onClose();
+    };
+
+    return (
+        <Modal show={show} onClose={onClose} maxW="max-w-md">
+            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
+                <div>
+                    <p className="text-xs text-slate-400 mb-0.5">Game & Spin Wheel Promo</p>
+                    <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <span className="text-lg">🎡</span> {promo?.name || "Spin Wheel"}
+                    </h3>
+                </div>
+                <button onClick={onClose} disabled={isSpinning} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors">
+                    <IconX size={16} />
+                </button>
+            </div>
+
+            <div className="px-5 py-3 bg-amber-50 dark:bg-amber-950/20 border-b border-amber-100 dark:border-amber-900/40 flex-shrink-0">
+                <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold leading-relaxed">
+                    {promo?.description || "Pelanggan berhak memutar Spin Wheel untuk mendapatkan reward menarik!"}
+                </p>
+            </div>
+
+            {N === 0 ? (
+                <div className="py-12 text-center text-slate-400 text-sm">Tidak ada reward pool disetting.</div>
+            ) : (
+                <div className="p-6 flex-1 flex flex-col items-center justify-center min-h-[350px]">
+                    {/* View Switcher */}
+                    <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 mb-6 w-full max-w-[240px] flex-shrink-0">
+                        <button disabled={isSpinning} onClick={() => setViewMode("wheel")} className={`flex-1 py-1.5 text-xs font-black rounded-lg transition-all ${viewMode === 'wheel' ? 'bg-white dark:bg-slate-900 text-amber-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>🎡 Spin Wheel</button>
+                        <button disabled={isSpinning} onClick={() => setViewMode("manual")} className={`flex-1 py-1.5 text-xs font-black rounded-lg transition-all ${viewMode === 'manual' ? 'bg-white dark:bg-slate-900 text-amber-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>📋 Pilih Manual</button>
+                    </div>
+
+                    {viewMode === "wheel" ? (
+                        <div className="flex-1 flex flex-col items-center justify-center w-full">
+                            {/* The Wheel */}
+                            <div className="relative w-64 h-64 mx-auto mb-6 flex-shrink-0">
+                                {/* Pointer */}
+                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[16px] border-t-rose-600 drop-shadow-md filter" />
+                                
+                                <div className="w-full h-full rounded-full border-4 border-slate-800 dark:border-slate-700 p-1 bg-slate-800 dark:bg-slate-700 shadow-2xl relative overflow-hidden">
+                                    <svg viewBox="0 0 200 200" className="w-full h-full select-none">
+                                        <g style={{
+                                            transform: `rotate(${angle}deg)`,
+                                            transformOrigin: '100px 100px',
+                                            transition: isSpinning ? 'transform 4s cubic-bezier(0.1, 0.8, 0.35, 1)' : 'none'
+                                        }}>
+                                            {slices.map((s, idx) => (
+                                                <g key={idx}>
+                                                    <path d={s.pathData} className={`${s.colorClass} stroke-white/20 stroke-[0.5px]`} />
+                                                    <text 
+                                                        x={s.tx} 
+                                                        y={s.ty} 
+                                                        transform={`rotate(${s.angleMid}, ${s.tx}, ${s.ty})`}
+                                                        textAnchor="middle" 
+                                                        alignmentBaseline="middle"
+                                                        className="text-[5.5px] font-black fill-white select-none pointer-events-none"
+                                                    >
+                                                        {s.label.length > 15 ? s.label.slice(0, 12) + '..' : s.label}
+                                                    </text>
+                                                </g>
+                                            ))}
+                                        </g>
+                                        <circle cx="100" cy="100" r="14" className="fill-white" />
+                                        <circle cx="100" cy="100" r="10" className="fill-slate-800" />
+                                        <circle cx="100" cy="100" r="4" className="fill-amber-400" />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            {/* Actions & Result */}
+                            <div className="w-full text-center">
+                                {!hasSpun && !isSpinning && (
+                                    <button 
+                                        onClick={handleSpin}
+                                        className="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black rounded-2xl shadow-lg shadow-amber-500/30 transition-all text-sm transform hover:scale-105 flex items-center gap-2 mx-auto"
+                                    >
+                                        SPIN WHEEL! 🎡
+                                    </button>
+                                )}
+
+                                {isSpinning && (
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 font-bold animate-pulse">
+                                        Memutar roda keberuntungan... 🌀
+                                    </p>
+                                )}
+
+                                {hasSpun && !isSpinning && (
+                                    <div className="space-y-4 animate-fade-in">
+                                        <div>
+                                            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Hasil Undian</p>
+                                            <h4 className="text-xl font-black text-amber-600 dark:text-amber-400">
+                                                🎉 {wheelItems[winningIndex]?.label} 🎉
+                                            </h4>
+                                        </div>
+                                        <div className="flex gap-2 justify-center">
+                                            <button 
+                                                onClick={handleSpin}
+                                                className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-xs hover:bg-slate-200 transition"
+                                            >
+                                                Spin Ulang 🔄
+                                            </button>
+                                            <button 
+                                                onClick={() => handleClaim()}
+                                                className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl text-xs shadow-md shadow-emerald-500/20 transition"
+                                            >
+                                                Klaim Hadiah! 🎁
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="w-full flex-1 overflow-y-auto max-h-[320px] space-y-2">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Daftar Pilihan Hadiah</p>
+                            {wheelItems.map((item, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => handleClaim(item)}
+                                    className="w-full flex items-center justify-between p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-amber-500 hover:bg-amber-50/20 transition text-left group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-600 flex items-center justify-center font-bold text-sm">
+                                            {item.reward_type === 'points' ? '🪙' : item.reward_type === 'reward_item' ? '🎁' : '🧪'}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-800 dark:text-white">{item.label}</p>
+                                            <p className="text-[10px] text-slate-400 capitalize">{item.reward_type}</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-xs text-slate-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                                        Pilih →
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </Modal>
+    );
+}
+
 // ─── Discount Modal ───────────────────────────────────────────────────────────
 function DiscountModal({ show, onClose, discounts = [], subtotal = 0, onSelect, eligiblePromos = [], onPickReward }) {
     const [search, setSearch] = useState("");
@@ -1034,6 +1302,9 @@ export default function Index({
     // ── State: auto promo ──────────────────────────────────────────────────────
     const [showPromoModal, setShowPromoModal] = useState(false);
     const [lastTriggeredPromoId, setLastTriggeredPromoId] = useState(null);
+    const [showGameModal, setShowGameModal] = useState(false);
+    const [activeGamePromo, setActiveGamePromo] = useState(null);
+    const [chosenPoolRewardItem, setChosenPoolRewardItem] = useState(null);
 
     const customerRef = useRef(null);
 
@@ -1172,17 +1443,22 @@ export default function Index({
 
     // ── Reward picker helpers ──────────────────────────────────────────────────
     const handleOpenRewardPicker = async (promo) => {
-        const reward = promo?.rewards?.[0];
+        const reward = promo?.rewards_details?.[0] || promo?.rewards?.[0];
         
+        // If it's a game promo or has a pool, open GameRewardModal
+        if (promo?.type === 'game_reward' || reward?.is_pool) {
+            setActiveGamePromo(promo);
+            setShowGameModal(true);
+            return;
+        }
+
         // If it's a direct reward (points or merchandise without pool), apply immediately
         if (reward && !reward.is_pool && reward.reward_type !== 'variant') {
             handleAddDirectReward(reward, promo);
             return;
         }
 
-        // If it's a pool, or a variant reward, show modal
-        // Note: For now, the modal only supports variants or selecting a label.
-        // We will just show the modal and let the cashier pick.
+        // If it's a direct variant reward, show ChooseRewardModal
         setActivePromoForReward(promo);
         setShowChooseRewardModal(true);
         // Load variants if not already loaded (reuse catalog or fetch fresh)
@@ -1220,7 +1496,7 @@ export default function Index({
 
     const handleAddFreeItem = (variant, promo) => {
         if (!variant || !promo) return;
-        const reward = promo?.rewards?.[0];
+        const reward = chosenPoolRewardItem || promo?.rewards_details?.[0] || promo?.rewards?.[0];
         const label = `${promo.name} - ${variant.name}`;
         router.post(route('transactions.add-reward-to-cart'), {
             discount_type_id: promo.id,
@@ -1230,7 +1506,10 @@ export default function Index({
             reward_label: label,
         }, {
             preserveScroll: true,
-            onSuccess: () => toast.success(`✅ Item reward "${variant.name}" ditambahkan ke keranjang (GRATIS)!`),
+            onSuccess: () => {
+                toast.success(`✅ Item reward "${variant.name}" ditambahkan ke keranjang (GRATIS)!`);
+                setChosenPoolRewardItem(null);
+            },
             onError: (err) => toast.error(Object.values(err)[0] ?? 'Gagal menambahkan reward'),
         });
     };
@@ -1468,11 +1747,34 @@ export default function Index({
                 initialVariant={customTabVariant}
             />
 
-            <ChooseRewardModal
+            <GameRewardModal
                 show={showPromoModal}
                 onClose={() => setShowPromoModal(false)}
                 promo={autoPromo}
-                onApply={handleApplyReward}
+                onAddDirectReward={handleAddDirectReward}
+                onOpenVariantPicker={(promo, poolItem) => {
+                    setActivePromoForReward(promo);
+                    if (catalogVariants.length > 0) {
+                        setRewardVariants(catalogVariants);
+                    }
+                    setChosenPoolRewardItem(poolItem);
+                    setShowChooseRewardModal(true);
+                }}
+            />
+
+            <GameRewardModal
+                show={showGameModal}
+                onClose={() => setShowGameModal(false)}
+                promo={activeGamePromo}
+                onAddDirectReward={handleAddDirectReward}
+                onOpenVariantPicker={(promo, poolItem) => {
+                    setActivePromoForReward(promo);
+                    if (catalogVariants.length > 0) {
+                        setRewardVariants(catalogVariants);
+                    }
+                    setChosenPoolRewardItem(poolItem);
+                    setShowChooseRewardModal(true);
+                }}
             />
 
             <DiscountModal
@@ -2094,7 +2396,7 @@ export default function Index({
 
             <ChooseRewardModal
                 show={showChooseRewardModal}
-                onClose={() => setShowChooseRewardModal(false)}
+                onClose={() => { setShowChooseRewardModal(false); setChosenPoolRewardItem(null); }}
                 promo={activePromoForReward}
                 variants={rewardVariants}
                 loadingVariants={loadingRewardVariants}
@@ -2137,8 +2439,9 @@ export default function Index({
                         <button
                             onClick={() => {
                                 if (localAutoPromo?.rewards && localAutoPromo.rewards.length > 0) {
-                                    // Jika ada reward pilihan (item/pool), buka modal reward
-                                    setShowPromoModal(true);
+                                    // Jika ada reward pilihan (item/pool), buka modal game/spin-wheel
+                                    setActiveGamePromo(localAutoPromo);
+                                    setShowGameModal(true);
                                     setLocalAutoPromo(null);
                                 } else {
                                     // Hitung amount dari diskon (disamakan dengan format selectedDiscount)

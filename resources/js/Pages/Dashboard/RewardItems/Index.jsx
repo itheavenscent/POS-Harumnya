@@ -12,7 +12,7 @@ import {
     IconCurrencyDollar,
     IconTag,
 } from "@tabler/icons-react";
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import DashboardLayout from "@/Layouts/DashboardLayout";
 
 const fmt = (n) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n ?? 0);
@@ -244,7 +244,7 @@ export default function RewardItemsIndex({ items, filters, categories }) {
     };
 
     return (
-        <AuthenticatedLayout>
+        <>
             <Head title="Master Reward Items" />
 
             {/* Header */}
@@ -288,8 +288,8 @@ export default function RewardItemsIndex({ items, filters, categories }) {
                 {[
                     { label: "Total Item", value: items.total, icon: <IconGift size={18} className="text-purple-500" /> },
                     { label: "Aktif", value: items.data.filter(i => i.is_active).length, icon: <IconToggleRight size={18} className="text-emerald-500" /> },
-                    { label: "HPP Terendah", value: fmt(Math.min(...items.data.map(i => i.cost_price || 0))), icon: <IconCurrencyDollar size={18} className="text-blue-500" /> },
-                    { label: "HPP Tertinggi", value: fmt(Math.max(...items.data.map(i => i.cost_price || 0))), icon: <IconTag size={18} className="text-amber-500" /> },
+                    { label: "HPP Terendah", value: items.data.length > 0 ? fmt(Math.min(...items.data.map(i => i.cost_price || 0))) : fmt(0), icon: <IconCurrencyDollar size={18} className="text-blue-500" /> },
+                    { label: "HPP Tertinggi", value: items.data.length > 0 ? fmt(Math.max(...items.data.map(i => i.cost_price || 0))) : fmt(0), icon: <IconTag size={18} className="text-amber-500" /> },
                 ].map((s, idx) => (
                     <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800">{s.icon}</div>
@@ -412,6 +412,8 @@ export default function RewardItemsIndex({ items, filters, categories }) {
                     onClose={() => setModal(null)}
                 />
             )}
-        </AuthenticatedLayout>
+        </>
     );
 }
+
+RewardItemsIndex.layout = (page) => <DashboardLayout children={page} />;

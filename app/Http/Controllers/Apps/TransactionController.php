@@ -1192,7 +1192,7 @@ class TransactionController extends Controller
             ->where(fn($q) => $q->whereNull('end_date')->orWhereDate('end_date', '>=', today()))
             ->where(fn($q) => $q->whereDoesntHave('stores')
                 ->orWhereHas('stores', fn($sq) => $sq->where('store_id', $storeId)))
-            ->with(['requirements', 'rewards.pools', 'rewards.intensity', 'rewards.size'])
+            ->with(['requirements', 'rewards.pools', 'rewards.pools.rewardItem', 'rewards.intensity', 'rewards.size', 'rewards.rewardItem'])
             ->orderByDesc('priority')
             ->get();
 

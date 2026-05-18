@@ -993,7 +993,7 @@ class POSController extends Controller
         // Ambil promo bertipe game_reward (Spin Wheel) yang aktif
         $promos = DiscountType::where('type', 'game_reward')
             ->where('is_active', true)
-            ->with(['requirements', 'rewards.variant', 'rewards.size', 'rewards.pools'])
+            ->with(['requirements', 'rewards.variant', 'rewards.size', 'rewards.rewardItem', 'rewards.pools', 'rewards.pools.rewardItem'])
             ->get();
 
         foreach ($promos as $promo) {
@@ -1024,6 +1024,47 @@ class POSController extends Controller
             }
 
             if ($anyGroupMatched) {
+                // Format reward data using a method similar to buildRewardData
+                $rewardsDetails = [];
+                foreach ($promo->rewards as $reward) {
+                    $item = [
+                        'id'                  => $reward->id,
+                        'reward_type'         => $reward->reward_type ?? 'variant',
+                        'reward_item_id'      => $reward->reward_item_id,
+                        'points_amount'       => $reward->points_amount,
+                        'reward_quantity'     => $reward->reward_quantity,
+                        'customer_can_choose' => $reward->customer_can_choose,
+                        'is_pool'             => $reward->is_pool,
+                        'discount_percentage' => (float)$reward->discount_percentage,
+                        'intensity_code'      => $reward->intensity?->code,
+                        'size_ml'             => $reward->size?->volume_ml,
+                        'intensity_id'        => $reward->intensity_id,
+                        'size_id'             => $reward->size_id,
+                    ];
+
+                    if ($item['reward_type'] === 'reward_item' && $reward->rewardItem) {
+                        $item['reward_item_name'] = $reward->rewardItem->name;
+                        $item['reward_item_cost'] = $reward->rewardItem->cost_price;
+                    }
+
+                    if ($reward->is_pool) {
+                        $item['pools'] = $reward->pools->map(fn($p) => [
+                            'id'            => $p->id,
+                            'reward_type'   => $p->reward_type ?? 'variant',
+                            'variant_id'    => $p->variant_id,
+                            'intensity_id'  => $p->intensity_id,
+                            'size_id'       => $p->size_id,
+                            'reward_item_id'=> $p->reward_item_id,
+                            'points_amount' => $p->points_amount,
+                            'label'         => $p->label,
+                            'probability'   => $p->probability,
+                            'reward_item_name' => $p->reward_type === 'reward_item' && $p->rewardItem ? $p->rewardItem->name : null,
+                        ]);
+                    }
+
+                    $rewardsDetails[] = $item;
+                }
+
                 // Ambil reward dari database jika disetting
                 $dbRewards = [];
                 foreach ($promo->rewards as $reward) {
@@ -1065,7 +1106,8 @@ class POSController extends Controller
                     'name' => $promo->name,
                     'description' => $promo->description,
                     'terms' => $promo->terms_conditions,
-                    'rewards' => $rewards
+                    'rewards' => $rewards,
+                    'rewards_details' => $rewardsDetails,
                 ];
             }
         }
