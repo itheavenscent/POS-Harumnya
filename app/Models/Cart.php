@@ -26,6 +26,7 @@ class Cart extends Model
         'is_free',
         'customer_id',
         'sales_person_id',
+        'discount_type_id',
         'hold_id',
         'hold_label',
         'held_at',
@@ -97,6 +98,11 @@ class Cart extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    public function discountType(): BelongsTo
+    {
+        return $this->belongsTo(DiscountType::class, 'discount_type_id');
     }
 
     public function packagings(): HasMany

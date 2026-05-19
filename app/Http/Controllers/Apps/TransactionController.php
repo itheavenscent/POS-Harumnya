@@ -447,7 +447,7 @@ class TransactionController extends Controller
 
         foreach ($sale->items as $item) {
             if ($item->intensity_id_snapshot && $item->size_id_snapshot) {
-                $item->original_price = (int) (\App\Models\IntensitySizePrice::where('intensity_id', $item->intensity_id_snapshot)
+                $item->original_price = (int) (IntensitySizePrice::where('intensity_id', $item->intensity_id_snapshot)
                     ->where('size_id', $item->size_id_snapshot)
                     ->where('is_active', true)
                     ->value('price') ?? 0);
@@ -1448,18 +1448,19 @@ class TransactionController extends Controller
 
         DB::transaction(function () use ($request, $user, $storeId, $discount, $price) {
             Cart::create([
-                'cashier_id'     => $user->id,
-                'store_id'       => $storeId,
-                'variant_id'     => $request->variant_id,
-                'intensity_id'   => $request->intensity_id,
-                'size_id'        => $request->size_id,
-                'product_id'     => null,
-                'reward_item_id' => $request->reward_item_id,
-                'points_amount'  => $request->points_amount,
-                'unit_price'     => $price,  // gratis
-                'qty'            => 1,
-                'is_free'        => true,
-                'notes'          => 'Reward: ' . ($request->reward_label ?? $discount->name),
+                'cashier_id'       => $user->id,
+                'store_id'         => $storeId,
+                'variant_id'       => $request->variant_id,
+                'intensity_id'     => $request->intensity_id,
+                'size_id'          => $request->size_id,
+                'product_id'       => null,
+                'reward_item_id'   => $request->reward_item_id,
+                'points_amount'    => $request->points_amount,
+                'discount_type_id' => $discount->id,
+                'unit_price'       => $price,  // gratis
+                'qty'              => 1,
+                'is_free'          => true,
+                'notes'            => 'Reward: ' . ($request->reward_label ?? $discount->name),
             ]);
         });
 
@@ -1612,7 +1613,7 @@ class TransactionController extends Controller
 
         foreach ($carts as $cart) {
             if ($cart->intensity_id && $cart->size_id) {
-                $cart->original_price = (int) (\App\Models\IntensitySizePrice::where('intensity_id', $cart->intensity_id)
+                $cart->original_price = (int) (IntensitySizePrice::where('intensity_id', $cart->intensity_id)
                     ->where('size_id', $cart->size_id)
                     ->where('is_active', true)
                     ->value('price') ?? 0);
