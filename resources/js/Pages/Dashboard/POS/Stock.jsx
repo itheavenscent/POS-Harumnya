@@ -88,7 +88,7 @@ export default function Stock({ stocks, filters }) {
                                     </tr>
                                 ) : (
                                     stocks.data.map((stock) => {
-                                        const item = stock.ingredient || stock.packagingMaterial;
+                                        const item = stock.ingredient || stock.packaging_material || stock.packagingMaterial;
                                         const isLow = stock.min_stock !== null && stock.quantity < stock.min_stock;
                                         
                                         return (
