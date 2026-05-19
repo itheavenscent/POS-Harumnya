@@ -118,7 +118,14 @@ class TransactionController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        $discounts = $this->getActiveDiscountsForStore($storeId);
+        $excludeIds = Cart::where('cashier_id', $user->id)
+            ->where('store_id', $storeId)
+            ->whereNull('hold_id')
+            ->whereNotNull('discount_type_id')
+            ->pluck('discount_type_id')
+            ->toArray();
+
+        $discounts = $this->getActiveDiscountsForStore($storeId, $excludeIds);
 
         $customPricingRules = CustomOrderPricingRule::where('is_active', true)
             ->where(fn($q) => $q->whereNull('valid_from')
@@ -437,6 +444,17 @@ class TransactionController extends Controller
             ->where('sale_number', str_replace('-', '/', $saleNumber))
             ->orWhere('sale_number', $saleNumber)
             ->firstOrFail();
+
+        foreach ($sale->items as $item) {
+            if ($item->intensity_id_snapshot && $item->size_id_snapshot) {
+                $item->original_price = (int) (\App\Models\IntensitySizePrice::where('intensity_id', $item->intensity_id_snapshot)
+                    ->where('size_id', $item->size_id_snapshot)
+                    ->where('is_active', true)
+                    ->value('price') ?? 0);
+            } else {
+                $item->original_price = 0;
+            }
+        }
 
         return Inertia::render('Dashboard/Transactions/Print', [
             'sale' => $sale,
@@ -897,6 +915,15 @@ class TransactionController extends Controller
         $customer = $request->customer_id ? Customer::find($request->customer_id) : null;
         $salesPerson = $request->sales_person_id ? SalesPerson::find($request->sales_person_id) : null;
         $discountType = $request->discount_type_id ? DiscountType::find($request->discount_type_id) : null;
+
+        // Prevent claiming a discount/voucher that is already applied as a reward in the cart
+        if ($discountType) {
+            $alreadyClaimed = $carts->contains('discount_type_id', $discountType->id);
+            if ($alreadyClaimed) {
+                return back()->withErrors(['message' => 'Diskon/voucher "' . $discountType->name . '" sudah diklaim di keranjang.']);
+            }
+        }
+
         $stockDeduction = $this->stockDeduction;
 
         $standalonePkgs = [];
@@ -924,6 +951,20 @@ class TransactionController extends Controller
             $grossProfit = $total - $cogsTotal;
             $marginPct = $total > 0 ? round($grossProfit / $total * 100, 2) : 0;
 
+            // Calculate points redeemed from points-member rewards
+            $pointsRedeemed = 0;
+            if ($customer) {
+                foreach ($carts as $cart) {
+                    if ($cart->discount_type_id) {
+                        $dt = DiscountType::find($cart->discount_type_id);
+                        if ($dt && $dt->code === 'POIN-MEMBER') {
+                            $threshold = (int) \App\Models\AppSetting::getValue('loyalty_reward_threshold', 30);
+                            $pointsRedeemed += ($threshold * $cart->qty);
+                        }
+                    }
+                }
+            }
+
             $sale = Sale::create([
                 'sale_number' => $this->generateSaleNumber($storeId),
                 'store_id' => $storeId,
@@ -950,7 +991,7 @@ class TransactionController extends Controller
                 'gross_profit' => (int) $grossProfit,
                 'gross_margin_pct' => $marginPct,
                 'points_earned' => 0,
-                'points_redeemed' => 0,
+                'points_redeemed' => $pointsRedeemed,
                 'status' => 'completed',
             ]);
 
@@ -1107,29 +1148,49 @@ class TransactionController extends Controller
             ]);
 
             // Loyalty Points
-            if ($customer && ($total > 0 || $rewardPoints > 0)) {
-                $pointRate = (int) \App\Models\AppSetting::getValue('loyalty_point_rate', 10000);
-                $pointsEarned = $pointRate > 0 ? (int) floor($total / $pointRate) : 0;
-                
-                $totalPointsEarned = $pointsEarned + $rewardPoints;
+            if ($customer) {
+                // 1. Process point earning
+                if ($total > 0 || $rewardPoints > 0) {
+                    $pointRate = (int) \App\Models\AppSetting::getValue('loyalty_point_rate', 10000);
+                    $pointsEarned = $pointRate > 0 ? (int) floor($total / $pointRate) : 0;
+                    
+                    $totalPointsEarned = $pointsEarned + $rewardPoints;
 
-                if ($totalPointsEarned > 0) {
-                    $sale->update(['points_earned' => $totalPointsEarned]);
-                    $customer->increment('points', $totalPointsEarned);
-                    $customer->increment('lifetime_points_earned', $totalPointsEarned);
-                    $customer->increment('lifetime_spending', (int) $total);
-                    $customer->increment('total_transactions');
+                    if ($totalPointsEarned > 0) {
+                        $sale->update(['points_earned' => $totalPointsEarned]);
+                        $customer->increment('points', $totalPointsEarned);
+                        $customer->increment('lifetime_points_earned', $totalPointsEarned);
+                        
+                        CustomerPointLedger::create([
+                            'customer_id' => $customer->id,
+                            'type' => 'earned',
+                            'points' => $totalPointsEarned,
+                            'balance_after' => $customer->fresh()->points,
+                            'reference_type' => Sale::class,
+                            'reference_id' => $sale->id,
+                            'notes' => "Pembelian {$sale->sale_number}",
+                        ]);
+                    }
+                }
+
+                // 2. Process point redemption
+                if ($pointsRedeemed > 0) {
+                    $customer->decrement('points', $pointsRedeemed);
 
                     CustomerPointLedger::create([
                         'customer_id' => $customer->id,
-                        'type' => 'earned',
-                        'points' => $totalPointsEarned,
+                        'type' => 'redeemed',
+                        'points' => $pointsRedeemed,
                         'balance_after' => $customer->fresh()->points,
                         'reference_type' => Sale::class,
                         'reference_id' => $sale->id,
-                        'notes' => "Pembelian {$sale->sale_number}",
+                        'notes' => "Penukaran Poin pada Transaksi {$sale->sale_number}",
                     ]);
                 }
+
+                // 3. Increment customer metrics
+                $customer->increment('lifetime_spending', (int) $total);
+                $customer->increment('total_transactions');
             }
 
             // Stock Deduction
@@ -1186,8 +1247,17 @@ class TransactionController extends Controller
         $customer = $request->customer_id ? Customer::find($request->customer_id) : null;
         $customerPoints = (int) ($customer?->points ?? 0);
 
+        // Exclude already claimed/applied rewards in active cart
+        $appliedDiscountIds = Cart::where('cashier_id', $user->id)
+            ->where('store_id', $storeId)
+            ->whereNull('hold_id')
+            ->whereNotNull('discount_type_id')
+            ->pluck('discount_type_id')
+            ->toArray();
+
         // Load all active discounts with their requirements & rewards
         $discounts = DiscountType::where('is_active', true)
+            ->whereNotIn('id', $appliedDiscountIds)
             ->where(fn($q) => $q->whereNull('start_date')->orWhereDate('start_date', '<=', today()))
             ->where(fn($q) => $q->whereNull('end_date')->orWhereDate('end_date', '>=', today()))
             ->where(fn($q) => $q->whereDoesntHave('stores')
@@ -1355,6 +1425,14 @@ class TransactionController extends Controller
 
         abort_unless((bool)$activeCashDrawer, 422, 'Silakan buka shift terlebih dahulu.');
 
+        $alreadyClaimed = Cart::where('cashier_id', $user->id)
+            ->where('store_id', $storeId)
+            ->whereNull('hold_id')
+            ->where('discount_type_id', $request->discount_type_id)
+            ->exists();
+
+        abort_if($alreadyClaimed, 422, 'Promo/Reward ini sudah diklaim di keranjang.');
+
         $discount = DiscountType::findOrFail($request->discount_type_id);
 
         // Determine price (reward = 100% discount => price 0)
@@ -1520,7 +1598,7 @@ class TransactionController extends Controller
 
     private function getActiveCarts(int $cashierId, string $storeId): Collection
     {
-        return Cart::with([
+        $carts = Cart::with([
             'variant:id,name,code,image',
             'intensity:id,name,code',
             'size:id,name,volume_ml',
@@ -1531,6 +1609,19 @@ class TransactionController extends Controller
             ->whereNull('hold_id')
             ->latest()
             ->get();
+
+        foreach ($carts as $cart) {
+            if ($cart->intensity_id && $cart->size_id) {
+                $cart->original_price = (int) (\App\Models\IntensitySizePrice::where('intensity_id', $cart->intensity_id)
+                    ->where('size_id', $cart->size_id)
+                    ->where('is_active', true)
+                    ->value('price') ?? 0);
+            } else {
+                $cart->original_price = 0;
+            }
+        }
+
+        return $carts;
     }
 
     private function calcCartsTotal(Collection $carts): int
@@ -1560,9 +1651,10 @@ class TransactionController extends Controller
             ]);
     }
 
-    private function getActiveDiscountsForStore(string $storeId): Collection
+    private function getActiveDiscountsForStore(string $storeId, array $excludeIds = []): Collection
     {
         return DiscountType::where('is_active', true)
+            ->whereNotIn('id', $excludeIds)
             ->where(fn($q) => $q->whereNull('start_date')
                 ->orWhereDate('start_date', '<=', today()))
             ->where(fn($q) => $q->whereNull('end_date')

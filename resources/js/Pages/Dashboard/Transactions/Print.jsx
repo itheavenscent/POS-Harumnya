@@ -554,8 +554,30 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                             {name}
                         </div>
                         <Row2
-                            left={`${qty}x @${isFree ? "GRATIS" : fmtN(item.unit_price)}`}
-                            right={isFree ? "GRATIS" : fmtN(item.subtotal)}
+                            left={
+                                <div style={{ display: "flex", flexFlow: "wrap", alignItems: "baseline", gap: "6px" }}>
+                                    <span>{qty}x @</span>
+                                    {isFree ? (
+                                        <>
+                                            {Number(item.original_price ?? 0) > 0 && (
+                                                <span style={{ textDecoration: "line-through", color: "#94a3b8" }}>
+                                                    {fmtN(item.original_price)}
+                                                </span>
+                                            )}
+                                            <span style={{ color: "#059669", fontWeight: "bold" }}>GRATIS</span>
+                                        </>
+                                    ) : (
+                                        <span>{fmtN(item.unit_price)}</span>
+                                    )}
+                                </div>
+                            }
+                            right={
+                                isFree ? (
+                                    <span style={{ color: "#059669", fontWeight: "bold" }}>GRATIS</span>
+                                ) : (
+                                    fmtN(item.subtotal)
+                                )
+                            }
                             mono
                         />
                         {pkgs.map((p, j) => {
@@ -730,13 +752,27 @@ function InvoiceView({ sale, saleItems, payments, totalPaid, change, statusInfo 
                                     <p className="font-semibold text-sm">{name}</p>
                                     <p className="text-xs text-slate-500 mt-0.5">
                                         {qty} ×{" "}
-                                        {isFree
-                                            ? <span className="text-emerald-600 font-semibold">GRATIS</span>
-                                            : fmt(item.unit_price)
-                                        }
+                                        {isFree ? (
+                                            <span className="inline-flex items-center gap-1.5">
+                                                {Number(item.original_price ?? 0) > 0 && (
+                                                    <span className="text-slate-400 line-through font-normal">
+                                                        {fmt(item.original_price)}
+                                                    </span>
+                                                )}
+                                                <span className="text-emerald-600 font-semibold">GRATIS</span>
+                                            </span>
+                                        ) : (
+                                            fmt(item.unit_price)
+                                        )}
                                     </p>
                                 </div>
-                                <p className="font-bold text-sm flex-shrink-0">{fmt(item.subtotal)}</p>
+                                <p className="font-bold text-sm flex-shrink-0">
+                                    {isFree ? (
+                                        <span className="text-emerald-600 font-bold">GRATIS</span>
+                                    ) : (
+                                        fmt(item.subtotal)
+                                    )}
+                                </p>
                             </div>
                             {pkgs.length > 0 && (
                                 <div className="px-4 py-2 space-y-1 border-t border-slate-100 dark:border-slate-800">

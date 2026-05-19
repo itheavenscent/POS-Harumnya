@@ -2181,49 +2181,88 @@ export default function Index({
                                 </div>
                             ) : (
                                 <>
-                                    {carts.map(item => (
-                                        <div key={item.id} className={`rounded-xl p-3 transition-opacity ${removingId === item.id ? "opacity-40" : ""} ${item.is_custom_order ? "bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/50" : "bg-slate-50 dark:bg-slate-800/60"}`}>
-                                            <div className="flex items-start gap-2.5">
-                                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm ${item.is_custom_order ? "bg-amber-500" : "bg-gradient-to-br from-primary-500 to-primary-700"}`}>
-                                                    {item.is_custom_order ? <IconAdjustments size={15} className="text-white" /> : <IconBottle size={15} className="text-white" />}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                                        <p className="text-sm font-bold text-slate-800 dark:text-white leading-tight truncate">{item.variant?.name ?? "Parfum Custom"}</p>
-                                                        {item.is_custom_order && <span className="px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 text-[9px] font-black rounded flex-shrink-0">CUSTOM</span>}
+                                    {carts.map(item => {
+                                        const isPointReward = item.points_amount !== null && item.points_amount !== undefined;
+                                        return (
+                                            <div key={item.id} className={`rounded-xl p-3 transition-opacity ${removingId === item.id ? "opacity-40" : ""} ${isPointReward ? "bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 animate-pulse" : item.is_custom_order ? "bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/50" : "bg-slate-50 dark:bg-slate-800/60"}`}>
+                                                <div className="flex items-start gap-2.5">
+                                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm ${isPointReward ? "bg-emerald-500" : item.is_custom_order ? "bg-amber-500" : "bg-gradient-to-br from-primary-500 to-primary-700"}`}>
+                                                        {isPointReward ? <IconStar size={15} className="text-white" /> : item.is_custom_order ? <IconAdjustments size={15} className="text-white" /> : <IconBottle size={15} className="text-white" />}
                                                     </div>
-                                                    {item.is_custom_order ? (
-                                                        <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">
-                                                            {item.custom_oil_qty}ml oil · {item.custom_alcohol_qty ?? 0}ml alkohol
-                                                            <span className="ml-1.5 px-1 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-[9px] font-black rounded">alkohol gratis</span>
-                                                        </p>
-                                                    ) : (
-                                                        <p className="text-[11px] text-slate-400 mt-0.5">
-                                                            <span className="font-semibold text-primary-500">{item.intensity?.code}</span> · {item.size?.volume_ml}ml
-                                                        </p>
-                                                    )}
-                                                    {(item.packagings ?? []).length > 0 && (
-                                                        <div className="flex flex-wrap gap-1 mt-1">
-                                                            {item.packagings.map((p, pi) => (
-                                                                <span key={pi} className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${p.packaging_material?.is_free ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700" : "bg-orange-100 dark:bg-orange-900/40 text-orange-700"}`}>
-                                                                    {p.packaging_material?.name ?? "Kemasan"}{p.packaging_material?.is_free && " 🎁"}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    <div className="flex items-center justify-between mt-1.5">
-                                                        <div className="flex items-center gap-1">
-                                                            <button onClick={() => handleUpdateQty(item.id, item.qty - 1)} disabled={item.qty <= 1 || updatingId === item.id} className="w-6 h-6 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center hover:bg-slate-100 disabled:opacity-40 transition-colors shadow-sm"><IconMinus size={10} /></button>
-                                                            <span className="w-7 text-center text-sm font-bold text-slate-800 dark:text-white">{item.qty}</span>
-                                                            <button onClick={() => handleUpdateQty(item.id, item.qty + 1)} disabled={updatingId === item.id} className="w-6 h-6 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center hover:bg-slate-100 disabled:opacity-40 transition-colors shadow-sm"><IconPlus size={10} /></button>
-                                                        </div>
-                                                        <p className={`text-sm font-black ${item.is_custom_order ? "text-amber-600 dark:text-amber-400" : "text-primary-600 dark:text-primary-400"}`}>{fmt(getCartItemTotal(item))}</p>
+                                                    <div className="flex-1 min-w-0">
+                                                        {isPointReward ? (
+                                                            <>
+                                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                                    <p className="text-sm font-bold text-slate-800 dark:text-white leading-tight truncate">
+                                                                        {item.notes ?? `Reward: +${item.points_amount} Poin`}
+                                                                    </p>
+                                                                </div>
+                                                                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5 font-bold">
+                                                                    Poin ditambahkan otomatis setelah checkout
+                                                                </p>
+                                                                <div className="flex items-center justify-between mt-1.5">
+                                                                    <div className="flex items-center gap-1">
+                                                                        <span className="w-7 text-left text-sm font-bold text-slate-500 dark:text-slate-400">Qty: {item.qty}</span>
+                                                                    </div>
+                                                                    <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded">
+                                                                        🎁 GRATIS
+                                                                    </span>
+                                                                </div>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                                    <p className="text-sm font-bold text-slate-800 dark:text-white leading-tight truncate">{item.variant?.name ?? "Parfum Custom"}</p>
+                                                                    {item.is_custom_order && <span className="px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 text-[9px] font-black rounded flex-shrink-0">CUSTOM</span>}
+                                                                </div>
+                                                                {item.is_custom_order ? (
+                                                                    <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">
+                                                                        {item.custom_oil_qty}ml oil · {item.custom_alcohol_qty ?? 0}ml alkohol
+                                                                        <span className="ml-1.5 px-1 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-[9px] font-black rounded">alkohol gratis</span>
+                                                                    </p>
+                                                                ) : (
+                                                                    <p className="text-[11px] text-slate-400 mt-0.5">
+                                                                        <span className="font-semibold text-primary-500">{item.intensity?.code}</span> · {item.size?.volume_ml}ml
+                                                                    </p>
+                                                                )}
+                                                                {(item.packagings ?? []).length > 0 && (
+                                                                    <div className="flex flex-wrap gap-1 mt-1">
+                                                                        {item.packagings.map((p, pi) => (
+                                                                            <span key={pi} className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${p.packaging_material?.is_free ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700" : "bg-orange-100 dark:bg-orange-900/40 text-orange-700"}`}>
+                                                                                {p.packaging_material?.name ?? "Kemasan"}{p.packaging_material?.is_free && " 🎁"}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex items-center justify-between mt-1.5">
+                                                                    <div className="flex items-center gap-1">
+                                                                        <button onClick={() => handleUpdateQty(item.id, item.qty - 1)} disabled={item.qty <= 1 || updatingId === item.id} className="w-6 h-6 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center hover:bg-slate-100 disabled:opacity-40 transition-colors shadow-sm"><IconMinus size={10} /></button>
+                                                                        <span className="w-7 text-center text-sm font-bold text-slate-800 dark:text-white">{item.qty}</span>
+                                                                        <button onClick={() => handleUpdateQty(item.id, item.qty + 1)} disabled={updatingId === item.id} className="w-6 h-6 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center hover:bg-slate-100 disabled:opacity-40 transition-colors shadow-sm"><IconPlus size={10} /></button>
+                                                                    </div>
+                                                                    {Number(item.unit_price) === 0 ? (
+                                                                        <div className="flex flex-col items-end">
+                                                                            {Number(item.original_price ?? 0) > 0 && (
+                                                                                <span className="text-xs text-slate-400 dark:text-slate-500 line-through font-semibold">
+                                                                                    {fmt(Number(item.original_price) * item.qty)}
+                                                                                </span>
+                                                                            )}
+                                                                            <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                                                                🎁 GRATIS
+                                                                            </span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <p className={`text-sm font-black ${item.is_custom_order ? "text-amber-600 dark:text-amber-400" : "text-primary-600 dark:text-primary-400"}`}>{fmt(getCartItemTotal(item))}</p>
+                                                                    )}
+                                                                </div>
+                                                            </>
+                                                        )}
                                                     </div>
+                                                    <button onClick={() => handleRemove(item.id)} disabled={removingId === item.id} className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors flex-shrink-0"><IconTrash size={13} /></button>
                                                 </div>
-                                                <button onClick={() => handleRemove(item.id)} disabled={removingId === item.id} className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors flex-shrink-0"><IconTrash size={13} /></button>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
 
                                     {/* Kemasan standalone */}
                                     {cartPackagings.length > 0 && (
