@@ -12,12 +12,18 @@ class IngredientSupplierSeeder extends Seeder
     {
         $now = now();
 
+        // Clear existing records to ensure clean re-seeding in correct dependency order
+        DB::table('product_recipes')->delete();
+        DB::table('variant_recipes')->delete();
+        DB::table('ingredients')->delete();
+        DB::table('ingredient_categories')->delete();
+        DB::table('suppliers')->delete();
+
         // ── INGREDIENT CATEGORIES ─────────────────────────────────────────────
         $categories = [
             ['id' => Str::uuid()->toString(), 'code' => 'IC-001', 'name' => 'Fragrance Oil (Wanita)', 'ingredient_type' => 'oil', 'sort_order' => 1],
             ['id' => Str::uuid()->toString(), 'code' => 'IC-002', 'name' => 'Fragrance Oil (Pria)', 'ingredient_type' => 'oil', 'sort_order' => 2],
-            ['id' => Str::uuid()->toString(), 'code' => 'IC-003', 'name' => 'DPG (Pelarut Oil)', 'ingredient_type' => 'other', 'sort_order' => 3],
-            ['id' => Str::uuid()->toString(), 'code' => 'IC-004', 'name' => 'Alcohol', 'ingredient_type' => 'alcohol', 'sort_order' => 4],
+            ['id' => Str::uuid()->toString(), 'code' => 'IC-003', 'name' => 'Alcohol', 'ingredient_type' => 'alcohol', 'sort_order' => 3],
         ];
 
         foreach ($categories as $cat) {
@@ -84,9 +90,9 @@ class IngredientSupplierSeeder extends Seeder
         // Sumber: Sheet "Varian Oil" HPP_Harumnya.xlsx
         // Harga per mL dihitung dari Harga/1Kg ÷ 1000
         // Kategori: IC-001 = Fragrance Oil Wanita, IC-002 = Fragrance Oil Pria
-        //           IC-003 = DPG, IC-004 = Alcohol 99%
+        //           IC-003 = Alcohol 99%
 
-        [$foWId, $foMId, $dpgId, $alcId] = array_column($categories, 'id');
+        [$foWId, $foMId, $alcId] = array_column($categories, 'id');
 
         // Format: [category_id, code, name, unit, average_cost_per_ml]
         // average_cost = Harga/1Kg ÷ 1000 (konversi ke per mL)
@@ -179,13 +185,10 @@ class IngredientSupplierSeeder extends Seeder
             [$foMId, 'ING-FO-M023', 'Black Aigner FO', 'ml', round(672000 / 1000, 4)],
             [$foMId, 'ING-FO-M024', 'Creed Aventus FO', 'ml', round(850000 / 1000, 4)],
 
-            // ── DPG (Dipropylene Glycol) — pelarut fragrance oil ──────────────
-            // Sumber: Sheet "Material & Packing" → 1 L DPG = Rp 47,500 → Rp 47.5/ml
-            [$dpgId, 'ING-DPG-001', 'Dipropylene Glycol (DPG)', 'ml', 47.5000],
-
             // ── Alcohol 99% — pelarut ─────────────────────────────────────────
             // Sumber: Sheet "Material & Packing" → Alcohol (99%) = Rp 19.6/ml
             [$alcId, 'ING-AL-001', 'Ethanol 99%', 'ml', 19.6000],
+            [$alcId, 'ING-MET-001', 'Metanol', 'ml', 15.0000],
         ];
 
         foreach ($ingredients as [$catId, $code, $name, $unit, $avgCost]) {

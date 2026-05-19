@@ -27,6 +27,10 @@ class ProductSeeder extends Seeder
     {
         $now = now();
 
+        // Clear existing products and product recipes to allow clean, idempotent re-seeding
+        DB::table('product_recipes')->delete();
+        DB::table('products')->delete();
+
         $variants    = DB::table('variants')->where('is_active', true)->get();
         $intensities = DB::table('intensities')->where('is_active', true)->get();
         $sizes       = DB::table('sizes')->where('is_active', true)->get();
@@ -76,7 +80,10 @@ class ProductSeeder extends Seeder
                     }
 
                     // Harga jual dari intensity_size_prices
-                    $sellingPrice = $ispMap[$intensity->id][$size->id] ?? 0;
+                    if (!isset($ispMap[$intensity->id][$size->id]) || $ispMap[$intensity->id][$size->id] <= 0) {
+                        continue;
+                    }
+                    $sellingPrice = $ispMap[$intensity->id][$size->id];
 
                     // Skala dari base 30ml ke ukuran aktual
                     $scale = $size->volume_ml / 30;

@@ -21,6 +21,7 @@ class IntensitySeeder extends Seeder
             $this->command->info('Seeding Sizes...');
 
             $sizesData = [
+                ['volume' => 10, 'name' => '10 mL', 'sort_order' => 0],
                 ['volume' => 30, 'name' => '30 mL', 'sort_order' => 1],
                 ['volume' => 50, 'name' => '50 mL', 'sort_order' => 2],
                 ['volume' => 100, 'name' => '100 mL', 'sort_order' => 3],
@@ -79,6 +80,13 @@ class IntensitySeeder extends Seeder
                     'alcohol_ratio' => '1:2',
                     'sort_order' => 3,
                 ],
+                [
+                    'code' => 'PURE',
+                    'name' => 'Pure (100% Oil)',
+                    'oil_ratio' => '1:0',
+                    'alcohol_ratio' => '0:1',
+                    'sort_order' => 4,
+                ],
             ];
 
             $intensityMap = []; // code => id
@@ -127,6 +135,9 @@ class IntensitySeeder extends Seeder
             $this->command->info('Seeding Intensity Size Prices & Quantities...');
 
             $matrix = [
+                'PURE' => [
+                    10 => ['price' => 30000, 'oil' => 10, 'alc' => 0],
+                ],
                 'EDT' => [
                     30 => ['price' => 30000, 'oil' => 10, 'alc' => 20],
                     50 => ['price' => 48000, 'oil' => 16, 'alc' => 34],
@@ -143,6 +154,10 @@ class IntensitySeeder extends Seeder
                     100 => ['price' => 198000, 'oil' => 67, 'alc' => 33],
                 ],
             ];
+
+            // Clear existing records to ensure updated matrix is fully applied
+            DB::table('intensity_size_prices')->delete();
+            DB::table('intensity_size_quantities')->delete();
 
             foreach ($matrix as $code => $sizes) {
                 $intensityId = $intensityMap[$code] ?? null;

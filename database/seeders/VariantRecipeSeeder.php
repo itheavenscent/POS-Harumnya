@@ -31,9 +31,13 @@ class VariantRecipeSeeder extends Seeder
     {
         $now = now();
 
-        $edt = DB::table('intensities')->where('code', 'EDT')->first();
-        $edp = DB::table('intensities')->where('code', 'EDP')->first();
-        $ext = DB::table('intensities')->where('code', 'EXT')->first();
+        // Clear existing variant recipes to allow clean, idempotent re-seeding
+        DB::table('variant_recipes')->delete();
+
+        $edt  = DB::table('intensities')->where('code', 'EDT')->first();
+        $edp  = DB::table('intensities')->where('code', 'EDP')->first();
+        $ext  = DB::table('intensities')->where('code', 'EXT')->first();
+        $pure = DB::table('intensities')->where('code', 'PURE')->first();
 
         if (!$edt || !$edp || !$ext) {
             $this->command->error('Intensities belum ada.');
@@ -42,20 +46,22 @@ class VariantRecipeSeeder extends Seeder
 
         $ingMap = DB::table('ingredients')->get()->keyBy('code');
         $alcIng = $ingMap['ING-AL-001'] ?? null;
-        $dpgIng = $ingMap['ING-DPG-001'] ?? null;
 
-        if (!$alcIng || !$dpgIng) {
-            $this->command->error('Ingredients ING-AL-001 atau ING-DPG-001 tidak ditemukan.');
+        if (!$alcIng) {
+            $this->command->error('Ingredients ING-AL-001 tidak ditemukan.');
             return;
         }
 
-        // Qty campuran FO+DPG dan Alkohol per intensity (base 30ml)
-        // FO = 75% dari mixture, DPG = 25%
+        // Qty Fragrance Oil dan Alkohol per intensity (base 30ml)
         $intensityQty = [
-            'EDT' => ['mixture' => 10, 'alc' => 20, 'id' => $edt->id],
-            'EDP' => ['mixture' => 15, 'alc' => 15, 'id' => $edp->id],
-            'EXT' => ['mixture' => 20, 'alc' => 10, 'id' => $ext->id],
+            'EDT' => ['oil' => 10, 'alc' => 20, 'id' => $edt->id],
+            'EDP' => ['oil' => 15, 'alc' => 15, 'id' => $edp->id],
+            'EXT' => ['oil' => 20, 'alc' => 10, 'id' => $ext->id],
         ];
+
+        if ($pure) {
+            $intensityQty['PURE'] = ['oil' => 30, 'alc' => 0, 'id' => $pure->id];
+        }
 
         // ─────────────────────────────────────────────────────────────────────
         // Mapping: variant code (SKU BARU) → ingredient code FO
@@ -94,7 +100,6 @@ class VariantRecipeSeeder extends Seeder
             'JPS'   => 'ING-FO-W031', // Scandal
             'POPY'  => 'ING-FO-W018', // Scarlet Poppy
             'JME'   => 'ING-FO-W037', // JME Persia IBC CV (English Pear Freesia)
-            'JMP'   => 'ING-FO-W048', // Jmp Peony Blush
             'VIVA'  => 'ING-FO-W054', // Viva La Juicy LZ
             'EDEN'  => 'ING-FO-W013', // Eden Sparkling
             'CANDY' => 'ING-FO-W002', // Vanilla Candy Rock
@@ -175,18 +180,16 @@ class VariantRecipeSeeder extends Seeder
 
             foreach ($intensityQty as $intCode => $qty) {
                 $intensityId = $qty['id'];
-                $mixQty      = $qty['mixture'];
+                $foQty       = $qty['oil'];
                 $alcQty      = $qty['alc'];
 
-                // FO = 75% dari mixture, DPG = sisa (25%)
-                $foQty  = (int) round($mixQty * 0.75);
-                $dpgQty = $mixQty - $foQty;
-
                 $lines = [
-                    ['ingredient_id' => $foIng->id,   'qty' => $foQty,  'notes' => 'Fragrance Oil (75% dari campuran FO+DPG)'],
-                    ['ingredient_id' => $dpgIng->id,  'qty' => $dpgQty, 'notes' => 'DPG — pelarut fragrance oil (25%)'],
-                    ['ingredient_id' => $alcIng->id,  'qty' => $alcQty, 'notes' => 'Ethanol 99% — pelarut utama'],
+                    ['ingredient_id' => $foIng->id,   'qty' => $foQty,  'notes' => 'Fragrance Oil — konsentrat utama'],
                 ];
+
+                if ($alcQty > 0) {
+                    $lines[] = ['ingredient_id' => $alcIng->id,  'qty' => $alcQty, 'notes' => 'Ethanol 99% — pelarut utama'];
+                }
 
                 foreach ($lines as $line) {
                     $exists = DB::table('variant_recipes')

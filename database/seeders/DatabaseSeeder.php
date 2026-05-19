@@ -42,7 +42,7 @@ class DatabaseSeeder extends Seeder
 
             // ── 08. Pembelian & Stok Awal ─────────────────────────────────────
             // PurchaseSeeder::class,           // purchases + purchase_items + stock_movements
-            // StockSeeder::class,              // warehouse/store stock snapshots
+            StockSeeder::class,              // warehouse/store stock snapshots
 
             // ── 09. Promo & Diskon ────────────────────────────────────────────
             DiscountSeeder::class,

@@ -36,11 +36,13 @@ class DiscountSeeder extends Seeder
         $size100 = DB::table('sizes')->where('volume_ml', 100)->first();
         $size50  = DB::table('sizes')->where('volume_ml', 50)->first();
         $size30  = DB::table('sizes')->where('volume_ml', 30)->first();
+        $size10  = DB::table('sizes')->where('volume_ml', 10)->first();
         $intEDT  = DB::table('intensities')->where('code', 'EDT')->first();
         $intEDP  = DB::table('intensities')->where('code', 'EDP')->first();
         $intEXT  = DB::table('intensities')->where('code', 'EXT')->first();
+        $intPURE = DB::table('intensities')->where('code', 'PURE')->first();
 
-        if (!$size100 || !$size50 || !$size30 || !$intEDT) {
+        if (!$size100 || !$size50 || !$size30 || !$intEDT || !$intPURE) {
             $this->command->error('Master data sizes/intensities belum ada. Jalankan IntensitySeeder terlebih dahulu.');
             return;
         }
@@ -49,16 +51,27 @@ class DiscountSeeder extends Seeder
         $s50  = $size50->id;
         $s30  = $size30->id;
         $edt  = $intEDT->id;
+        $pure = $intPURE->id;
 
-        // ── Guard: idempotent ─────────────────────────────────────────────────
-        $existing = DB::table('discount_types')
-            ->whereIn('code', ['SPINWHEEL', 'POIN-MEMBER'])
-            ->count();
-
-        if ($existing > 0) {
-            $this->command->warn('DiscountSeeder: data sudah ada, skip.');
-            return;
+        // Ensure 10 mL size exists
+        if (!$size10) {
+            $s10Id = Str::uuid()->toString();
+            DB::table('sizes')->insert([
+                'id' => $s10Id,
+                'volume_ml' => 10,
+                'name' => '10 mL',
+                'sort_order' => 0,
+                'is_active' => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            $s10 = $s10Id;
+        } else {
+            $s10 = $size10->id;
         }
+
+        // Clean old promo data to make it idempotent and cleanly refreshable
+        DB::table('discount_types')->whereIn('code', ['SPINWHEEL', 'POIN-MEMBER'])->delete();
 
         DB::beginTransaction();
 
@@ -89,12 +102,12 @@ class DiscountSeeder extends Seeder
                 'priority'              => 10,
                 'is_combinable'         => false,
                 'is_active'             => true,
-                'description'           => 'Gratis 1x Spin Wheel untuk setiap: beli ≥3 botol P30, atau ≥2 botol P50, atau ≥1 botol P100 (semua intensitas & varian). Hadiah: P30 EDT (pilih varian + botol) atau P10 EDT (pilih varian + botol spray).',
+                'description'           => 'Gratis 1x Spin Wheel untuk setiap: beli ≥3 botol P30, atau ≥2 botol P50, atau ≥1 botol P100 (semua intensitas & varian). Hadiah: Parfum 10 mL all variant, Parfum 30 mL all variant, atau 1 Poin Member.',
                 'terms_conditions'      => json_encode([
                     'Syarat: beli ≥3 botol P30 ATAU ≥2 botol P50 ATAU ≥1 botol P100',
                     'Berlaku semua intensitas (EDT/EDP/EXT) dan semua varian',
                     'Gratis 1x spin Spin Wheel per transaksi yang memenuhi syarat',
-                    'Hadiah spin: P30 EDT pilih varian + Botol, atau P10 EDT pilih varian + Botol Spray',
+                    'Hadiah spin: Parfum 10 mL all variant, Parfum 30 mL all variant, atau 1 Poin Member',
                     'Hadiah tidak dapat ditukar uang tunai',
                 ]),
                 'created_at'            => $now,
@@ -159,19 +172,46 @@ class DiscountSeeder extends Seeder
                 'updated_at'          => $now,
             ]);
 
-            // Pool items: P30 EDT pilih varian + Botol (50%), P10 EDT pilih varian + Botol Spray (50%)
+            // Pool items: Parfum 10 mL all variant, Parfum 30 mL all variant, 1 Poin Member
             $spinItems = [
-                ['label' => 'P30 EDT (Pilih Varian + Botol)',        'probability' => 50, 'sort_order' => 1],
-                ['label' => 'P10 EDT (Pilih Varian + Botol Spray)',  'probability' => 50, 'sort_order' => 2],
+                [
+                    'label'         => 'Parfum 10 mL (Pilih Varian)',
+                    'reward_type'   => 'variant',
+                    'points_amount' => null,
+                    'intensity_id'  => $pure,
+                    'size_id'       => $s10,
+                    'probability'   => 33,
+                    'sort_order'    => 1
+                ],
+                [
+                    'label'         => 'Parfum 30 mL (Pilih Varian)',
+                    'reward_type'   => 'variant',
+                    'points_amount' => null,
+                    'intensity_id'  => $edt,
+                    'size_id'       => $s30,
+                    'probability'   => 33,
+                    'sort_order'    => 2
+                ],
+                [
+                    'label'         => '1 Poin Member',
+                    'reward_type'   => 'points',
+                    'points_amount' => 1,
+                    'intensity_id'  => null,
+                    'size_id'       => null,
+                    'probability'   => 34,
+                    'sort_order'    => 3
+                ],
             ];
             foreach ($spinItems as $item) {
                 DB::table('discount_reward_pools')->insert([
                     'id'                 => Str::uuid(),
                     'discount_reward_id' => $rwSpin,
+                    'reward_type'        => $item['reward_type'],
+                    'points_amount'      => $item['points_amount'],
                     'product_id'         => null,
                     'variant_id'         => null,
-                    'intensity_id'       => $edt,
-                    'size_id'            => $item['sort_order'] === 1 ? $s30 : null, // P10 belum ada di sizes
+                    'intensity_id'       => $item['intensity_id'],
+                    'size_id'            => $item['size_id'],
                     'label'              => $item['label'],
                     'image_url'          => null,
                     'fixed_price'        => 0.00,

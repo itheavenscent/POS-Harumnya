@@ -12,6 +12,10 @@ class PackagingSeeder extends Seeder
     {
         $now = now();
 
+        // Clear existing packaging categories and materials to allow clean, idempotent re-seeding
+        DB::table('packaging_materials')->delete();
+        DB::table('packaging_categories')->delete();
+
         /*
         |--------------------------------------------------------------------------
         | PACKAGING CATEGORIES
@@ -62,7 +66,7 @@ class PackagingSeeder extends Seeder
             // ── Botol Roll On 10ml ────────────────────────────────────────────
             [
                 'packaging_category_id' => $botolCat,
-                'code'                  => 'PKG-BOT-ROLL',
+                'code'                  => 'ROLL',
                 'name'                  => 'Botol Roll On 10ml',
                 'purchase_price'        => 2000.00,   // estimasi HPP
                 'selling_price'         => 3000.00,   // dari sheet HARGA
@@ -72,7 +76,7 @@ class PackagingSeeder extends Seeder
             // ── Botol 30ml — beberapa tipe, harga jual sama Rp 7.500 ─────────
             [
                 'packaging_category_id' => $botolCat,
-                'code'                  => 'PKG-BOT-LD',
+                'code'                  => 'LD',
                 'name'                  => 'Botol Lady 30ml',
                 'purchase_price'        => 5600.00,
                 'selling_price'         => 7500.00,
@@ -81,7 +85,7 @@ class PackagingSeeder extends Seeder
             ],
             [
                 'packaging_category_id' => $botolCat,
-                'code'                  => 'PKG-BOT-PRI',
+                'code'                  => 'PRI',
                 'name'                  => 'Botol Prisma 30ml',
                 'purchase_price'        => 5600.00,
                 'selling_price'         => 7500.00,
@@ -90,7 +94,7 @@ class PackagingSeeder extends Seeder
             ],
             [
                 'packaging_category_id' => $botolCat,
-                'code'                  => 'PKG-BOT-GD',
+                'code'                  => 'GD',
                 'name'                  => 'Botol Golden Drop 30ml',
                 'purchase_price'        => 5600.00,
                 'selling_price'         => 7500.00,
@@ -100,7 +104,7 @@ class PackagingSeeder extends Seeder
             // ── Botol 50ml ────────────────────────────────────────────────────
             [
                 'packaging_category_id' => $botolCat,
-                'code'                  => 'PKG-BOT-OR',
+                'code'                  => 'OR',
                 'name'                  => 'Botol Orion 50ml',
                 'purchase_price'        => 7500.00,
                 'selling_price'         => 10000.00,
@@ -109,7 +113,7 @@ class PackagingSeeder extends Seeder
             ],
             [
                 'packaging_category_id' => $botolCat,
-                'code'                  => 'PKG-BOT-HEX',
+                'code'                  => 'HEX',
                 'name'                  => 'Botol Hexagon 50ml',
                 'purchase_price'        => 7500.00,
                 'selling_price'         => 10000.00,
@@ -119,7 +123,7 @@ class PackagingSeeder extends Seeder
             // ── Botol 100ml ───────────────────────────────────────────────────
             [
                 'packaging_category_id' => $botolCat,
-                'code'                  => 'PKG-BOT-PER',
+                'code'                  => 'PER',
                 'name'                  => 'Botol Persegi 100ml',
                 'purchase_price'        => 11000.00,
                 'selling_price'         => 15000.00,
@@ -171,8 +175,8 @@ class PackagingSeeder extends Seeder
             // Sumber: Sheet "PRODUK" → Produk Free: Spunbond Kecil (SBM) & Besar (SBL)
             [
                 'packaging_category_id' => $spunbondCat,
-                'code'                  => 'PKG-SBM',
-                'name'                  => 'Spunbond Kecil',
+                'code'                  => 'SBM',
+                'name'                  => 'Spunbond',
                 'purchase_price'        => 1500.00,
                 'selling_price'         => 0.00,
                 'is_available_as_addon' => false,
@@ -180,7 +184,7 @@ class PackagingSeeder extends Seeder
             ],
             [
                 'packaging_category_id' => $spunbondCat,
-                'code'                  => 'PKG-SBL',
+                'code'                  => 'SBL',
                 'name'                  => 'Spunbond Besar',
                 'purchase_price'        => 2500.00,
                 'selling_price'         => 0.00,
