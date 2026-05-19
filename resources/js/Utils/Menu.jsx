@@ -269,15 +269,6 @@ export default function Menu() {
             title: "Transaksi",
             details: [
                 {
-                    title: "Transaksi",
-                    href: route("transactions.index"),
-                    active:
-                        url.startsWith("/dashboard/transactions") &&
-                        !url.startsWith("/dashboard/transactions/history"),
-                    icon: <IconShoppingCart size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["transactions-access"]),
-                },
-                {
                     title: "Riwayat Transaksi",
                     href: route("transactions.history"),
                     active: url === "/dashboard/transactions/history",
