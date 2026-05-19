@@ -113,8 +113,8 @@ class PurchaseSeeder extends Seeder
             ['type' => 'packaging', 'code' => 'PKG-BOT-100', 'qty' => 200, 'price' => 15000.00],
             ['type' => 'packaging', 'code' => 'PKG-TTP-30',  'qty' => 400, 'price' =>  2000.00],
             ['type' => 'packaging', 'code' => 'PKG-TTP-50',  'qty' => 600, 'price' =>  2500.00],
-            ['type' => 'packaging', 'code' => 'PKG-PB-S',    'qty' => 300, 'price' =>  3000.00],
-            ['type' => 'packaging', 'code' => 'PKG-PB-M',    'qty' => 200, 'price' =>  5000.00],
+            ['type' => 'packaging', 'code' => 'PKG-SB-S',    'qty' => 300, 'price' =>  3000.00],
+            ['type' => 'packaging', 'code' => 'PKG-SB-M',    'qty' => 200, 'price' =>  5000.00],
             ['type' => 'packaging', 'code' => 'PKG-GC-STD',  'qty' => 400, 'price' =>  2000.00],
             ['type' => 'packaging', 'code' => 'PKG-GC-PRM',  'qty' => 150, 'price' =>  5000.00],
         ], $ingredients, $packagings, $warehouse->id, 'warehouse', $now);
@@ -168,7 +168,7 @@ class PurchaseSeeder extends Seeder
         ], [
             ['type' => 'packaging', 'code' => 'PKG-BOT-50',  'qty' => 300, 'price' => 10000.00],
             ['type' => 'packaging', 'code' => 'PKG-BOT-100', 'qty' => 150, 'price' => 15000.00],
-            ['type' => 'packaging', 'code' => 'PKG-PB-M',    'qty' => 200, 'price' =>  5000.00],
+            ['type' => 'packaging', 'code' => 'PKG-SB-M',    'qty' => 200, 'price' =>  5000.00],
         ], $ingredients, $packagings, $warehouse->id, 'warehouse', $now, false); // false = jangan buat stock movements
 
         $this->command->info('✓ Purchases seeded (4 completed + 1 approved).');

@@ -1878,8 +1878,8 @@ export default function Index({
                                         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-6 group-hover:scale-110 transition-transform">
                                             <IconShoppingBag size={32} className="text-white" />
                                         </div>
-                                        <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">Paperbag</h3>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Pilihan tas kertas eksklusif untuk kemasan akhir.</p>
+                                        <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">Spunbond</h3>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Pilihan tas spunbond eksklusif untuk kemasan akhir.</p>
                                         <div className="mt-6 flex items-center gap-1.5 text-emerald-600 font-bold text-sm">
                                             Buka Katalog <IconChevronRight size={16} />
                                         </div>
@@ -1985,7 +1985,7 @@ export default function Index({
                             <div className="flex-1 overflow-y-auto p-4">
                                 {(() => {
                                     const items = packagingMaterials.filter(pkg => {
-                                        const isPaperbag = pkg.name.toLowerCase().includes('paper bag') || pkg.name.toLowerCase().includes('paperbag');
+                                        const isPaperbag = pkg.name.toLowerCase().includes('paper bag') || pkg.name.toLowerCase().includes('paperbag') || pkg.name.toLowerCase().includes('spunbond');
                                         return selectedCategory === 'paperbag' ? isPaperbag : !isPaperbag;
                                     });
 

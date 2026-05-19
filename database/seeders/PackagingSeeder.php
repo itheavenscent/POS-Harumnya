@@ -23,9 +23,8 @@ class PackagingSeeder extends Seeder
         */
         $categories = [
             ['id' => Str::uuid(), 'code' => 'PC-001', 'name' => 'Botol', 'sort_order' => 1],
-            ['id' => Str::uuid(), 'code' => 'PC-002', 'name' => 'Paper Bag', 'sort_order' => 2],
-            ['id' => Str::uuid(), 'code' => 'PC-003', 'name' => 'Gift Card', 'sort_order' => 3],
-            ['id' => Str::uuid(), 'code' => 'PC-004', 'name' => 'Spunbond', 'sort_order' => 4],
+            ['id' => Str::uuid(), 'code' => 'PC-002', 'name' => 'Gift Card', 'sort_order' => 2],
+            ['id' => Str::uuid(), 'code' => 'PC-003', 'name' => 'Spunbond', 'sort_order' => 3],
         ];
 
         foreach ($categories as $cat) {
@@ -60,7 +59,7 @@ class PackagingSeeder extends Seeder
         |   100 mL → purchase ~11.000
         |--------------------------------------------------------------------------
         */
-        [$botolCat, $paperBagCat, $giftCardCat, $spunbondCat] = array_column($categories, 'id');
+        [$botolCat, $giftCardCat, $spunbondCat] = array_column($categories, 'id');
 
         $materials = [
             // ── Botol Roll On 10ml ────────────────────────────────────────────
@@ -131,26 +130,6 @@ class PackagingSeeder extends Seeder
                 'sort_order'            => 6,
             ],
 
-            // ── Paper Bag (Add-on) ────────────────────────────────────────────
-            [
-                'packaging_category_id' => $paperBagCat,
-                'code'                  => 'PKG-PB-S',
-                'name'                  => 'Paper Bag Small - Premium',
-                'purchase_price'        => 3000.00,
-                'selling_price'         => 5000.00,
-                'is_available_as_addon' => true,
-                'sort_order'            => 1,
-            ],
-            [
-                'packaging_category_id' => $paperBagCat,
-                'code'                  => 'PKG-PB-M',
-                'name'                  => 'Paper Bag Medium - Premium',
-                'purchase_price'        => 5000.00,
-                'selling_price'         => 8000.00,
-                'is_available_as_addon' => true,
-                'sort_order'            => 2,
-            ],
-
             // ── Gift Card (Add-on) ────────────────────────────────────────────
             [
                 'packaging_category_id' => $giftCardCat,
@@ -171,25 +150,44 @@ class PackagingSeeder extends Seeder
                 'sort_order'            => 2,
             ],
 
-            // ── Spunbond (Produk Free / Promo) ────────────────────────────────
-            // Sumber: Sheet "PRODUK" → Produk Free: Spunbond Kecil (SBM) & Besar (SBL)
+            // ── Spunbond (Add-on / Paid) ──────────────────────────────────────
             [
                 'packaging_category_id' => $spunbondCat,
-                'code'                  => 'SBM',
-                'name'                  => 'Spunbond',
-                'purchase_price'        => 1500.00,
-                'selling_price'         => 0.00,
-                'is_available_as_addon' => false,
+                'code'                  => 'PKG-SB-S',
+                'name'                  => 'Spunbond Kecil',
+                'purchase_price'        => 3000.00,
+                'selling_price'         => 5000.00,
+                'is_available_as_addon' => true,
                 'sort_order'            => 1,
             ],
             [
                 'packaging_category_id' => $spunbondCat,
+                'code'                  => 'PKG-SB-M',
+                'name'                  => 'Spunbond Sedang',
+                'purchase_price'        => 5000.00,
+                'selling_price'         => 8000.00,
+                'is_available_as_addon' => true,
+                'sort_order'            => 2,
+            ],
+
+            // ── Spunbond (Free / Promo) ──────────────────────────────────────
+            [
+                'packaging_category_id' => $spunbondCat,
+                'code'                  => 'SBM',
+                'name'                  => 'Spunbond Free',
+                'purchase_price'        => 1500.00,
+                'selling_price'         => 0.00,
+                'is_available_as_addon' => false,
+                'sort_order'            => 3,
+            ],
+            [
+                'packaging_category_id' => $spunbondCat,
                 'code'                  => 'SBL',
-                'name'                  => 'Spunbond Besar',
+                'name'                  => 'Spunbond Besar Free',
                 'purchase_price'        => 2500.00,
                 'selling_price'         => 0.00,
                 'is_available_as_addon' => false,
-                'sort_order'            => 2,
+                'sort_order'            => 4,
             ],
         ];
 
