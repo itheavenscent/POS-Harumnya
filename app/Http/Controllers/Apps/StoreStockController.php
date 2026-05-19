@@ -37,10 +37,10 @@ class StoreStockController extends Controller
                 ])
                 ->when($request->search, fn ($q, $s) =>
                     $q->whereHas('ingredient', fn ($q) =>
-                        $q->where('name', 'like', "%{$s}%")
-                          ->orWhere('code', 'like', "%{$s}%")
+                        $q->where('name', 'ilike', "%{$s}%")
+                          ->orWhere('code', 'ilike', "%{$s}%")
                     )->orWhereHas('store', fn ($q) =>
-                        $q->where('name', 'like', "%{$s}%")
+                        $q->where('name', 'ilike', "%{$s}%")
                     )
                 )
                 ->when($restrictedStoreId, fn ($q, $id) => $q->where('store_id', $id))
@@ -69,10 +69,10 @@ class StoreStockController extends Controller
                 ])
                 ->when($request->search, fn ($q, $s) =>
                     $q->whereHas('packagingMaterial', fn ($q) =>
-                        $q->where('name', 'like', "%{$s}%")
-                          ->orWhere('code', 'like', "%{$s}%")
+                        $q->where('name', 'ilike', "%{$s}%")
+                          ->orWhere('code', 'ilike', "%{$s}%")
                     )->orWhereHas('store', fn ($q) =>
-                        $q->where('name', 'like', "%{$s}%")
+                        $q->where('name', 'ilike', "%{$s}%")
                     )
                 )
                 ->when($restrictedStoreId, fn ($q, $id) => $q->where('store_id', $id))

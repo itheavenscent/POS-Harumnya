@@ -24,13 +24,12 @@ class WarehouseStockController extends Controller
                     'ingredient:id,name,code,unit',
                 ])
                 ->when($request->search, function ($q, $s) {
-                    // BUG FIX: tambahkan return agar scope benar-benar diterapkan
                     $q->where(function ($q) use ($s) {
                         $q->whereHas('ingredient', fn ($q) =>
-                            $q->where('name', 'like', "%{$s}%")
-                              ->orWhere('code', 'like', "%{$s}%")
+                            $q->where('name', 'ilike', "%{$s}%")
+                              ->orWhere('code', 'ilike', "%{$s}%")
                         )->orWhereHas('warehouse', fn ($q) =>
-                            $q->where('name', 'like', "%{$s}%")
+                            $q->where('name', 'ilike', "%{$s}%")
                         );
                     });
                 })
@@ -67,10 +66,10 @@ class WarehouseStockController extends Controller
                 ->when($request->search, function ($q, $s) {
                     $q->where(function ($q) use ($s) {
                         $q->whereHas('packagingMaterial', fn ($q) =>
-                            $q->where('name', 'like', "%{$s}%")
-                              ->orWhere('code', 'like', "%{$s}%")
+                            $q->where('name', 'ilike', "%{$s}%")
+                              ->orWhere('code', 'ilike', "%{$s}%")
                         )->orWhereHas('warehouse', fn ($q) =>
-                            $q->where('name', 'like', "%{$s}%")
+                            $q->where('name', 'ilike', "%{$s}%")
                         );
                     });
                 })

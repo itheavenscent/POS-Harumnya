@@ -19,7 +19,7 @@ class CategoryController extends Controller
     {
         //get categories
         $categories = Category::when(request()->search, function ($categories) {
-            $categories = $categories->where('name', 'like', '%' . request()->search . '%');
+            $categories = $categories->where('name', 'ilike', '%' . request()->search . '%');
         })->latest()->paginate(2);
 
         //return inertia

@@ -29,11 +29,10 @@ class UserController extends Controller
         $users = User::query()
             ->with(['roles:id,name', 'store:id,name', 'warehouse:id,name'])
             // FIX: Grouped where untuk search agar OR tidak merusak filter lain
-            ->when($request->filled('search'), function ($query) use ($request) {
-                $search = $request->search;
+            ->when($request->search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
+                    $q->where('name', 'ilike', "%{$search}%")
+                      ->orWhere('email', 'ilike', "%{$search}%");
                 });
             })
             ->when($request->filled('role'), function ($query) use ($request) {

@@ -14,7 +14,7 @@ export default function Form({ customer = null }) {
         email: customer?.email || "",
         phone: customer?.phone || "",
         address: customer?.address || "",
-        birth_date: customer?.birth_date || "",
+        birth_date: customer?.birth_date ? customer.birth_date.substring(0, 10) : "",
         gender: customer?.gender || "male",
         points: customer?.points || 0,
         is_active: customer?.is_active ?? true,

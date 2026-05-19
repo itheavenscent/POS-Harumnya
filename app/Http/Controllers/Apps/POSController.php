@@ -722,9 +722,9 @@ class POSController extends Controller
             ->where('is_active', true)
             ->when($q, fn($query) => $query->where(
                 fn($inner) =>
-                $inner->where('name', 'like', "%{$q}%")
-                    ->orWhere('phone', 'like', "%{$q}%")
-                    ->orWhere('code', 'like', "%{$q}%")
+                $inner->where('name', 'ilike', "%{$q}%")
+                    ->orWhere('phone', 'ilike', "%{$q}%")
+                    ->orWhere('code', 'ilike', "%{$q}%")
             ))
             ->orderBy('name')
             ->limit(20)

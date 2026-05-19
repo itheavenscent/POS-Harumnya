@@ -392,14 +392,15 @@ class TransactionController extends Controller
         }
         if ($request->filled('sale_number')) {
             $q = $request->sale_number;
-            $query->where('sale_number', 'like', "%{$q}%");
+            $query->where('sale_number', 'ilike', "%{$q}%");
         }
         if ($request->filled('q')) {
             $q = $request->q;
             $query->where(
                 fn($inner) =>
-                $inner->where('sale_number', 'like', "%{$q}%")
-                    ->orWhere('customer_name', 'like', "%{$q}%")
+                $inner->where('sale_number', 'ilike', "%{$q}%")
+                    ->orWhere('customer_name', 'ilike', "%{$q}%")
+                    ->orWhereHas('customer', fn($c) => $c->where('name', 'ilike', "%{$q}%"))
             );
         }
 

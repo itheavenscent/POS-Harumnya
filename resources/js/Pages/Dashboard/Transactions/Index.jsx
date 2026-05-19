@@ -1680,7 +1680,7 @@ export default function Index({
     const handleCheckout = () => { if (!carts.length) { toast.error("Keranjang kosong"); return; } setShowPaymentModal(true); };
 
     const handleSubmit = () => {
-        if (!selectedCustomer?.id) { toast.error("Pelanggan wajib dipilih!"); return; }
+        if (!selectedCustomer) { toast.error("Pelanggan wajib dipilih!"); return; }
         if (!selectedSalesPerson?.id) { toast.error("Sales wajib dipilih!"); return; }
         if (isCash && cash < payable) { toast.error("Jumlah bayar kurang dari total"); return; }
         setIsSubmitting(true);

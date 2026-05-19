@@ -22,8 +22,8 @@ class PaymentMethodController extends Controller
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('code', 'like', "%{$search}%");
+                    $q->where('name', 'ilike', "%{$search}%")
+                      ->orWhere('code', 'ilike', "%{$search}%");
                 });
             })
             ->when($request->filled('type'), fn ($q) => $q->where('type', $request->type))

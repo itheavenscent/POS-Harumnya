@@ -366,10 +366,6 @@ export default function PrintShift({ drawer, summary }) {
     const [printMsg, setPrintMsg] = useState(null);
     const bt = useBluetooth();
 
-    useEffect(() => {
-        const timer = setTimeout(() => { window.print(); }, 800);
-        return () => clearTimeout(timer);
-    }, []);
 
     const handleBtPrint = async () => {
         setPrinting(true);

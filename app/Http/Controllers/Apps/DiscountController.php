@@ -27,8 +27,8 @@ class DiscountController extends Controller
             ->when($request->filled('search'), function ($q) use ($request) {
                 $search = '%' . $request->search . '%';
                 $q->where(function ($inner) use ($search) {
-                    $inner->where('name', 'like', $search)
-                          ->orWhere('code', 'like', $search);
+                    $inner->where('name', 'ilike', $search)
+                          ->orWhere('code', 'ilike', $search);
                 });
             })
             ->when($request->filled('type'), fn ($q) => $q->where('type', $request->type))

@@ -79,7 +79,7 @@ class Supplier extends Model
               ->orWhereRaw('LOWER(code) LIKE ?', [$kw])
               ->orWhereRaw('LOWER(email) LIKE ?', [$kw])
               ->orWhereRaw('LOWER(contact_person) LIKE ?', [$kw])
-              ->orWhere('phone', 'like', $kw);
+              ->orWhere('phone', 'ilike', $kw);
         });
     }
 

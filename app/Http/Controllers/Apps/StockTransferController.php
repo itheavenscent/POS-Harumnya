@@ -50,8 +50,8 @@ class StockTransferController extends Controller
         $transfers = StockTransfer::query()
             ->with(['creator:id,name', 'items'])
             ->when($request->search, fn ($q, $s) =>
-                $q->where('transfer_number', 'like', "%{$s}%")
-                  ->orWhere('notes', 'like', "%{$s}%")
+                $q->where('transfer_number', 'ilike', "%{$s}%")
+                  ->orWhere('notes', 'ilike', "%{$s}%")
             )
             ->when($request->status,    fn ($q, $s) => $q->where('status', $s))
             ->when($request->from_type, fn ($q, $t) => $q->where('from_location_type', $t))

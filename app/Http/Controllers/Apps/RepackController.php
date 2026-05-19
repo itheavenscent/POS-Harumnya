@@ -30,9 +30,9 @@ class RepackController extends Controller
                 'items',
             ])
             ->when($request->search, fn ($q, $s) =>
-                $q->where('repack_number', 'like', "%{$s}%")
+                $q->where('repack_number', 'ilike', "%{$s}%")
                   ->orWhereHas('outputIngredient', fn ($q2) =>
-                      $q2->where('name', 'like', "%{$s}%")
+                      $q2->where('name', 'ilike', "%{$s}%")
                   )
             )
             ->when($request->status,        fn ($q, $s) => $q->where('status', $s))

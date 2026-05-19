@@ -28,8 +28,8 @@ class POSFeatureController extends Controller
                 ->where('store_id', $storeId)
                 ->when($request->search, function ($query, $search) {
                     $query->whereHas('ingredient', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%")
-                          ->orWhere('code', 'like', "%{$search}%");
+                        $q->where('name', 'ilike', "%{$search}%")
+                          ->orWhere('code', 'ilike', "%{$search}%");
                     });
                 })
                 ->latest('updated_at')
@@ -40,8 +40,8 @@ class POSFeatureController extends Controller
                 ->where('store_id', $storeId)
                 ->when($request->search, function ($query, $search) {
                     $query->whereHas('packagingMaterial', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%")
-                          ->orWhere('code', 'like', "%{$search}%");
+                        $q->where('name', 'ilike', "%{$search}%")
+                          ->orWhere('code', 'ilike', "%{$search}%");
                     });
                 })
                 ->latest('updated_at')
@@ -77,8 +77,10 @@ class POSFeatureController extends Controller
                 $query->where('cashier_id', $user->id);
             })
             ->when($request->search, function ($query, $search) {
-                $query->where('sale_number', 'like', "%{$search}%")
-                    ->orWhere('customer_name', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->where('sale_number', 'ilike', "%{$search}%")
+                      ->orWhere('customer_name', 'ilike', "%{$search}%");
+                });
             })
             ->latest('sold_at')
             ->paginate(20)

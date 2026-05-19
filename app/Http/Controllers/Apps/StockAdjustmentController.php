@@ -28,8 +28,8 @@ class StockAdjustmentController extends Controller
         $adjustments = StockAdjustment::query()
             ->with(['creator:id,name', 'items'])
             ->when($request->search, fn ($q, $s) =>
-                $q->where('adjustment_number', 'like', "%{$s}%")
-                  ->orWhere('notes', 'like', "%{$s}%")
+                $q->where('adjustment_number', 'ilike', "%{$s}%")
+                  ->orWhere('notes', 'ilike', "%{$s}%")
             )
             ->when($request->status,        fn ($q, $s) => $q->where('status', $s))
             ->when($request->type,          fn ($q, $t) => $q->where('type', $t))

@@ -21,8 +21,8 @@ class RewardItemController extends Controller
             ->when($request->filled('search'), function ($q) use ($request) {
                 $s = '%' . $request->search . '%';
                 $q->where(fn($inner) => $inner
-                    ->where('name', 'like', $s)
-                    ->orWhere('code', 'like', $s)
+                    ->where('name', 'ilike', $s)
+                    ->orWhere('code', 'ilike', $s)
                 );
             })
             ->when($request->filled('category'), fn($q) => $q->where('category', $request->category))
