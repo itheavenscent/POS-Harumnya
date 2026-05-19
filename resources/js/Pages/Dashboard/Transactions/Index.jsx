@@ -881,7 +881,7 @@ function GameRewardModal({ show, onClose, promo, onAddDirectReward, onOpenVarian
     // Build wheel slices/options from promo rewards details
     const wheelItems = useMemo(() => {
         if (!promo) return [];
-        const details = promo.rewards_details || [];
+        const details = promo.rewards_details || promo.rewards || [];
         const list = [];
         details.forEach(reward => {
             if (reward.is_pool && reward.pools && reward.pools.length > 0) {
