@@ -365,7 +365,11 @@ class TransactionController extends Controller
             return redirect()->route('pos.transactions');
         }
 
-        $storeId = $user->default_store_id;
+        $isAdmin = $user->hasRole('super-admin') || $user->hasRole('admin') || $user->hasPermissionTo('transactions-all');
+
+        // Admin sees all stores; non-admin is limited to their default store
+        $filterStoreId = $request->filled('store_id') ? $request->store_id : null;
+        $defaultStoreId = $user->default_store_id;
 
         $query = Sale::with([
             'items.packagings.packagingMaterial',
@@ -373,10 +377,22 @@ class TransactionController extends Controller
             'customer:id,name,phone',
             'cashier:id,name',
             'salesPerson:id,name,code',
+            'store:id,name',
         ])
             ->withCount('items')
-            ->where('store_id', $storeId)
             ->latest('sold_at');
+
+        // Apply store filter
+        if ($isAdmin) {
+            // Admin: filter by selected store if specified, otherwise show all stores
+            if ($filterStoreId) {
+                $query->where('store_id', $filterStoreId);
+            }
+            // else: no store filter — show all stores
+        } else {
+            // Non-admin: restrict to their default store
+            $query->where('store_id', $defaultStoreId);
+        }
 
         if ($request->filled('date_from')) {
             $query->whereDate('sold_at', '>=', $request->date_from);
@@ -387,7 +403,7 @@ class TransactionController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
-        if (!$user->hasRole('super-admin') && !$user->hasPermissionTo('transactions-all')) {
+        if (!$isAdmin) {
             $query->where('cashier_id', $user->id);
         }
         if ($request->filled('sale_number')) {
@@ -406,15 +422,20 @@ class TransactionController extends Controller
 
         $sales = $query->paginate(20)->withQueryString();
 
-        $summaryQuery = Sale::where('store_id', $storeId)->where('status', 'completed');
+        // Summary query — same store filter logic
+        $summaryQuery = Sale::where('status', 'completed');
+        if ($isAdmin) {
+            if ($filterStoreId) {
+                $summaryQuery->where('store_id', $filterStoreId);
+            }
+        } else {
+            $summaryQuery->where('store_id', $defaultStoreId)->where('cashier_id', $user->id);
+        }
         if ($request->filled('date_from')) {
             $summaryQuery->whereDate('sold_at', '>=', $request->date_from);
         }
         if ($request->filled('date_to')) {
             $summaryQuery->whereDate('sold_at', '<=', $request->date_to);
-        }
-        if (!$user->hasRole('super-admin') && !$user->hasPermissionTo('transactions-all')) {
-            $summaryQuery->where('cashier_id', $user->id);
         }
 
         $summary = $summaryQuery->selectRaw('
@@ -425,10 +446,17 @@ class TransactionController extends Controller
             COALESCE(AVG(gross_margin_pct), 0) as avg_margin
         ')->first();
 
+        // Pass store list to admin for filter dropdown
+        $stores = $isAdmin
+            ? Store::select('id', 'name')->orderBy('name')->get()
+            : collect();
+
         return Inertia::render('Dashboard/Transactions/History', [
-            'sales' => $sales,
-            'filters' => $request->only('date_from', 'date_to', 'q', 'sale_number', 'status'),
-            'summary' => $summary,
+            'sales'    => $sales,
+            'filters'  => $request->only('date_from', 'date_to', 'q', 'sale_number', 'status', 'store_id'),
+            'summary'  => $summary,
+            'stores'   => $stores,
+            'isAdmin'  => $isAdmin,
         ]);
     }
 

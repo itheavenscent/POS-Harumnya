@@ -8,7 +8,7 @@ import {
     IconRefresh, IconEye, IconUser, IconFlask, IconBox, IconBuildingStore
 } from "@tabler/icons-react";
 
-const defaultFilters = { q: "", date_from: "", date_to: "", status: "" };
+const defaultFilters = { q: "", date_from: "", date_to: "", status: "", store_id: "" };
 
 const fmt = (v = 0) =>
     Number(v || 0).toLocaleString("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 });
@@ -36,7 +36,7 @@ const STATUS_LABEL = {
     refunded: "Refund", pending: "Pending", draft: "Draft",
 };
 
-export default function History({ sales, filters, summary = {} }) {
+export default function History({ sales, filters, summary = {}, stores = [], isAdmin = false }) {
     const [filterData,   setFilterData]   = useState({ ...defaultFilters, ...filters });
     const [showFilters,  setShowFilters]  = useState(false);
     const [selectedSale, setSelectedSale] = useState(null);
@@ -60,10 +60,15 @@ export default function History({ sales, filters, summary = {} }) {
     const links       = sales?.links        ?? [];
     const currentPage = sales?.current_page ?? 1;
     const perPage     = Number(sales?.per_page || 20);
-    const hasFilter   = filterData.q || filterData.date_from || filterData.date_to || filterData.status;
+    const hasFilter   = filterData.q || filterData.date_from || filterData.date_to || filterData.status || filterData.store_id;
 
     // Summary dari controller — gunakan kolom decimal langsung
     const sumStats = summary && typeof summary === "object" ? summary : {};
+
+    // Nama toko yang sedang difilter
+    const selectedStoreName = filterData.store_id
+        ? (stores.find(s => String(s.id) === String(filterData.store_id))?.name ?? "")
+        : "";
 
     return (
         <>
@@ -76,8 +81,20 @@ export default function History({ sales, filters, summary = {} }) {
                         <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             <IconHistory size={28} className="text-primary-500"/>
                             Riwayat Transaksi
+                            {isAdmin && (
+                                <span className="ml-2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 rounded-full">
+                                    All Toko
+                                </span>
+                            )}
                         </h1>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">{sales?.total ?? 0} transaksi tercatat</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                            {sales?.total ?? 0} transaksi tercatat
+                            {selectedStoreName && (
+                                <span className="ml-1 font-semibold text-primary-600 dark:text-primary-400">
+                                    · {selectedStoreName}
+                                </span>
+                            )}
+                        </p>
                     </div>
                     <div className="flex gap-2">
                         <button onClick={() => setShowFilters(!showFilters)}
@@ -145,9 +162,9 @@ export default function History({ sales, filters, summary = {} }) {
                 {showFilters && (
                     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
                         <form onSubmit={applyFilters}>
-                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                                 {/* Search: sale_number atau customer_name */}
-                                <div>
+                                <div className={isAdmin ? "xl:col-span-1" : "xl:col-span-2"}>
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                                         No. Transaksi / Pelanggan
                                     </label>
@@ -157,6 +174,22 @@ export default function History({ sales, filters, summary = {} }) {
                                         className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
                                     />
                                 </div>
+
+                                {/* Filter Toko — hanya untuk admin */}
+                                {isAdmin && (
+                                    <div className="xl:col-span-1">
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                            Toko
+                                        </label>
+                                        <select value={filterData.store_id} onChange={e => change("store_id", e.target.value)}
+                                            className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all">
+                                            <option value="">Semua Toko</option>
+                                            {stores.map(store => (
+                                                <option key={store.id} value={store.id}>{store.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
 
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Tanggal Mulai</label>
@@ -215,6 +248,7 @@ export default function History({ sales, filters, summary = {} }) {
                                             { label: "No",             cls: "text-left" },
                                             { label: "No. Transaksi",  cls: "text-left" },
                                             { label: "Tanggal",        cls: "text-left" },
+                                            ...(isAdmin ? [{ label: "Toko", cls: "text-left" }] : []),
                                             { label: "Kasir",          cls: "text-left" },
                                             { label: "Pelanggan",      cls: "text-left" },
                                             { label: "Item",           cls: "text-center" },
@@ -261,6 +295,16 @@ export default function History({ sales, filters, summary = {} }) {
                                                     </div>
                                                     <div className="text-xs text-slate-400 ml-4">{time}</div>
                                                 </td>
+
+                                                {/* Nama toko — hanya untuk admin */}
+                                                {isAdmin && (
+                                                    <td className="px-4 py-4">
+                                                        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-md whitespace-nowrap">
+                                                            <IconBuildingStore size={11}/>
+                                                            {sale.store?.name ?? "-"}
+                                                        </span>
+                                                    </td>
+                                                )}
 
                                                 {/* cashier (User) — dari relasi eager-loaded */}
                                                 <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-400">
@@ -383,6 +427,11 @@ export default function History({ sales, filters, summary = {} }) {
                             <div>
                                 <h3 className="text-xl font-black text-slate-900 dark:text-white">Detail Transaksi</h3>
                                 <p className="text-sm font-mono text-primary-600 font-bold">{selectedSale.sale_number}</p>
+                                {isAdmin && selectedSale.store?.name && (
+                                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 text-[10px] font-bold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full uppercase">
+                                        <IconBuildingStore size={10}/> {selectedSale.store.name}
+                                    </span>
+                                )}
                             </div>
                             <button onClick={() => setSelectedSale(null)} className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-400">
                                 <IconX size={24}/>
