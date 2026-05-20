@@ -101,15 +101,12 @@ export default function Index({ drawers, filters, isAdmin }) {
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Buka</th>
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Tutup</th>
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider text-right">Diharapkan</th>
-                                    <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider text-right">Aktual</th>
-                                    <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider text-right">Selisih</th>
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {drawers.data.length > 0 ? (
                                     drawers.data.map((drawer) => {
-                                        const diff = Number(drawer.difference);
                                         return (
                                             <tr key={drawer.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                                                 <td className="px-6 py-4">
@@ -142,12 +139,6 @@ export default function Index({ drawers, filters, isAdmin }) {
                                                 <td className="px-6 py-4 text-right text-sm font-bold text-slate-700 dark:text-slate-200">
                                                     {fmt(drawer.expected_ending_cash)}
                                                 </td>
-                                                <td className="px-6 py-4 text-right text-sm font-bold text-slate-700 dark:text-slate-200">
-                                                    {fmt(drawer.actual_ending_cash)}
-                                                </td>
-                                                <td className={`px-6 py-4 text-right text-sm font-black ${diff === 0 ? "text-emerald-500" : diff > 0 ? "text-cyan-500" : "text-rose-500"}`}>
-                                                    {fmt(drawer.difference)}
-                                                </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center justify-center gap-2">
                                                         <Link
@@ -172,7 +163,7 @@ export default function Index({ drawers, filters, isAdmin }) {
                                     })
                                 ) : (
                                     <tr>
-                                        <td colSpan="7" className="px-6 py-20 text-center">
+                                        <td colSpan="5" className="px-6 py-20 text-center">
                                             <IconHistory size={48} className="mx-auto text-slate-200 dark:text-slate-800 mb-3" />
                                             <p className="text-slate-500 dark:text-slate-400 font-medium">Belo ada riwayat shift yang tersimpan</p>
                                         </td>
