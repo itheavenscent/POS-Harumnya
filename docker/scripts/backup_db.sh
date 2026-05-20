@@ -26,4 +26,4 @@ gzip $BACKUP_DIR/backup_$TIMESTAMP.sql
 echo "Backup completed: $BACKUP_DIR/backup_$TIMESTAMP.sql.gz"
 
 # Optional: Delete backups older than 7 days
-# find $BACKUP_DIR -type f -name "*.sql.gz" -mtime +7 -delete
+find $BACKUP_DIR -type f -name "*.sql.gz" -mtime +7 -delete

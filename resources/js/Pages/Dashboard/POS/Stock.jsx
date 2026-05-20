@@ -9,7 +9,13 @@ export default function Stock({ stocks, filters }) {
     const [activeType, setActiveType] = React.useState(filters.type || "ingredient");
     const [debouncedSearch] = useDebounce(search, 500);
 
+    const isFirstRender = React.useRef(true);
+
     React.useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         router.get(
             route("pos.stock"),
             { search: debouncedSearch, type: activeType },

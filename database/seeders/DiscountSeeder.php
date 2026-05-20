@@ -102,12 +102,12 @@ class DiscountSeeder extends Seeder
                 'priority'              => 10,
                 'is_combinable'         => false,
                 'is_active'             => true,
-                'description'           => 'Gratis 1x Spin Wheel untuk setiap: beli ≥3 botol P30, atau ≥2 botol P50, atau ≥1 botol P100 (semua intensitas & varian). Hadiah: Parfum 10 mL all variant, Parfum 30 mL all variant, atau 1 Poin Member.',
+                'description'           => 'Gratis 1x Spin Wheel untuk setiap: beli ≥3 botol P30, atau ≥2 botol P50, atau ≥1 botol P100 (semua intensitas & varian). Hadiah: Parfum Spray EDT 3mL Oil + 7mL Alkohol (10 mL) all variant, Parfum 30 mL all variant, atau 1 Poin Member.',
                 'terms_conditions'      => json_encode([
                     'Syarat: beli ≥3 botol P30 ATAU ≥2 botol P50 ATAU ≥1 botol P100',
                     'Berlaku semua intensitas (EDT/EDP/EXT) dan semua varian',
                     'Gratis 1x spin Spin Wheel per transaksi yang memenuhi syarat',
-                    'Hadiah spin: Parfum 10 mL all variant, Parfum 30 mL all variant, atau 1 Poin Member',
+                    'Hadiah spin: Parfum Spray EDT 3mL Oil + 7mL Alkohol (10 mL) all variant, Parfum 30 mL all variant, atau 1 Poin Member',
                     'Hadiah tidak dapat ditukar uang tunai',
                 ]),
                 'created_at'            => $now,
@@ -175,10 +175,10 @@ class DiscountSeeder extends Seeder
             // Pool items: Parfum 10 mL all variant, Parfum 30 mL all variant, 1 Poin Member
             $spinItems = [
                 [
-                    'label'         => 'Parfum 10 mL (Pilih Varian)',
+                    'label'         => 'Parfum Spray EDT 3mL Oil + 7mL Alkohol (Pilih Varian)',
                     'reward_type'   => 'variant',
                     'points_amount' => null,
-                    'intensity_id'  => $pure,
+                    'intensity_id'  => $edt,
                     'size_id'       => $s10,
                     'probability'   => 33,
                     'sort_order'    => 1

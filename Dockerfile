@@ -39,11 +39,16 @@ RUN docker-php-ext-install \
     pcntl \
     bcmath \
     gd \
-    zip
+    zip \
+    opcache
 
 # Install phpredis extension via PECL
 RUN pecl install redis \
     && docker-php-ext-enable redis
+
+# Copy custom PHP configs
+COPY docker/php/www.conf /usr/local/etc/php-fpm.d/www.conf
+COPY docker/php/custom.ini /usr/local/etc/php/conf.d/custom.ini
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer

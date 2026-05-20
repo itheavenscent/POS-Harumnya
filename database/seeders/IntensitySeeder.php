@@ -139,6 +139,7 @@ class IntensitySeeder extends Seeder
                     10 => ['price' => 30000, 'oil' => 10, 'alc' => 0],
                 ],
                 'EDT' => [
+                    10 => ['price' => 30000, 'oil' => 3, 'alc' => 7], // Promo Spray 10ml
                     30 => ['price' => 30000, 'oil' => 10, 'alc' => 20],
                     50 => ['price' => 48000, 'oil' => 16, 'alc' => 34],
                     100 => ['price' => 99000, 'oil' => 33, 'alc' => 67],

@@ -130,26 +130,6 @@ class PackagingSeeder extends Seeder
                 'sort_order'            => 6,
             ],
 
-            // ── Gift Card (Add-on) ────────────────────────────────────────────
-            [
-                'packaging_category_id' => $giftCardCat,
-                'code'                  => 'PKG-GC-STD',
-                'name'                  => 'Gift Card Standard',
-                'purchase_price'        => 2000.00,
-                'selling_price'         => 5000.00,
-                'is_available_as_addon' => true,
-                'sort_order'            => 1,
-            ],
-            [
-                'packaging_category_id' => $giftCardCat,
-                'code'                  => 'PKG-GC-PRM',
-                'name'                  => 'Gift Card Premium - Embossed',
-                'purchase_price'        => 5000.00,
-                'selling_price'         => 10000.00,
-                'is_available_as_addon' => true,
-                'sort_order'            => 2,
-            ],
-
             // ── Spunbond (Add-on / Paid) ──────────────────────────────────────
             [
                 'packaging_category_id' => $spunbondCat,
@@ -158,6 +138,7 @@ class PackagingSeeder extends Seeder
                 'purchase_price'        => 3000.00,
                 'selling_price'         => 5000.00,
                 'is_available_as_addon' => true,
+                'is_free'               => false,
                 'sort_order'            => 1,
             ],
             [
@@ -167,18 +148,30 @@ class PackagingSeeder extends Seeder
                 'purchase_price'        => 5000.00,
                 'selling_price'         => 8000.00,
                 'is_available_as_addon' => true,
+                'is_free'               => false,
                 'sort_order'            => 2,
             ],
 
-            // ── Spunbond (Free / Promo) ──────────────────────────────────────
+            // ── Free / Promo Packaging ──────────────────────────────────────
+            [
+                'packaging_category_id' => $botolCat,
+                'code'                  => 'B30-FREE',
+                'name'                  => 'Botol 30mL Free (Spinwheel)',
+                'purchase_price'        => 5600.00,
+                'selling_price'         => 0.00,
+                'is_available_as_addon' => true,
+                'is_free'               => true,
+                'sort_order'            => 3,
+            ],
             [
                 'packaging_category_id' => $spunbondCat,
                 'code'                  => 'SBM',
                 'name'                  => 'Spunbond Free',
                 'purchase_price'        => 1500.00,
                 'selling_price'         => 0.00,
-                'is_available_as_addon' => false,
-                'sort_order'            => 3,
+                'is_available_as_addon' => true,
+                'is_free'               => true,
+                'sort_order'            => 4,
             ],
             [
                 'packaging_category_id' => $spunbondCat,
@@ -186,8 +179,9 @@ class PackagingSeeder extends Seeder
                 'name'                  => 'Spunbond Besar Free',
                 'purchase_price'        => 2500.00,
                 'selling_price'         => 0.00,
-                'is_available_as_addon' => false,
-                'sort_order'            => 4,
+                'is_available_as_addon' => true,
+                'is_free'               => true,
+                'sort_order'            => 5,
             ],
         ];
 
@@ -206,6 +200,7 @@ class PackagingSeeder extends Seeder
                 'selling_price'         => $item['selling_price'],
                 'average_cost'          => $item['purchase_price'],
                 'is_active'             => true,
+                'is_free'               => $item['is_free'] ?? false,
                 'sort_order'            => $item['sort_order'],
                 'created_at'            => $now,
                 'updated_at'            => $now,

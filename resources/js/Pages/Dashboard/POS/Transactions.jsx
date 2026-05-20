@@ -25,7 +25,13 @@ export default function Transactions({ sales, filters }) {
     const [selectedSale, setSelectedSale] = React.useState(null);
     const [debouncedSearch] = useDebounce(search, 500);
 
+    const isFirstRender = React.useRef(true);
+
     React.useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         router.get(
             route("pos.transactions"),
             { search: debouncedSearch },

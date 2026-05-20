@@ -97,7 +97,35 @@ export default function Current({ drawer, summary }) {
                                 </Link>
                             </div>
 
-                            {/* Shift Details Section */}
+                            {/* Total Pendapatan Card */}
+                            <div className="rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 shadow-xl shadow-blue-600/20 relative overflow-hidden">
+                                <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full" />
+                                <div className="absolute bottom-0 right-8 w-16 h-16 bg-white/5 rounded-full" />
+                                <div className="relative z-10">
+                                    <p className="text-blue-200 text-xs font-black uppercase tracking-[0.2em] mb-3">Total Pendapatan Hari Ini</p>
+                                    <p className="text-4xl font-black text-white leading-none mb-4">
+                                        {fmt(summary.gross_sales)}
+                                    </p>
+                                    <div className="flex items-center gap-6">
+                                        <div>
+                                            <p className="text-blue-200 text-[10px] font-semibold uppercase tracking-wider">Transaksi</p>
+                                            <p className="text-white font-black text-lg">{summary.transactions}</p>
+                                        </div>
+                                        <div className="w-px h-8 bg-white/20" />
+                                        <div>
+                                            <p className="text-blue-200 text-[10px] font-semibold uppercase tracking-wider">Produk Terjual</p>
+                                            <p className="text-white font-black text-lg">{summary.items_sold}</p>
+                                        </div>
+                                        <div className="w-px h-8 bg-white/20" />
+                                        <div>
+                                            <p className="text-blue-200 text-[10px] font-semibold uppercase tracking-wider">Modal Awal</p>
+                                            <p className="text-white font-black text-lg">{fmt(drawer.starting_cash)}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
                             <div className="space-y-6">
                                 <div>
                                     <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Detil Shift</h3>

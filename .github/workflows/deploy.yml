@@ -62,9 +62,8 @@ jobs:
               echo "ERROR: .env file not found!" && exit 1
             fi
 
-            # Hapus container lama dan naikan semua service
-            docker compose down --remove-orphans
-            docker compose up -d
+            # Eksekusi deployment tanpa downtime (hanya recreate container yang di-update)
+            docker compose up -d --remove-orphans
 
             # Tunggu DB siap
             echo "Waiting for database..."
