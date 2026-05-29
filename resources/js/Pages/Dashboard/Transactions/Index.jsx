@@ -1469,6 +1469,10 @@ export default function Index({
     };
 
     const handleRemove = (cartId) => {
+        const item = carts.find(c => c.id === cartId);
+        if (item && (item.is_game_reward || item.points_amount !== null)) {
+            setLastTriggeredPromoId(null);
+        }
         setRemovingId(cartId);
         router.delete(route("transactions.destroy-cart", cartId), {
             preserveScroll: true, preserveState: true, only: ["carts", "carts_total"],

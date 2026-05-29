@@ -123,7 +123,7 @@ function buildReceipt(sale, saleItems, payments, change) {
         });
     });
 
-    ep.thinLine(W).lf();
+    ep.lf().thinLine(W).lf();
 
     // ══ SUMMARY ══
     ep.row2("Subtotal", "Rp " + fmtN(sale.subtotal_perfume ?? 0), W).lf();
@@ -131,17 +131,26 @@ function buildReceipt(sale, saleItems, payments, change) {
     if (Number(sale.discount_amount) > 0) ep.row2("Diskon", "- Rp " + fmtN(sale.discount_amount), W).lf();
     if (Number(sale.points_redemption_value) > 0) ep.row2("Redeem Poin", "- Rp " + fmtN(sale.points_redemption_value), W).lf();
 
-    ep.divider(W).lf();
+    ep.lf().divider(W).lf();
     ep.bold(true).size(1, 2).row2("TOTAL", "Rp " + fmtN(sale.total), W).lf().size(1, 1).bold(false);
-    ep.thinLine(W).lf();
+    ep.divider(W).lf();
 
     payments.forEach(p => {
         ep.row2(String(p.payment_method?.name ?? p.payment_method_name ?? "Cash"), "Rp " + fmtN(p.amount), W).lf();
     });
     if (change > 0) ep.bold(true).row2("Kembalian", "Rp " + fmtN(change), W).lf().bold(false);
-    if (Number(sale.points_earned) > 0) ep.row2("Poin diperoleh", "+" + sale.points_earned + " poin", W).lf();
 
-    ep.divider(W).lf().lf()
+    ep.lf();
+    if (Number(sale.points_earned) > 0) {
+        ep.thinLine(W).lf();
+        ep.row2("Poin diperoleh", "+" + sale.points_earned + " poin", W).lf();
+        if (sale.customer && Number(sale.customer.points) >= 0) {
+            ep.bold(true).row2("Total Poin Member", sale.customer.points + " poin", W).lf().bold(false);
+        }
+        ep.thinLine(W).lf();
+    }
+
+    ep.lf().divider(W).lf().lf()
         .center("Terima kasih!", W).lf()
         .center("-- Harumnya --", W).lf()
         .lf(6).defaultSpacing().cut();
@@ -425,7 +434,7 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
     const font = "Inter, system-ui, -apple-system, sans-serif";
     const fontMono = "'JetBrains Mono', monospace";
 
-    const base = { fontFamily: font, fontSize: fs, lineHeight: 1.6, color: "#1e293b" };
+    const base = { fontFamily: font, fontSize: fs, lineHeight: 1.8, color: "#1e293b" };
     const dim = { fontFamily: font, fontSize: fsSM, lineHeight: 1.5, color: "#64748b" };
 
     const Row2 = ({ left, right, bold = false, xl = false, mono = false }) => (
@@ -443,7 +452,7 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
     );
 
     const Divider = ({ dashed = false }) => (
-        <div style={{ borderTop: dashed ? "1px dashed #e2e8f0" : "1px solid #cbd5e1", margin: "8px 0" }} />
+        <div style={{ borderTop: dashed ? "1px dashed #e2e8f0" : "1px solid #cbd5e1", margin: "10px 0" }} />
     );
 
     const Spacer = ({ h = 8 }) => <div style={{ height: h }} />;
@@ -527,9 +536,9 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                 ) : null;
             })()}
 
-            <Spacer h={8} />
+            <Spacer h={12} />
             <Divider />
-            <Spacer h={6} />
+            <Spacer h={10} />
 
             {/* ══ ITEMS ══ */}
             {saleItems.map((item, i) => {
@@ -604,11 +613,11 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                 );
             })}
 
-            <Spacer h={2} />
+            <Spacer h={4} />
             <Divider />
 
             {/* ══ SUMMARY ══ */}
-            <Spacer h={4} />
+            <Spacer h={8} />
             <Row2 left="Subtotal" right={"Rp " + fmtN(sale.subtotal_perfume ?? 0)} mono />
             {Number(sale.subtotal_packaging) > 0 && (
                 <Row2 left="Kemasan" right={"Rp " + fmtN(sale.subtotal_packaging)} mono />
@@ -633,7 +642,7 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                 </div>
             </div>
 
-            <Spacer h={8} />
+            <Spacer h={12} />
 
             {/* ══ PEMBAYARAN ══ */}
             {payments.map((p, i) => (
@@ -649,16 +658,28 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                 </div>
             )}
             {Number(sale.points_earned) > 0 && (
-                <div style={{
-                    background: "#fef3c7", padding: "6px 10px", borderRadius: 6, marginTop: 8,
-                    fontFamily: font, fontSize: fsSM, color: "#b45309", textAlign: "center",
-                    border: "1px solid #fde68a", fontWeight: "600",
-                }}>
-                    ⭐ Poin diperoleh: +{sale.points_earned} poin
+                <div style={{ marginTop: 10, border: "1px solid #fde68a", borderRadius: 8, overflow: "hidden" }}>
+                    <div style={{
+                        background: "#fef3c7", padding: "6px 10px",
+                        fontFamily: font, fontSize: fsSM, color: "#b45309", textAlign: "center",
+                        fontWeight: "600", borderBottom: "1px solid #fde68a",
+                    }}>
+                        ⭐ Poin diperoleh: +{sale.points_earned} poin
+                    </div>
+                    {sale.customer && Number(sale.customer.points) >= 0 && (
+                        <div style={{
+                            background: "#fffbeb", padding: "6px 10px",
+                            fontFamily: font, fontSize: fsSM, color: "#92400e",
+                            display: "flex", justifyContent: "space-between", alignItems: "center",
+                        }}>
+                            <span>Total Poin Member</span>
+                            <span style={{ fontWeight: "700" }}>{sale.customer.points} poin</span>
+                        </div>
+                    )}
                 </div>
             )}
 
-            <Spacer h={12} />
+            <Spacer h={16} />
             <Divider />
 
             {/* ══ FOOTER ══ */}

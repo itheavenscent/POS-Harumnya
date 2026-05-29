@@ -468,7 +468,7 @@ class TransactionController extends Controller
             'store',
             'cashier:id,name',
             'salesPerson:id,name',
-            'customer:id,name,phone,code',
+            'customer:id,name,phone,code,points',
         ])
             ->where('sale_number', str_replace('-', '/', $saleNumber))
             ->orWhere('sale_number', $saleNumber)
@@ -980,15 +980,38 @@ class TransactionController extends Controller
             $grossProfit = $total - $cogsTotal;
             $marginPct = $total > 0 ? round($grossProfit / $total * 100, 2) : 0;
 
-            // Calculate points redeemed from points-member rewards
+            // Calculate points redeemed and reward item values
             $pointsRedeemed = 0;
+            $pointsRedemptionValue = 0;
+            $rewardItemValues = [];
+
             if ($customer) {
                 foreach ($carts as $cart) {
-                    if ($cart->discount_type_id) {
+                    if ($cart->discount_type_id && $cart->is_free) {
                         $dt = DiscountType::find($cart->discount_type_id);
-                        if ($dt && $dt->code === 'POIN-MEMBER') {
-                            $threshold = (int) \App\Models\AppSetting::getValue('loyalty_reward_threshold', 30);
-                            $pointsRedeemed += ($threshold * $cart->qty);
+                        if ($dt) {
+                            if ($dt->code === 'POIN-MEMBER') {
+                                $threshold = (int) \App\Models\AppSetting::getValue('loyalty_reward_threshold', 30);
+                                $pointsRedeemed += ($threshold * $cart->qty);
+                            }
+
+                            $basePrice = $cart->product?->selling_price ?? 0;
+                            if ($basePrice == 0 && $cart->intensity_id && $cart->size_id) {
+                                $priceRow = IntensitySizePrice::where('intensity_id', $cart->intensity_id)
+                                    ->where('size_id', $cart->size_id)->first();
+                                $basePrice = $priceRow ? $priceRow->selling_price : 0;
+                            }
+
+                            $val = $basePrice * $cart->qty;
+
+                            if ($dt->code === 'POIN-MEMBER') {
+                                $pointsRedemptionValue += $val;
+                            }
+
+                            if (!isset($rewardItemValues[$dt->id])) {
+                                $rewardItemValues[$dt->id] = 0;
+                            }
+                            $rewardItemValues[$dt->id] += $val;
                         }
                     }
                 }
@@ -1021,6 +1044,7 @@ class TransactionController extends Controller
                 'gross_margin_pct' => $marginPct,
                 'points_earned' => 0,
                 'points_redeemed' => $pointsRedeemed,
+                'points_redemption_value' => $pointsRedemptionValue,
                 'status' => 'completed',
             ]);
 
@@ -1157,6 +1181,34 @@ class TransactionController extends Controller
                         'store_id' => $storeId,
                         'customer_id' => $customer?->id,
                         'discount_amount' => (int) $discountAmount,
+                        'original_amount' => (int) $subtotal,
+                        'final_amount' => (int) $total,
+                        'used_at' => now(),
+                    ]);
+                }
+            }
+
+            // Record Free Reward Items (Spin Wheel, Point Redemption) as Discount Usage
+            foreach ($rewardItemValues as $dtId => $val) {
+                $dtReward = DiscountType::find($dtId);
+                if ($dtReward) {
+                    // Start sort order from 2 to not conflict with manual discount
+                    SaleDiscount::create([
+                        'sale_id' => $sale->id,
+                        'discount_type_id' => $dtReward->id,
+                        'discount_name' => $dtReward->name,
+                        'discount_category' => $dtReward->type ?? 'reward',
+                        'discount_value' => $val,
+                        'applied_amount' => $val,
+                        'sort_order' => 2,
+                    ]);
+
+                    DiscountUsage::create([
+                        'discount_type_id' => $dtReward->id,
+                        'order_id' => $sale->id,
+                        'store_id' => $storeId,
+                        'customer_id' => $customer?->id,
+                        'discount_amount' => $val,
                         'original_amount' => (int) $subtotal,
                         'final_amount' => (int) $total,
                         'used_at' => now(),
