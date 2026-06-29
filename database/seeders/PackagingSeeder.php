@@ -66,7 +66,7 @@ class PackagingSeeder extends Seeder
             [
                 'packaging_category_id' => $botolCat,
                 'code'                  => 'ROLL',
-                'name'                  => 'Botol Roll On 10ml',
+                'name'                  => 'Botol Roll 10 ml',
                 'purchase_price'        => 2000.00,   // estimasi HPP
                 'selling_price'         => 3000.00,   // dari sheet HARGA
                 'is_available_as_addon' => true,
@@ -76,7 +76,7 @@ class PackagingSeeder extends Seeder
             [
                 'packaging_category_id' => $botolCat,
                 'code'                  => 'LD',
-                'name'                  => 'Botol Lady 30ml',
+                'name'                  => 'Botol Lady 30 ml',
                 'purchase_price'        => 5600.00,
                 'selling_price'         => 7500.00,
                 'is_available_as_addon' => false,
@@ -85,7 +85,7 @@ class PackagingSeeder extends Seeder
             [
                 'packaging_category_id' => $botolCat,
                 'code'                  => 'PRI',
-                'name'                  => 'Botol Prisma 30ml',
+                'name'                  => 'Botol Prisma 30 ml',
                 'purchase_price'        => 5600.00,
                 'selling_price'         => 7500.00,
                 'is_available_as_addon' => false,
@@ -94,7 +94,7 @@ class PackagingSeeder extends Seeder
             [
                 'packaging_category_id' => $botolCat,
                 'code'                  => 'GD',
-                'name'                  => 'Botol Golden Drop 30ml',
+                'name'                  => 'Botol Drop 30 ml',
                 'purchase_price'        => 5600.00,
                 'selling_price'         => 7500.00,
                 'is_available_as_addon' => false,
@@ -104,7 +104,7 @@ class PackagingSeeder extends Seeder
             [
                 'packaging_category_id' => $botolCat,
                 'code'                  => 'OR',
-                'name'                  => 'Botol Orion 50ml',
+                'name'                  => 'Botol Orion 50 ml',
                 'purchase_price'        => 7500.00,
                 'selling_price'         => 10000.00,
                 'is_available_as_addon' => false,
@@ -113,7 +113,7 @@ class PackagingSeeder extends Seeder
             [
                 'packaging_category_id' => $botolCat,
                 'code'                  => 'HEX',
-                'name'                  => 'Botol Hexagon 50ml',
+                'name'                  => 'Botol Hexagon 50 ml',
                 'purchase_price'        => 7500.00,
                 'selling_price'         => 10000.00,
                 'is_available_as_addon' => false,
@@ -123,7 +123,7 @@ class PackagingSeeder extends Seeder
             [
                 'packaging_category_id' => $botolCat,
                 'code'                  => 'PER',
-                'name'                  => 'Botol Persegi 100ml',
+                'name'                  => 'Botol Persegi 100 ml',
                 'purchase_price'        => 11000.00,
                 'selling_price'         => 15000.00,
                 'is_available_as_addon' => false,
@@ -166,12 +166,22 @@ class PackagingSeeder extends Seeder
             [
                 'packaging_category_id' => $spunbondCat,
                 'code'                  => 'SBM',
-                'name'                  => 'Spunbond Free',
+                'name'                  => 'Spunbond',
                 'purchase_price'        => 1500.00,
                 'selling_price'         => 0.00,
                 'is_available_as_addon' => true,
                 'is_free'               => true,
                 'sort_order'            => 4,
+            ],
+            [
+                'packaging_category_id' => $spunbondCat,
+                'code'                  => 'KRS',
+                'name'                  => 'Plastic bag',
+                'purchase_price'        => 500.00,
+                'selling_price'         => 0.00,
+                'is_available_as_addon' => true,
+                'is_free'               => true,
+                'sort_order'            => 5,
             ],
             [
                 'packaging_category_id' => $spunbondCat,
@@ -181,7 +191,7 @@ class PackagingSeeder extends Seeder
                 'selling_price'         => 0.00,
                 'is_available_as_addon' => true,
                 'is_free'               => true,
-                'sort_order'            => 5,
+                'sort_order'            => 6,
             ],
         ];
 

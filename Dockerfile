@@ -68,5 +68,8 @@ RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
 # Install PHP dependencies (production only)
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
+RUN chown -R www-data:www-data /var/www
+USER www-data
+
 EXPOSE 9000
 CMD ["php-fpm"]

@@ -71,7 +71,6 @@ class VariantRecipeSeeder extends Seeder
             // ── Wanita ────────────────────────────────────────────────────────
             'NAG'   => 'ING-FO-W039', // Nagita CV
             'GRT'   => 'ING-FO-W041', // Green Tea CV
-            'MRT'   => 'ING-FO-W042', // Morning Tea CV
             'RIA'   => 'ING-FO-W023', // Euphoria (Calvin Klein)
             'GI'    => 'ING-FO-W041', // Garuda Indonesia — pakai Green Tea sebagai proxy (belum ada FO khusus)
             'FOF'   => 'ING-FO-W046', // Flight Of Fancy
@@ -84,11 +83,9 @@ class VariantRecipeSeeder extends Seeder
             'BLAN'  => 'ING-FO-W059', // Blanche
             'GG'    => 'ING-FO-W027', // Good Girl
             'GGB'   => 'ING-FO-W035', // Good Girl Blush
-            'COCO'  => 'ING-FO-W047', // Coco Mademoiselle
-            'NO5'   => 'ING-FO-W050', // No. 5
             'NOMA'  => 'ING-FO-W049', // Nomadian (Chloe Nomade)
             'BOUQ'  => 'ING-FO-W033', // Blooming Bouquet
-            'MISS'  => 'ING-FO-W032', // Miss Dior (proxy untuk Miss Lady)
+            'MISS'  => 'ING-FO-W032', // Miss Dior
             'EAC'   => 'ING-FO-W045', // Eau Capitale
             'CTA'   => 'ING-FO-W056', // Cherry In The Air
             'WAY'   => 'ING-FO-W020', // My Way
@@ -111,14 +108,12 @@ class VariantRecipeSeeder extends Seeder
             'MVR'   => 'ING-FO-W029', // Vanilla Rose
             'MJP'   => 'ING-FO-W016', // Perfect
             'FAME'  => 'ING-FO-W010', // Fame
-            'DEL'   => 'ING-FO-W051', // Delina
             'IS'    => 'ING-FO-W055', // Incanto Shine
             'MUSK'  => 'ING-FO-W008', // White Musk
             'SCN'   => 'ING-FO-W011', // Scandalous
             'VBS'   => 'ING-FO-W005', // Bombshell Escape
             'VB'    => 'ING-FO-W015', // Bombshell
-            'VCS'   => 'ING-FO-W014', // Coconut Passion
-            'TEAS'  => 'ING-FO-W044', // Tease
+            'VSC'   => 'ING-FO-W014', // Coconut Passion
             'ROWI'  => 'ING-FO-W058', // Romantic Wish
             'BOP'   => 'ING-FO-W025', // Black Opium
             'BOPR'  => 'ING-FO-W003', // Black Opium Over Red
@@ -139,13 +134,12 @@ class VariantRecipeSeeder extends Seeder
             'DDB'   => 'ING-FO-M014', // Desire Blue
             'SWY'   => 'ING-FO-M018', // Stronger With You
             'MANX'  => 'ING-FO-M004', // Halloween Man X
-            'JPM'   => 'ING-FO-M017', // Scandal Men
+            'SH'    => 'ING-FO-M017', // Scandal Homme
             'JMW'   => 'ING-FO-M016', // Wood Sage & Salt
             'SANT'  => 'ING-FO-M010', // Santal 33
             'ONE'   => 'ING-FO-M001', // One Million Lucky
             'ONER'  => 'ING-FO-M015', // One Million Royal
             'BM'    => 'ING-FO-W008', // Black Musk — pakai White Musk FO sebagai proxy
-            'TTV'   => 'ING-FO-M019', // Tobacco (Tobacco Vanille)
             'BIR'   => 'ING-FO-W004', // Born In Roma Green
             'EROF'  => 'ING-FO-W024', // Eros Flame
             'EROS'  => 'ING-FO-M009', // Eros

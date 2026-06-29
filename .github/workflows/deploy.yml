@@ -29,7 +29,7 @@ jobs:
           tags: ghcr.io/itheavenscent/pos-harumnya:latest
 
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
@@ -70,12 +70,21 @@ jobs:
             sleep 15
 
             # Setup Laravel
-            docker compose exec -T app php artisan key:generate --force
+            # Jalankan key:generate HANYA jika APP_KEY kosong di .env
+            if ! grep -q "^APP_KEY=base64:" .env; then
+              docker compose exec -T --user root app php artisan key:generate --force
+              docker compose exec -T --user root app chown www-data:www-data /var/www/.env
+            fi
+            
             docker compose exec -T app php artisan migrate --force
             docker compose exec -T app php artisan storage:link --force
             docker compose exec -T app php artisan optimize:clear
             docker compose exec -T app php artisan optimize
-            docker compose exec -T app chown -R www-data:www-data \
+            
+            # Perbaiki permission storage & cache lewat user root container
+            docker compose exec -T --user root app chown -R www-data:www-data \
+              /var/www/storage /var/www/bootstrap/cache
+            docker compose exec -T --user root app chmod -R 775 \
               /var/www/storage /var/www/bootstrap/cache
 
             echo "Deploy selesai!"

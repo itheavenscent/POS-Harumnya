@@ -8,7 +8,7 @@ services:
     command: postgres -c max_connections=200
     restart: always
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_USER: ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgre}
@@ -72,6 +72,12 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    healthcheck:
+      test: ["CMD", "php", "-r", "$$c = @fsockopen('127.0.0.1', 9000); if ($$c) { fclose($$c); exit(0); } exit(1);"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
 
   nginx:
     image: nginx:alpine
@@ -146,19 +152,21 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  backup-cron:
-    image: mcuadros/ofelia:latest
-    container_name: backup-cron
+  db-backup:
+    image: prodrigestivill/postgres-backup-local:15
+    container_name: db-backup
     restart: always
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=${DB_DATABASE:-harumnya}
+      - POSTGRES_USER=${DB_USERNAME:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgre}
+      - SCHEDULE=0 2 * * *
+      - BACKUP_KEEP_DAYS=7
+    volumes:
+      - ./backups:/backups
     depends_on:
       - db
-    command: daemon --docker
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    labels:
-      ofelia.job-local.db-backup.schedule: "0 0 2 * * *"
-      ofelia.job-local.db-backup.command: "/bin/sh /var/www/POS-Harumnya/docker/scripts/backup_db.sh"
-      ofelia.job-local.db-backup.no-overlap: "true"
     networks:
       - proxy-net
 

@@ -11,26 +11,10 @@ use Illuminate\Support\Str;
  *
  * Sumber data: Sheet "CEWEK COWOK" — Varian_Harumnya.xlsx (versi terbaru)
  *
- * Perubahan dari versi lama:
- *   - SKU disesuaikan dengan Excel terbaru
- *   - Varian baru: GI (Garuda Indonesia), PINK (Pink Chifon), NOMA (Nomade),
- *     BOUQ (Blooming Bouquet), MISS (Miss Lady), JPS (Scandal), POPY (Scarlet Poppy),
- *     JMP (Peony Blush), VIVA (Viva La Juicy), CANDY (Vanilla Candy), VIE (La Vie Est Belle),
- *     BRO (Baccarat 540), MVR (Vanilla Rose), MJP (Perfect), IS (Incanto Shine),
- *     VBS (Bombshell Escape), VB (Bombshell), VCS (Coconut Passion), ROWI (Romantic Wish),
- *     BOPR (Black Opium Red), ORC (Orchid), BOA (Omnia), RIA (Euphoria),
- *     BE (Blue Emotion), BLACK (Black Aigner), BS (Blue Seduction), DDB (Desire Blue),
- *     JPM (Scandal Homme), JMW (Wood Sage Sea Salt), ONE (One Million Lucky),
- *     ONER (One Million Royal), BM (Black Musk), TTV (Tobacco Vanille), BIR (Born in Roma)
- *   - SKU lama yang berubah: BLUS→BS, ABE→BE, BAGN→BLACK, DBL→DDB,
- *     SCNM→JPM, WOSS→JMW, OML→ONE, OMRV→ONER, TBCO→TTV, CDIV→BIR,
- *     SCND→JPS, BBOQ→BOUQ, MISD→MISS, SPOP→POPY, VLJ→VIVA,
- *     EUPH→RIA, BACR→BRO, ROMW→ROWI, INCH→IS, CCP→VCS, BS(lama)→VB,
- *     BSE→VBS, VR→MVR, PERF→MJP, BBTH→BATH, CBREK→BREAK, ORCH→ORC,
- *     OAM→BOA, MWNE→WAYN, MWAY→WAY, EDEN→EDEN, VCR→CANDY, GG→GG, SCN→SCN
- *
- * Catatan: Peony Blush (JMP) tidak dirilis karena oil rusak — tetap di-seed sebagai
- *           referensi tapi bisa di-nonaktifkan jika diperlukan.
+ * Catatan warna Excel:
+ *   - Merah dihapus dari seed: MRT, COCO, NO5, DEL, TEAS, TTV
+ *   - Biru/hijau disesuaikan: LIM ditambahkan, JPM menjadi SH, VCS menjadi VSC
+ *   - MISS disesuaikan menjadi Miss Dior sesuai nama di Excel
  */
 class VariantSeeder extends Seeder
 {
@@ -46,13 +30,13 @@ class VariantSeeder extends Seeder
         DB::table('variants')->delete();
 
         // Format: [code, name, gender]
-        // Wanita (55 items) + Pria (25 items) dari Sheet "CEWEK COWOK"
+        // Wanita (51 items) + Pria (24 items) dari Sheet "CEWEK COWOK"
         $variants = [
             // ── Wanita ────────────────────────────────────────────────────────
             ['NAG',   'Nagita',                    'female'],
             ['GRT',   'Green Tea',                 'unisex'],
-            ['MRT',   'Morning Tea',               'unisex'],
             ['RIA',   'Euphoria',                  'female'],
+            ['LIM',   'L\'Imperatrice 3',          'female'],
             ['GI',    'Garuda Indonesia',          'unisex'],
             ['FOF',   'Flight Of Fancy',           'female'],
             ['CLP',   'Cloud Pink',                'female'],
@@ -64,11 +48,9 @@ class VariantSeeder extends Seeder
             ['BLAN',  'Blanche',                   'unisex'],
             ['GG',    'Good Girl',                 'female'],
             ['GGB',   'Good Girl Blush',           'female'],
-            ['COCO',  'Coco',                      'female'],
-            ['NO5',   'No. 5',                     'female'],
             ['NOMA',  'Nomade',                    'female'],
             ['BOUQ',  'Blooming Bouquet',          'female'],
-            ['MISS',  'Miss Lady',                 'female'],
+            ['MISS',  'Miss Dior',                 'female'],
             ['EAC',   'Eau Capitale',              'unisex'],
             ['CTA',   'Cherry in The Air',         'female'],
             ['WAY',   'My Way',                    'female'],
@@ -91,14 +73,12 @@ class VariantSeeder extends Seeder
             ['MVR',   'Vanilla Rose',              'unisex'],
             ['MJP',   'Perfect',                   'female'],
             ['FAME',  'Fame',                      'female'],
-            ['DEL',   'Delina',                    'female'],
             ['IS',    'Incanto Shine',             'female'],
             ['MUSK',  'White Musk',                'unisex'],
             ['SCN',   'Scandalous',                'female'],
             ['VBS',   'Bombshell Escape',          'female'],
             ['VB',    'Bombshell',                 'female'],
-            ['VCS',   'Coconut Passion',           'female'],
-            ['TEAS',  'Tease',                     'female'],
+            ['VSC',   'Coconut Passion',           'female'],
             ['ROWI',  'Romantic Wish',             'female'],
             ['BOP',   'Black Opium',               'female'],
             ['BOPR',  'Black Opium Red',           'female'],
@@ -119,13 +99,12 @@ class VariantSeeder extends Seeder
             ['DDB',   'Desire Blue',               'male'],
             ['SWY',   'Stronger With You',         'male'],
             ['MANX',  'Man X',                     'male'],
-            ['JPM',   'Scandal Homme',             'male'],
+            ['SH',    'Scandal Homme',             'male'],
             ['JMW',   'Wood Sage Sea Salt',        'unisex'],
             ['SANT',  'Santal 33',                 'unisex'],
             ['ONE',   'One Million Lucky',         'male'],
             ['ONER',  'One Million Royal',         'male'],
             ['BM',    'Black Musk',                'unisex'],
-            ['TTV',   'Tobacco Vanille',           'unisex'],
             ['BIR',   'Born in Roma',              'male'],
             ['EROF',  'Eros Flame',                'male'],
             ['EROS',  'Eros',                      'male'],

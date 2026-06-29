@@ -31,9 +31,9 @@ class PromoSeeder extends Seeder
                 'is_active' => true,
                 'description' => 'Hadiah Spin Wheel untuk pembelian jumlah tertentu.',
                 'terms_conditions' => [
-                    'Beli 3 botol 30 mL',
-                    'ATAU Beli 2 botol 50 mL',
-                    'ATAU Beli 1 botol 100 mL',
+                    'Setiap pembelian 3 parfum + botol 30 mL',
+                    'Setiap pembelian 2 parfum + botol 50 mL',
+                    'Setiap pembelian 1 parfum + botol 100 mL',
                 ],
                 'is_game_reward' => true,
                 'game_probability' => 100, // Selalu muncul jika syarat terpenuhi

@@ -71,7 +71,7 @@ class DiscountSeeder extends Seeder
         }
 
         // Clean old promo data to make it idempotent and cleanly refreshable
-        DB::table('discount_types')->whereIn('code', ['SPINWHEEL', 'POIN-MEMBER'])->delete();
+        DB::table('discount_types')->whereIn('code', ['SPINWHEEL', 'POIN-MEMBER', 'BUY1GET1'])->delete();
 
         DB::beginTransaction();
 
@@ -102,13 +102,12 @@ class DiscountSeeder extends Seeder
                 'priority'              => 10,
                 'is_combinable'         => false,
                 'is_active'             => true,
-                'description'           => 'Gratis 1x Spin Wheel untuk setiap: beli ≥3 botol P30, atau ≥2 botol P50, atau ≥1 botol P100 (semua intensitas & varian). Hadiah: Parfum Spray EDT 3mL Oil + 7mL Alkohol (10 mL) all variant, Parfum 30 mL all variant, atau 1 Poin Member.',
+                'description'           => 'Setiap pembelian parfum sesuai ketentuan gratis 1 kali spinwheel dengan hadiah (P30 EDT pilih varian + Botol, P10 EDT pilih varian + Botol Spray).',
                 'terms_conditions'      => json_encode([
-                    'Syarat: beli ≥3 botol P30 ATAU ≥2 botol P50 ATAU ≥1 botol P100',
-                    'Berlaku semua intensitas (EDT/EDP/EXT) dan semua varian',
-                    'Gratis 1x spin Spin Wheel per transaksi yang memenuhi syarat',
-                    'Hadiah spin: Parfum Spray EDT 3mL Oil + 7mL Alkohol (10 mL) all variant, Parfum 30 mL all variant, atau 1 Poin Member',
-                    'Hadiah tidak dapat ditukar uang tunai',
+                    'Syarat: Beli 3 parfum + botol 30 mL, ATAU Beli 2 parfum + botol 50 mL, ATAU Beli 1 parfum + botol 100 mL',
+                    'Berlaku untuk semua kategori produk',
+                    'Gratis 1 kali spinwheel per transaksi yang memenuhi ketentuan',
+                    'Hadiah: P30 EDT pilih varian + Botol, atau P10 EDT pilih varian + Botol Spray',
                 ]),
                 'created_at'            => $now,
                 'updated_at'            => $now,
@@ -175,31 +174,22 @@ class DiscountSeeder extends Seeder
             // Pool items: Parfum 10 mL all variant, Parfum 30 mL all variant, 1 Poin Member
             $spinItems = [
                 [
-                    'label'         => 'Parfum Spray EDT 3mL Oil + 7mL Alkohol (Pilih Varian)',
+                    'label'         => 'Parfum P10 EDT (Pilih Varian) + Botol Spray',
                     'reward_type'   => 'variant',
                     'points_amount' => null,
                     'intensity_id'  => $edt,
                     'size_id'       => $s10,
-                    'probability'   => 33,
+                    'probability'   => 50,
                     'sort_order'    => 1
                 ],
                 [
-                    'label'         => 'Parfum 30 mL (Pilih Varian)',
+                    'label'         => 'Parfum P30 EDT (Pilih Varian) + Botol',
                     'reward_type'   => 'variant',
                     'points_amount' => null,
                     'intensity_id'  => $edt,
                     'size_id'       => $s30,
-                    'probability'   => 33,
+                    'probability'   => 50,
                     'sort_order'    => 2
-                ],
-                [
-                    'label'         => '1 Poin Member',
-                    'reward_type'   => 'points',
-                    'points_amount' => 1,
-                    'intensity_id'  => null,
-                    'size_id'       => null,
-                    'probability'   => 34,
-                    'sort_order'    => 3
                 ],
             ];
             foreach ($spinItems as $item) {
@@ -315,10 +305,101 @@ class DiscountSeeder extends Seeder
 
             $this->command->line('  [2/2] Poin Member seeded');
 
+            // ==================================================================
+            // 3. BUY 1 GET 1 (Promo Opening)
+            //    - Beli 1 P50 (All Kategori) + botol -> Free 1 P10 EDT (1:2) spray
+            // ==================================================================
+            $dtB1G1 = Str::uuid()->toString();
+
+            DB::table('discount_types')->insert([
+                'id'                    => $dtB1G1,
+                'code'                  => 'BUY1GET1',
+                'name'                  => 'Buy 1 Get 1 Free P10 Spray',
+                'type'                  => 'buy_x_get_y',
+                'value'                 => 0.00,
+                'buy_quantity'          => 1,
+                'get_quantity'          => 1,
+                'get_product_type'      => 'specific',
+                'min_purchase_amount'   => null,
+                'min_purchase_quantity' => null,
+                'max_discount_amount'   => null,
+                'start_date'            => null,
+                'end_date'              => null,
+                'start_time'            => null,
+                'end_time'              => null,
+                'is_game_reward'        => false,
+                'game_probability'      => null,
+                'priority'              => 8,
+                'is_combinable'         => false,
+                'is_active'             => true,
+                'description'           => 'Promo Opening Buy 1 P50 + botol (All Kategori) Free 1 P10 EDT (1:2) spray.',
+                'terms_conditions'      => json_encode([
+                    'Beli 1 Parfum P50 (50 mL) all category gratis 1 Parfum P10 EDT (10 mL) spray',
+                    'Customer dapat memilih varian parfum P10 EDT gratis',
+                    'Promo berlaku selama masa opening toko',
+                ]),
+                'created_at'            => $now,
+                'updated_at'            => $now,
+            ]);
+
+            // Applicability: P50 (50 mL)
+            DB::table('discount_applicabilities')->insert([
+                'id'               => Str::uuid(),
+                'discount_type_id' => $dtB1G1,
+                'variant_id'       => null,
+                'intensity_id'     => null,
+                'size_id'          => $s50,
+                'created_at'       => $now,
+                'updated_at'       => $now,
+            ]);
+
+            // Requirement: Beli 1 P50
+            DB::table('discount_requirements')->insert([
+                'id'                => Str::uuid(),
+                'discount_type_id'  => $dtB1G1,
+                'variant_id'        => null,
+                'intensity_id'      => null,
+                'size_id'           => $s50,
+                'required_quantity' => 1,
+                'matching_mode'     => 'all',
+                'group_key'         => 'BUY-P50-1PCS',
+                'created_at'        => $now,
+                'updated_at'        => $now,
+            ]);
+
+            // Reward: 1x P10 EDT (customer pilih varian)
+            DB::table('discount_rewards')->insert([
+                'id'                  => Str::uuid(),
+                'discount_type_id'    => $dtB1G1,
+                'variant_id'          => null,
+                'intensity_id'        => $edt,
+                'size_id'             => $s10,
+                'reward_quantity'     => 1,
+                'customer_can_choose' => true,
+                'is_pool'             => false,
+                'max_choices'         => null,
+                'discount_percentage' => 100.00,
+                'fixed_price'         => null,
+                'priority'            => 1,
+                'created_at'          => $now,
+                'updated_at'          => $now,
+            ]);
+
+            // Berlaku di semua toko
+            DB::table('discount_stores')->insert([
+                'id'               => Str::uuid(),
+                'discount_type_id' => $dtB1G1,
+                'store_id'         => null,
+                'created_at'       => $now,
+                'updated_at'       => $now,
+            ]);
+
+            $this->command->line('  [3/3] Buy 1 Get 1 (Opening) seeded');
+
             DB::commit();
 
             $this->command->info('');
-            $this->command->info('✓ DiscountSeeder selesai — 2 program promo (Spin Wheel + Poin Member).');
+            $this->command->info('✓ DiscountSeeder selesai — 3 program promo (Spin Wheel + Poin Member + Buy 1 Get 1).');
 
         } catch (\Exception $e) {
             DB::rollBack();
