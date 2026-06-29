@@ -635,6 +635,9 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     Route::prefix('pos')->name('pos.')->group(function () {
         Route::get('stock', [POSFeatureController::class, 'stock'])->name('stock')->middleware('permission:transactions-access');
         Route::get('transactions', [POSFeatureController::class, 'transactions'])->name('transactions')->middleware('permission:transactions-access');
+        Route::get('fulfillment', [POSFeatureController::class, 'fulfillmentIndex'])->name('fulfillment.index')->middleware('permission:transactions-access');
+        Route::get('fulfillment/{id}', [POSFeatureController::class, 'fulfillmentShow'])->name('fulfillment.show')->middleware('permission:transactions-access');
+        Route::post('fulfillment/{id}/receive', [POSFeatureController::class, 'fulfillmentReceive'])->name('fulfillment.receive')->middleware('permission:transactions-access');
     });
 
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');

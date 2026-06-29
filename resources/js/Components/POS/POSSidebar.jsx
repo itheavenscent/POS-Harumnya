@@ -13,6 +13,7 @@ import {
     IconChevronLeft,
     IconChevronRight,
     IconBox,
+    IconTransfer,
 } from "@tabler/icons-react";
 
 export default function POSSidebar({ onCashAction, onOpenShift, onCloseShift, activeCashDrawer, isOpen, onToggle }) {
@@ -31,6 +32,12 @@ export default function POSSidebar({ onCashAction, onOpenShift, onCloseShift, ac
             icon: <IconBox size={20} />,
             href: route("pos.stock"),
             active: component === "Dashboard/POS/Stock",
+        },
+        {
+            title: "Fulfillment",
+            icon: <IconTransfer size={20} />,
+            href: route("pos.fulfillment.index"),
+            active: component.startsWith("Dashboard/POS/Fulfillment"),
         },
         {
             title: "Riwayat Transaksi",

@@ -15,7 +15,10 @@ import {
     IconArrowsExchange,
     IconBuildingStore,
     IconReceipt,
+    IconTransfer,
+    IconBox,
 } from "@tabler/icons-react";
+
 import OpenShiftModal from "@/Components/Dashboard/OpenShiftModal";
 import CloseShiftModal from "@/Components/Dashboard/CloseShiftModal";
 import POSSidebar from "@/Components/POS/POSSidebar";
@@ -230,6 +233,22 @@ export default function POSLayout({ children, headerActions }) {
                             >
                                 <IconBuildingStore size={18} />
                                 <span className="font-medium text-sm">Kasir / POS</span>
+                            </Link>
+                            <Link
+                                href={route("pos.stock")}
+                                onClick={() => setShowMobileMenu(false)}
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors ${component === "Dashboard/POS/Stock" ? "text-cyan-600 bg-cyan-50 dark:bg-cyan-900/30" : "text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"}`}
+                            >
+                                <IconBox size={18} />
+                                <span className="font-medium text-sm">Stok Toko</span>
+                            </Link>
+                            <Link
+                                href={route("pos.fulfillment.index")}
+                                onClick={() => setShowMobileMenu(false)}
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors ${component.startsWith("Dashboard/POS/Fulfillment") ? "text-cyan-600 bg-cyan-50 dark:bg-cyan-900/30" : "text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"}`}
+                            >
+                                <IconTransfer size={18} />
+                                <span className="font-medium text-sm">Fulfillment</span>
                             </Link>
                             <Link
                                 href={route("cash-drawers.current")}
