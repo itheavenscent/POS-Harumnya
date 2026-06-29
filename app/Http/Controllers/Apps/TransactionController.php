@@ -95,6 +95,7 @@ class TransactionController extends Controller
             'id',
             'name',
             'code',
+            'image',
             'selling_price',
             'is_free',
             'free_condition_note',
