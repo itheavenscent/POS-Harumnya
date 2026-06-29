@@ -49,7 +49,7 @@ jobs:
             docker pull ghcr.io/itheavenscent/pos-harumnya:latest
 
             # Ekstrak static assets dari image ke host (agar dibaca oleh nginx)
-            docker run --rm -v $(pwd)/public:/host-public ghcr.io/itheavenscent/pos-harumnya:latest sh -c "rm -rf /host-public/build && cp -r /var/www/public/build /host-public/"
+            docker run --rm --user root -v $(pwd)/public:/host-public ghcr.io/itheavenscent/pos-harumnya:latest sh -c "rm -rf /host-public/build && cp -r /var/www/public/build /host-public/"
 
             # Buat direktori yang dibutuhkan
             mkdir -p logs/nginx logs/nginx-proxy storage bootstrap/cache
