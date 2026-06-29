@@ -15,11 +15,11 @@ import toast from "react-hot-toast";
 // =============================================================================
 
 const STATUS_CFG = {
-    draft:     { label: "Draft",     cls: "bg-slate-100 text-slate-600 border-slate-300"         },
-    pending:   { label: "Pending",   cls: "bg-yellow-100 text-yellow-700 border-yellow-300"       },
-    approved:  { label: "Disetujui", cls: "bg-blue-100 text-blue-700 border-blue-300"             },
-    completed: { label: "Selesai",   cls: "bg-success-100 text-success-700 border-success-300"    },
-    cancelled: { label: "Batal",     cls: "bg-red-100 text-red-700 border-red-300"                },
+    draft:     { label: "Draft",     cls: "bg-slate-100 text-slate-700 border-slate-300" },
+    pending:   { label: "Pending",   cls: "bg-slate-100 text-slate-700 border-slate-300" },
+    approved:  { label: "Disetujui", cls: "bg-slate-100 text-slate-700 border-slate-300" },
+    completed: { label: "Selesai",   cls: "bg-slate-100 text-slate-700 border-slate-300" },
+    cancelled: { label: "Batal",     cls: "bg-slate-100 text-slate-700 border-slate-300" },
 };
 
 // =============================================================================
@@ -32,8 +32,8 @@ function DeleteModal({ show, item, onConfirm, onClose, loading }) {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-xl border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
-                        <IconAlertTriangle size={20} className="text-red-500" />
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
+                        <IconAlertTriangle size={20} className="text-slate-700" />
                     </div>
                     <div>
                         <h3 className="font-bold text-slate-900 dark:text-white text-base">
@@ -124,7 +124,7 @@ export default function Index({ repacks, filters = {}, summary = {} }) {
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <IconFlask size={28} className="text-primary-500" /> Repack Ingredient
+                        <IconFlask size={28} className="text-slate-700" /> Repack Ingredient
                     </h1>
                     <p className="text-sm text-slate-500">Gabungkan beberapa ingredient menjadi satu ingredient baru.</p>
                 </div>
@@ -208,7 +208,7 @@ export default function Index({ repacks, filters = {}, summary = {} }) {
                                             {i + 1 + (repacks.current_page - 1) * repacks.per_page}
                                         </Table.Td>
                                         <Table.Td>
-                                            <span className="font-mono text-xs font-bold text-primary-600">
+                                            <span className="font-mono text-xs font-bold text-slate-800">
                                                 {r.repack_number}
                                             </span>
                                         </Table.Td>
@@ -225,7 +225,7 @@ export default function Index({ repacks, filters = {}, summary = {} }) {
                                             <div className="text-xs text-slate-400 capitalize">{r.location_type}</div>
                                         </Table.Td>
                                         <Table.Td className="text-right">
-                                            <div className="font-bold text-primary-600">{fmtQty(r.output_quantity)}</div>
+                                            <div className="font-bold text-slate-800">{fmtQty(r.output_quantity)}</div>
                                             <div className="text-xs text-slate-400">{r.repack_ingredient?.unit}</div>
                                         </Table.Td>
                                         <Table.Td className="text-right">
@@ -245,21 +245,21 @@ export default function Index({ repacks, filters = {}, summary = {} }) {
                                                 <Button
                                                     type="link"
                                                     icon={<IconEye size={14} />}
-                                                    className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200"
+                                                    className="p-1.5 bg-slate-100 text-slate-700 hover:bg-blue-100 border border-slate-300"
                                                     href={route("repacks.show", r.id)}
                                                 />
                                                 {["draft", "pending"].includes(r.status) && (
                                                     <Button
                                                         type="edit"
                                                         icon={<IconPencilCog size={14} />}
-                                                        className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200"
+                                                        className="p-1.5 bg-slate-100 text-slate-700 hover:bg-amber-100 border border-slate-300"
                                                         href={route("repacks.edit", r.id)}
                                                     />
                                                 )}
                                                 {r.status === "draft" && (
                                                     <button
                                                         onClick={() => confirmDelete(r)}
-                                                        className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors"
+                                                        className="p-1.5 bg-slate-100 text-slate-700 hover:bg-rose-100 border border-slate-300 rounded-lg transition-colors"
                                                         title="Hapus"
                                                     >
                                                         <IconTrash size={14} />
@@ -279,7 +279,7 @@ export default function Index({ repacks, filters = {}, summary = {} }) {
                     <h3 className="font-bold text-slate-600 dark:text-slate-400">Tidak ada data repack</h3>
                     <Link
                         href={route("repacks.create")}
-                        className="mt-4 flex items-center gap-2 text-primary-600 font-bold hover:underline text-sm"
+                        className="mt-4 flex items-center gap-2 text-slate-700 font-bold hover:underline text-sm"
                     >
                         <IconCirclePlus size={16} /> Buat Repack Baru
                     </Link>

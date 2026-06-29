@@ -27,11 +27,11 @@ const CATEGORY_LABELS = {
 };
 
 const CATEGORY_COLORS = {
-    merchandise: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
-    voucher: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-    food: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-    cash: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-    service: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
+    merchandise: "bg-purple-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+    voucher: "bg-blue-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+    food: "bg-amber-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+    cash: "bg-emerald-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+    service: "bg-sky-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
     other: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
 };
 
@@ -70,7 +70,7 @@ function ItemModal({ item = null, categories, onClose }) {
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
                     <h2 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        <IconGift size={18} className="text-purple-500" />
+                        <IconGift size={18} className="text-slate-700" />
                         {isEdit ? "Edit Reward Item" : "Tambah Reward Item"}
                     </h2>
                     <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl leading-none">&times;</button>
@@ -87,7 +87,7 @@ function ItemModal({ item = null, categories, onClose }) {
                                 placeholder="MERCH-001"
                                 className="w-full text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-700 focus:border-transparent"
                             />
-                            {errors.code && <p className="text-red-500 text-xs mt-1">{errors.code}</p>}
+                            {errors.code && <p className="text-slate-700 text-xs mt-1">{errors.code}</p>}
                         </div>
                         {/* Category */}
                         <div>
@@ -111,7 +111,7 @@ function ItemModal({ item = null, categories, onClose }) {
                             placeholder="Kaos Harumnya"
                             className="w-full text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-700 focus:border-transparent"
                         />
-                        {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                        {errors.name && <p className="text-slate-700 text-xs mt-1">{errors.name}</p>}
                     </div>
 
                     {/* Description */}
@@ -141,7 +141,7 @@ function ItemModal({ item = null, categories, onClose }) {
                                 className="w-full text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2"
                             />
                             <p className="text-[10px] text-slate-400 mt-0.5">Biaya yang ditanggung toko</p>
-                            {errors.cost_price && <p className="text-red-500 text-xs mt-1">{errors.cost_price}</p>}
+                            {errors.cost_price && <p className="text-slate-700 text-xs mt-1">{errors.cost_price}</p>}
                         </div>
                         {/* Selling Value */}
                         <div>
@@ -195,7 +195,7 @@ function ItemModal({ item = null, categories, onClose }) {
                             type="checkbox"
                             checked={data.is_active}
                             onChange={e => setData("is_active", e.target.checked)}
-                            className="rounded border-slate-300 text-purple-600 focus:ring-purple-400"
+                            className="rounded border-slate-300 text-slate-700 focus:ring-purple-400"
                         />
                         Aktif (dapat dipilih sebagai reward)
                     </label>
@@ -251,7 +251,7 @@ export default function RewardItemsIndex({ items, filters, categories }) {
             <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        <IconGift size={26} className="text-purple-500" />
+                        <IconGift size={26} className="text-slate-700" />
                         Master Reward Items
                     </h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
@@ -286,10 +286,10 @@ export default function RewardItemsIndex({ items, filters, categories }) {
             {/* Stats summary */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                 {[
-                    { label: "Total Item", value: items.total, icon: <IconGift size={18} className="text-purple-500" /> },
-                    { label: "Aktif", value: items.data.filter(i => i.is_active).length, icon: <IconToggleRight size={18} className="text-emerald-500" /> },
-                    { label: "HPP Terendah", value: items.data.length > 0 ? fmt(Math.min(...items.data.map(i => i.cost_price || 0))) : fmt(0), icon: <IconCurrencyDollar size={18} className="text-blue-500" /> },
-                    { label: "HPP Tertinggi", value: items.data.length > 0 ? fmt(Math.max(...items.data.map(i => i.cost_price || 0))) : fmt(0), icon: <IconTag size={18} className="text-amber-500" /> },
+                    { label: "Total Item", value: items.total, icon: <IconGift size={18} className="text-slate-700" /> },
+                    { label: "Aktif", value: items.data.filter(i => i.is_active).length, icon: <IconToggleRight size={18} className="text-slate-700" /> },
+                    { label: "HPP Terendah", value: items.data.length > 0 ? fmt(Math.min(...items.data.map(i => i.cost_price || 0))) : fmt(0), icon: <IconCurrencyDollar size={18} className="text-slate-700" /> },
+                    { label: "HPP Tertinggi", value: items.data.length > 0 ? fmt(Math.max(...items.data.map(i => i.cost_price || 0))) : fmt(0), icon: <IconTag size={18} className="text-slate-700" /> },
                 ].map((s, idx) => (
                     <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800">{s.icon}</div>
@@ -334,7 +334,7 @@ export default function RewardItemsIndex({ items, filters, categories }) {
                                         {CATEGORY_LABELS[item.category] ?? item.category}
                                     </span>
                                 </td>
-                                <td className="px-5 py-3.5 text-right font-semibold text-red-600 dark:text-red-400">
+                                <td className="px-5 py-3.5 text-right font-semibold text-slate-700 dark:text-slate-300">
                                     {fmt(item.cost_price)}
                                 </td>
                                 <td className="px-5 py-3.5 text-right text-slate-500 dark:text-slate-400">
@@ -344,7 +344,7 @@ export default function RewardItemsIndex({ items, filters, categories }) {
                                     {item.stock_qty == null ? (
                                         <span className="text-xs text-slate-400 italic">∞</span>
                                     ) : (
-                                        <span className={`text-xs font-semibold ${item.stock_qty === 0 ? "text-red-500" : "text-slate-700 dark:text-slate-300"}`}>
+                                        <span className={`text-xs font-semibold ${item.stock_qty === 0 ? "text-slate-700" : "text-slate-700 dark:text-slate-300"}`}>
                                             {item.stock_qty}
                                         </span>
                                     )}
@@ -352,7 +352,7 @@ export default function RewardItemsIndex({ items, filters, categories }) {
                                 <td className="px-5 py-3.5 text-center">
                                     <button onClick={() => handleToggle(item)} className="transition-colors">
                                         {item.is_active
-                                            ? <IconToggleRight size={22} className="text-emerald-500 hover:text-emerald-600" />
+                                            ? <IconToggleRight size={22} className="text-slate-700 hover:text-slate-700" />
                                             : <IconToggleLeft size={22} className="text-slate-300 dark:text-slate-600 hover:text-slate-400" />}
                                     </button>
                                 </td>
@@ -367,7 +367,7 @@ export default function RewardItemsIndex({ items, filters, categories }) {
                                         </button>
                                         <button
                                             onClick={() => handleDelete(item)}
-                                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-red-950/30 transition-colors"
                                             title="Hapus"
                                         >
                                             <IconTrash size={14} />

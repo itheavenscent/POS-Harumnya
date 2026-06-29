@@ -17,7 +17,7 @@ import toast from "react-hot-toast";
 
 function StatusBadge({ isActive }) {
     return isActive ? (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-success-100 text-success-700 dark:bg-success-900/50 dark:text-success-400">
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-success-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
             <IconCircleCheck size={13} strokeWidth={2.5} /> Aktif
         </span>
     ) : (
@@ -29,11 +29,11 @@ function StatusBadge({ isActive }) {
 
 function ModeBadge({ allowAll }) {
     return allowAll ? (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-green-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
             Semua Variant
         </span>
     ) : (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
             Whitelist
         </span>
     );
@@ -49,8 +49,8 @@ function DeleteModal({ show, item, onConfirm, onClose, loading }) {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-xl border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
-                        <IconAlertTriangle size={20} className="text-red-500" />
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
+                        <IconAlertTriangle size={20} className="text-slate-700" />
                     </div>
                     <div>
                         <h3 className="font-bold text-slate-900 dark:text-white text-base">
@@ -125,7 +125,7 @@ function CategoryCard({ category, onToggle, onDelete }) {
                     </div>
                     <div className="w-px h-10 bg-slate-200 dark:bg-slate-700" />
                     <div className="text-center flex-1">
-                        <p className="text-2xl font-black text-primary-600 dark:text-primary-400">
+                        <p className="text-2xl font-black text-slate-700 dark:text-slate-300">
                             {category.stores_count}
                         </p>
                         <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wide">
@@ -144,7 +144,7 @@ function CategoryCard({ category, onToggle, onDelete }) {
                 </Link>
                 <Link
                     href={route("store-categories.edit", category.id)}
-                    className="flex-1 py-2 rounded-xl bg-warning-50 dark:bg-warning-900/30 text-warning-700 dark:text-warning-300 text-xs font-bold hover:bg-warning-100 dark:hover:bg-warning-900/50 transition-colors flex items-center justify-center gap-1"
+                    className="flex-1 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-warning-100 dark:hover:bg-warning-900/50 transition-colors flex items-center justify-center gap-1"
                 >
                     <IconPencilCog size={14} /> Edit
                 </Link>
@@ -154,13 +154,13 @@ function CategoryCard({ category, onToggle, onDelete }) {
                     title={category.is_active ? "Nonaktifkan" : "Aktifkan"}
                 >
                     {category.is_active
-                        ? <IconToggleRight size={16} className="text-success-500" />
+                        ? <IconToggleRight size={16} className="text-slate-700" />
                         : <IconToggleLeft size={16} className="text-slate-400" />
                     }
                 </button>
                 <button
                     onClick={() => onDelete(category)}
-                    className="px-3 py-2 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                    className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
                     title="Hapus"
                 >
                     <IconTrash size={14} />
@@ -407,7 +407,7 @@ export default function Index({ categories, filters }) {
                     )}
                     <button
                         onClick={() => applyFilters({ is_active: "", per_page: 12 })}
-                        className="text-xs text-red-500 hover:text-red-700 font-semibold"
+                        className="text-xs text-slate-700 hover:text-slate-700 font-semibold"
                     >
                         Reset semua
                     </button>
@@ -494,20 +494,20 @@ export default function Index({ categories, filters }) {
                                                         title={cat.is_active ? "Nonaktifkan" : "Aktifkan"}
                                                     >
                                                         {cat.is_active
-                                                            ? <IconToggleRight size={16} className="text-success-500" />
+                                                            ? <IconToggleRight size={16} className="text-slate-700" />
                                                             : <IconToggleLeft size={16} />
                                                         }
                                                     </button>
                                                     <Link
                                                         href={route("store-categories.edit", cat.id)}
-                                                        className="p-2 rounded-lg bg-warning-50 dark:bg-warning-900/30 text-warning-600 dark:text-warning-400 hover:bg-warning-100 dark:hover:bg-warning-900/50 transition-all"
+                                                        className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-warning-100 dark:hover:bg-warning-900/50 transition-all"
                                                         title="Edit"
                                                     >
                                                         <IconPencilCog size={16} strokeWidth={2} />
                                                     </Link>
                                                     <button
                                                         onClick={() => confirmDelete(cat)}
-                                                        className="p-2 rounded-lg bg-danger-50 dark:bg-danger-900/30 text-danger-600 dark:text-danger-400 hover:bg-danger-100 dark:hover:bg-danger-900/50 transition-all"
+                                                        className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-danger-100 dark:hover:bg-danger-900/50 transition-all"
                                                         title="Hapus"
                                                     >
                                                         <IconTrash size={16} strokeWidth={2} />

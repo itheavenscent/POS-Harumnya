@@ -17,7 +17,7 @@ export default function Index() {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                            <IconKey size={28} className="text-primary-500" />
+                            <IconKey size={28} className="text-slate-700" />
                             Hak Akses
                         </h1>
                         <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -42,13 +42,13 @@ export default function Index() {
                     {permissions.data.map((permission, i) => (
                         <div
                             key={permission.id || i}
-                            className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:shadow-md hover:border-primary-300 dark:hover:border-primary-700 transition-all"
+                            className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:shadow-md hover:border-slate-300 dark:hover:border-primary-700 transition-all"
                         >
                             <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center">
+                                <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-slate-800 flex items-center justify-center">
                                     <IconShield
                                         size={16}
-                                        className="text-primary-600 dark:text-primary-400"
+                                        className="text-slate-700 dark:text-slate-300"
                                     />
                                 </div>
                                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">

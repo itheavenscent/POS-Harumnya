@@ -18,7 +18,7 @@ import toast from "react-hot-toast";
 // ---------------------------------------------------------------------------
 function StatusBadge({ isActive }) {
     return isActive ? (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-success-100 text-success-700 dark:bg-success-900/50 dark:text-success-400">
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-success-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
             <IconCircleCheck size={13} strokeWidth={2.5} /> Aktif
         </span>
     ) : (
@@ -51,8 +51,8 @@ function DeleteModal({ show, item, onConfirm, onClose, loading }) {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-xl border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
-                        <IconAlertTriangle size={20} className="text-red-500" />
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
+                        <IconAlertTriangle size={20} className="text-slate-700" />
                     </div>
                     <div>
                         <h3 className="font-bold text-slate-900 dark:text-white text-base">
@@ -94,7 +94,7 @@ function StoreCard({ store, selected, onSelect, onDelete }) {
     return (
         <div className={`bg-white dark:bg-slate-900 rounded-2xl border transition-all hover:shadow-lg ${
             selected
-                ? "border-primary-400 dark:border-primary-600 ring-2 ring-primary-200 dark:ring-primary-800"
+                ? "border-slate-300 dark:border-primary-600 ring-2 ring-primary-200 dark:ring-primary-800"
                 : "border-slate-200 dark:border-slate-800"
         }`}>
             <div className="p-5">
@@ -104,10 +104,10 @@ function StoreCard({ store, selected, onSelect, onDelete }) {
                             type="checkbox"
                             checked={selected}
                             onChange={e => onSelect(store.id, e.target.checked)}
-                            className="w-4 h-4 rounded border-2 border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                            className="w-4 h-4 rounded border-2 border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
                         />
-                        <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/40 flex items-center justify-center">
-                            <IconBuildingStore size={20} className="text-primary-600 dark:text-primary-400" />
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                            <IconBuildingStore size={20} className="text-slate-700 dark:text-slate-300" />
                         </div>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -150,13 +150,13 @@ function StoreCard({ store, selected, onSelect, onDelete }) {
             <div className="px-5 pb-4 flex gap-2">
                 <Link
                     href={route("stores.edit", store.id)}
-                    className="flex-1 text-center py-2 rounded-xl bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs font-bold hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
+                    className="flex-1 text-center py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
                 >
                     <IconPencilCog size={14} className="inline mr-1" />Edit
                 </Link>
                 <button
                     onClick={() => onDelete(store)}
-                    className="flex-1 text-center py-2 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                    className="flex-1 text-center py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
                 >
                     <IconTrash size={14} className="inline mr-1" />Hapus
                 </button>
@@ -186,8 +186,8 @@ function FilterModal({ show, onClose, filters, onApply, categories }) {
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-sm w-full border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center">
-                            <IconFilter size={18} className="text-primary-600 dark:text-primary-400" />
+                        <div className="w-9 h-9 rounded-xl bg-primary-100 dark:bg-slate-800 flex items-center justify-center">
+                            <IconFilter size={18} className="text-slate-700 dark:text-slate-300" />
                         </div>
                         <h3 className="text-base font-bold text-slate-900 dark:text-white">Filter Toko</h3>
                     </div>
@@ -254,8 +254,8 @@ function BulkDeleteModal({ show, onClose, onConfirm, count }) {
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-sm w-full border border-slate-200 dark:border-slate-800 p-6">
-                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center mx-auto mb-4">
-                    <IconAlertTriangle size={22} className="text-red-600 dark:text-red-400" />
+                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                    <IconAlertTriangle size={22} className="text-slate-700 dark:text-slate-300" />
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Hapus {count} Toko?</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 text-center mb-6">
@@ -360,7 +360,7 @@ export default function Index({ stores, filters, categories }) {
                             {stores.total ?? stores.data?.length ?? 0} Toko Terdaftar
                         </span>
                         {selectedIds.length > 0 && (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-400 text-xs font-semibold">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-primary-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
                                 {selectedIds.length} Dipilih
                             </span>
                         )}
@@ -395,7 +395,7 @@ export default function Index({ stores, filters, categories }) {
                             onClick={() => setShowFilter(true)}
                             className={`p-2.5 rounded-xl transition-colors relative ${
                                 hasActiveFilters
-                                    ? "bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400"
+                                    ? "bg-primary-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                                     : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                             }`}
                             title="Filter"
@@ -409,14 +409,14 @@ export default function Index({ stores, filters, categories }) {
                         <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                             <button
                                 onClick={() => setViewMode("list")}
-                                className={`p-1.5 rounded-lg transition-all ${viewMode === "list" ? "bg-white dark:bg-slate-700 shadow text-primary-600 dark:text-primary-400" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"}`}
+                                className={`p-1.5 rounded-lg transition-all ${viewMode === "list" ? "bg-white dark:bg-slate-700 shadow text-slate-700 dark:text-slate-300" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"}`}
                                 title="List View"
                             >
                                 <IconList size={18} />
                             </button>
                             <button
                                 onClick={() => setViewMode("grid")}
-                                className={`p-1.5 rounded-lg transition-all ${viewMode === "grid" ? "bg-white dark:bg-slate-700 shadow text-primary-600 dark:text-primary-400" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"}`}
+                                className={`p-1.5 rounded-lg transition-all ${viewMode === "grid" ? "bg-white dark:bg-slate-700 shadow text-slate-700 dark:text-slate-300" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"}`}
                                 title="Grid View"
                             >
                                 <IconLayoutGrid size={18} />
@@ -427,9 +427,9 @@ export default function Index({ stores, filters, categories }) {
 
                 {/* Bulk Actions */}
                 {selectedIds.length > 0 && (
-                    <div className="flex items-center justify-between p-4 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl">
+                    <div className="flex items-center justify-between p-4 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl">
                         <div className="flex items-center gap-3">
-                            <IconCheck size={18} className="text-primary-600 dark:text-primary-400" />
+                            <IconCheck size={18} className="text-slate-700 dark:text-slate-300" />
                             <span className="text-sm font-semibold text-primary-900 dark:text-primary-100">{selectedIds.length} toko dipilih</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -456,7 +456,7 @@ export default function Index({ stores, filters, categories }) {
                         )}
 
                         {currentFilters.is_active !== "" && (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 text-xs font-semibold">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
                                 Status: {currentFilters.is_active === "1" ? "Aktif" : "Non-Aktif"}
                                 <button onClick={() => handleApplyFilters({ ...currentFilters, is_active: "" })} className="hover:bg-primary-200 dark:hover:bg-primary-800 rounded-full p-0.5">
                                     <IconX size={11} strokeWidth={3} />
@@ -464,7 +464,7 @@ export default function Index({ stores, filters, categories }) {
                             </span>
                         )}
 
-                        <button onClick={() => handleApplyFilters({ is_active: "", store_category_id: "", per_page: 12 })} className="text-xs font-semibold text-red-600 dark:text-red-400 hover:underline">Reset Semua</button>
+                        <button onClick={() => handleApplyFilters({ is_active: "", store_category_id: "", per_page: 12 })} className="text-xs font-semibold text-slate-700 dark:text-slate-300 hover:underline">Reset Semua</button>
                     </div>
                 )}
             </div>
@@ -482,7 +482,7 @@ export default function Index({ stores, filters, categories }) {
                                                 type="checkbox"
                                                 checked={allSelected}
                                                 onChange={e => handleSelectAll(e.target.checked)}
-                                                className="w-4 h-4 rounded border-2 border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                                                className="w-4 h-4 rounded border-2 border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
                                             />
                                         </th>
                                         {["Info Toko", "Kategori", "Manajer & Kontak", "Alamat", "Status", "Dibuat", "Aksi"].map(h => (
@@ -498,17 +498,17 @@ export default function Index({ stores, filters, categories }) {
                                                     type="checkbox"
                                                     checked={selectedIds.includes(item.id)}
                                                     onChange={e => handleSelect(item.id, e.target.checked)}
-                                                    className="w-4 h-4 rounded border-2 border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                                                    className="w-4 h-4 rounded border-2 border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
                                                 />
                                             </td>
                                             <td className="px-4 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-lg bg-primary-50 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
-                                                        <IconBuildingStore size={17} className="text-primary-600 dark:text-primary-400" />
+                                                    <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
+                                                        <IconBuildingStore size={17} className="text-slate-700 dark:text-slate-300" />
                                                     </div>
                                                     <div>
                                                         <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{item.name}</p>
-                                                        <code className="text-[10px] text-primary-600 dark:text-primary-400 font-mono uppercase">{item.code}</code>
+                                                        <code className="text-[10px] text-slate-700 dark:text-slate-300 font-mono uppercase">{item.code}</code>
                                                     </div>
                                                 </div>
                                             </td>
@@ -540,14 +540,14 @@ export default function Index({ stores, filters, categories }) {
                                                 <div className="flex justify-end gap-2">
                                                     <Link
                                                         href={route("stores.edit", item.id)}
-                                                        className="p-2 rounded-lg bg-warning-100 border border-warning-200 text-warning-600 hover:bg-warning-200 dark:bg-warning-900/50 dark:border-warning-800 dark:text-warning-400 dark:hover:bg-warning-900/70 transition-all"
+                                                        className="p-2 rounded-lg bg-warning-100 border border-slate-300 text-slate-700 hover:bg-warning-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-warning-900/70 transition-all"
                                                         title="Edit"
                                                     >
                                                         <IconPencilCog size={16} strokeWidth={2} />
                                                     </Link>
                                                     <button
                                                         onClick={() => confirmDelete(item)}
-                                                        className="p-2 rounded-lg bg-danger-100 border border-danger-200 text-danger-600 hover:bg-danger-200 dark:bg-danger-900/50 dark:border-danger-800 dark:text-danger-400 dark:hover:bg-danger-900/70 transition-all"
+                                                        className="p-2 rounded-lg bg-danger-100 border border-slate-300 text-slate-700 hover:bg-danger-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-danger-900/70 transition-all"
                                                         title="Hapus"
                                                     >
                                                         <IconTrash size={16} strokeWidth={2} />

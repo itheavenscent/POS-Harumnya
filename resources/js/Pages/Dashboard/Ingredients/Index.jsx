@@ -14,9 +14,9 @@ import toast from "react-hot-toast";
 const fmt = (v = 0) => Number(v || 0).toLocaleString("id-ID");
 
 const TYPE_CFG = {
-    oil:     { label: "Fragrance Oil", color: "bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/30 dark:text-purple-300 dark:border-purple-800" },
-    alcohol: { label: "Alkohol",       color: "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800" },
-    other:   { label: "Lainnya",       color: "bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700" },
+    oil:     { label: "Fragrance Oil", color: "bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700" },
+    alcohol: { label: "Alkohol",       color: "bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700" },
+    other:   { label: "Lainnya",       color: "bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700" },
 };
 
 function Select({ value, onChange, children, className = "" }) {
@@ -54,8 +54,8 @@ function DeleteModal({ show, title, message, onConfirm, onClose, loading }) {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-xl border dark:border-slate-800">
                 <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
-                        <IconAlertTriangle size={20} className="text-red-500" />
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
+                        <IconAlertTriangle size={20} className="text-slate-700" />
                     </div>
                     <div>
                         <h3 className="font-bold text-slate-900 dark:text-white text-base">{title}</h3>
@@ -175,7 +175,7 @@ function CategoryModal({ show, onClose, category = null }) {
 
                     <div>
                         <label className="block text-sm font-medium mb-1.5 dark:text-slate-300">
-                            Tipe Scaling <span className="text-red-500">*</span>
+                            Tipe Scaling <span className="text-slate-700">*</span>
                         </label>
                         <div className="grid grid-cols-3 gap-2">
                             {Object.entries(TYPE_CFG).map(([val, cfg]) => (
@@ -183,7 +183,7 @@ function CategoryModal({ show, onClose, category = null }) {
                                     key={val}
                                     className={`cursor-pointer rounded-xl border-2 p-3 text-center transition-all ${
                                         data.ingredient_type === val
-                                            ? "border-teal-500 bg-teal-50 dark:bg-teal-950/30"
+                                            ? "border-teal-500 bg-slate-100 dark:bg-teal-950/30"
                                             : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
                                     }`}
                                 >
@@ -201,7 +201,7 @@ function CategoryModal({ show, onClose, category = null }) {
                             ))}
                         </div>
                         {errors.ingredient_type && (
-                            <p className="text-red-500 text-xs mt-1">{errors.ingredient_type}</p>
+                            <p className="text-slate-700 text-xs mt-1">{errors.ingredient_type}</p>
                         )}
                         <p className="text-[10px] text-slate-400 mt-1.5">
                             Tipe ini otomatis berlaku ke semua bahan dalam kategori ini.
@@ -225,7 +225,7 @@ function CategoryModal({ show, onClose, category = null }) {
                             id="cat_is_active"
                             checked={data.is_active}
                             onChange={e => setData("is_active", e.target.checked)}
-                            className="rounded text-teal-600 w-4 h-4 accent-teal-600"
+                            className="rounded text-slate-700 w-4 h-4 accent-teal-600"
                         />
                         <label htmlFor="cat_is_active" className="text-sm dark:text-slate-300 cursor-pointer">
                             Status Aktif
@@ -333,14 +333,14 @@ export default function Index({ ingredients, categories, filters }) {
                         onClick={() => setActiveTab(tab.key)}
                         className={`pb-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2 ${
                             activeTab === tab.key
-                                ? "border-teal-600 text-teal-600"
+                                ? "border-teal-600 text-slate-700"
                                 : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                         }`}
                     >
                         {tab.label}
                         <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                             activeTab === tab.key
-                                ? "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400"
+                                ? "bg-teal-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                                 : "bg-slate-100 dark:bg-slate-800 text-slate-500"
                         }`}>
                             {tab.count}
@@ -410,7 +410,7 @@ export default function Index({ ingredients, categories, filters }) {
                                                 <p className="text-slate-400 text-sm font-medium">Belum ada bahan baku</p>
                                                 <Link
                                                     href={route("ingredients.create")}
-                                                    className="inline-flex items-center gap-1.5 mt-3 text-sm text-teal-600 hover:text-teal-700 font-semibold"
+                                                    className="inline-flex items-center gap-1.5 mt-3 text-sm text-slate-700 hover:text-slate-700 font-semibold"
                                                 >
                                                     <IconCirclePlus size={16} /> Tambah Bahan Baku
                                                 </Link>
@@ -439,7 +439,7 @@ export default function Index({ ingredients, categories, filters }) {
 
                                             {/* Kategori */}
                                             <td className="px-5 py-3.5">
-                                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-400 font-semibold">
+                                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-300 dark:border-slate-700">
                                                     {item.category?.name ?? "—"}
                                                 </span>
                                             </td>
@@ -475,7 +475,7 @@ export default function Index({ ingredients, categories, filters }) {
                                             <td className="px-5 py-3.5 text-right">
                                                 {item.selling_price != null && parseFloat(item.selling_price) > 0 ? (
                                                     <div>
-                                                        <span className="text-sm font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                                                        <span className="text-sm font-mono font-semibold text-slate-800 dark:text-slate-200">
                                                             Rp {fmt(item.selling_price)}
                                                         </span>
                                                         <span className="text-[10px] text-slate-400 ml-1">/{item.unit}</span>
@@ -488,7 +488,7 @@ export default function Index({ ingredients, categories, filters }) {
                                             {/* Aktif */}
                                             <td className="px-5 py-3.5 text-center">
                                                 {item.is_active
-                                                    ? <IconCheck size={18} className="text-teal-500 mx-auto" />
+                                                    ? <IconCheck size={18} className="text-slate-700 dark:text-slate-300 mx-auto" />
                                                     : <IconX size={18} className="text-slate-300 dark:text-slate-600 mx-auto" />
                                                 }
                                             </td>
@@ -498,14 +498,14 @@ export default function Index({ ingredients, categories, filters }) {
                                                 <div className="flex justify-end gap-2">
                                                     <Link
                                                         href={route("ingredients.edit", item.id)}
-                                                        className="p-1.5 bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50 text-amber-600 rounded-lg transition-colors"
+                                                        className="p-1.5 bg-slate-100 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50 text-slate-700 rounded-lg transition-colors"
                                                         title="Edit"
                                                     >
                                                         <IconPencil size={15} />
                                                     </Link>
                                                     <button
                                                         onClick={() => confirmDelete("ingredient", item)}
-                                                        className="p-1.5 bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-950/50 text-red-500 rounded-lg transition-colors"
+                                                        className="p-1.5 bg-slate-100 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-950/50 text-slate-700 rounded-lg transition-colors"
                                                         title="Hapus"
                                                     >
                                                         <IconTrash size={15} />
@@ -550,27 +550,27 @@ export default function Index({ ingredients, categories, filters }) {
                                 ) : categories.map(cat => (
                                     <tr key={cat.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                                         <td className="px-6 py-4 text-xs text-slate-400 font-mono">{cat.sort_order}</td>
-                                        <td className="px-6 py-4 font-mono text-xs text-teal-600 dark:text-teal-400 font-bold">{cat.code}</td>
+                                        <td className="px-6 py-4 font-mono text-xs text-slate-700 dark:text-slate-300 font-bold">{cat.code}</td>
                                         <td className="px-6 py-4 text-sm font-semibold text-slate-800 dark:text-white">{cat.name}</td>
                                         <td className="px-6 py-4"><TypeBadge type={cat.ingredient_type} /></td>
                                         <td className="px-6 py-4 text-center">
                                             {cat.is_active
-                                                ? <span className="px-2 py-0.5 text-[10px] font-bold bg-teal-50 dark:bg-teal-950/30 text-teal-600 dark:text-teal-400 rounded-full">Aktif</span>
-                                                : <span className="px-2 py-0.5 text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-full">Nonaktif</span>
+                                                ? <span className="px-2 py-0.5 text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full border border-slate-300 dark:border-slate-700">Aktif</span>
+                                                : <span className="px-2 py-0.5 text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-full border border-slate-300 dark:border-slate-700">Nonaktif</span>
                                             }
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-3">
                                                 <button
                                                     onClick={() => setCatModal({ show: true, data: cat })}
-                                                    className="p-1.5 bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors"
+                                                    className="p-1.5 bg-slate-100 dark:bg-amber-950/30 hover:bg-amber-100 text-slate-700 rounded-lg transition-colors"
                                                     title="Edit kategori"
                                                 >
                                                     <IconPencil size={15} />
                                                 </button>
                                                 <button
                                                     onClick={() => confirmDelete("category", cat)}
-                                                    className="p-1.5 bg-red-50 dark:bg-red-950/30 hover:bg-red-100 text-red-500 rounded-lg transition-colors"
+                                                    className="p-1.5 bg-slate-100 dark:bg-red-950/30 hover:bg-red-100 text-slate-700 rounded-lg transition-colors"
                                                     title="Hapus kategori"
                                                 >
                                                     <IconTrash size={15} />
@@ -587,7 +587,7 @@ export default function Index({ ingredients, categories, filters }) {
                     <div className="space-y-4">
                         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
                             <h3 className="font-bold text-sm text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                                <IconTag size={16} className="text-teal-600" />
+                                <IconTag size={16} className="text-slate-700" />
                                 Tentang Tipe Scaling
                             </h3>
                             <div className="space-y-3">
@@ -604,9 +604,9 @@ export default function Index({ ingredients, categories, filters }) {
                             </div>
                         </div>
 
-                        <div className="bg-teal-50 dark:bg-teal-950/20 rounded-xl border border-teal-100 dark:border-teal-900 p-5">
-                            <h3 className="font-bold text-sm text-teal-800 dark:text-teal-300 mb-2">💡 Tipe Scaling Otomatis</h3>
-                            <p className="text-xs text-teal-700 dark:text-teal-400">
+                        <div className="bg-slate-100 dark:bg-teal-950/20 rounded-xl border border-teal-100 dark:border-slate-700 p-5">
+                            <h3 className="font-bold text-sm text-slate-700 dark:text-slate-300 mb-2">💡 Tipe Scaling Otomatis</h3>
+                            <p className="text-xs text-slate-700 dark:text-slate-300">
                                 Tipe scaling diatur di level <strong>kategori</strong>, bukan per bahan.
                                 Semua bahan dalam satu kategori otomatis mengikuti tipe kategorinya.
                             </p>

@@ -111,7 +111,7 @@ export default function Index({ drawers, filters, isAdmin }) {
                                             <tr key={drawer.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
+                                                        <div className="w-8 h-8 rounded-full bg-cyan-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300">
                                                             <IconCash size={16} />
                                                         </div>
                                                         <div>
@@ -143,14 +143,14 @@ export default function Index({ drawers, filters, isAdmin }) {
                                                     <div className="flex items-center justify-center gap-2">
                                                         <Link
                                                             href={route("cash-drawers.show", drawer.id)}
-                                                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-cyan-600 transition-colors"
+                                                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 transition-colors"
                                                             title="Detail Summary"
                                                         >
                                                             <IconEye size={18} />
                                                         </Link>
                                                         <Link
                                                             href={route("cash-drawers.print", drawer.id)}
-                                                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-cyan-600 transition-colors"
+                                                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 transition-colors"
                                                             title="Print Recap"
                                                             target="_blank"
                                                         >

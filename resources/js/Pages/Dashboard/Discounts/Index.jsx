@@ -131,8 +131,8 @@ function DeleteModal({ show, item, onConfirm, onClose, loading }) {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-xl border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
-                        <IconAlertTriangle size={20} className="text-red-500" />
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
+                        <IconAlertTriangle size={20} className="text-slate-700" />
                     </div>
                     <div>
                         <h3 className="font-bold text-slate-900 dark:text-white text-base">
@@ -329,7 +329,7 @@ export default function Index({ discounts, filters }) {
                                         {/* Status */}
                                         <td className="px-5 py-4">
                                             {item.is_active ? (
-                                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 px-2 py-1 rounded-md">
+                                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-emerald-950/40 border border-slate-300 dark:border-slate-700/50 px-2 py-1 rounded-md">
                                                     <IconCheck size={11} strokeWidth={2.5} /> Aktif
                                                 </span>
                                             ) : (
@@ -351,7 +351,7 @@ export default function Index({ discounts, filters }) {
                                                 </Link>
                                                 <button
                                                     onClick={() => confirmDelete(item)}
-                                                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all"
+                                                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-red-950/30 transition-all"
                                                     title="Hapus"
                                                 >
                                                     <IconTrash size={14} />

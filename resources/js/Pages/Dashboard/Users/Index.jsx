@@ -30,7 +30,7 @@ function DeleteModal({ user, onConfirm, onCancel, processing }) {
                 </button>
 
                 <div className="flex items-center gap-4 mb-6">
-                    <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-2xl text-red-600">
+                    <div className="p-3 bg-red-100 dark:bg-slate-800 rounded-2xl text-slate-700">
                         <IconAlertTriangle size={28} />
                     </div>
                     <div>
@@ -207,7 +207,7 @@ export default function Index({ users, stores, warehouses, roles, filters }) {
                                         user.roles.map((role, idx) => (
                                             <span
                                                 key={idx}
-                                                className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300 rounded-lg text-[10px] font-bold uppercase border border-indigo-100 dark:border-indigo-800"
+                                                className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 rounded-lg text-[10px] font-bold uppercase border border-slate-300 dark:border-slate-700"
                                             >
                                                 <IconShieldCheck size={12} /> {role.name}
                                             </span>
@@ -245,13 +245,13 @@ export default function Index({ users, stores, warehouses, roles, filters }) {
                         <div className="flex gap-2 mt-6">
                             <Link
                                 href={route("users.edit", user.id)}
-                                className="flex-1 flex justify-center items-center py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-900/20 dark:hover:text-primary-400 transition-colors text-xs font-bold"
+                                className="flex-1 flex justify-center items-center py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-primary-900/20 dark:hover:text-primary-400 transition-colors text-xs font-bold"
                             >
                                 <IconPencil size={16} className="mr-2" /> Edit Profil
                             </Link>
                             <button
                                 onClick={() => setUserToDelete(user)}
-                                className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-red-900/20 transition-colors"
                                 title="Hapus user"
                             >
                                 <IconTrash size={18} />

@@ -107,10 +107,10 @@ function ListCard({ title, subtitle, icon: Icon, children, emptyMessage }) {
         <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
             <div className="p-5 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-lg bg-primary-100 dark:bg-primary-900/30">
+                    <div className="p-2 rounded-lg bg-primary-100 dark:bg-slate-800">
                         <Icon
                             size={18}
-                            className="text-primary-600 dark:text-primary-400"
+                            className="text-slate-700 dark:text-slate-300"
                         />
                     </div>
                     <div>
@@ -357,7 +357,7 @@ export default function Dashboard({
                                         className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                                     >
                                         <div className="flex items-center gap-3">
-                                            <span className="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400 text-xs font-bold flex items-center justify-center">
+                                            <span className="w-6 h-6 rounded-full bg-primary-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center justify-center">
                                                 {index + 1}
                                             </span>
                                             <div>
@@ -406,7 +406,7 @@ export default function Dashboard({
                                                 Kasir: {trx.cashier}
                                             </p>
                                         </div>
-                                        <p className="text-sm font-bold text-primary-600 dark:text-primary-400">
+                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
                                             {formatCurrency(trx.total)}
                                         </p>
                                     </div>

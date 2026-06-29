@@ -16,10 +16,10 @@ const fmt = (n) => new Intl.NumberFormat('id-ID', {
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 function StatCard({ icon, label, value, sub, color = "slate" }) {
     const colors = {
-        indigo: "bg-indigo-50 border-indigo-100 text-indigo-600",
-        green: "bg-green-50 border-green-100 text-green-600",
-        amber: "bg-amber-50 border-amber-100 text-amber-600",
-        purple: "bg-purple-50 border-purple-100 text-purple-600",
+        indigo: "bg-slate-100 border-indigo-100 text-slate-700",
+        green: "bg-slate-100 border-green-100 text-slate-700",
+        amber: "bg-slate-100 border-amber-100 text-slate-700",
+        purple: "bg-slate-100 border-purple-100 text-slate-700",
         slate: "bg-slate-50 border-slate-100 text-slate-500",
     };
     return (
@@ -36,13 +36,8 @@ function StatCard({ icon, label, value, sub, color = "slate" }) {
 
 // ─── Intensity Badge ──────────────────────────────────────────────────────────
 function IntensityBadge({ code }) {
-    const map = {
-        EDT: "bg-blue-100 text-blue-700",
-        EDP: "bg-purple-100 text-purple-700",
-        EXT: "bg-rose-100 text-rose-700",
-    };
     return (
-        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${map[code] ?? "bg-slate-100 text-slate-600"}`}>
+        <span className={`px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300`}>
             {code}
         </span>
     );
@@ -51,11 +46,8 @@ function IntensityBadge({ code }) {
 // ─── Margin Badge ─────────────────────────────────────────────────────────────
 function MarginBadge({ pct }) {
     const n = parseFloat(pct) || 0;
-    const cls = n >= 60 ? "bg-green-100 text-green-700"
-        : n >= 40 ? "bg-amber-100 text-amber-700"
-            : "bg-red-100 text-red-700";
     return (
-        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${cls}`}>
+        <span className={`px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300`}>
             {n.toFixed(1)}%
         </span>
     );
@@ -63,13 +55,8 @@ function MarginBadge({ pct }) {
 
 // ─── Gender Badge ─────────────────────────────────────────────────────────────
 function GenderBadge({ gender }) {
-    const map = {
-        male: "bg-sky-100 text-sky-700",
-        female: "bg-pink-100 text-pink-700",
-        unisex: "bg-violet-100 text-violet-700",
-    };
     return (
-        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${map[gender] ?? "bg-slate-100 text-slate-500"}`}>
+        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize bg-slate-100 text-slate-700 border border-slate-300`}>
             {gender}
         </span>
     );
@@ -130,12 +117,12 @@ function ProductRow({ product, onToggle }) {
             <td className="px-4 py-3.5">
                 <div className="flex items-center gap-1 justify-end">
                     <Link href={route('products.show', product.id)}
-                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Lihat Detail">
+                        className="p-2 text-slate-700 hover:bg-slate-100 rounded-lg transition" title="Lihat Detail">
                         <IconEye size={16} />
                     </Link>
                     <button onClick={() => onToggle(product)}
                         className={`p-2 rounded-lg transition ${product.is_active
-                            ? "text-green-600 hover:bg-green-50"
+                            ? "text-slate-700 hover:bg-slate-100"
                             : "text-slate-400 hover:bg-slate-100"}`}
                         title={product.is_active ? "Nonaktifkan" : "Aktifkan"}>
                         {product.is_active
@@ -153,9 +140,9 @@ function VariantGroup({ group, onToggle, defaultOpen = true }) {
     const [open, setOpen] = useState(defaultOpen);
     const { variant, products, total_products, active_products, avg_margin, min_price, max_price } = group;
 
-    const marginColor = avg_margin >= 60 ? "text-green-600"
-        : avg_margin >= 40 ? "text-amber-600"
-            : "text-red-500";
+    const marginColor = avg_margin >= 60 ? "text-slate-700"
+        : avg_margin >= 40 ? "text-slate-700"
+            : "text-slate-700";
 
     return (
         <div className="bg-white rounded-2xl border shadow-sm overflow-hidden mb-4">
@@ -192,11 +179,11 @@ function VariantGroup({ group, onToggle, defaultOpen = true }) {
                         <div className="text-xs text-slate-400">produk</div>
                     </div>
                     <div className="text-center hidden sm:block">
-                        <div className="text-sm font-bold text-green-600">{active_products}</div>
+                        <div className="text-sm font-bold text-slate-800">{active_products}</div>
                         <div className="text-xs text-slate-400">aktif</div>
                     </div>
                     <div className="text-center hidden md:block">
-                        <div className={`text-sm font-bold ${marginColor}`}>{avg_margin}%</div>
+                        <div className={`text-sm font-bold text-slate-800`}>{avg_margin}%</div>
                         <div className="text-xs text-slate-400">avg margin</div>
                     </div>
                     <div className="text-center hidden lg:block">
@@ -256,7 +243,7 @@ function VariantGroup({ group, onToggle, defaultOpen = true }) {
                             {total_products} produk · {active_products} aktif · {total_products - active_products} nonaktif
                         </span>
                         <Link href={route('recipes.index', { variant_id: variant?.id })}
-                            className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition">
+                            className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-700 transition">
                             <IconFlask size={13} /> Lihat Formula
                         </Link>
                     </div>
@@ -321,7 +308,7 @@ function FilterBar({ filters, variants, intensities, sizes, onChange, onReset })
                 {/* Reset */}
                 {hasFilters && (
                     <button onClick={onReset}
-                        className="flex items-center gap-1.5 px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-xl transition font-semibold">
+                        className="flex items-center gap-1.5 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-xl transition font-semibold">
                         <IconX size={15} /> Reset
                     </button>
                 )}

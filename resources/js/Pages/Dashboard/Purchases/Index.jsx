@@ -10,12 +10,12 @@ import {
 } from "@tabler/icons-react";
 
 const STATUS_CFG = {
-    draft:     { label: "Draft",     cls: "bg-slate-100 text-slate-600 border-slate-300",           step: 0 },
-    pending:   { label: "Menunggu",  cls: "bg-yellow-100 text-yellow-700 border-yellow-300",          step: 1 },
-    approved:  { label: "Disetujui", cls: "bg-blue-100 text-blue-700 border-blue-300",               step: 2 },
-    received:  { label: "Diterima",  cls: "bg-violet-100 text-violet-700 border-violet-300",          step: 3 },
-    completed: { label: "Selesai",   cls: "bg-success-100 text-success-700 border-success-300",       step: 4 },
-    cancelled: { label: "Dibatal",   cls: "bg-red-100 text-red-700 border-red-300",                   step: -1 },
+    draft:     { label: "Draft",     cls: "bg-slate-100 text-slate-700 border-slate-300",   step: 0 },
+    pending:   { label: "Menunggu",  cls: "bg-slate-100 text-slate-700 border-slate-300",   step: 1 },
+    approved:  { label: "Disetujui", cls: "bg-slate-100 text-slate-700 border-slate-300",   step: 2 },
+    received:  { label: "Diterima",  cls: "bg-slate-100 text-slate-700 border-slate-300",   step: 3 },
+    completed: { label: "Selesai",   cls: "bg-slate-100 text-slate-700 border-slate-300",   step: 4 },
+    cancelled: { label: "Dibatal",   cls: "bg-slate-100 text-slate-700 border-slate-300",   step: -1 },
 };
 
 const fmt = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n || 0);
@@ -42,7 +42,7 @@ export default function Index({ purchases, filters = {}, summary = {} }) {
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <IconShoppingBag size={28} className="text-indigo-500" /> Purchase Order
+                        <IconShoppingBag size={28} className="text-slate-700" /> Purchase Order
                     </h1>
                     <p className="text-sm text-slate-500">Pembelian bahan baku dan kemasan dari supplier.</p>
                 </div>
@@ -111,7 +111,7 @@ export default function Index({ purchases, filters = {}, summary = {} }) {
                                             {i + 1 + (purchases.current_page - 1) * purchases.per_page}
                                         </Table.Td>
                                         <Table.Td>
-                                            <span className="font-mono text-xs font-bold text-indigo-600">{p.purchase_number}</span>
+                                            <span className="font-mono text-xs font-bold text-slate-800">{p.purchase_number}</span>
                                         </Table.Td>
                                         <Table.Td>
                                             <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{p.supplier?.name}</div>
@@ -131,12 +131,12 @@ export default function Index({ purchases, filters = {}, summary = {} }) {
                                         <Table.Td>
                                             <div className="flex justify-center gap-1">
                                                 <Link href={route("purchases.show", p.id)}
-                                                    className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 rounded-lg">
+                                                    className="p-1.5 bg-slate-100 text-slate-700 hover:bg-blue-100 border border-slate-300 rounded-lg">
                                                     <IconEye size={14} />
                                                 </Link>
                                                 {p.can_edit && (
                                                     <Link href={route("purchases.edit", p.id)}
-                                                        className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 rounded-lg">
+                                                        className="p-1.5 bg-slate-100 text-slate-700 hover:bg-amber-100 border border-slate-300 rounded-lg">
                                                         <IconPencilCog size={14} />
                                                     </Link>
                                                 )}
@@ -153,7 +153,7 @@ export default function Index({ purchases, filters = {}, summary = {} }) {
                     <IconDatabaseOff size={48} className="text-slate-300 mb-3" />
                     <h3 className="font-bold text-slate-600 dark:text-slate-400">Belum ada Purchase Order</h3>
                     <Link href={route("purchases.create")}
-                        className="mt-4 flex items-center gap-2 text-indigo-600 font-bold hover:underline text-sm">
+                        className="mt-4 flex items-center gap-2 text-slate-700 font-bold hover:underline text-sm">
                         <IconCirclePlus size={16} /> Buat PO Baru
                     </Link>
                 </div>

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { usePage } from "@inertiajs/react";
-import { IconX, IconChevronDown, IconChevronRight, IconMenu2 } from "@tabler/icons-react";
+import { IconX, IconChevronDown, IconChevronRight, IconMenu2, IconSun, IconMoon } from "@tabler/icons-react";
 import LinkItem from "@/Components/Dashboard/LinkItem";
 import LinkItemDropdown from "@/Components/Dashboard/LinkItemDropdown";
 import Menu from "@/Utils/Menu";
@@ -16,18 +16,30 @@ import Menu from "@/Utils/Menu";
  *   aksen      : #56B8C3  (teal — tetap sama agar konsisten)
  */
 
-export default function Sidebar({ sidebarOpen, onClose }) {
+export default function Sidebar({ themeSwitcher, darkMode }) {
     const { auth } = usePage().props;
     const menuNavigation = Menu();
     const [openSections, setOpenSections] = useState({});
     const [mobileOpen, setMobileOpen] = useState(false);
+
+    // State sidebarOpen sekarang dikelola di dalam Sidebar sendiri
+    const [sidebarOpen, setSidebarOpen] = useState(
+        localStorage.getItem("sidebarOpen") === "true"
+    );
+
+    const toggleSidebar = () => {
+        setSidebarOpen((prev) => {
+            const next = !prev;
+            localStorage.setItem("sidebarOpen", next);
+            return next;
+        });
+    };
 
     const toggleSection = (index) =>
         setOpenSections((prev) => ({ ...prev, [index]: !prev[index] }));
 
     const closeMobile = () => {
         setMobileOpen(false);
-        if (onClose) onClose();
     };
 
     const renderContent = (isMobile = false) => {
@@ -130,7 +142,7 @@ export default function Sidebar({ sidebarOpen, onClose }) {
 
                 <div className="sb-wrap relative z-10 flex flex-col h-full pt-[3px]">
 
-                    {/* ── Logo ── */}
+                    {/* ── Logo + Toggle Button ── */}
                     <div className="
                         flex-shrink-0 flex items-center justify-between
                         px-3.5 h-16
@@ -139,7 +151,7 @@ export default function Sidebar({ sidebarOpen, onClose }) {
                         border-[#E0F0F2]    dark:border-slate-800
                         transition-colors duration-300
                     ">
-                        <a href="/" className="flex items-center gap-3 no-underline">
+                        <a href="/" className="flex items-center gap-3 no-underline min-w-0">
                             <div className="w-[38px] h-[38px] rounded-[11px] overflow-hidden flex-shrink-0
                                 border-2 border-[rgba(86,184,195,0.3)] dark:border-slate-700"
                                 style={{ boxShadow: "0 4px 14px rgba(86,184,195,0.2)" }}>
@@ -147,7 +159,7 @@ export default function Sidebar({ sidebarOpen, onClose }) {
                                     className="w-full h-full object-cover block" />
                             </div>
                             {expanded && (
-                                <div>
+                                <div className="min-w-0">
                                     <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 21, fontWeight: 700, letterSpacing: -0.3, lineHeight: 1 }}
                                         className="text-[#0D2B30] dark:text-slate-100 transition-colors duration-300">
                                         Harumnya
@@ -159,7 +171,9 @@ export default function Sidebar({ sidebarOpen, onClose }) {
                                 </div>
                             )}
                         </a>
-                        {isMobile && (
+
+                        {/* Tombol close untuk mobile drawer */}
+                        {isMobile ? (
                             <button onClick={closeMobile}
                                 className="p-1.5 rounded-lg border-none cursor-pointer flex items-center
                                     bg-transparent
@@ -168,6 +182,20 @@ export default function Sidebar({ sidebarOpen, onClose }) {
                                     dark:hover:bg-slate-800 dark:hover:text-slate-300
                                     transition-colors duration-200">
                                 <IconX size={18} />
+                            </button>
+                        ) : (
+                            /* Tombol toggle expand/collapse sidebar (desktop) */
+                            <button
+                                onClick={toggleSidebar}
+                                title={sidebarOpen ? "Ciutkan sidebar" : "Perluas sidebar"}
+                                className="p-1.5 rounded-lg border-none cursor-pointer flex items-center
+                                    bg-transparent
+                                    text-[#A0C4C8]          dark:text-slate-500
+                                    hover:bg-[#F0FAFB]      hover:text-[#3A9DAA]
+                                    dark:hover:bg-slate-800 dark:hover:text-slate-300
+                                    transition-colors duration-200"
+                            >
+                                <IconMenu2 size={18} />
                             </button>
                         )}
                     </div>
@@ -288,24 +316,65 @@ export default function Sidebar({ sidebarOpen, onClose }) {
                     </nav>
 
                     {/* ── Footer ── */}
-                    {expanded && (
-                        <div className="
-                            flex-shrink-0 flex items-center justify-center gap-2 px-4 py-3
-                            border-t transition-colors duration-300
-                            border-[#E8F5F6]    dark:border-slate-800
-                            bg-[#F0FAFB]        dark:bg-slate-900
-                        ">
-                            <div className="w-[5px] h-[5px] rounded-full bg-[#56B8C3]"
-                                style={{
-                                    boxShadow: "0 0 6px rgba(86,184,195,0.5)",
-                                    animation: "sbPulse 2.5s ease-in-out infinite",
-                                }} />
-                            <span className="text-[10px] font-semibold uppercase tracking-[1.2px] transition-colors duration-300
-                                text-[#A8CACF] dark:text-slate-600">
-                                Harumnya v2.0
-                            </span>
-                        </div>
-                    )}
+                    <div className="
+                        flex-shrink-0 flex items-center px-4 py-3
+                        border-t transition-colors duration-300
+                        border-[#E8F5F6]    dark:border-slate-800
+                        bg-[#F0FAFB]        dark:bg-slate-900
+                    " style={{ justifyContent: expanded ? "space-between" : "center" }}>
+                        {expanded ? (
+                            <>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-[5px] h-[5px] rounded-full bg-[#56B8C3]"
+                                        style={{
+                                            boxShadow: "0 0 6px rgba(86,184,195,0.5)",
+                                            animation: "sbPulse 2.5s ease-in-out infinite",
+                                        }} />
+                                    <span className="text-[10px] font-semibold uppercase tracking-[1.2px] transition-colors duration-300
+                                        text-[#A8CACF] dark:text-slate-600">
+                                        Harumnya v2.0
+                                    </span>
+                                </div>
+                                {/* Theme toggle */}
+                                {themeSwitcher && (
+                                    <button
+                                        onClick={themeSwitcher}
+                                        title={darkMode ? "Light Mode" : "Dark Mode"}
+                                        className="p-1.5 rounded-lg border-none cursor-pointer flex items-center
+                                            bg-transparent
+                                            text-[#A0C4C8]          dark:text-slate-500
+                                            hover:bg-[#E4F6F8]      hover:text-[#3A9DAA]
+                                            dark:hover:bg-slate-800 dark:hover:text-[#56B8C3]
+                                            transition-colors duration-200"
+                                    >
+                                        {darkMode
+                                            ? <IconSun size={16} strokeWidth={1.5} className="text-amber-500" />
+                                            : <IconMoon size={16} strokeWidth={1.5} />
+                                        }
+                                    </button>
+                                )}
+                            </>
+                        ) : (
+                            /* Collapsed: hanya tampilkan theme toggle */
+                            themeSwitcher && (
+                                <button
+                                    onClick={themeSwitcher}
+                                    title={darkMode ? "Light Mode" : "Dark Mode"}
+                                    className="p-1.5 rounded-lg border-none cursor-pointer flex items-center
+                                        bg-transparent
+                                        text-[#A0C4C8]          dark:text-slate-500
+                                        hover:bg-[#E4F6F8]      hover:text-[#3A9DAA]
+                                        dark:hover:bg-slate-800 dark:hover:text-[#56B8C3]
+                                        transition-colors duration-200"
+                                >
+                                    {darkMode
+                                        ? <IconSun size={16} strokeWidth={1.5} className="text-amber-500" />
+                                        : <IconMoon size={16} strokeWidth={1.5} />
+                                    }
+                                </button>
+                            )
+                        )}
+                    </div>
                 </div>
             </div>
         );

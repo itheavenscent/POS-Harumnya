@@ -28,13 +28,13 @@ import toast from "react-hot-toast";
 
 function GenderBadge({ gender }) {
     const configs = {
-        male:   { bg: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400",       label: "👨 Pria"    },
-        female: { bg: "bg-pink-100 text-pink-700 dark:bg-pink-900/50 dark:text-pink-400",       label: "👩 Wanita"  },
-        unisex: { bg: "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400", label: "🔄 Unisex" },
+        male:   { bg: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",       label: "👨 Pria"    },
+        female: { bg: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",       label: "👩 Wanita"  },
+        unisex: { bg: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300", label: "🔄 Unisex" },
     };
     const config = configs[gender] || configs.unisex;
     return (
-        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold ${config.bg}`}>
+        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border border-slate-300 dark:border-slate-700 ${config.bg}`}>
             {config.label}
         </span>
     );
@@ -42,11 +42,11 @@ function GenderBadge({ gender }) {
 
 function StatusBadge({ isActive }) {
     return isActive ? (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-success-100 text-success-700 dark:bg-success-900/50 dark:text-success-400 shadow-sm">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 shadow-sm">
             <IconCircleCheck size={14} strokeWidth={2.5} /> Aktif
         </span>
     ) : (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 shadow-sm">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 shadow-sm">
             <IconCircleX size={14} strokeWidth={2.5} /> Tidak Aktif
         </span>
     );
@@ -62,8 +62,8 @@ function DeleteModal({ show, item, onConfirm, onClose, loading }) {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-xl border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
-                        <IconAlertTriangle size={20} className="text-red-500" />
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
+                        <IconAlertTriangle size={20} className="text-slate-700" />
                     </div>
                     <div>
                         <h3 className="font-bold text-slate-900 dark:text-white text-base">
@@ -104,7 +104,7 @@ function DeleteModal({ show, item, onConfirm, onClose, loading }) {
 
 function VariantCard({ variant, isSelected, onSelect, onDelete }) {
     return (
-        <div className="group relative bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-xl hover:border-primary-300 dark:hover:border-primary-700 transition-all duration-300">
+        <div className="group relative bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-xl hover:border-slate-300 dark:hover:border-primary-700 transition-all duration-300">
             {/* Checkbox */}
             <div className="absolute top-3 left-3 z-10">
                 <label className="flex items-center cursor-pointer">
@@ -112,7 +112,7 @@ function VariantCard({ variant, isSelected, onSelect, onDelete }) {
                         type="checkbox"
                         checked={isSelected}
                         onChange={(e) => onSelect(variant.id, e.target.checked)}
-                        className="w-5 h-5 rounded-md border-2 border-white shadow-lg text-primary-600 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all"
+                        className="w-5 h-5 rounded-md border-2 border-white shadow-lg text-slate-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all"
                     />
                 </label>
             </div>
@@ -145,14 +145,14 @@ function VariantCard({ variant, isSelected, onSelect, onDelete }) {
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end justify-center pb-4 gap-2">
                     <Link
                         href={route("variants.edit", variant.id)}
-                        className="p-3 rounded-xl bg-white text-warning-600 hover:bg-warning-50 shadow-lg transition-all transform hover:scale-110"
+                        className="p-3 rounded-xl bg-white text-slate-700 hover:bg-slate-100 shadow-lg transition-all transform hover:scale-110"
                         title="Edit Varian"
                     >
                         <IconPencilCog size={20} strokeWidth={2} />
                     </Link>
                     <button
                         onClick={() => onDelete(variant)}
-                        className="p-3 rounded-xl bg-white text-danger-600 hover:bg-danger-50 shadow-lg transition-all transform hover:scale-110"
+                        className="p-3 rounded-xl bg-white text-slate-700 hover:bg-slate-100 shadow-lg transition-all transform hover:scale-110"
                         title="Hapus Varian"
                     >
                         <IconTrash size={20} strokeWidth={2} />
@@ -211,8 +211,8 @@ function FilterModal({ show, onClose, filters, onApply }) {
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center">
-                            <IconFilter size={20} className="text-primary-600 dark:text-primary-400" />
+                        <div className="w-10 h-10 rounded-xl bg-primary-100 dark:bg-slate-800 flex items-center justify-center">
+                            <IconFilter size={20} className="text-slate-700 dark:text-slate-300" />
                         </div>
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white">Filter Varian</h3>
                     </div>
@@ -294,8 +294,8 @@ function BulkDeleteModal({ show, onClose, onConfirm, count }) {
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-800 p-6">
-                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center mx-auto mb-4">
-                    <IconAlertTriangle size={24} className="text-red-600 dark:text-red-400" />
+                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                    <IconAlertTriangle size={24} className="text-slate-700 dark:text-slate-300" />
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">
                     Hapus {count} Varian?
@@ -425,7 +425,7 @@ export default function Index({ variants, filters }) {
                                 {variants.total || variants.data?.length || 0} Total Varian
                             </span>
                             {selectedIds.length > 0 && (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-400 text-xs font-semibold">
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-primary-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
                                     {selectedIds.length} Dipilih
                                 </span>
                             )}
@@ -465,7 +465,7 @@ export default function Index({ variants, filters }) {
                             onClick={() => setShowFilterModal(true)}
                             className={`p-2.5 rounded-xl transition-colors relative ${
                                 hasActiveFilters
-                                    ? "bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400"
+                                    ? "bg-primary-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                                     : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                             }`}
                             title="Filter"
@@ -487,7 +487,7 @@ export default function Index({ variants, filters }) {
                                     onClick={() => setViewMode(mode)}
                                     className={`p-2 rounded-lg transition-all ${
                                         viewMode === mode
-                                            ? "bg-white dark:bg-slate-900 text-primary-600 shadow-sm"
+                                            ? "bg-white dark:bg-slate-900 text-slate-700 shadow-sm"
                                             : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                                     }`}
                                     title={`${mode === "grid" ? "Grid" : "List"} View`}
@@ -501,9 +501,9 @@ export default function Index({ variants, filters }) {
 
                 {/* Bulk Actions Bar */}
                 {selectedIds.length > 0 && (
-                    <div className="flex items-center justify-between p-4 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl">
+                    <div className="flex items-center justify-between p-4 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl">
                         <div className="flex items-center gap-3">
-                            <IconCheck size={20} className="text-primary-600 dark:text-primary-400" />
+                            <IconCheck size={20} className="text-slate-700 dark:text-slate-300" />
                             <span className="text-sm font-semibold text-primary-900 dark:text-primary-100">
                                 {selectedIds.length} varian dipilih
                             </span>
@@ -531,7 +531,7 @@ export default function Index({ variants, filters }) {
                     <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Filter Aktif:</span>
                         {currentFilters.gender && (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 text-xs font-semibold">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
                                 Gender:{" "}
                                 {currentFilters.gender === "male"
                                     ? "Pria"
@@ -547,7 +547,7 @@ export default function Index({ variants, filters }) {
                             </span>
                         )}
                         {currentFilters.is_active !== "" && (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 text-xs font-semibold">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
                                 Status: {currentFilters.is_active === "1" ? "Aktif" : "Tidak Aktif"}
                                 <button
                                     onClick={() => handleApplyFilters({ ...currentFilters, is_active: "" })}
@@ -559,7 +559,7 @@ export default function Index({ variants, filters }) {
                         )}
                         <button
                             onClick={() => handleApplyFilters({ gender: "", is_active: "", per_page: 20 })}
-                            className="text-xs font-semibold text-red-600 dark:text-red-400 hover:underline"
+                            className="text-xs font-semibold text-slate-700 dark:text-slate-300 hover:underline"
                         >
                             Reset Semua
                         </button>
@@ -578,7 +578,7 @@ export default function Index({ variants, filters }) {
                                     type="checkbox"
                                     checked={allSelected}
                                     onChange={(e) => handleSelectAll(e.target.checked)}
-                                    className="w-4 h-4 rounded border-2 border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                                    className="w-4 h-4 rounded border-2 border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
                                 />
                                 <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                                     Pilih Semua ({variants.data.length})
@@ -611,7 +611,7 @@ export default function Index({ variants, filters }) {
                                                 type="checkbox"
                                                 checked={allSelected}
                                                 onChange={(e) => handleSelectAll(e.target.checked)}
-                                                className="w-4 h-4 rounded border-2 border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                                                className="w-4 h-4 rounded border-2 border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
                                             />
                                         </th>
                                         {[
@@ -643,7 +643,7 @@ export default function Index({ variants, filters }) {
                                                     type="checkbox"
                                                     checked={selectedIds.includes(variant.id)}
                                                     onChange={(e) => handleSelect(variant.id, e.target.checked)}
-                                                    className="w-4 h-4 rounded border-2 border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                                                    className="w-4 h-4 rounded border-2 border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
                                                 />
                                             </td>
                                             <td className="px-4 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -702,14 +702,14 @@ export default function Index({ variants, filters }) {
                                                 <div className="flex justify-end gap-2">
                                                     <Link
                                                         href={route("variants.edit", variant.id)}
-                                                        className="p-2 rounded-lg bg-warning-100 border border-warning-200 text-warning-600 hover:bg-warning-200 dark:bg-warning-900/50 dark:border-warning-800 dark:text-warning-400 dark:hover:bg-warning-900/70 transition-all"
+                                                        className="p-2 rounded-lg bg-warning-100 border border-slate-300 text-slate-700 hover:bg-warning-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-warning-900/70 transition-all"
                                                         title="Edit"
                                                     >
                                                         <IconPencilCog size={16} strokeWidth={2} />
                                                     </Link>
                                                     <button
                                                         onClick={() => confirmDelete(variant)}
-                                                        className="p-2 rounded-lg bg-danger-100 border border-danger-200 text-danger-600 hover:bg-danger-200 dark:bg-danger-900/50 dark:border-danger-800 dark:text-danger-400 dark:hover:bg-danger-900/70 transition-all"
+                                                        className="p-2 rounded-lg bg-danger-100 border border-slate-300 text-slate-700 hover:bg-danger-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-danger-900/70 transition-all"
                                                         title="Hapus"
                                                     >
                                                         <IconTrash size={16} strokeWidth={2} />

@@ -31,16 +31,16 @@ const parseRupiah = (str) => str.replace(/\./g, "").replace(",", ".");
 
 const GENDER_LABEL = { male: "Pria", female: "Wanita", unisex: "Unisex" };
 const GENDER_COLOR = {
-    male: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-    female: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300",
+    male: "bg-blue-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+    female: "bg-pink-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
     unisex: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
 };
 const INTENSITY_COLORS = [
     { bg: "bg-violet-600", bar: "bg-violet-500", light: "bg-violet-50 dark:bg-violet-950/30", border: "border-violet-200 dark:border-violet-800", text: "text-violet-700 dark:text-violet-300" },
-    { bg: "bg-blue-600", bar: "bg-blue-500", light: "bg-blue-50 dark:bg-blue-950/30", border: "border-blue-200 dark:border-blue-800", text: "text-blue-700 dark:text-blue-300" },
-    { bg: "bg-teal-600", bar: "bg-teal-500", light: "bg-teal-50 dark:bg-teal-950/30", border: "border-teal-200 dark:border-teal-800", text: "text-teal-700 dark:text-teal-300" },
-    { bg: "bg-rose-600", bar: "bg-rose-500", light: "bg-rose-50 dark:bg-rose-950/30", border: "border-rose-200 dark:border-rose-800", text: "text-rose-700 dark:text-rose-300" },
-    { bg: "bg-amber-600", bar: "bg-amber-500", light: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-200 dark:border-amber-800", text: "text-amber-700 dark:text-amber-300" },
+    { bg: "bg-blue-600", bar: "bg-blue-500", light: "bg-slate-100 dark:bg-blue-950/30", border: "border-slate-300 dark:border-slate-700", text: "text-slate-700 dark:text-slate-300" },
+    { bg: "bg-teal-600", bar: "bg-teal-500", light: "bg-slate-100 dark:bg-teal-950/30", border: "border-slate-300 dark:border-slate-700", text: "text-slate-700 dark:text-slate-300" },
+    { bg: "bg-rose-600", bar: "bg-rose-500", light: "bg-slate-100 dark:bg-rose-950/30", border: "border-slate-300 dark:border-slate-700", text: "text-slate-700 dark:text-slate-300" },
+    { bg: "bg-amber-600", bar: "bg-amber-500", light: "bg-slate-100 dark:bg-amber-950/30", border: "border-slate-300 dark:border-slate-700", text: "text-slate-700 dark:text-slate-300" },
 ];
 const PKG_BG = ["bg-orange-500", "bg-violet-500", "bg-rose-500", "bg-teal-500", "bg-sky-500"];
 
@@ -203,13 +203,13 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                 <div>
                     <p className="text-xs text-slate-400 mb-0.5">Custom Order</p>
                     <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                        <span className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
-                            <IconAdjustments size={16} className="text-amber-600" />
+                        <span className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-slate-800 flex items-center justify-center">
+                            <IconAdjustments size={16} className="text-slate-700" />
                         </span>
                         Komposisi Bebas
                     </h3>
                 </div>
-                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 flex items-center justify-center transition-colors">
+                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-red-950/30 hover:text-slate-700 flex items-center justify-center transition-colors">
                     <IconX size={16} />
                 </button>
             </div>
@@ -226,8 +226,8 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                                     setStep(s.n);
                                 }
                             }}
-                            className={`flex items-center gap-2 text-xs font-bold transition-colors ${step === s.n ? "text-amber-600 dark:text-amber-400" :
-                                step > s.n ? "text-emerald-600 cursor-pointer hover:opacity-80" :
+                            className={`flex items-center gap-2 text-xs font-bold transition-colors ${step === s.n ? "text-slate-700 dark:text-slate-300" :
+                                step > s.n ? "text-slate-700 cursor-pointer hover:opacity-80" :
                                     "text-slate-400 cursor-not-allowed"
                                 }`}>
                             <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${step === s.n ? "bg-amber-500 text-white" :
@@ -280,7 +280,7 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                                 {filteredVariants.map((variant, idx) => (
                                     <button key={variant.id}
                                         onClick={() => { setSelectedVariant(variant); setStep(2); }}
-                                        className="group flex items-center gap-3 p-3.5 rounded-xl border-2 border-slate-100 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-600 bg-white dark:bg-slate-800/50 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 transition-all text-left">
+                                        className="group flex items-center gap-3 p-3.5 rounded-xl border-2 border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-amber-600 bg-white dark:bg-slate-800/50 hover:bg-slate-100/50 dark:hover:bg-amber-950/20 transition-all text-left">
                                         <div className={`w-10 h-10 rounded-xl ${INTENSITY_COLORS[idx % INTENSITY_COLORS.length].bg} flex items-center justify-center flex-shrink-0 shadow-sm`}>
                                             <IconDroplet size={17} className="text-white" />
                                         </div>
@@ -295,7 +295,7 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                                                 )}
                                             </div>
                                         </div>
-                                        <IconChevronRight size={14} className="text-slate-300 group-hover:text-amber-500 flex-shrink-0 transition-colors" />
+                                        <IconChevronRight size={14} className="text-slate-300 group-hover:text-slate-700 flex-shrink-0 transition-colors" />
                                     </button>
                                 ))}
                             </div>
@@ -309,14 +309,14 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                 <>
                     <div className="overflow-y-auto flex-1 p-5 space-y-4">
                         {/* Variant info */}
-                        <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                        <div className="flex items-center gap-3 p-3 bg-slate-100 dark:bg-amber-950/20 border border-slate-300 dark:border-slate-700 rounded-xl">
                             <div className="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center flex-shrink-0 shadow-sm">
                                 <IconDroplet size={16} className="text-white" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="font-bold text-amber-800 dark:text-amber-200 text-sm truncate">{selectedVariant.name}</p>
+                                <p className="font-bold text-slate-700 dark:text-amber-200 text-sm truncate">{selectedVariant.name}</p>
                                 {priceData?.price_per_ml_oil ? (
-                                    <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">
+                                    <p className="text-[11px] text-slate-700 dark:text-slate-300 mt-0.5">
                                         {fmt(priceData.price_per_ml_oil)}/ml · {priceData.oil_ingredient_name ?? "ingredient oil"}
                                     </p>
                                 ) : loadingPrice ? null : (
@@ -330,18 +330,18 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
 
                         {/* Error kalkulasi harga dari backend */}
                         {priceError && (
-                            <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl">
-                                <IconAlertTriangle size={14} className="text-red-500 flex-shrink-0 mt-0.5" />
-                                <p className="text-xs text-red-700 dark:text-red-400">{priceError}</p>
+                            <div className="flex items-start gap-2 p-3 bg-slate-100 dark:bg-red-950/20 border border-slate-300 dark:border-slate-700 rounded-xl">
+                                <IconAlertTriangle size={14} className="text-slate-700 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-slate-700 dark:text-slate-300">{priceError}</p>
                             </div>
                         )}
 
                         {/* Aturan rasio */}
                         <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 space-y-1">
                             <p className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                                <IconAlertTriangle size={12} className="text-amber-500" /> Aturan Komposisi
+                                <IconAlertTriangle size={12} className="text-slate-700" /> Aturan Komposisi
                             </p>
-                            <p>• Alkohol <span className="font-semibold text-emerald-600 dark:text-emerald-400">GRATIS</span> ke customer (HPP tetap dihitung)</p>
+                            <p>• Alkohol <span className="font-semibold text-slate-700 dark:text-slate-300">GRATIS</span> ke customer (HPP tetap dihitung)</p>
                             <p>• Rasio minimum oil:alkohol = <span className="font-bold">1:1</span></p>
                             <p>• Contoh valid: 27ml oil + 3ml alkohol ✓</p>
                             <p>• Contoh tidak valid: 10ml oil + 15ml alkohol ✗</p>
@@ -366,17 +366,17 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                                     }}
                                     placeholder="cth: 27"
                                     className={`w-full h-11 px-3 rounded-xl border text-center text-lg font-black focus:outline-none focus:ring-2 dark:bg-slate-900 dark:text-white ${compositionErrors.oil
-                                        ? "border-red-400 bg-red-50 dark:bg-red-950/20 focus:ring-red-400/30"
+                                        ? "border-slate-300 bg-slate-100 dark:bg-red-950/20 focus:ring-red-400/30"
                                         : "border-slate-200 dark:border-slate-700 bg-slate-50 focus:ring-amber-500/30 focus:border-amber-500"
                                         }`}
                                 />
-                                {compositionErrors.oil && <p className="text-xs text-red-500 mt-1">{compositionErrors.oil}</p>}
+                                {compositionErrors.oil && <p className="text-xs text-slate-700 mt-1">{compositionErrors.oil}</p>}
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 flex items-center gap-1.5">
                                     <span className="w-3 h-3 rounded-full bg-blue-400 inline-block" />
                                     Alkohol (ml)
-                                    <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-[9px] font-black rounded ml-auto">GRATIS</span>
+                                    <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[9px] font-black rounded ml-auto">GRATIS</span>
                                 </label>
                                 <input
                                     type="number" min="0" inputMode="numeric"
@@ -387,11 +387,11 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                                     }}
                                     placeholder="cth: 3"
                                     className={`w-full h-11 px-3 rounded-xl border text-center text-lg font-black focus:outline-none focus:ring-2 dark:bg-slate-900 dark:text-white ${compositionErrors.alcohol
-                                        ? "border-red-400 bg-red-50 dark:bg-red-950/20 focus:ring-red-400/30"
-                                        : "border-slate-200 dark:border-slate-700 bg-slate-50 focus:ring-blue-500/30 focus:border-blue-400"
+                                        ? "border-slate-300 bg-slate-100 dark:bg-red-950/20 focus:ring-red-400/30"
+                                        : "border-slate-200 dark:border-slate-700 bg-slate-50 focus:ring-blue-500/30 focus:border-slate-300"
                                         }`}
                                 />
-                                {compositionErrors.alcohol && <p className="text-xs text-red-500 mt-1">{compositionErrors.alcohol}</p>}
+                                {compositionErrors.alcohol && <p className="text-xs text-slate-700 mt-1">{compositionErrors.alcohol}</p>}
                             </div>
                         </div>
 
@@ -402,7 +402,7 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                                     <span className="font-bold text-slate-700 dark:text-slate-200">{totalVolume}ml</span> total · {Number(oilQty) || 0}ml oil + {Number(alcoholQty) || 0}ml alkohol
                                 </div>
                                 {isCompositionValid && (
-                                    <span className="flex items-center gap-1 text-xs text-emerald-600 font-bold">
+                                    <span className="flex items-center gap-1 text-xs text-slate-700 font-bold">
                                         <IconCheck size={13} /> Rasio valid
                                     </span>
                                 )}
@@ -415,14 +415,14 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                                 <label className="text-xs font-bold text-slate-600 dark:text-slate-400">
                                     Harga Jual (Rp)
                                     {priceData && !priceOverride && (
-                                        <span className="ml-1.5 text-[10px] font-normal text-amber-600">
+                                        <span className="ml-1.5 text-[10px] font-normal text-slate-700">
                                             · otomatis dari harga jual oil
                                         </span>
                                     )}
                                 </label>
                                 {priceData?.calculated_price > 0 && priceOverride && (
                                     <button onClick={() => { setPriceOverride(false); setCustomPrice(String(priceData.calculated_price)); }}
-                                        className="text-[10px] text-amber-600 font-bold hover:underline">
+                                        className="text-[10px] text-slate-700 font-bold hover:underline">
                                         Reset ke {fmt(priceData.calculated_price)}
                                     </button>
                                 )}
@@ -435,24 +435,24 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                                     onChange={e => { setCustomPrice(e.target.value.replace(/\D/g, "")); setPriceOverride(true); }}
                                     placeholder="0"
                                     className={`w-full h-12 pl-10 pr-16 rounded-xl border text-xl font-black focus:outline-none focus:ring-2 dark:bg-slate-900 dark:text-white ${errors.price
-                                        ? "border-red-400 bg-red-50 focus:ring-red-400/30"
+                                        ? "border-slate-300 bg-slate-100 focus:ring-red-400/30"
                                         : !priceOverride && customPrice
-                                            ? "border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/10 focus:ring-amber-500/30 focus:border-amber-500"
+                                            ? "border-slate-300 dark:border-slate-700 bg-slate-100/50 dark:bg-amber-950/10 focus:ring-amber-500/30 focus:border-amber-500"
                                             : "border-slate-200 dark:border-slate-700 bg-slate-50 focus:ring-amber-500/30 focus:border-amber-500"
                                         }`}
                                 />
                                 {customPrice && (
                                     <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold px-1.5 py-0.5 rounded ${priceOverride
                                         ? "bg-slate-100 dark:bg-slate-700 text-slate-500"
-                                        : "bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400"
+                                        : "bg-amber-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
                                         }`}>
                                         {priceOverride ? "manual" : "auto"}
                                     </span>
                                 )}
                             </div>
-                            {errors.price && <p className="text-xs text-red-500 mt-1">{errors.price}</p>}
+                            {errors.price && <p className="text-xs text-slate-700 mt-1">{errors.price}</p>}
                             {!priceData && !priceError && Number(oilQty) > 0 && !loadingPrice && !customPrice && (
-                                <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                                <p className="text-xs text-slate-700 mt-1 flex items-center gap-1">
                                     <IconAlertTriangle size={11} /> Menghitung harga...
                                 </p>
                             )}
@@ -526,7 +526,7 @@ function IntensityModal({ show, onClose, variant, intensities, loading, onSelect
                     <p className="text-xs text-slate-400 mb-0.5">Pilih Konsentrasi</p>
                     <h3 className="font-bold text-slate-800 dark:text-white text-sm leading-snug">{variant?.name}</h3>
                 </div>
-                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors">
+                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-100 hover:text-slate-700 flex items-center justify-center transition-colors">
                     <IconX size={16} />
                 </button>
             </div>
@@ -576,16 +576,16 @@ function IntensityModal({ show, onClose, variant, intensities, loading, onSelect
                         {/* Opsi Custom Order (Komposisi Bebas) */}
                         <div className="mt-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                             <button onClick={() => { onSelectCustom(variant); onClose(); }}
-                                className="group w-full relative p-3 rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20 hover:border-amber-400 hover:bg-amber-50 text-left transition-all duration-200">
+                                className="group w-full relative p-3 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100/50 dark:bg-amber-950/20 hover:border-slate-300 hover:bg-slate-100 text-left transition-all duration-200">
                                 <div className="flex items-center gap-3">
                                     <div className="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center shadow-sm flex-shrink-0">
                                         <IconAdjustments size={18} className="text-white" />
                                     </div>
                                     <div className="flex-1">
-                                        <p className="font-black text-amber-800 dark:text-amber-200 text-sm">Komposisi Bebas</p>
-                                        <span className="text-[10px] text-amber-600 dark:text-amber-400 block mt-0.5">Tentukan rasio ml minyak & alkohol sendiri</span>
+                                        <p className="font-black text-slate-700 dark:text-amber-200 text-sm">Komposisi Bebas</p>
+                                        <span className="text-[10px] text-slate-700 dark:text-slate-300 block mt-0.5">Tentukan rasio ml minyak & alkohol sendiri</span>
                                     </div>
-                                    <IconChevronRight size={14} className="text-amber-500 flex-shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" />
+                                    <IconChevronRight size={14} className="text-slate-700 flex-shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" />
                                 </div>
                             </button>
                         </div>
@@ -604,10 +604,10 @@ function SizeModal({ show, onClose, variant, intensity, sizes, loading, onSelect
                 <div>
                     <p className="text-xs text-slate-400 mb-0.5">Pilih Ukuran</p>
                     <h3 className="font-bold text-slate-800 dark:text-white text-sm leading-snug">
-                        <span className="text-primary-600 dark:text-primary-400">{intensity?.code}</span> · {variant?.name}
+                        <span className="text-slate-700 dark:text-slate-300">{intensity?.code}</span> · {variant?.name}
                     </h3>
                 </div>
-                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors">
+                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-100 hover:text-slate-700 flex items-center justify-center transition-colors">
                     <IconX size={16} />
                 </button>
             </div>
@@ -626,14 +626,14 @@ function SizeModal({ show, onClose, variant, intensity, sizes, loading, onSelect
                     <div className="grid grid-cols-3 gap-2.5">
                         {sizes.map((size) => (
                             <button key={size.id} onClick={() => { onSelect(size); onClose(); }}
-                                className="group flex flex-col items-center p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-primary-400 dark:hover:border-primary-600 bg-white dark:bg-slate-800/50 hover:bg-primary-50/50 dark:hover:bg-primary-950/20 transition-all">
+                                className="group flex flex-col items-center p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-primary-600 bg-white dark:bg-slate-800/50 hover:bg-slate-100/50 dark:hover:bg-primary-950/20 transition-all">
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center mb-2 shadow-sm">
                                     <IconBottle size={18} className="text-white" />
                                 </div>
                                 <p className="text-2xl font-black text-slate-800 dark:text-white leading-none">{size.volume_ml}</p>
                                 <p className="text-[10px] font-semibold text-slate-400 mt-0.5">ml</p>
                                 {size.price != null && (
-                                    <p className="text-[11px] font-bold text-primary-600 dark:text-primary-400 mt-1.5 text-center">{fmt(size.price)}</p>
+                                    <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mt-1.5 text-center">{fmt(size.price)}</p>
                                 )}
                             </button>
                         ))}
@@ -659,12 +659,12 @@ function PackagingModal({ show, onClose, packagingMaterials = [], selectedPkgs =
         <Modal show={show} onClose={onClose} maxW="max-w-xl">
             <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
                 <h3 className="font-bold text-slate-800 dark:text-white text-lg">Kemasan Parfum</h3>
-                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors"><IconX size={16} /></button>
+                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-100 hover:text-slate-700 flex items-center justify-center transition-colors"><IconX size={16} /></button>
             </div>
             {!isPendingMode && (
                 <div className="flex border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
-                    <button onClick={() => setActiveTab("addon")} className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-colors ${activeTab === "addon" ? "text-primary-600 border-b-2 border-primary-500" : "text-slate-400 hover:text-slate-600"}`}><IconPackage size={13} /> Kemasan Parfum Ini</button>
-                    <button onClick={() => setActiveTab("standalone")} className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-colors ${activeTab === "standalone" ? "text-orange-600 border-b-2 border-orange-500" : "text-slate-400 hover:text-slate-600"}`}><IconBox size={13} /> Kemasan Satuan</button>
+                    <button onClick={() => setActiveTab("addon")} className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-colors ${activeTab === "addon" ? "text-slate-700 border-b-2 border-primary-500" : "text-slate-400 hover:text-slate-600"}`}><IconPackage size={13} /> Kemasan Parfum Ini</button>
+                    <button onClick={() => setActiveTab("standalone")} className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-colors ${activeTab === "standalone" ? "text-slate-700 border-b-2 border-orange-500" : "text-slate-400 hover:text-slate-600"}`}><IconBox size={13} /> Kemasan Satuan</button>
                 </div>
             )}
             <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
@@ -678,27 +678,27 @@ function PackagingModal({ show, onClose, packagingMaterials = [], selectedPkgs =
                     const bg = PKG_BG_LIST[idx % PKG_BG_LIST.length];
                     const isOn = selectedPkgs.includes(pkg.id);
                     if (isPendingMode || activeTab === "addon") return (
-                        <button key={pkg.id} onClick={() => onToggle(pkg.id)} className={`group flex items-center gap-3 p-3.5 mb-2 rounded-xl border-2 text-left transition-all w-full ${isOn ? "border-primary-400 bg-primary-50 dark:bg-primary-950/20" : "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800/50"}`}>
+                        <button key={pkg.id} onClick={() => onToggle(pkg.id)} className={`group flex items-center gap-3 p-3.5 mb-2 rounded-xl border-2 text-left transition-all w-full ${isOn ? "border-slate-300 bg-slate-100 dark:bg-primary-950/20" : "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800/50"}`}>
                             <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}><IconBox size={18} className="text-white" /></div>
                             <div className="flex-1 min-w-0">
                                 <p className="font-bold text-slate-800 dark:text-white text-sm truncate">{pkg.name}</p>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                    {pkg.is_free ? <span className="text-[10px] px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 rounded font-black">GRATIS</span> : <span className="text-[10px] font-bold text-orange-600">+{fmt(pkg.selling_price)}</span>}
+                                    {pkg.is_free ? <span className="text-[10px] px-1.5 py-0.5 bg-emerald-100 dark:bg-slate-800 text-slate-700 rounded font-black">GRATIS</span> : <span className="text-[10px] font-bold text-slate-700">+{fmt(pkg.selling_price)}</span>}
                                 </div>
                             </div>
                             <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isOn ? "bg-primary-500" : "bg-slate-100 dark:bg-slate-700"}`}>{isOn ? <IconCheck size={13} className="text-white" /> : <IconPlus size={13} className="text-slate-400" />}</div>
                         </button>
                     );
                     return (
-                        <button key={pkg.id} onClick={() => { onAddStandalone(pkg); onClose(); }} className="group flex items-center gap-3 p-3.5 mb-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800/50 hover:border-orange-300 text-left transition-all w-full">
+                        <button key={pkg.id} onClick={() => { onAddStandalone(pkg); onClose(); }} className="group flex items-center gap-3 p-3.5 mb-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800/50 hover:border-slate-300 text-left transition-all w-full">
                             <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}><IconBox size={18} className="text-white" /></div>
                             <div className="flex-1 min-w-0">
                                 <p className="font-bold text-slate-800 dark:text-white text-sm truncate">{pkg.name}</p>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                    {pkg.is_free ? <span className="text-[10px] px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded font-black">GRATIS</span> : <span className="text-[10px] font-bold text-orange-600">{fmt(pkg.selling_price)}</span>}
+                                    {pkg.is_free ? <span className="text-[10px] px-1.5 py-0.5 bg-emerald-100 text-slate-700 rounded font-black">GRATIS</span> : <span className="text-[10px] font-bold text-slate-700">{fmt(pkg.selling_price)}</span>}
                                 </div>
                             </div>
-                            <IconPlus size={13} className="text-slate-400 group-hover:text-orange-600 flex-shrink-0" />
+                            <IconPlus size={13} className="text-slate-400 group-hover:text-slate-700 flex-shrink-0" />
                         </button>
                     );
                 })}
@@ -740,10 +740,10 @@ function EligiblePromoModal({ show, promos = [], onClose, onPickReward, onAddDis
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
                     Transaksi ini memenuhi syarat untuk:
                 </p>
-                <p className="text-base font-black text-amber-600 dark:text-amber-400 mb-4">{promo?.name}</p>
+                <p className="text-base font-black text-slate-700 dark:text-slate-300 mb-4">{promo?.name}</p>
                 {promo?.trigger === 'loyalty_points' && (
                     <p className="text-xs text-slate-400 mb-4">
-                        Poin customer: <span className="font-bold text-amber-500">{promo.customer_points}</span> / {promo.points_needed} poin
+                        Poin customer: <span className="font-bold text-slate-700">{promo.customer_points}</span> / {promo.points_needed} poin
                     </p>
                 )}
                 <p className="text-xs text-slate-400 mb-6">{promo?.description}</p>
@@ -797,12 +797,12 @@ function ChooseRewardModal({ show, onClose, promo, variants = [], loadingVariant
                         <span className="text-lg">🎁</span> {promo?.name}
                     </h3>
                 </div>
-                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors">
+                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-100 hover:text-slate-700 flex items-center justify-center transition-colors">
                     <IconX size={16} />
                 </button>
             </div>
-            <div className="px-5 py-3 bg-amber-50 dark:bg-amber-950/20 border-b border-amber-100 dark:border-amber-900/40 flex-shrink-0">
-                <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold">
+            <div className="px-5 py-3 bg-slate-100 dark:bg-amber-950/20 border-b border-amber-100 dark:border-slate-700/40 flex-shrink-0">
+                <p className="text-xs text-slate-700 dark:text-slate-300 font-semibold">
                     Hadiah: <span className="font-black">{rewardLabel}</span> — GRATIS!
                 </p>
             </div>
@@ -827,8 +827,8 @@ function ChooseRewardModal({ show, onClose, promo, variants = [], loadingVariant
                         <button key={v.id} onClick={() => setSelectedVariant(v)}
                             className={`group w-full flex items-center gap-3 p-3.5 rounded-xl border-2 text-left transition-all ${
                                 selectedVariant?.id === v.id
-                                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/20'
-                                    : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-amber-300'
+                                    ? 'border-amber-500 bg-slate-100 dark:bg-amber-950/20'
+                                    : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300'
                             }`}>
                             <div className={`w-10 h-10 rounded-xl ${INTENSITY_COLORS[idx % INTENSITY_COLORS.length].bg} flex items-center justify-center flex-shrink-0`}>
                                 <IconDroplet size={16} className="text-white" />
@@ -837,7 +837,7 @@ function ChooseRewardModal({ show, onClose, promo, variants = [], loadingVariant
                                 <p className="font-bold text-slate-800 dark:text-white text-sm truncate">{v.name}</p>
                                 {v.code && <p className="text-[10px] text-slate-400 font-mono">{v.code}</p>}
                             </div>
-                            {selectedVariant?.id === v.id && <IconCheck size={16} className="text-amber-500 flex-shrink-0" />}
+                            {selectedVariant?.id === v.id && <IconCheck size={16} className="text-slate-700 flex-shrink-0" />}
                         </button>
                     ))
                 )}
@@ -908,13 +908,13 @@ function GameRewardModal({ show, onClose, promo, onAddDirectReward, onOpenVarian
                         <span className="text-lg">🎁</span> {promo?.name || "Pilih Hadiah"}
                     </h3>
                 </div>
-                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors">
+                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-100 hover:text-slate-700 flex items-center justify-center transition-colors">
                     <IconX size={16} />
                 </button>
             </div>
 
-            <div className="px-5 py-3 bg-amber-50 dark:bg-amber-950/20 border-b border-amber-100 dark:border-amber-900/40 flex-shrink-0">
-                <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold leading-relaxed">
+            <div className="px-5 py-3 bg-slate-100 dark:bg-amber-950/20 border-b border-amber-100 dark:border-slate-700/40 flex-shrink-0">
+                <p className="text-xs text-slate-700 dark:text-slate-300 font-semibold leading-relaxed">
                     {promo?.description || "Silakan pilih hadiah di bawah ini untuk transaksi pelanggan."}
                 </p>
             </div>
@@ -929,10 +929,10 @@ function GameRewardModal({ show, onClose, promo, onAddDirectReward, onOpenVarian
                             <button
                                 key={idx}
                                 onClick={() => handleClaim(item)}
-                                className="w-full flex items-center justify-between p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-amber-500 hover:bg-amber-50/20 transition text-left group shadow-sm"
+                                className="w-full flex items-center justify-between p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-amber-500 hover:bg-slate-100/20 transition text-left group shadow-sm"
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-600 flex items-center justify-center font-bold text-sm">
+                                    <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-slate-800 text-slate-700 flex items-center justify-center font-bold text-sm">
                                         {item.reward_type === 'points' ? '🪙' : item.reward_type === 'reward_item' ? '🎁' : '🧪'}
                                     </div>
                                     <div>
@@ -970,9 +970,9 @@ function DiscountModal({ show, onClose, discounts = [], subtotal = 0, onSelect, 
         <Modal show={show} onClose={onClose} maxW="max-w-md">
             <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
                 <h3 className="font-bold text-slate-800 dark:text-white text-lg flex items-center gap-2">
-                    <IconTag size={20} className="text-emerald-500" /> Pilih Diskon
+                    <IconTag size={20} className="text-slate-700" /> Pilih Diskon
                 </h3>
-                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors"><IconX size={16} /></button>
+                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-100 hover:text-slate-700 flex items-center justify-center transition-colors"><IconX size={16} /></button>
             </div>
             <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
                 <div className="relative">
@@ -1013,19 +1013,19 @@ function DiscountModal({ show, onClose, discounts = [], subtotal = 0, onSelect, 
                                 if (isRewardType && isEligible && eligiblePromo) { onClose(); onPickReward && onPickReward(eligiblePromo); }
                                 else if (!isRewardType) { onSelect({ ...d, amount: calcAmount }); onClose(); }
                             }} className={`group relative flex items-start gap-3 p-3.5 rounded-xl border-2 text-left transition-all w-full ${
-                                isEligible ? 'border-amber-400 dark:border-amber-600 bg-amber-50/50 dark:bg-amber-950/20 hover:border-amber-500 shadow-sm'
-                                : eligible ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-emerald-400'
+                                isEligible ? 'border-slate-300 dark:border-amber-600 bg-slate-100/50 dark:bg-amber-950/20 hover:border-amber-500 shadow-sm'
+                                : eligible ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300'
                                 : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 opacity-60 cursor-not-allowed'
                             }`}>
                                 {isEligible && <span className="absolute -top-2 right-3 px-2 py-0.5 bg-amber-500 text-white text-[9px] font-black rounded-full animate-pulse">✓ ELIGIBLE</span>}
-                                <div className={`w-10 h-10 rounded-xl ${isEligible ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40' : eligible ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40' : 'bg-slate-200 text-slate-400 dark:bg-slate-700'} flex items-center justify-center flex-shrink-0`}><IconTag size={18} /></div>
+                                <div className={`w-10 h-10 rounded-xl ${isEligible ? 'bg-amber-100 text-slate-700 dark:bg-slate-800' : eligible ? 'bg-emerald-100 text-slate-700 dark:bg-slate-800' : 'bg-slate-200 text-slate-400 dark:bg-slate-700'} flex items-center justify-center flex-shrink-0`}><IconTag size={18} /></div>
                                 <div className="flex-1 min-w-0">
                                     <p className="font-bold text-slate-800 dark:text-white text-sm truncate">{d.name}</p>
                                     <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-2">{d.description || (isRewardType ? 'Item Gratis' : d.type === 'percentage' ? `Diskon ${d.value}%` : `Potongan Rp ${d.value}`)}</p>
-                                    {!eligible && <p className="text-[10px] text-red-500 mt-1 font-bold">Minimal belanja: {fmt(d.min_purchase_amount)}</p>}
+                                    {!eligible && <p className="text-[10px] text-slate-700 mt-1 font-bold">Minimal belanja: {fmt(d.min_purchase_amount)}</p>}
                                 </div>
                                 {eligible && <div className="text-right flex-shrink-0">
-                                    <p className="text-xs font-black text-emerald-600">-{fmt(calcAmount)}</p>
+                                    <p className="text-xs font-black text-slate-700">-{fmt(calcAmount)}</p>
                                 </div>}
                             </button>
                         );
@@ -1630,10 +1630,10 @@ export default function Index({
             <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
                 {/* Mobile tab bar */}
                 <div className="lg:hidden flex-shrink-0 flex bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-                    <button onClick={() => setMobileView("catalog")} className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-colors ${mobileView === "catalog" ? "text-primary-600 border-b-2 border-primary-500" : "text-slate-400"}`}>
+                    <button onClick={() => setMobileView("catalog")} className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-colors ${mobileView === "catalog" ? "text-slate-700 border-b-2 border-primary-500" : "text-slate-400"}`}>
                         <IconFlask size={14} /> Katalog
                     </button>
-                    <button onClick={() => setMobileView("cart")} className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-colors relative ${mobileView === "cart" ? "text-primary-600 border-b-2 border-primary-500" : "text-slate-400"}`}>
+                    <button onClick={() => setMobileView("cart")} className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-colors relative ${mobileView === "cart" ? "text-slate-700 border-b-2 border-primary-500" : "text-slate-400"}`}>
                         <IconShoppingCart size={14} /> Keranjang
                         {totalCartCount > 0 && <span className="absolute top-2 right-[20%] w-4 h-4 bg-primary-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">{totalCartCount > 9 ? "9+" : totalCartCount}</span>}
                     </button>
@@ -1677,7 +1677,7 @@ export default function Index({
                                         </div>
                                         <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">Pilih Parfum</h3>
                                         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Pilih varian, konsentrasi, dan ukuran parfum favorit.</p>
-                                        <div className="mt-6 flex items-center gap-1.5 text-primary-600 font-bold text-sm">
+                                        <div className="mt-6 flex items-center gap-1.5 text-slate-700 font-bold text-sm">
                                             Buka Katalog <IconChevronRight size={16} />
                                         </div>
                                     </button>
@@ -1693,7 +1693,7 @@ export default function Index({
                                         </div>
                                         <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">Kemasan</h3>
                                         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Botol, tutup spray, dan aksesoris kemasan lainnya.</p>
-                                        <div className="mt-6 flex items-center gap-1.5 text-orange-600 font-bold text-sm">
+                                        <div className="mt-6 flex items-center gap-1.5 text-slate-700 font-bold text-sm">
                                             Buka Katalog <IconChevronRight size={16} />
                                         </div>
                                     </button>
@@ -1709,7 +1709,7 @@ export default function Index({
                                         </div>
                                         <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">Spunbond</h3>
                                         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Pilihan tas spunbond eksklusif untuk kemasan akhir.</p>
-                                        <div className="mt-6 flex items-center gap-1.5 text-emerald-600 font-bold text-sm">
+                                        <div className="mt-6 flex items-center gap-1.5 text-slate-700 font-bold text-sm">
                                             Buka Katalog <IconChevronRight size={16} />
                                         </div>
                                     </button>
@@ -1761,14 +1761,14 @@ export default function Index({
                                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3">
                                             {filtered.map((variant, idx) => {
                                                 const genderColor = variant.gender === "male"
-                                                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                                                    ? "bg-blue-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                                                     : variant.gender === "female"
-                                                        ? "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300"
+                                                        ? "bg-pink-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                                                         : "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300";
                                                 const accentBg = INTENSITY_COLORS[idx % INTENSITY_COLORS.length].bg;
                                                 return (
                                                     <button key={variant.id} onClick={() => selectCatalogVariant(variant)}
-                                                        className="group relative p-4 rounded-2xl border-2 text-left transition-all border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-primary-400 dark:hover:border-primary-600 hover:shadow-md">
+                                                        className="group relative p-4 rounded-2xl border-2 text-left transition-all border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-primary-600 hover:shadow-md">
                                                         <div className="flex items-start gap-2 mb-3">
                                                             <div className="flex-1 min-w-0">
                                                                 <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">{variant.name}</p>
@@ -1789,18 +1789,18 @@ export default function Index({
 
                                             {/* Card Custom Order */}
                                             <button onClick={openCustomModal}
-                                                className="group relative p-4 rounded-2xl border-2 border-dashed text-left transition-all border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20 hover:border-amber-400 dark:hover:border-amber-600 hover:shadow-md">
+                                                className="group relative p-4 rounded-2xl border-2 border-dashed text-left transition-all border-slate-300 dark:border-slate-700 bg-slate-100/50 dark:bg-amber-950/20 hover:border-slate-300 dark:hover:border-amber-600 hover:shadow-md">
                                                 <div className="flex items-start gap-2 mb-3">
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-black text-amber-800 dark:text-amber-200 text-sm leading-tight">Komposisi Bebas</p>
-                                                        <span className="text-[10px] text-amber-600/70 font-mono mt-0.5 block">CUSTOM</span>
+                                                        <p className="font-black text-slate-700 dark:text-amber-200 text-sm leading-tight">Komposisi Bebas</p>
+                                                        <span className="text-[10px] text-slate-700/70 font-mono mt-0.5 block">CUSTOM</span>
                                                     </div>
                                                     <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center shadow-sm flex-shrink-0">
                                                         <IconAdjustments size={16} className="text-white" />
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center justify-end">
-                                                    <span className="text-[11px] text-amber-500 font-semibold">+ Buat →</span>
+                                                    <span className="text-[11px] text-slate-700 font-semibold">+ Buat →</span>
                                                 </div>
                                             </button>
                                         </div>
@@ -1834,7 +1834,7 @@ export default function Index({
                                                     const inCart = cartPackagings.find(p => p.pkg.id === pkg.id);
                                                     return (
                                                         <button key={pkg.id} onClick={() => handleAddPkg(pkg)}
-                                                            className={`group flex flex-col rounded-2xl border-2 overflow-hidden text-left transition-all duration-200 ${inCart ? "border-orange-400 dark:border-orange-600 shadow-md ring-2 ring-orange-500/20" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-orange-400 dark:hover:border-orange-600 hover:shadow-md"}`}>
+                                                            className={`group flex flex-col rounded-2xl border-2 overflow-hidden text-left transition-all duration-200 ${inCart ? "border-slate-300 dark:border-orange-600 shadow-md ring-2 ring-orange-500/20" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-orange-600 hover:shadow-md"}`}>
                                                             <div className="relative w-full aspect-square bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
                                                                 {pkg.image_url ? (
                                                                     <img src={pkg.image_url} alt={pkg.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -1854,12 +1854,12 @@ export default function Index({
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <div className={`p-2.5 flex-1 flex flex-col ${inCart ? "bg-orange-50 dark:bg-orange-950/20" : ""}`}>
+                                                            <div className={`p-2.5 flex-1 flex flex-col ${inCart ? "bg-slate-100 dark:bg-orange-950/20" : ""}`}>
                                                                 <p className="font-black text-slate-800 dark:text-white text-xs leading-tight line-clamp-2">{pkg.name}</p>
                                                                 {pkg.code && <p className="text-[10px] text-slate-400 font-mono mt-0.5">{pkg.code}</p>}
                                                                 <div className="mt-auto pt-1.5 flex items-center justify-between">
-                                                                    {!pkg.is_free && <span className="text-xs font-black text-orange-600">{fmt(pkg.selling_price)}</span>}
-                                                                    <span className="text-[10px] text-orange-500 font-bold ml-auto">+ Tambah →</span>
+                                                                    {!pkg.is_free && <span className="text-xs font-black text-slate-700">{fmt(pkg.selling_price)}</span>}
+                                                                    <span className="text-[10px] text-slate-700 font-bold ml-auto">+ Tambah →</span>
                                                                 </div>
                                                             </div>
                                                         </button>
@@ -1920,24 +1920,24 @@ export default function Index({
                                                 className="w-full h-8 pl-8 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white"
                                             />
                                         </div>
-                                        <button onClick={() => setShowAddCustomer(true)} className="w-8 h-8 rounded-xl bg-primary-50 dark:bg-primary-950/30 text-primary-600 flex items-center justify-center hover:bg-primary-100 flex-shrink-0" title="Tambah Pelanggan Baru">
+                                        <button onClick={() => setShowAddCustomer(true)} className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-primary-950/30 text-slate-700 flex items-center justify-center hover:bg-primary-100 flex-shrink-0" title="Tambah Pelanggan Baru">
                                             <IconUserPlus size={14} />
                                         </button>
                                     </div>
                                     {selectedCustomer && (
                                         <div className="mt-1 flex flex-col gap-1">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><IconCheck size={10} /> {selectedCustomer.name}</p>
-                                                {Number(selectedCustomer.points ?? 0) > 0 && <span className="ml-auto text-[10px] text-amber-500 font-bold">{Number(selectedCustomer.points).toLocaleString("id-ID")} poin</span>}
+                                                <p className="text-[11px] text-slate-700 dark:text-slate-300 flex items-center gap-1"><IconCheck size={10} /> {selectedCustomer.name}</p>
+                                                {Number(selectedCustomer.points ?? 0) > 0 && <span className="ml-auto text-[10px] text-slate-700 font-bold">{Number(selectedCustomer.points).toLocaleString("id-ID")} poin</span>}
                                             </div>
 
                                             {/* Loyalty Reward Progress/Notification */}
                                             {Number(selectedCustomer.points ?? 0) >= loyalty_reward_threshold ? (
-                                                <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-2 flex items-center gap-2 animate-pulse shadow-sm">
+                                                <div className="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 flex items-center gap-2 animate-pulse shadow-sm">
                                                     <span className="text-base flex-shrink-0">🏆</span>
                                                     <div className="flex-1">
-                                                        <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 leading-tight">Reward Tersedia!</p>
-                                                        <p className="text-[9px] text-emerald-600 dark:text-emerald-500">{loyalty_reward_description || "Reward diskon tersedia"}</p>
+                                                        <p className="text-[10px] font-black text-slate-700 dark:text-slate-300 leading-tight">Reward Tersedia!</p>
+                                                        <p className="text-[9px] text-slate-700 dark:text-slate-700">{loyalty_reward_description || "Reward diskon tersedia"}</p>
                                                     </div>
                                                 </div>
                                             ) : Number(selectedCustomer.points ?? 0) > 0 && (
@@ -1973,14 +1973,14 @@ export default function Index({
 
                         {/* Held carts */}
                         {heldCarts.length > 0 && (
-                            <div className="flex-shrink-0 border-b border-slate-100 dark:border-slate-800 px-3 py-2 bg-amber-50 dark:bg-amber-950/20">
-                                <p className="text-[10px] font-black text-amber-600 uppercase tracking-wider mb-1.5 flex items-center gap-1"><IconClock size={10} /> Ditahan ({heldCarts.length})</p>
+                            <div className="flex-shrink-0 border-b border-slate-100 dark:border-slate-800 px-3 py-2 bg-slate-100 dark:bg-amber-950/20">
+                                <p className="text-[10px] font-black text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1"><IconClock size={10} /> Ditahan ({heldCarts.length})</p>
                                 <div className="flex gap-2 overflow-x-auto pb-1">
                                     {heldCarts.map(h => (
-                                        <div key={h.hold_id} className="flex-shrink-0 bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-2 flex items-center gap-2">
+                                        <div key={h.hold_id} className="flex-shrink-0 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 flex items-center gap-2">
                                             <div><p className="text-xs font-bold text-slate-800 dark:text-white">{h.label}</p><p className="text-xs text-slate-400">{fmt(h.total)}</p></div>
-                                            <button onClick={() => handleResume(h.hold_id)} className="text-xs text-primary-600 font-bold hover:underline">Lanjut</button>
-                                            <button onClick={() => handleDeleteHeld(h.hold_id)} className="text-red-400 hover:text-red-600"><IconX size={12} /></button>
+                                            <button onClick={() => handleResume(h.hold_id)} className="text-xs text-slate-700 font-bold hover:underline">Lanjut</button>
+                                            <button onClick={() => handleDeleteHeld(h.hold_id)} className="text-red-400 hover:text-slate-700"><IconX size={12} /></button>
                                         </div>
                                     ))}
                                 </div>
@@ -1991,10 +1991,10 @@ export default function Index({
                         <div className="flex-shrink-0 px-3 py-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                 <IconShoppingCart size={11} /> Keranjang
-                                {totalCartCount > 0 && <span className="px-1.5 py-0.5 bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 rounded-full text-[10px] font-black">{totalCartCount}</span>}
+                                {totalCartCount > 0 && <span className="px-1.5 py-0.5 bg-primary-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full text-[10px] font-black">{totalCartCount}</span>}
                             </p>
                             {carts.length > 0 && (
-                                <button onClick={handleHold} disabled={isHolding} className="text-[11px] text-amber-600 font-bold flex items-center gap-1 px-2 py-1 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded-lg transition-colors">
+                                <button onClick={handleHold} disabled={isHolding} className="text-[11px] text-slate-700 font-bold flex items-center gap-1 px-2 py-1 hover:bg-slate-100 dark:hover:bg-amber-950/30 rounded-lg transition-colors">
                                     <IconClock size={11} /> Tahan
                                 </button>
                             )}
@@ -2013,7 +2013,7 @@ export default function Index({
                                     {carts.map(item => {
                                         const isPointReward = item.points_amount !== null && item.points_amount !== undefined;
                                         return (
-                                            <div key={item.id} className={`rounded-xl p-3 transition-opacity ${removingId === item.id ? "opacity-40" : ""} ${isPointReward ? "bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 animate-pulse" : item.is_custom_order ? "bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/50" : "bg-slate-50 dark:bg-slate-800/60"}`}>
+                                            <div key={item.id} className={`rounded-xl p-3 transition-opacity ${removingId === item.id ? "opacity-40" : ""} ${isPointReward ? "bg-slate-100 dark:bg-emerald-950/20 border border-emerald-100 dark:border-slate-700/50 animate-pulse" : item.is_custom_order ? "bg-slate-100 dark:bg-amber-950/20 border border-amber-100 dark:border-slate-700/50" : "bg-slate-50 dark:bg-slate-800/60"}`}>
                                                 <div className="flex items-start gap-2.5">
                                                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm ${isPointReward ? "bg-emerald-500" : item.is_custom_order ? "bg-amber-500" : "bg-gradient-to-br from-primary-500 to-primary-700"}`}>
                                                         {isPointReward ? <IconStar size={15} className="text-white" /> : item.is_custom_order ? <IconAdjustments size={15} className="text-white" /> : <IconBottle size={15} className="text-white" />}
@@ -2026,14 +2026,14 @@ export default function Index({
                                                                         {item.notes ?? `Reward: +${item.points_amount} Poin`}
                                                                     </p>
                                                                 </div>
-                                                                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5 font-bold">
+                                                                <p className="text-[11px] text-slate-700 dark:text-slate-300 mt-0.5 font-bold">
                                                                     Poin ditambahkan otomatis setelah checkout
                                                                 </p>
                                                                 <div className="flex items-center justify-between mt-1.5">
                                                                     <div className="flex items-center gap-1">
                                                                         <span className="w-7 text-left text-sm font-bold text-slate-500 dark:text-slate-400">Qty: {item.qty}</span>
                                                                     </div>
-                                                                    <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded">
+                                                                    <span className="text-xs font-black text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded">
                                                                         🎁 GRATIS
                                                                     </span>
                                                                 </div>
@@ -2042,22 +2042,22 @@ export default function Index({
                                                             <>
                                                                 <div className="flex items-center gap-1.5 flex-wrap">
                                                                     <p className="text-sm font-bold text-slate-800 dark:text-white leading-tight truncate">{item.variant?.name ?? "Parfum Custom"}</p>
-                                                                    {item.is_custom_order && <span className="px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 text-[9px] font-black rounded flex-shrink-0">CUSTOM</span>}
+                                                                    {item.is_custom_order && <span className="px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 text-slate-700 dark:text-amber-200 text-[9px] font-black rounded flex-shrink-0">CUSTOM</span>}
                                                                 </div>
                                                                 {item.is_custom_order ? (
-                                                                    <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">
+                                                                    <p className="text-[11px] text-slate-700 dark:text-slate-300 mt-0.5">
                                                                         {item.custom_oil_qty}ml oil · {item.custom_alcohol_qty ?? 0}ml alkohol
-                                                                        <span className="ml-1.5 px-1 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-[9px] font-black rounded">alkohol gratis</span>
+                                                                        <span className="ml-1.5 px-1 py-0.5 bg-emerald-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[9px] font-black rounded">alkohol gratis</span>
                                                                     </p>
                                                                 ) : (
                                                                     <p className="text-[11px] text-slate-400 mt-0.5">
-                                                                        <span className="font-semibold text-primary-500">{item.intensity?.code}</span> · {item.size?.volume_ml}ml
+                                                                        <span className="font-semibold text-slate-700">{item.intensity?.code}</span> · {item.size?.volume_ml}ml
                                                                     </p>
                                                                 )}
                                                                 {(item.packagings ?? []).length > 0 && (
                                                                     <div className="flex flex-wrap gap-1 mt-1">
                                                                         {item.packagings.map((p, pi) => (
-                                                                            <span key={pi} className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${p.packaging_material?.is_free ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700" : "bg-orange-100 dark:bg-orange-900/40 text-orange-700"}`}>
+                                                                            <span key={pi} className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${p.packaging_material?.is_free ? "bg-emerald-100 dark:bg-slate-800 text-slate-700" : "bg-orange-100 dark:bg-slate-800 text-slate-700"}`}>
                                                                                 {p.packaging_material?.name ?? "Kemasan"}{p.packaging_material?.is_free && " 🎁"}
                                                                             </span>
                                                                         ))}
@@ -2076,18 +2076,18 @@ export default function Index({
                                                                                     {fmt(Number(item.original_price) * item.qty)}
                                                                                 </span>
                                                                             )}
-                                                                            <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                                                            <span className="text-xs font-black text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded flex items-center gap-0.5">
                                                                                 🎁 GRATIS
                                                                             </span>
                                                                         </div>
                                                                     ) : (
-                                                                        <p className={`text-sm font-black ${item.is_custom_order ? "text-amber-600 dark:text-amber-400" : "text-primary-600 dark:text-primary-400"}`}>{fmt(getCartItemTotal(item))}</p>
+                                                                        <p className={`text-sm font-black ${item.is_custom_order ? "text-slate-700 dark:text-slate-300" : "text-slate-700 dark:text-slate-300"}`}>{fmt(getCartItemTotal(item))}</p>
                                                                     )}
                                                                 </div>
                                                             </>
                                                         )}
                                                     </div>
-                                                    <button onClick={() => handleRemove(item.id)} disabled={removingId === item.id} className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors flex-shrink-0"><IconTrash size={13} /></button>
+                                                    <button onClick={() => handleRemove(item.id)} disabled={removingId === item.id} className="p-1.5 text-slate-300 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-red-950/30 rounded-lg transition-colors flex-shrink-0"><IconTrash size={13} /></button>
                                                 </div>
                                             </div>
                                         );
@@ -2098,12 +2098,12 @@ export default function Index({
                                         <>
                                             {carts.length > 0 && <div className="flex items-center gap-2 py-0.5"><div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" /><span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1"><IconPackage size={9} /> Kemasan</span><div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" /></div>}
                                             {cartPackagings.map(({ pkg, qty }, i) => (
-                                                <div key={pkg.id} className="bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/50 rounded-xl p-3 flex items-center gap-2.5">
+                                                <div key={pkg.id} className="bg-slate-100 dark:bg-orange-950/20 border border-orange-100 dark:border-slate-700/50 rounded-xl p-3 flex items-center gap-2.5">
                                                     <div className={`w-9 h-9 rounded-xl ${PKG_BG[i % PKG_BG.length]} flex items-center justify-center flex-shrink-0 shadow-sm`}><IconBox size={15} className="text-white" /></div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-1.5 flex-wrap">
                                                             <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{pkg.name}</p>
-                                                            {pkg.is_free && <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 text-[9px] font-black rounded flex-shrink-0">GRATIS</span>}
+                                                            {pkg.is_free && <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-slate-800 text-slate-700 text-[9px] font-black rounded flex-shrink-0">GRATIS</span>}
                                                         </div>
                                                         <div className="flex items-center justify-between mt-1.5">
                                                             <div className="flex items-center gap-1">
@@ -2111,19 +2111,19 @@ export default function Index({
                                                                 <span className="w-7 text-center text-sm font-bold text-slate-800 dark:text-white">{qty}</span>
                                                                 <button onClick={() => handleUpdatePkgQty(pkg.id, 1)} className="w-6 h-6 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center hover:bg-slate-100 transition-colors shadow-sm"><IconPlus size={10} /></button>
                                                             </div>
-                                                            <p className={`text-sm font-black ${pkg.is_free ? "text-emerald-600" : "text-orange-600"}`}>{pkg.is_free ? "GRATIS" : fmt((pkg.is_free ? 0 : Number(pkg.selling_price || 0)) * qty)}</p>
+                                                            <p className={`text-sm font-black ${pkg.is_free ? "text-slate-700" : "text-slate-700"}`}>{pkg.is_free ? "GRATIS" : fmt((pkg.is_free ? 0 : Number(pkg.selling_price || 0)) * qty)}</p>
                                                         </div>
                                                     </div>
-                                                    <button onClick={() => handleUpdatePkgQty(pkg.id, -qty)} className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors flex-shrink-0"><IconTrash size={13} /></button>
+                                                    <button onClick={() => handleUpdatePkgQty(pkg.id, -qty)} className="p-1.5 text-slate-300 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-red-950/30 rounded-lg transition-colors flex-shrink-0"><IconTrash size={13} /></button>
                                                 </div>
                                             ))}
                                         </>
                                     )}
 
                                     {packagingMaterials.length > 0 && (
-                                        <button onClick={() => setShowPackagingModal(true)} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-2 border-dashed border-orange-200 dark:border-orange-800 hover:border-orange-400 hover:bg-orange-50/50 transition-all text-left">
-                                            <div className="w-8 h-8 rounded-xl bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0"><IconPackage size={15} className="text-orange-600" /></div>
-                                            <div className="flex-1 min-w-0"><p className="text-xs font-bold text-orange-700 dark:text-orange-400">Tambah Kemasan Satuan</p><p className="text-[10px] text-slate-400 mt-0.5">{packagingMaterials.length} jenis tersedia</p></div>
+                                        <button onClick={() => setShowPackagingModal(true)} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-slate-300 hover:bg-slate-100/50 transition-all text-left">
+                                            <div className="w-8 h-8 rounded-xl bg-orange-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0"><IconPackage size={15} className="text-slate-700" /></div>
+                                            <div className="flex-1 min-w-0"><p className="text-xs font-bold text-slate-700 dark:text-slate-300">Tambah Kemasan Satuan</p><p className="text-[10px] text-slate-400 mt-0.5">{packagingMaterials.length} jenis tersedia</p></div>
                                             <IconChevronRight size={13} className="text-orange-300 flex-shrink-0" />
                                         </button>
                                     )}
@@ -2134,28 +2134,28 @@ export default function Index({
                         {/* Summary + checkout */}
                         <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 space-y-2.5">
                             <button onClick={() => setShowDiscountModal(true)}
-                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border-2 transition-all relative ${selectedDiscount ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30" : "border-dashed border-slate-200 dark:border-slate-700 hover:border-primary-300 hover:bg-primary-50/50"}`}>
+                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border-2 transition-all relative ${selectedDiscount ? "border-slate-300 bg-slate-100 dark:bg-emerald-950/30" : "border-dashed border-slate-200 dark:border-slate-700 hover:border-slate-300 hover:bg-slate-100/50"}`}>
                                 {eligiblePromos.length > 0 && !selectedDiscount && (
                                     <span className="absolute -top-2 -right-2 w-5 h-5 bg-amber-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg shadow-amber-500/40 animate-bounce">
                                         {eligiblePromos.length}
                                     </span>
                                 )}
-                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${selectedDiscount ? "bg-emerald-100 dark:bg-emerald-900/50" : "bg-slate-100 dark:bg-slate-800"}`}><IconTag size={13} className={selectedDiscount ? "text-emerald-600" : "text-slate-400"} /></div>
+                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${selectedDiscount ? "bg-emerald-100 dark:bg-slate-800" : "bg-slate-100 dark:bg-slate-800"}`}><IconTag size={13} className={selectedDiscount ? "text-slate-700" : "text-slate-400"} /></div>
                                 <div className="flex-1 text-left min-w-0">
-                                    <p className={`text-xs font-bold truncate ${selectedDiscount ? "text-emerald-700 dark:text-emerald-400" : "text-slate-500"}`}>{selectedDiscount ? selectedDiscount.name : "Tambah Diskon / Voucher"}</p>
-                                    {selectedDiscount && <p className="text-[10px] text-emerald-600 font-semibold">-{fmt(selectedDiscount.amount)}</p>}
-                                    {eligiblePromos.length > 0 && !selectedDiscount && <p className="text-[9px] text-amber-600 font-black animate-pulse">PROMO TERSEDIA!</p>}
+                                    <p className={`text-xs font-bold truncate ${selectedDiscount ? "text-slate-700 dark:text-slate-300" : "text-slate-500"}`}>{selectedDiscount ? selectedDiscount.name : "Tambah Diskon / Voucher"}</p>
+                                    {selectedDiscount && <p className="text-[10px] text-slate-700 font-semibold">-{fmt(selectedDiscount.amount)}</p>}
+                                    {eligiblePromos.length > 0 && !selectedDiscount && <p className="text-[9px] text-slate-700 font-black animate-pulse">PROMO TERSEDIA!</p>}
                                 </div>
-                                {selectedDiscount ? <button onClick={e => { e.stopPropagation(); setSelectedDiscount(null); }} className="p-0.5 text-slate-400 hover:text-red-500 flex-shrink-0"><IconX size={13} /></button> : <IconChevronRight size={13} className="text-slate-300 flex-shrink-0" />}
+                                {selectedDiscount ? <button onClick={e => { e.stopPropagation(); setSelectedDiscount(null); }} className="p-0.5 text-slate-400 hover:text-slate-700 flex-shrink-0"><IconX size={13} /></button> : <IconChevronRight size={13} className="text-slate-300 flex-shrink-0" />}
                             </button>
 
                             <div className="space-y-1">
                                 {subtotal > 0 && <div className="flex justify-between text-xs"><span className="text-slate-500">Parfum</span><span className="font-semibold text-slate-700 dark:text-slate-300">{fmt(subtotal)}</span></div>}
                                 {pkgCartTotal > 0 && <div className="flex justify-between text-xs"><span className="text-slate-500">Kemasan</span><span className="font-semibold text-slate-700 dark:text-slate-300">{fmt(pkgCartTotal)}</span></div>}
-                                {discountAmount > 0 && <div className="flex justify-between text-xs"><span className="text-emerald-600 dark:text-emerald-400">Diskon</span><span className="text-emerald-600 font-bold">-{fmt(discountAmount)}</span></div>}
+                                {discountAmount > 0 && <div className="flex justify-between text-xs"><span className="text-slate-700 dark:text-slate-300">Diskon</span><span className="text-slate-700 font-bold">-{fmt(discountAmount)}</span></div>}
                                 <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800">
                                     <span className="font-black text-slate-800 dark:text-white text-sm">Total</span>
-                                    <span className="text-2xl font-black text-primary-600 dark:text-primary-400">{fmt(payable)}</span>
+                                    <span className="text-2xl font-black text-slate-700 dark:text-slate-300">{fmt(payable)}</span>
                                 </div>
                             </div>
 
@@ -2177,20 +2177,20 @@ export default function Index({
                         <div className="sm:hidden flex justify-center pt-3 pb-1 flex-shrink-0"><div className="w-10 h-1 bg-slate-200 dark:bg-slate-700 rounded-full" /></div>
                         <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
                             <h3 className="font-black text-slate-800 dark:text-white flex items-center gap-2">
-                                <span className="w-8 h-8 rounded-xl bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center"><IconReceipt size={16} className="text-primary-600" /></span>
+                                <span className="w-8 h-8 rounded-xl bg-primary-100 dark:bg-slate-800 flex items-center justify-center"><IconReceipt size={16} className="text-slate-700" /></span>
                                 Pembayaran
                             </h3>
-                            <button onClick={() => setShowPaymentModal(false)} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors"><IconX size={16} /></button>
+                            <button onClick={() => setShowPaymentModal(false)} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-100 hover:text-slate-700 flex items-center justify-center transition-colors"><IconX size={16} /></button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-4 space-y-4">
                             <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 space-y-2">
                                 {selectedCustomer && <div className="pb-2 border-b border-slate-200 dark:border-slate-700"><span className="text-xs text-slate-600 dark:text-slate-400">👤 {selectedCustomer.name}</span></div>}
                                 {subtotal > 0 && <div className="flex justify-between text-sm"><span className="text-slate-500">Parfum</span><span className="font-semibold">{fmt(subtotal)}</span></div>}
                                 {pkgCartTotal > 0 && <div className="flex justify-between text-sm"><span className="text-slate-500">Kemasan</span><span className="font-semibold">{fmt(pkgCartTotal)}</span></div>}
-                                {discountAmount > 0 && <div className="flex justify-between text-sm"><span className="text-emerald-600">{selectedDiscount?.name}</span><span className="text-emerald-600 font-bold">-{fmt(discountAmount)}</span></div>}
+                                {discountAmount > 0 && <div className="flex justify-between text-sm"><span className="text-slate-700">{selectedDiscount?.name}</span><span className="text-slate-700 font-bold">-{fmt(discountAmount)}</span></div>}
                                 <div className="flex justify-between items-center border-t border-slate-200 dark:border-slate-700 pt-2">
                                     <span className="font-black text-slate-800 dark:text-white">Total Bayar</span>
-                                    <span className="text-2xl font-black text-primary-600 dark:text-primary-400">{fmt(payable)}</span>
+                                    <span className="text-2xl font-black text-slate-700 dark:text-slate-300">{fmt(payable)}</span>
                                 </div>
                             </div>
                             <div>
@@ -2198,8 +2198,8 @@ export default function Index({
                                 <div className="grid grid-cols-2 gap-2">
                                     {paymentMethods.map(method => (
                                         <button key={method.id} onClick={() => setSelectedPaymentId(method.id)}
-                                            className={`p-3 rounded-xl border-2 text-left transition-all ${selectedPaymentId === method.id ? "border-primary-500 bg-primary-50 dark:bg-primary-950/30" : "border-slate-200 dark:border-slate-700"}`}>
-                                            <p className={`font-bold text-sm ${selectedPaymentId === method.id ? "text-primary-700 dark:text-primary-300" : "text-slate-700 dark:text-slate-300"}`}>{method.name}</p>
+                                            className={`p-3 rounded-xl border-2 text-left transition-all ${selectedPaymentId === method.id ? "border-primary-500 bg-slate-100 dark:bg-primary-950/30" : "border-slate-200 dark:border-slate-700"}`}>
+                                            <p className={`font-bold text-sm ${selectedPaymentId === method.id ? "text-slate-700 dark:text-slate-300" : "text-slate-700 dark:text-slate-300"}`}>{method.name}</p>
                                             <p className="text-xs text-slate-400 capitalize">{method.type}</p>
                                         </button>
                                     ))}
@@ -2227,9 +2227,9 @@ export default function Index({
                                         </div>
                                     </div>
                                     {cash >= payable && payable > 0 && (
-                                        <div className="flex justify-between items-center p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl">
-                                            <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">Kembalian</span>
-                                            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{fmt(kembalian)}</span>
+                                        <div className="flex justify-between items-center p-3 bg-slate-100 dark:bg-emerald-950/30 border border-slate-300 dark:border-slate-700 rounded-xl">
+                                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Kembalian</span>
+                                            <span className="text-2xl font-black text-slate-700 dark:text-slate-300">{fmt(kembalian)}</span>
                                         </div>
                                     )}
                                 </div>
@@ -2287,12 +2287,12 @@ export default function Index({
                 setLocalAutoPromo(null);
             }} maxW="max-w-md">
                 <div className="p-6 text-center">
-                    <div className="w-16 h-16 mx-auto bg-emerald-100 dark:bg-emerald-900/40 rounded-full flex items-center justify-center mb-4 shadow-sm border-4 border-white dark:border-slate-900">
+                    <div className="w-16 h-16 mx-auto bg-emerald-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 shadow-sm border-4 border-white dark:border-slate-900">
                         <span className="text-3xl">🎁</span>
                     </div>
                     <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2 leading-tight">Selamat! Promo Tersedia 🎉</h2>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 px-4">
-                        Pelanggan telah memenuhi syarat untuk mendapatkan <span className="font-bold text-emerald-600 dark:text-emerald-400">{localAutoPromo?.name}</span>.
+                        Pelanggan telah memenuhi syarat untuk mendapatkan <span className="font-bold text-slate-700 dark:text-slate-300">{localAutoPromo?.name}</span>.
                         {Number(localAutoPromo?.min_purchase_amount) > 0 && <span className="block mt-1 text-xs text-slate-400">Syarat minimal belanja {fmt(localAutoPromo?.min_purchase_amount)} telah tercapai.</span>}
                     </p>
                     <div className="flex gap-3">
@@ -2339,7 +2339,7 @@ export default function Index({
             <Modal show={showAddCustomer} onClose={() => setShowAddCustomer(false)} maxW="max-w-md">
                 <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <h3 className="font-black text-slate-800 dark:text-white flex items-center gap-2">
-                        <IconUserPlus size={18} className="text-primary-500" />
+                        <IconUserPlus size={18} className="text-slate-700" />
                         Tambah Pelanggan Baru
                     </h3>
                     <button onClick={() => setShowAddCustomer(false)} className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors"><IconX size={16} /></button>

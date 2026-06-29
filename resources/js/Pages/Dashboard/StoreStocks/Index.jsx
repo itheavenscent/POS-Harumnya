@@ -64,7 +64,7 @@ export default function Index({
         if (qty < 0)
             return {
                 label: "Negatif",
-                color: "bg-red-100 text-red-700 border-red-300",
+                color: "bg-slate-100 text-slate-700 border-slate-300",
                 icon: <IconAlertTriangle size={13} />,
             };
         if (qty === 0)
@@ -76,18 +76,18 @@ export default function Index({
         if (min > 0 && qty < min)
             return {
                 label: "Low Stock",
-                color: "bg-danger-100 text-danger-700 border-danger-300",
+                color: "bg-slate-100 text-slate-700 border-slate-300",
                 icon: <IconAlertTriangle size={13} />,
             };
         if (max > 0 && qty > max)
             return {
                 label: "Over Stock",
-                color: "bg-warning-100 text-warning-700 border-warning-300",
+                color: "bg-slate-100 text-slate-700 border-slate-300",
                 icon: <IconTrendingUp size={13} />,
             };
         return {
             label: "Normal",
-            color: "bg-success-100 text-success-700 border-success-300",
+            color: "bg-slate-100 text-slate-700 border-slate-300",
             icon: null,
         };
     };
@@ -117,7 +117,7 @@ export default function Index({
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <IconPackages size={28} className="text-primary-500" />
+                        <IconPackages size={28} className="text-slate-700" />
                         Stok Toko
                     </h1>
                     <p className="text-sm text-slate-500 font-medium">
@@ -169,7 +169,7 @@ export default function Index({
                                     <div className="text-sm text-slate-500">{total} items · {sub}</div>
                                 </div>
                                 {low > 0 && (
-                                    <span className="px-2 py-1 rounded-full text-xs font-bold bg-danger-100 text-danger-700">
+                                    <span className="px-2 py-1 rounded-full text-xs font-bold bg-danger-100 text-slate-700">
                                         {low} Low
                                     </span>
                                 )}
@@ -316,7 +316,7 @@ export default function Index({
                                         </Table.Td>
 
                                         <Table.Td className="text-right">
-                                            <div className={`font-bold text-lg ${qty < 0 ? "text-red-600" : "text-primary-600 dark:text-primary-400"}`}>
+                                            <div className={`font-bold text-lg text-slate-800`}>
                                                 {qty.toLocaleString("id-ID")}
                                             </div>
                                             <div className="text-xs text-slate-400">{getItemUnit(item)}</div>
@@ -355,7 +355,7 @@ export default function Index({
                                                     {fmtDate(item.last_in_at || item.updated_at)}
                                                 </div>
                                                 {item.last_in_qty && (
-                                                    <div className="flex items-center gap-1 text-success-600">
+                                                    <div className="flex items-center gap-1 text-slate-700">
                                                         <IconTrendingUp size={11} />
                                                         +{parseInt(item.last_in_qty, 10).toLocaleString("id-ID")} {getItemUnit(item)}
                                                     </div>
@@ -375,19 +375,19 @@ export default function Index({
                                                 <Button
                                                     type="link"
                                                     icon={<IconEye size={15} />}
-                                                    className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200"
+                                                    className="p-1.5 bg-slate-100 text-slate-700 hover:bg-blue-100 border border-slate-300"
                                                     href={route("store-stocks.show", { id: item.id, item_type: itemType })}
                                                 />
                                                 <Button
                                                     type="edit"
                                                     icon={<IconPencilCog size={15} />}
-                                                    className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200"
+                                                    className="p-1.5 bg-slate-100 text-slate-700 hover:bg-amber-100 border border-slate-300"
                                                     href={route("store-stocks.edit", { id: item.id, item_type: itemType })}
                                                 />
                                                 <Button
                                                     type="delete"
                                                     icon={<IconTrash size={15} />}
-                                                    className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200"
+                                                    className="p-1.5 bg-slate-100 text-slate-700 hover:bg-rose-100 border border-slate-300"
                                                     url={route("store-stocks.destroy", { id: item.id, item_type: itemType })}
                                                 />
                                             </div>
@@ -407,7 +407,7 @@ export default function Index({
                     </p>
                     <Link
                         href={route("store-stocks.create")}
-                        className="mt-4 flex items-center gap-2 text-primary-600 font-bold hover:underline text-sm"
+                        className="mt-4 flex items-center gap-2 text-slate-700 font-bold hover:underline text-sm"
                     >
                         <IconCirclePlus size={16} /> Tambah Stok Sekarang
                     </Link>

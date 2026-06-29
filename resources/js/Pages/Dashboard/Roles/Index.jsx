@@ -62,7 +62,7 @@ function RoleCard({ role, onEdit, onDelete }) {
             <div className="flex border-t border-slate-100 dark:border-slate-800">
                 <button
                     onClick={onEdit}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-3 text-warning-600 hover:bg-warning-50 dark:hover:bg-warning-950/50 text-sm font-medium transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-3 text-slate-700 hover:bg-slate-100 dark:hover:bg-warning-950/50 text-sm font-medium transition-colors"
                 >
                     <IconPencilCog size={16} />
                     <span>Edit</span>
@@ -70,7 +70,7 @@ function RoleCard({ role, onEdit, onDelete }) {
                 <div className="w-px bg-slate-100 dark:bg-slate-800" />
                 <button
                     onClick={onDelete}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-3 text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-950/50 text-sm font-medium transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-3 text-slate-700 hover:bg-slate-100 dark:hover:bg-danger-950/50 text-sm font-medium transition-colors"
                 >
                     <IconTrash size={16} />
                     <span>Hapus</span>
@@ -157,7 +157,7 @@ export default function Index() {
                         <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             <IconUserShield
                                 size={28}
-                                className="text-primary-500"
+                                className="text-slate-700"
                             />
                             Akses Group
                         </h1>

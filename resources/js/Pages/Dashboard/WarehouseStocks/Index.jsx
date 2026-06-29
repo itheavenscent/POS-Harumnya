@@ -76,14 +76,14 @@ export default function Index({
         const max = parseInt(s.max_stock ?? 0, 10);
 
         if (qty < 0)
-            return { label: "Negatif",     color: "bg-red-100 text-red-700 border-red-300",              icon: <IconAlertTriangle size={12} /> };
+            return { label: "Negatif",     color: "bg-slate-100 text-slate-700 border-slate-300",  icon: <IconAlertTriangle size={12} /> };
         if (qty === 0)
-            return { label: "Habis",       color: "bg-slate-100 text-slate-600 border-slate-300",         icon: <IconPackages size={12} /> };
+            return { label: "Habis",       color: "bg-slate-100 text-slate-700 border-slate-300",  icon: <IconPackages size={12} /> };
         if (min > 0 && qty < min)
-            return { label: "Stok Rendah", color: "bg-danger-100 text-danger-700 border-danger-300",      icon: <IconAlertTriangle size={12} /> };
+            return { label: "Stok Rendah", color: "bg-slate-100 text-slate-700 border-slate-300",  icon: <IconAlertTriangle size={12} /> };
         if (max > 0 && qty > max)
-            return { label: "Overstock",   color: "bg-warning-100 text-warning-700 border-warning-300",   icon: <IconTrendingUp size={12} /> };
-        return      { label: "Normal",     color: "bg-success-100 text-success-700 border-success-300",   icon: null };
+            return { label: "Overstock",   color: "bg-slate-100 text-slate-700 border-slate-300",  icon: <IconTrendingUp size={12} /> };
+        return      { label: "Normal",     color: "bg-slate-100 text-slate-700 border-slate-300",  icon: null };
     };
 
     // ─── Navigation ───────────────────────────────────────────────────────────
@@ -153,7 +153,7 @@ export default function Index({
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <IconBuildingWarehouse size={28} className="text-primary-500" />
+                        <IconBuildingWarehouse size={28} className="text-slate-700" />
                         Stok Gudang
                     </h1>
                     <p className="text-sm text-slate-500 font-medium mt-0.5">
@@ -209,12 +209,12 @@ export default function Index({
                                 {/* BUG FIX: tampilkan badge low DAN over */}
                                 <div className="flex flex-col gap-1 items-end shrink-0">
                                     {low > 0 && (
-                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-danger-100 text-danger-700 border border-danger-200 whitespace-nowrap">
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-danger-100 text-slate-700 border border-slate-300 whitespace-nowrap">
                                             {low} Low
                                         </span>
                                     )}
                                     {over > 0 && (
-                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-warning-100 text-warning-700 border border-warning-200 whitespace-nowrap">
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-warning-100 text-slate-700 border border-slate-300 whitespace-nowrap">
                                             {over} Over
                                         </span>
                                     )}
@@ -232,17 +232,17 @@ export default function Index({
                         label: `Total ${itemType === "ingredient" ? "Ingredient" : "Packaging"}`,
                         value: summary.total_items,
                         Icon: IconChartBar,
-                        colorBg: "bg-blue-50 dark:bg-blue-900/20",
-                        colorIcon: "text-blue-600",
+                        colorBg: "bg-slate-100 dark:bg-slate-800",
+                        colorIcon: "text-slate-700",
                         colorText: "text-slate-800 dark:text-slate-200",
                     },
                     {
                         label: "Low Stock",
                         value: summary.low_stock,
                         Icon: IconAlertTriangle,
-                        colorBg: "bg-danger-50 dark:bg-danger-900/20",
-                        colorIcon: "text-danger-600",
-                        colorText: "text-danger-700",
+                        colorBg: "bg-slate-100 dark:bg-slate-800",
+                        colorIcon: "text-slate-700",
+                        colorText: "text-slate-700",
                         accent: "border-l-danger-500",
                     },
                     {
@@ -257,18 +257,18 @@ export default function Index({
                         label: "Overstock",
                         value: summary.over_stock,
                         Icon: IconTrendingUp,
-                        colorBg: "bg-warning-50 dark:bg-warning-900/20",
-                        colorIcon: "text-warning-600",
-                        colorText: "text-warning-700",
+                        colorBg: "bg-slate-100 dark:bg-slate-800",
+                        colorIcon: "text-slate-700",
+                        colorText: "text-slate-700",
                         accent: "border-l-warning-500",
                     },
                     {
                         label: "Nilai Aset",
                         value: fmt(summary.total_value),
                         Icon: IconCurrencyDollar,
-                        colorBg: "bg-success-50 dark:bg-success-900/20",
-                        colorIcon: "text-success-600",
-                        colorText: "text-success-700",
+                        colorBg: "bg-slate-100 dark:bg-slate-800",
+                        colorIcon: "text-slate-700",
+                        colorText: "text-slate-700",
                         accent: "border-l-success-500",
                         wide: true,
                     },
@@ -404,7 +404,7 @@ export default function Index({
                                         </Table.Td>
 
                                         <Table.Td className="text-right">
-                                            <div className={`text-base font-black tabular-nums ${qty < 0 ? "text-red-600" : "text-primary-600 dark:text-primary-400"}`}>
+                                            <div className={`text-base font-black tabular-nums text-slate-800 dark:text-slate-200`}>
                                                 {qty.toLocaleString("id-ID")}
                                             </div>
                                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -416,13 +416,13 @@ export default function Index({
                                             <div className="text-[11px] font-semibold text-slate-500 space-y-0.5">
                                                 <div className="flex items-center justify-center gap-1">
                                                     <span className="text-slate-400">Min</span>
-                                                    <span className={`font-bold ${item.min_stock != null ? "text-danger-600" : "text-slate-300"}`}>
+                                                    <span className={`font-bold text-slate-700 dark:text-slate-300`}>
                                                         {item.min_stock != null ? fmtNum(item.min_stock) : "—"}
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center justify-center gap-1">
                                                     <span className="text-slate-400">Max</span>
-                                                    <span className={`font-bold ${item.max_stock != null ? "text-warning-600" : "text-slate-300"}`}>
+                                                    <span className={`font-bold text-slate-700 dark:text-slate-300`}>
                                                         {item.max_stock != null ? fmtNum(item.max_stock) : "—"}
                                                     </span>
                                                 </div>
@@ -443,7 +443,7 @@ export default function Index({
                                                     {fmtDate(item.last_in_at || item.updated_at)}
                                                 </div>
                                                 {item.last_in_qty && (
-                                                    <div className="text-success-600 font-semibold">
+                                                    <div className="text-slate-700 font-semibold">
                                                         +{parseInt(item.last_in_qty, 10).toLocaleString("id-ID")} {getItemUnit(item)}
                                                     </div>
                                                 )}
@@ -464,7 +464,7 @@ export default function Index({
                                                 <Button
                                                     type="edit"
                                                     icon={<IconPencilCog size={14} />}
-                                                    className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 border-amber-200 rounded-lg"
+                                                    className="p-1.5 bg-slate-100 text-slate-700 hover:bg-amber-100 border-slate-300 rounded-lg"
                                                     href={route("warehouse-stocks.edit", {
                                                         id: item.id,
                                                         item_type: itemType,
@@ -473,7 +473,7 @@ export default function Index({
                                                 <Button
                                                     type="delete"
                                                     icon={<IconTrash size={14} />}
-                                                    className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200 rounded-lg"
+                                                    className="p-1.5 bg-slate-100 text-slate-700 hover:bg-rose-100 border-slate-300 rounded-lg"
                                                     url={route("warehouse-stocks.destroy", {
                                                         id: item.id,
                                                         item_type: itemType,
@@ -504,7 +504,7 @@ export default function Index({
                     {!(searchTerm || selectedWarehouse || selectedStatus) && (
                         <Link
                             href={route("warehouse-stocks.create")}
-                            className="mt-5 flex items-center gap-2 text-primary-600 font-bold hover:underline text-sm"
+                            className="mt-5 flex items-center gap-2 text-slate-700 font-bold hover:underline text-sm"
                         >
                             <IconCirclePlus size={17} /> Tambah Stok Sekarang
                         </Link>
@@ -516,9 +516,9 @@ export default function Index({
                 <Pagination links={stocks?.links || []} />
             </div>
 
-            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/30 flex gap-3 items-start">
-                <IconInfoCircle className="text-blue-500 shrink-0 mt-0.5" size={16} />
-                <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+            <div className="mt-6 p-4 bg-slate-100 dark:bg-slate-800 rounded-xl border border-blue-100 dark:border-slate-700/30 flex gap-3 items-start">
+                <IconInfoCircle className="text-slate-700 shrink-0 mt-0.5" size={16} />
+                <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
                     <strong>Informasi:</strong> Total nilai = Kuantitas × Biaya Rata-rata.{" "}
                     <strong>Low Stock</strong> aktif jika qty &lt; minimum.{" "}
                     <strong>Overstock</strong> aktif jika qty &gt; maksimum.{" "}
@@ -533,7 +533,7 @@ export default function Index({
 // ─── Chip filter ──────────────────────────────────────────────────────────────
 function Chip({ label, onRemove }) {
     return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-primary-100 text-primary-700 border border-primary-200">
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-primary-100 text-slate-700 border border-slate-300">
             {label}
             <button onClick={onRemove} className="hover:text-primary-900 ml-0.5">
                 <IconX size={11} />

@@ -38,8 +38,8 @@ function DeleteModal({ show, title, message, onConfirm, onClose, loading }) {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
                 <div className="flex items-start gap-4 mb-6">
-                    <div className="w-11 h-11 rounded-full bg-red-50 dark:bg-red-950/40 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <IconAlertTriangle size={22} className="text-red-500" />
+                    <div className="w-11 h-11 rounded-full bg-slate-100 dark:bg-red-950/40 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <IconAlertTriangle size={22} className="text-slate-700" />
                     </div>
                     <div>
                         <h3 className="font-bold text-slate-900 dark:text-white text-base leading-tight">{title}</h3>
@@ -206,7 +206,7 @@ function SellingPriceCell({ item }) {
     if (item.is_free) {
         return (
             <div>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-[11px] font-bold">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold border border-slate-300 dark:border-slate-700">
                     <IconGift size={11} /> Gratis
                 </span>
                 {item.free_condition_note && (
@@ -233,10 +233,10 @@ function MarginBadge({ item }) {
         if (avgCost <= 0) return <span className="text-slate-300 dark:text-slate-600 text-xs">—</span>;
         return (
             <div className="text-right">
-                <span className="text-sm font-bold flex items-center justify-end gap-1 text-amber-500">
+                <span className="text-sm font-bold flex items-center justify-end gap-1 text-slate-700 dark:text-slate-300">
                     <IconGift size={13} /> subsidi
                 </span>
-                <span className="text-[10px] text-amber-400">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">
                     −{fmt(Math.round(avgCost))}/unit
                 </span>
             </div>
@@ -251,11 +251,11 @@ function MarginBadge({ item }) {
 
     return (
         <div className="text-right">
-            <span className={`text-sm font-bold flex items-center justify-end gap-1 ${isGood ? "text-teal-600" : "text-red-500"}`}>
+            <span className={`text-sm font-bold flex items-center justify-end gap-1 text-slate-700 dark:text-slate-300`}>
                 {isGood ? <IconTrendingUp size={13} /> : <IconTrendingDown size={13} />}
                 {margin.toFixed(1)}%
             </span>
-            <span className={`text-[10px] ${isGood ? "text-teal-500" : "text-red-400"}`}>
+            <span className={`text-[10px] text-slate-500 dark:text-slate-400`}>
                 {isGood ? "+" : ""}{fmt(profit)}/unit
             </span>
         </div>
@@ -339,14 +339,14 @@ export default function Index({ materials, categories, filters }) {
                         onClick={() => setActiveTab(tab.key)}
                         className={`pb-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2 ${
                             activeTab === tab.key
-                                ? "border-teal-600 text-teal-600"
+                                ? "border-teal-600 text-slate-700"
                                 : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                         }`}
                     >
                         {tab.label}
                         <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                             activeTab === tab.key
-                                ? "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400"
+                                ? "bg-teal-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                                 : "bg-slate-100 dark:bg-slate-800 text-slate-500"
                         }`}>
                             {tab.count}
@@ -413,7 +413,7 @@ export default function Index({ materials, categories, filters }) {
                                                 <p className="text-slate-400 text-sm font-medium">Belum ada material kemasan</p>
                                                 <Link
                                                     href={route("packaging.create")}
-                                                    className="inline-flex items-center gap-1.5 mt-3 text-sm text-teal-600 hover:text-teal-700 font-semibold"
+                                                    className="inline-flex items-center gap-1.5 mt-3 text-sm text-slate-700 hover:text-slate-700 font-semibold"
                                                 >
                                                     <IconCirclePlus size={16} /> Tambah Kemasan
                                                 </Link>
@@ -433,13 +433,13 @@ export default function Index({ materials, categories, filters }) {
                                                         <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{item.name}</div>
                                                         <div className="text-[10px] font-mono text-slate-400">{item.code}</div>
                                                         {item.size && (
-                                                            <div className="text-[10px] text-teal-500 font-medium">{item.size.name}</div>
+                                                            <div className="text-[10px] text-slate-700 font-medium">{item.size.name}</div>
                                                         )}
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-5 py-3.5">
-                                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-400 font-semibold">
+                                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-300 dark:border-slate-700">
                                                     {item.category?.name ?? "—"}
                                                 </span>
                                             </td>
@@ -468,7 +468,7 @@ export default function Index({ materials, categories, filters }) {
                                             </td>
                                             <td className="px-5 py-3.5 text-center">
                                                 {item.is_available_as_addon
-                                                    ? <IconCheck size={18} className="text-teal-500 mx-auto" />
+                                                    ? <IconCheck size={18} className="text-slate-700 dark:text-slate-300 mx-auto" />
                                                     : <IconX    size={18} className="text-slate-300 dark:text-slate-600 mx-auto" />
                                                 }
                                             </td>
@@ -476,14 +476,14 @@ export default function Index({ materials, categories, filters }) {
                                                 <div className="flex justify-end gap-2">
                                                     <Link
                                                         href={route("packaging.edit", item.id)}
-                                                        className="p-1.5 bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors"
+                                                        className="p-1.5 bg-slate-100 dark:bg-amber-950/30 hover:bg-amber-100 text-slate-700 rounded-lg transition-colors"
                                                         title="Edit"
                                                     >
                                                         <IconPencil size={15} />
                                                     </Link>
                                                     <button
                                                         onClick={() => confirmDelete("material", item)}
-                                                        className="p-1.5 bg-red-50 dark:bg-red-950/30 hover:bg-red-100 text-red-500 rounded-lg transition-colors"
+                                                        className="p-1.5 bg-slate-100 dark:bg-red-950/30 hover:bg-red-100 text-slate-700 rounded-lg transition-colors"
                                                         title="Hapus"
                                                     >
                                                         <IconTrash size={15} />
@@ -527,25 +527,25 @@ export default function Index({ materials, categories, filters }) {
                                 ) : categories.map(cat => (
                                     <tr key={cat.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                                         <td className="px-6 py-4 text-xs text-slate-400 font-mono">{cat.sort_order}</td>
-                                        <td className="px-6 py-4 font-mono text-xs text-teal-600 dark:text-teal-400 font-bold">{cat.code}</td>
+                                        <td className="px-6 py-4 font-mono text-xs text-slate-700 dark:text-slate-300 font-bold">{cat.code}</td>
                                         <td className="px-6 py-4 text-sm font-semibold text-slate-800 dark:text-white">{cat.name}</td>
                                         <td className="px-6 py-4 text-center">
                                             {cat.is_active
-                                                ? <span className="px-2 py-0.5 text-[10px] font-bold bg-teal-50 dark:bg-teal-950/30 text-teal-600 dark:text-teal-400 rounded-full">Aktif</span>
-                                                : <span className="px-2 py-0.5 text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-full">Nonaktif</span>
+                                                ? <span className="px-2 py-0.5 text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full border border-slate-300 dark:border-slate-700">Aktif</span>
+                                                : <span className="px-2 py-0.5 text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-full border border-slate-300 dark:border-slate-700">Nonaktif</span>
                                             }
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => setCatModal({ show: true, data: cat })}
-                                                    className="p-1.5 bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors"
+                                                    className="p-1.5 bg-slate-100 dark:bg-amber-950/30 hover:bg-amber-100 text-slate-700 rounded-lg transition-colors"
                                                 >
                                                     <IconPencil size={15} />
                                                 </button>
                                                 <button
                                                     onClick={() => confirmDelete("category", cat)}
-                                                    className="p-1.5 bg-red-50 dark:bg-red-950/30 hover:bg-red-100 text-red-500 rounded-lg transition-colors"
+                                                    className="p-1.5 bg-slate-100 dark:bg-red-950/30 hover:bg-red-100 text-slate-700 rounded-lg transition-colors"
                                                 >
                                                     <IconTrash size={15} />
                                                 </button>
@@ -558,9 +558,9 @@ export default function Index({ materials, categories, filters }) {
                     </div>
 
                     <div className="space-y-4">
-                        <div className="bg-teal-50 dark:bg-teal-950/20 rounded-xl border border-teal-100 dark:border-teal-900 p-5">
-                            <h3 className="font-bold text-sm text-teal-800 dark:text-teal-300 mb-2">💡 Tips Kategori</h3>
-                            <p className="text-xs text-teal-700 dark:text-teal-400">
+                        <div className="bg-slate-100 dark:bg-teal-950/20 rounded-xl border border-teal-100 dark:border-slate-700 p-5">
+                            <h3 className="font-bold text-sm text-slate-700 dark:text-slate-300 mb-2">💡 Tips Kategori</h3>
+                            <p className="text-xs text-slate-700 dark:text-slate-300">
                                 Gunakan kategori untuk mengelompokkan kemasan sejenis.
                                 Urutan menentukan tampilan di dropdown POS.
                             </p>

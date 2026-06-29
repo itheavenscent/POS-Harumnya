@@ -28,8 +28,8 @@ function DeleteModal({ show, item, onConfirm, onClose, loading }) {
         >
             <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-xl border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
-                        <IconAlertTriangle size={20} className="text-red-500" />
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
+                        <IconAlertTriangle size={20} className="text-slate-700" />
                     </div>
                     <div>
                         <h3 id="delete-modal-title" className="font-bold text-slate-900 dark:text-white text-base">
@@ -84,7 +84,7 @@ function SupplierCard({ supplier, onDelete }) {
             <h3 className="font-bold text-slate-800 dark:text-slate-100 truncate mb-1 text-base">
                 {supplier.name}
             </h3>
-            <code className="text-[10px] bg-teal-50 dark:bg-teal-900/30 px-2 py-0.5 rounded text-teal-600 dark:text-teal-400 font-mono uppercase">
+            <code className="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-700 dark:text-slate-300 font-mono uppercase">
                 {supplier.code}
             </code>
 
@@ -113,16 +113,16 @@ function SupplierCard({ supplier, onDelete }) {
             <div className="mt-4 flex gap-2">
                 <Link
                     href={route("suppliers.edit", supplier.id)}
-                    className="flex-1 text-center py-2.5 rounded-lg bg-teal-50 dark:bg-teal-900/30
-                        text-teal-700 dark:text-teal-400 text-xs font-bold
+                    className="flex-1 text-center py-2.5 rounded-lg bg-slate-100 dark:bg-slate-800
+                        text-slate-700 dark:text-slate-300 text-xs font-bold
                         hover:bg-teal-100 dark:hover:bg-teal-900/50 transition-colors"
                 >
                     Edit Detail
                 </Link>
                 <button
                     onClick={() => onDelete(supplier)}
-                    className="px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-500
-                        dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                    className="px-3 py-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700
+                        dark:text-slate-300 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
                     title={`Hapus ${supplier.name}`}
                     aria-label={`Hapus ${supplier.name}`}
                 >
@@ -139,7 +139,7 @@ function SupplierCard({ supplier, onDelete }) {
 
 function StatusBadge({ isActive }) {
     return isActive ? (
-        <span className="flex items-center gap-1 text-xs font-semibold text-teal-600 bg-teal-50 dark:bg-teal-900/30 px-2 py-1 rounded-full">
+        <span className="flex items-center gap-1 text-xs font-semibold text-slate-700 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
             <IconCircleCheck size={14} /> Aktif
         </span>
     ) : (
@@ -323,7 +323,7 @@ export default function Index({ suppliers, filters, paymentTerms = [] }) {
                     <p className="text-sm font-medium text-slate-500 mt-1 ml-11">
                         {suppliers.total} Supplier Terdaftar
                         {activeFiltersCount > 0 && (
-                            <span className="ml-2 text-teal-600">• {activeFiltersCount} filter aktif</span>
+                            <span className="ml-2 text-slate-700">• {activeFiltersCount} filter aktif</span>
                         )}
                     </p>
                 </div>
@@ -369,7 +369,7 @@ export default function Index({ suppliers, filters, paymentTerms = [] }) {
                                 onClick={() => setViewMode(mode)}
                                 className={`p-1.5 rounded-lg transition-all ${
                                     viewMode === mode
-                                        ? "bg-white dark:bg-slate-900 shadow text-teal-600"
+                                        ? "bg-white dark:bg-slate-900 shadow text-slate-700"
                                         : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                                 }`}
                                 title={label}
@@ -403,7 +403,7 @@ export default function Index({ suppliers, filters, paymentTerms = [] }) {
 
                     <button
                         onClick={handleClearFilters}
-                        className="text-xs text-teal-600 hover:text-teal-700 font-medium transition-colors"
+                        className="text-xs text-slate-700 hover:text-slate-700 font-medium transition-colors"
                     >
                         Reset semua
                     </button>
@@ -454,7 +454,7 @@ Index.layout = (page) => <DashboardLayout children={page} />;
 
 function FilterChip({ label, onRemove }) {
     return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 rounded-lg text-xs font-medium">
+        <span className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium">
             {label}
             <button
                 onClick={onRemove}
@@ -497,7 +497,7 @@ function SupplierTable({ data, onDelete }) {
                             <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                 <td className="px-6 py-4">
                                     <span className="text-sm font-bold dark:text-slate-200 block">{item.name}</span>
-                                    <code className="text-[10px] font-mono text-teal-600 dark:text-teal-400 uppercase mt-0.5">
+                                    <code className="text-[10px] font-mono text-slate-700 dark:text-slate-300 uppercase mt-0.5">
                                         {item.code}
                                     </code>
                                 </td>
@@ -534,16 +534,16 @@ function SupplierTable({ data, onDelete }) {
                                     <div className="flex justify-end gap-2">
                                         <Link
                                             href={route("suppliers.edit", item.id)}
-                                            className="p-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600
-                                                dark:text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-colors"
+                                            className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700
+                                                dark:text-slate-700 hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-colors"
                                             title={`Edit ${item.name}`}
                                         >
                                             <IconPencil size={16} />
                                         </Link>
                                         <button
                                             onClick={() => onDelete(item)}
-                                            className="p-2 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-500
-                                                dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+                                            className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700
+                                                dark:text-slate-300 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
                                             title={`Hapus ${item.name}`}
                                         >
                                             <IconTrash size={16} />

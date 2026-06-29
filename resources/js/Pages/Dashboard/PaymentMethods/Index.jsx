@@ -20,11 +20,11 @@ import toast from "react-hot-toast";
 
 // ─── Type Config ──────────────────────────────────────────────────────────────
 const TYPE_STYLES = {
-    cash:     { label: "Tunai",              color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-800" },
-    card:     { label: "Kartu Debit/Kredit", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800" },
-    transfer: { label: "Transfer Bank",      color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800" },
-    qris:     { label: "QRIS",              color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 dark:border-purple-800" },
-    ewallet:  { label: "E-Wallet",          color: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300 border-pink-200 dark:border-pink-800" },
+    cash:     { label: "Tunai",              color: "bg-green-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700" },
+    card:     { label: "Kartu Debit/Kredit", color: "bg-blue-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700" },
+    transfer: { label: "Transfer Bank",      color: "bg-indigo-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700" },
+    qris:     { label: "QRIS",              color: "bg-purple-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700" },
+    ewallet:  { label: "E-Wallet",          color: "bg-pink-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700" },
     other:    { label: "Lainnya",           color: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700" },
 };
 
@@ -39,7 +39,7 @@ function DeleteModal({ item, onConfirm, onCancel, processing }) {
                     <IconX size={20} />
                 </button>
                 <div className="flex items-center gap-4 mb-6">
-                    <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-2xl text-red-600">
+                    <div className="p-3 bg-red-100 dark:bg-slate-800 rounded-2xl text-slate-700">
                         <IconAlertTriangle size={28} />
                     </div>
                     <div>
@@ -235,7 +235,7 @@ export default function Index({ paymentMethods, types, filters }) {
                                             {/* Admin Fee */}
                                             <td className="px-6 py-4">
                                                 {item.has_admin_fee ? (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800">
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">
                                                         <IconReceipt size={12} />
                                                         {parseFloat(item.admin_fee_pct)}%
                                                     </span>
@@ -247,7 +247,7 @@ export default function Index({ paymentMethods, types, filters }) {
                                             {/* Can Give Change */}
                                             <td className="px-6 py-4">
                                                 {item.can_give_change ? (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-800">
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">
                                                         <IconArrowsExchange size={12} />
                                                         Ya
                                                     </span>
@@ -263,7 +263,7 @@ export default function Index({ paymentMethods, types, filters }) {
                                                     title={item.is_active ? "Klik untuk nonaktifkan" : "Klik untuk aktifkan"}
                                                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all hover:scale-105 ${
                                                         item.is_active
-                                                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800"
+                                                            ? "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
                                                             : "bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
                                                     }`}
                                                 >
@@ -279,14 +279,14 @@ export default function Index({ paymentMethods, types, filters }) {
                                                 <div className="flex items-center justify-end gap-2">
                                                     <Link
                                                         href={route("payment-methods.edit", item.id)}
-                                                        className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-500 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 dark:hover:text-primary-400 transition-colors"
+                                                        className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-primary-900/20 dark:hover:text-primary-400 transition-colors"
                                                         title="Edit"
                                                     >
                                                         <IconPencil size={16} />
                                                     </Link>
                                                     <button
                                                         onClick={() => setItemToDelete(item)}
-                                                        className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                                        className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-red-900/20 transition-colors"
                                                         title="Hapus"
                                                     >
                                                         <IconTrash size={16} />

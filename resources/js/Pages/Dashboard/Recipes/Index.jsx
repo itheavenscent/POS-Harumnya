@@ -13,12 +13,12 @@ import toast from "react-hot-toast";
 // ─── Badge ────────────────────────────────────────────────────────────────────
 const Badge = ({ color = "slate", children, size = "md" }) => {
     const colors = {
-        teal: "bg-teal-50 text-teal-700 ring-teal-200",
-        green: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-        amber: "bg-amber-50 text-amber-700 ring-amber-200",
+        teal: "bg-slate-100 text-slate-700 ring-teal-200",
+        green: "bg-slate-100 text-slate-700 ring-emerald-200",
+        amber: "bg-slate-100 text-slate-700 ring-amber-200",
         slate: "bg-slate-100 text-slate-600 ring-slate-200",
-        blue: "bg-blue-50 text-blue-700 ring-blue-200",
-        red: "bg-red-50 text-red-600 ring-red-200",
+        blue: "bg-slate-100 text-slate-700 ring-blue-200",
+        red: "bg-slate-100 text-slate-700 ring-red-200",
     };
     const sizes = {
         sm: "px-1.5 py-0.5 text-[10px]",
@@ -42,9 +42,9 @@ const TypeDot = ({ type }) => {
 const GenderIcon = ({ gender }) => {
     const map = { male: "♂", female: "♀", unisex: "⚥" };
     const cls = {
-        male: "text-blue-500 bg-blue-50 border-blue-100",
-        female: "text-pink-500 bg-pink-50 border-pink-100",
-        unisex: "text-purple-500 bg-purple-50 border-purple-100",
+        male: "text-slate-700 bg-slate-100 border-blue-100",
+        female: "text-slate-700 bg-slate-100 border-pink-100",
+        unisex: "text-slate-700 bg-slate-100 border-purple-100",
     };
     if (!gender) return null;
     return (
@@ -61,8 +61,8 @@ function DeleteModal({ show, title, message, onConfirm, onClose, loading }) {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
                 <div className="flex items-start gap-4 mb-6">
-                    <div className="w-11 h-11 rounded-full bg-red-50 dark:bg-red-950/40 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <IconAlertTriangle size={22} className="text-red-500" />
+                    <div className="w-11 h-11 rounded-full bg-slate-100 dark:bg-red-950/40 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <IconAlertTriangle size={22} className="text-slate-700" />
                     </div>
                     <div>
                         <h3 className="font-bold text-slate-900 dark:text-white text-base leading-tight">{title}</h3>
@@ -135,21 +135,21 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
                     <div className="flex items-center gap-1 flex-shrink-0">
                         <Link
                             href={route("recipes.show", [variantId, intensity.intensity_id])}
-                            className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition"
+                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-teal-900/30 rounded-lg transition"
                             title="Detail"
                         >
                             <IconEye size={14} />
                         </Link>
                         <Link
                             href={route("recipes.edit", [variantId, intensity.intensity_id])}
-                            className="p-1.5 text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition"
+                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-amber-900/30 rounded-lg transition"
                             title="Edit"
                         >
                             <IconEdit size={14} />
                         </Link>
                         <button
                             onClick={() => onDelete(intensity, variantId)}
-                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
+                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-red-900/30 rounded-lg transition"
                             title="Hapus"
                         >
                             <IconTrash size={14} />
@@ -160,7 +160,7 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
                         {isGenerated ? (
                             <Link
                                 href={route("recipes.show", [variantId, intensity.intensity_id])}
-                                className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 rounded-lg text-[11px] font-bold hover:bg-emerald-100 dark:hover:bg-emerald-800 transition"
+                                className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-[11px] font-bold hover:bg-emerald-100 dark:hover:bg-emerald-800 transition"
                             >
                                 <IconLock size={11} /> Generated
                             </Link>
@@ -224,7 +224,7 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
                                 +{intensity.recipes.length - 6} bahan lainnya
                             </p>
                         )}
-                        <div className="border-t border-slate-200 dark:border-slate-700 pt-1.5 flex justify-between text-[11px] font-bold text-teal-700 dark:text-teal-400">
+                        <div className="border-t border-slate-200 dark:border-slate-700 pt-1.5 flex justify-between text-[11px] font-bold text-slate-700 dark:text-slate-300">
                             <span>Total:</span>
                             <span>{parseFloat(intensity.total_volume).toFixed(2)} ml</span>
                         </div>
@@ -237,9 +237,9 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
                         Scaling per Ukuran
                     </p>
                     {!hasScaling ? (
-                        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200">
-                            <IconAlertTriangle size={12} className="text-amber-500 flex-shrink-0" />
-                            <span className="text-[11px] text-amber-700">IntensitySizeQuantity belum dikonfigurasi</span>
+                        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-100 border border-slate-300">
+                            <IconAlertTriangle size={12} className="text-slate-700 flex-shrink-0" />
+                            <span className="text-[11px] text-slate-700">IntensitySizeQuantity belum dikonfigurasi</span>
                         </div>
                     ) : (
                         <div className="space-y-1.5">
@@ -249,19 +249,19 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
                                     className="flex items-center gap-3 text-xs bg-white dark:bg-slate-900 rounded-lg px-3 py-2 border border-slate-100 dark:border-slate-800"
                                 >
                                     {/* Volume label */}
-                                    <span className="font-bold text-teal-600 tabular-nums w-12 flex-shrink-0">
+                                    <span className="font-bold text-slate-700 tabular-nums w-12 flex-shrink-0">
                                         {s.volume_ml}ml
                                     </span>
 
                                     {/* Tags */}
                                     <div className="flex gap-1 flex-wrap flex-1">
                                         {s.oil_quantity > 0 && (
-                                            <span className="text-[10px] bg-teal-50 text-teal-600 px-1.5 py-0.5 rounded border border-teal-100 whitespace-nowrap">
+                                            <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-teal-100 whitespace-nowrap">
                                                 Oil {s.oil_quantity}
                                             </span>
                                         )}
                                         {s.alcohol_quantity > 0 && (
-                                            <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 whitespace-nowrap">
+                                            <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-blue-100 whitespace-nowrap">
                                                 Alc {s.alcohol_quantity}
                                             </span>
                                         )}
@@ -279,7 +279,7 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
                                         </span>
                                         <span className="text-slate-400">ml</span>
                                         {intensity.generated_sizes?.includes(s.size_id) && (
-                                            <IconCircleCheck size={11} className="text-emerald-500 ml-0.5" />
+                                            <IconCircleCheck size={11} className="text-slate-700 ml-0.5" />
                                         )}
                                     </div>
                                 </div>
@@ -312,7 +312,7 @@ function VariantCard({ variantGroup, onDelete }) {
         );
 
     return (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-teal-300 hover:shadow-md shadow-sm transition-all duration-200 overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 hover:shadow-md shadow-sm transition-all duration-200 overflow-hidden">
             {/* Top accent */}
             <div className={`h-1 w-full bg-gradient-to-r ${accentColor}`} />
 
@@ -333,17 +333,17 @@ function VariantCard({ variantGroup, onDelete }) {
                             {statusBadge}
                         </div>
                     </div>
-                    <div className="p-2.5 bg-teal-50 dark:bg-teal-950/30 rounded-xl flex-shrink-0">
-                        <IconFlask size={20} className="text-teal-600 dark:text-teal-400" />
+                    <div className="p-2.5 bg-slate-100 dark:bg-teal-950/30 rounded-xl flex-shrink-0">
+                        <IconFlask size={20} className="text-slate-700 dark:text-slate-300" />
                     </div>
                 </div>
 
                 {/* Stats row */}
                 <div className="grid grid-cols-3 gap-2 mb-4">
                     {[
-                        { label: "Intensitas", value: intensity_count, icon: <IconAdjustments size={12} className="text-teal-500" />, color: "text-teal-600" },
-                        { label: "Total Bahan", value: total_ingredients, icon: <IconDroplet size={12} className="text-blue-500" />, color: "text-blue-600" },
-                        { label: "Generated", value: `${intensities.filter(i => i.is_generated).length}/${intensity_count}`, icon: <IconPackage size={12} className="text-emerald-500" />, color: "text-emerald-600" },
+                        { label: "Intensitas", value: intensity_count, icon: <IconAdjustments size={12} className="text-slate-700" />, color: "text-slate-700" },
+                        { label: "Total Bahan", value: total_ingredients, icon: <IconDroplet size={12} className="text-slate-700" />, color: "text-slate-700" },
+                        { label: "Generated", value: `${intensities.filter(i => i.is_generated).length}/${intensity_count}`, icon: <IconPackage size={12} className="text-slate-700" />, color: "text-slate-700" },
                     ].map(({ label, value, icon, color }) => (
                         <div key={label} className="bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2 text-center">
                             <div className="flex items-center justify-center gap-1 mb-0.5">{icon}</div>
@@ -360,7 +360,7 @@ function VariantCard({ variantGroup, onDelete }) {
                             <span
                                 key={i}
                                 className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold border ${it.is_generated
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                    ? "bg-slate-100 text-slate-700 border-slate-300"
                                     : "bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
                                     }`}
                             >
@@ -376,7 +376,7 @@ function VariantCard({ variantGroup, onDelete }) {
                     onClick={() => setExpanded(!expanded)}
                     className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${expanded
                         ? "bg-teal-600 text-white hover:bg-teal-700 shadow-lg shadow-teal-500/20"
-                        : "bg-teal-50 dark:bg-teal-950/20 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-950/40 border border-teal-200 dark:border-teal-900"
+                        : "bg-slate-100 dark:bg-teal-950/20 text-slate-700 dark:text-slate-300 hover:bg-teal-100 dark:hover:bg-teal-950/40 border border-slate-300 dark:border-slate-700"
                         }`}
                 >
                     {expanded
@@ -421,9 +421,9 @@ function StatsBar({ variantGroups }) {
     return (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             {[
-                { label: "Total Variant", value: stats.totalVariants, icon: IconFlask, color: "text-teal-600", bg: "bg-teal-50" },
-                { label: "Total Formula", value: stats.totalFormulas, icon: IconAdjustments, color: "text-blue-600", bg: "bg-blue-50" },
-                { label: "Sudah Generated", value: stats.totalGenerated, icon: IconSparkles, color: "text-emerald-600", bg: "bg-emerald-50" },
+                { label: "Total Variant", value: stats.totalVariants, icon: IconFlask, color: "text-slate-700", bg: "bg-slate-100" },
+                { label: "Total Formula", value: stats.totalFormulas, icon: IconAdjustments, color: "text-slate-700", bg: "bg-slate-100" },
+                { label: "Sudah Generated", value: stats.totalGenerated, icon: IconSparkles, color: "text-slate-700", bg: "bg-slate-100" },
                 { label: "Total Bahan", value: stats.totalIngredients, icon: IconDroplet, color: "text-slate-600", bg: "bg-slate-100" },
             ].map(({ label, value, icon: Icon, color, bg }) => (
                 <div key={label} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 flex items-center gap-3">
@@ -529,7 +529,7 @@ export default function Index({ variantRecipes }) {
                             placeholder="Cari variant, kode, intensitas…"
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-300 focus:border-teal-400 transition"
+                            className="w-full pl-9 pr-4 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-300 focus:border-slate-300 transition"
                         />
                         {search && (
                             <button
@@ -576,7 +576,7 @@ export default function Index({ variantRecipes }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {variantRecipes.length === 0 ? (
                     <div className="col-span-full bg-white dark:bg-slate-900 p-16 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-center">
-                        <div className="w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <IconFlask size={32} className="text-teal-400" />
                         </div>
                         <p className="text-slate-600 dark:text-slate-400 font-semibold mb-1">Belum ada formula variant</p>
@@ -594,7 +594,7 @@ export default function Index({ variantRecipes }) {
                         <p className="text-slate-500 font-semibold">Tidak ada hasil yang sesuai</p>
                         <button
                             onClick={() => { setSearch(""); setFilter("all"); }}
-                            className="mt-3 text-sm text-teal-600 hover:underline"
+                            className="mt-3 text-sm text-slate-700 hover:underline"
                         >
                             Reset filter
                         </button>

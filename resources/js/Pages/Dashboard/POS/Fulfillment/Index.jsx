@@ -6,8 +6,8 @@ import { useDebounce } from "use-debounce";
 
 const STATUS_CFG = {
     in_transit: { label: "Dalam Perjalanan", cls: "bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400" },
-    completed:  { label: "Selesai",          cls: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" },
-    cancelled:  { label: "Dibatalkan",       cls: "bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400" },
+    completed:  { label: "Selesai",          cls: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" },
+    cancelled:  { label: "Dibatalkan",       cls: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" },
 };
 
 export default function Index({ transfers, filters }) {
@@ -67,7 +67,7 @@ export default function Index({ transfers, filters }) {
                                 onClick={() => setStatus("completed")}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                     status === "completed" 
-                                        ? "bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm" 
+                                        ? "bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 shadow-sm" 
                                         : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                                 }`}
                             >
@@ -167,7 +167,7 @@ export default function Index({ transfers, filters }) {
                                                         ) : (
                                                             <Link
                                                                 href={route("pos.fulfillment.show", transfer.id)}
-                                                                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-cyan-600 hover:border-cyan-200 transition-all bg-white dark:bg-slate-900 shadow-sm"
+                                                                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-700 hover:border-slate-300 transition-all bg-white dark:bg-slate-900 shadow-sm"
                                                                 title="Lihat Detail"
                                                             >
                                                                 <IconEye size={16} />

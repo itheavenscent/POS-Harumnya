@@ -25,11 +25,11 @@ const TYPE_CFG = {
 };
 
 const COLOR_CLS = {
-    success: "bg-success-100 text-success-700 border-success-300",
-    blue:    "bg-blue-100 text-blue-700 border-blue-300",
-    violet:  "bg-violet-100 text-violet-700 border-violet-300",
-    warning: "bg-amber-100 text-amber-700 border-amber-300",
-    danger:  "bg-red-100 text-red-700 border-red-300",
+    success: "bg-slate-100 text-slate-700 border-slate-300",
+    blue:    "bg-slate-100 text-slate-700 border-slate-300",
+    violet:  "bg-slate-100 text-slate-700 border-slate-300",
+    warning: "bg-slate-100 text-slate-700 border-slate-300",
+    danger:  "bg-slate-100 text-slate-700 border-slate-300",
     slate:   "bg-slate-100 text-slate-600 border-slate-300",
 };
 
@@ -112,7 +112,7 @@ export default function Index({
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <IconHistory size={28} className="text-primary-500" /> Log Pergerakan Stok
+                        <IconHistory size={28} className="text-slate-700" /> Log Pergerakan Stok
                     </h1>
                     <p className="text-sm text-slate-500">
                         Catatan semua pergerakan stok: repack, transfer, penyesuaian, dll.
@@ -153,7 +153,7 @@ export default function Index({
                     onClick={() => setShowFilters(!showFilters)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-bold transition-all ${
                         showFilters
-                            ? "bg-primary-50 border-primary-300 text-primary-700"
+                            ? "bg-slate-100 border-slate-300 text-slate-700"
                             : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
                     }`}
                 >
@@ -168,7 +168,7 @@ export default function Index({
                 {Object.values(filters).filter(Boolean).length > 0 && (
                     <button
                         onClick={resetFilters}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 bg-red-50 text-red-600 text-sm font-bold hover:bg-red-200 transition-all shadow-sm"
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 bg-slate-100 text-slate-700 text-sm font-bold hover:bg-red-200 transition-all shadow-sm"
                     >
                         <IconRefresh size={16} /> Reset
                     </button>
@@ -298,12 +298,12 @@ export default function Index({
                                         </Table.Td>
                                         <Table.Td>
                                             {mv.reference_number
-                                                ? <span className="font-mono text-xs text-primary-600 font-bold">{mv.reference_number}</span>
+                                                ? <span className="font-mono text-xs text-slate-800 font-bold">{mv.reference_number}</span>
                                                 : <span className="text-xs text-slate-400">-</span>}
                                         </Table.Td>
                                         {/* qty_change → bigInteger SIGNED: parseInt, tanda + jika positif */}
                                         <Table.Td className="text-right">
-                                            <div className={`font-bold flex items-center justify-end gap-1 ${isIn ? "text-success-600" : "text-red-600"}`}>
+                                            <div className={`font-bold flex items-center justify-end gap-1 text-slate-800`}>
                                                 {isIn ? <IconTrendingUp size={14} /> : <IconTrendingDown size={14} />}
                                                 {isIn ? "+" : ""}{fmtQty(mv.qty_change)}
                                             </div>

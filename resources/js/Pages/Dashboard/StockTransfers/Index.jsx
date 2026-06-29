@@ -11,13 +11,13 @@ import {
 } from "@tabler/icons-react";
 
 const STATUS_CFG = {
-    draft:      { label: "Draft",           cls: "bg-slate-100 text-slate-600 border-slate-300" },
-    pending:    { label: "Menunggu",         cls: "bg-yellow-100 text-yellow-700 border-yellow-300" },
-    approved:   { label: "Disetujui",        cls: "bg-blue-100 text-blue-700 border-blue-300" },
-    in_transit: { label: "Dalam Perjalanan", cls: "bg-violet-100 text-violet-700 border-violet-300" },
-    received:   { label: "Diterima",         cls: "bg-cyan-100 text-cyan-700 border-cyan-300" },
-    completed:  { label: "Selesai",          cls: "bg-success-100 text-success-700 border-success-300" },
-    cancelled:  { label: "Dibatalkan",       cls: "bg-red-100 text-red-700 border-red-300" },
+    draft:      { label: "Draft",           cls: "bg-slate-100 text-slate-700 border-slate-300" },
+    pending:    { label: "Menunggu",         cls: "bg-slate-100 text-slate-700 border-slate-300" },
+    approved:   { label: "Disetujui",        cls: "bg-slate-100 text-slate-700 border-slate-300" },
+    in_transit: { label: "Dalam Perjalanan", cls: "bg-slate-100 text-slate-700 border-slate-300" },
+    received:   { label: "Diterima",         cls: "bg-slate-100 text-slate-700 border-slate-300" },
+    completed:  { label: "Selesai",          cls: "bg-slate-100 text-slate-700 border-slate-300" },
+    cancelled:  { label: "Dibatalkan",       cls: "bg-slate-100 text-slate-700 border-slate-300" },
 };
 
 export default function Index({ transfers, filters = {}, summary = {} }) {
@@ -44,7 +44,7 @@ export default function Index({ transfers, filters = {}, summary = {} }) {
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <IconTransfer size={28} className="text-primary-500" /> Transfer Stok
+                        <IconTransfer size={28} className="text-slate-700" /> Transfer Stok
                     </h1>
                     <p className="text-sm text-slate-500">Pindahkan stok antar gudang dan toko.</p>
                 </div>
@@ -110,7 +110,7 @@ export default function Index({ transfers, filters = {}, summary = {} }) {
                                             {i + 1 + (transfers.current_page - 1) * transfers.per_page}
                                         </Table.Td>
                                         <Table.Td>
-                                            <span className="font-mono text-xs font-bold text-primary-600">{t.transfer_number}</span>
+                                            <span className="font-mono text-xs font-bold text-slate-800">{t.transfer_number}</span>
                                         </Table.Td>
                                         <Table.Td>
                                             <div className="flex items-center gap-2 text-sm">
@@ -138,12 +138,12 @@ export default function Index({ transfers, filters = {}, summary = {} }) {
                                         <Table.Td>
                                             <div className="flex justify-center gap-1">
                                                 <Link href={route("stock-transfers.show", t.id)}
-                                                    className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 rounded-lg">
+                                                    className="p-1.5 bg-slate-100 text-slate-700 hover:bg-blue-100 border border-slate-300 rounded-lg">
                                                     <IconEye size={14} />
                                                 </Link>
                                                 {t.canEdit && (
                                                     <Link href={route("stock-transfers.edit", t.id)}
-                                                        className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 rounded-lg">
+                                                        className="p-1.5 bg-slate-100 text-slate-700 hover:bg-amber-100 border border-slate-300 rounded-lg">
                                                         <IconPencilCog size={14} />
                                                     </Link>
                                                 )}
@@ -160,7 +160,7 @@ export default function Index({ transfers, filters = {}, summary = {} }) {
                     <IconDatabaseOff size={48} className="text-slate-300 mb-3" />
                     <h3 className="font-bold text-slate-600 dark:text-slate-400">Belum ada transfer stok</h3>
                     <Link href={route("stock-transfers.create")}
-                        className="mt-4 flex items-center gap-2 text-primary-600 font-bold hover:underline text-sm">
+                        className="mt-4 flex items-center gap-2 text-slate-700 font-bold hover:underline text-sm">
                         <IconCirclePlus size={16} /> Buat Transfer Baru
                     </Link>
                 </div>

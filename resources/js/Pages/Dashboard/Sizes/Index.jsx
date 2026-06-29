@@ -17,7 +17,7 @@ import toast from "react-hot-toast";
 
 function StatusBadge({ isActive }) {
     return isActive ? (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-success-100 text-success-700 dark:bg-success-900/50 dark:text-success-400 shadow-sm">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-success-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 shadow-sm">
             <IconCircleCheck size={14} strokeWidth={2.5} /> Aktif
         </span>
     ) : (
@@ -29,12 +29,12 @@ function StatusBadge({ isActive }) {
 
 function SizeCategoryBadge({ volumeMl }) {
     if (volumeMl >= 100) {
-        return <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400">Large</span>;
+        return <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">Large</span>;
     }
     if (volumeMl >= 50) {
-        return <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400">Medium</span>;
+        return <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-orange-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">Medium</span>;
     }
-    return <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400">Small</span>;
+    return <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">Small</span>;
 }
 
 // =============================================================================
@@ -47,8 +47,8 @@ function DeleteModal({ show, item, onConfirm, onClose, loading }) {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-xl border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
-                        <IconAlertTriangle size={20} className="text-red-500" />
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-red-950/30 flex items-center justify-center flex-shrink-0">
+                        <IconAlertTriangle size={20} className="text-slate-700" />
                     </div>
                     <div>
                         <h3 className="font-bold text-slate-900 dark:text-white text-base">
@@ -105,8 +105,8 @@ function FilterModal({ show, onClose, filters, onApply }) {
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center">
-                            <IconFilter size={20} className="text-primary-600 dark:text-primary-400" />
+                        <div className="w-10 h-10 rounded-xl bg-primary-100 dark:bg-slate-800 flex items-center justify-center">
+                            <IconFilter size={20} className="text-slate-700 dark:text-slate-300" />
                         </div>
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white">Filter Ukuran</h3>
                     </div>
@@ -158,8 +158,8 @@ function BulkDeleteModal({ show, onClose, onConfirm, count }) {
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-800 p-6">
-                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center mx-auto mb-4">
-                    <IconAlertTriangle size={24} className="text-red-600 dark:text-red-400" />
+                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                    <IconAlertTriangle size={24} className="text-slate-700 dark:text-slate-300" />
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Hapus {count} Ukuran?</h3>
                 <p className="text-sm text-slate-600 dark:text-slate-400 text-center mb-6">
@@ -259,7 +259,7 @@ export default function Index({ sizes, filters }) {
                                 {sizes.total ?? sizes.data?.length ?? 0} Total Ukuran
                             </span>
                             {selectedIds.length > 0 && (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-400 text-xs font-semibold">
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-primary-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
                                     {selectedIds.length} Dipilih
                                 </span>
                             )}
@@ -293,7 +293,7 @@ export default function Index({ sizes, filters }) {
                             onClick={() => setShowFilterModal(true)}
                             className={`p-2.5 rounded-xl transition-colors relative ${
                                 hasActiveFilters
-                                    ? "bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400"
+                                    ? "bg-primary-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                                     : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                             }`}
                             title="Filter"
@@ -308,9 +308,9 @@ export default function Index({ sizes, filters }) {
 
                 {/* Bulk Actions */}
                 {selectedIds.length > 0 && (
-                    <div className="flex items-center justify-between p-4 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl">
+                    <div className="flex items-center justify-between p-4 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl">
                         <div className="flex items-center gap-3">
-                            <IconCheck size={20} className="text-primary-600 dark:text-primary-400" />
+                            <IconCheck size={20} className="text-slate-700 dark:text-slate-300" />
                             <span className="text-sm font-semibold text-primary-900 dark:text-primary-100">
                                 {selectedIds.length} ukuran dipilih
                             </span>
@@ -329,14 +329,14 @@ export default function Index({ sizes, filters }) {
                     <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Filter Aktif:</span>
                         {currentFilters.is_active !== "" && (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 text-xs font-semibold">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
                                 Status: {currentFilters.is_active === "1" ? "Aktif" : "Tidak Aktif"}
                                 <button onClick={() => handleApplyFilters({ ...currentFilters, is_active: "" })} className="hover:bg-primary-200 dark:hover:bg-primary-800 rounded-full p-0.5">
                                     <IconX size={12} strokeWidth={3} />
                                 </button>
                             </span>
                         )}
-                        <button onClick={() => handleApplyFilters({ is_active: "", per_page: 20 })} className="text-xs font-semibold text-red-600 dark:text-red-400 hover:underline">Reset Semua</button>
+                        <button onClick={() => handleApplyFilters({ is_active: "", per_page: 20 })} className="text-xs font-semibold text-slate-700 dark:text-slate-300 hover:underline">Reset Semua</button>
                     </div>
                 )}
             </div>
@@ -353,7 +353,7 @@ export default function Index({ sizes, filters }) {
                                             type="checkbox"
                                             checked={allSelected}
                                             onChange={(e) => handleSelectAll(e.target.checked)}
-                                            className="w-4 h-4 rounded border-2 border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                                            className="w-4 h-4 rounded border-2 border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
                                         />
                                     </th>
                                     {[
@@ -380,7 +380,7 @@ export default function Index({ sizes, filters }) {
                                                 type="checkbox"
                                                 checked={selectedIds.includes(size.id)}
                                                 onChange={(e) => handleSelect(size.id, e.target.checked)}
-                                                className="w-4 h-4 rounded border-2 border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                                                className="w-4 h-4 rounded border-2 border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
                                             />
                                         </td>
                                         <td className="px-4 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -388,7 +388,7 @@ export default function Index({ sizes, filters }) {
                                         </td>
                                         <td className="px-4 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-primary-600 dark:text-primary-400 flex-shrink-0">
+                                                <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 flex-shrink-0">
                                                     <IconScale size={18} strokeWidth={1.5} />
                                                 </div>
                                                 <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{size.name}</p>
@@ -419,14 +419,14 @@ export default function Index({ sizes, filters }) {
                                             <div className="flex justify-end gap-2">
                                                 <Link
                                                     href={route("sizes.edit", size.id)}
-                                                    className="p-2 rounded-lg bg-warning-100 border border-warning-200 text-warning-600 hover:bg-warning-200 dark:bg-warning-900/50 dark:border-warning-800 dark:text-warning-400 dark:hover:bg-warning-900/70 transition-all"
+                                                    className="p-2 rounded-lg bg-warning-100 border border-slate-300 text-slate-700 hover:bg-warning-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-warning-900/70 transition-all"
                                                     title="Edit"
                                                 >
                                                     <IconPencilCog size={16} strokeWidth={2} />
                                                 </Link>
                                                 <button
                                                     onClick={() => confirmDelete(size)}
-                                                    className="p-2 rounded-lg bg-danger-100 border border-danger-200 text-danger-600 hover:bg-danger-200 dark:bg-danger-900/50 dark:border-danger-800 dark:text-danger-400 dark:hover:bg-danger-900/70 transition-all"
+                                                    className="p-2 rounded-lg bg-danger-100 border border-slate-300 text-slate-700 hover:bg-danger-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-danger-900/70 transition-all"
                                                     title="Hapus"
                                                 >
                                                     <IconTrash size={16} strokeWidth={2} />

@@ -11,19 +11,19 @@ import {
 } from "@tabler/icons-react";
 
 const STATUS_CFG = {
-    draft:     { label: "Draft",     cls: "bg-slate-100 text-slate-600 border-slate-300" },
-    pending:   { label: "Menunggu",  cls: "bg-yellow-100 text-yellow-700 border-yellow-300" },
-    approved:  { label: "Disetujui", cls: "bg-blue-100 text-blue-700 border-blue-300" },
-    completed: { label: "Selesai",   cls: "bg-success-100 text-success-700 border-success-300" },
-    cancelled: { label: "Dibatal",   cls: "bg-red-100 text-red-700 border-red-300" },
+    draft:     { label: "Draft",     cls: "bg-slate-100 text-slate-700 border-slate-300" },
+    pending:   { label: "Menunggu",  cls: "bg-slate-100 text-slate-700 border-slate-300" },
+    approved:  { label: "Disetujui", cls: "bg-slate-100 text-slate-700 border-slate-300" },
+    completed: { label: "Selesai",   cls: "bg-slate-100 text-slate-700 border-slate-300" },
+    cancelled: { label: "Dibatal",   cls: "bg-slate-100 text-slate-700 border-slate-300" },
 };
 
 const TYPE_CFG = {
-    stock_opname: { label: "Stock Opname", color: "blue" },
-    damage:       { label: "Rusak",        color: "red" },
-    loss:         { label: "Hilang",       color: "red" },
-    found:        { label: "Ditemukan",    color: "success" },
-    expired:      { label: "Kadaluarsa",   color: "warning" },
+    stock_opname: { label: "Stock Opname", color: "slate" },
+    damage:       { label: "Rusak",        color: "slate" },
+    loss:         { label: "Hilang",       color: "slate" },
+    found:        { label: "Ditemukan",    color: "slate" },
+    expired:      { label: "Kadaluarsa",   color: "slate" },
     other:        { label: "Lainnya",      color: "slate" },
 };
 
@@ -61,7 +61,7 @@ export default function Index({ adjustments, filters = {}, summary = {}, typeOpt
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <IconAdjustments size={28} className="text-orange-500" /> Penyesuaian Stok
+                        <IconAdjustments size={28} className="text-slate-700" /> Penyesuaian Stok
                     </h1>
                     <p className="text-sm text-slate-500">Stock opname, barang rusak, hilang, dan penyesuaian lainnya.</p>
                 </div>
@@ -149,12 +149,12 @@ export default function Index({ adjustments, filters = {}, summary = {}, typeOpt
                                             {i + 1 + (adjustments.current_page - 1) * adjustments.per_page}
                                         </Table.Td>
                                         <Table.Td>
-                                            <span className="font-mono text-xs font-bold text-orange-600">
+                                            <span className="font-mono text-xs font-bold text-slate-800">
                                                 {adj.adjustment_number}
                                             </span>
                                         </Table.Td>
                                         <Table.Td>
-                                            <span className={`text-[10px] px-2 py-1 rounded-full font-bold bg-${typ.color}-100 text-${typ.color}-700 border border-${typ.color}-300`}>
+                                            <span className={`text-[10px] px-2 py-1 rounded-full font-bold bg-slate-100 text-slate-700 border border-slate-300`}>
                                                 {typ.label}
                                             </span>
                                         </Table.Td>
@@ -170,7 +170,7 @@ export default function Index({ adjustments, filters = {}, summary = {}, typeOpt
                                         {/* total_surplus → decimal(15,2): parseFloat di dalam fmt() */}
                                         <Table.Td className="text-right">
                                             {parseFloat(adj.total_surplus) > 0
-                                                ? <span className="font-bold text-success-600 flex items-center justify-end gap-1">
+                                                ? <span className="font-bold text-slate-800 flex items-center justify-end gap-1">
                                                     <IconTrendingUp size={13} />{fmt(adj.total_surplus)}
                                                   </span>
                                                 : <span className="text-slate-300 text-xs">-</span>}
@@ -178,7 +178,7 @@ export default function Index({ adjustments, filters = {}, summary = {}, typeOpt
                                         {/* total_shortage → decimal(15,2): parseFloat di dalam fmt() */}
                                         <Table.Td className="text-right">
                                             {parseFloat(adj.total_shortage) > 0
-                                                ? <span className="font-bold text-red-600 flex items-center justify-end gap-1">
+                                                ? <span className="font-bold text-slate-800 flex items-center justify-end gap-1">
                                                     <IconTrendingDown size={13} />{fmt(adj.total_shortage)}
                                                   </span>
                                                 : <span className="text-slate-300 text-xs">-</span>}
@@ -195,14 +195,14 @@ export default function Index({ adjustments, filters = {}, summary = {}, typeOpt
                                             <div className="flex justify-center gap-1">
                                                 <Link
                                                     href={route("stock-adjustments.show", adj.id)}
-                                                    className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 rounded-lg"
+                                                    className="p-1.5 bg-slate-100 text-slate-700 hover:bg-blue-100 border border-slate-300 rounded-lg"
                                                 >
                                                     <IconEye size={14} />
                                                 </Link>
                                                 {["draft", "pending"].includes(adj.status) && (
                                                     <Link
                                                         href={route("stock-adjustments.edit", adj.id)}
-                                                        className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 rounded-lg"
+                                                        className="p-1.5 bg-slate-100 text-slate-700 hover:bg-amber-100 border border-slate-300 rounded-lg"
                                                     >
                                                         <IconPencilCog size={14} />
                                                     </Link>
@@ -221,7 +221,7 @@ export default function Index({ adjustments, filters = {}, summary = {}, typeOpt
                     <h3 className="font-bold text-slate-600 dark:text-slate-400">Belum ada penyesuaian stok</h3>
                     <Link
                         href={route("stock-adjustments.create")}
-                        className="mt-4 flex items-center gap-2 text-orange-600 font-bold hover:underline text-sm"
+                        className="mt-4 flex items-center gap-2 text-slate-700 font-bold hover:underline text-sm"
                     >
                         <IconCirclePlus size={16} /> Buat Adjustment Baru
                     </Link>

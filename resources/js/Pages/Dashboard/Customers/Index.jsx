@@ -89,7 +89,7 @@ export default function Index({ customers, filters }) {
                             onClick={() => handleFilter("segment", s.key)}
                             className={`px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all ${
                                 (filters.segment || "") === s.key
-                                    ? "bg-white dark:bg-slate-700 shadow-sm text-primary-600"
+                                    ? "bg-white dark:bg-slate-700 shadow-sm text-slate-700"
                                     : "text-slate-500 hover:text-slate-700"
                             }`}
                         >
@@ -127,7 +127,7 @@ export default function Index({ customers, filters }) {
                                     <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                                         <td className="p-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center font-bold text-primary-600 text-sm flex-shrink-0">
+                                                <div className="w-9 h-9 rounded-full bg-primary-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-700 text-sm flex-shrink-0">
                                                     {c.name.charAt(0).toUpperCase()}
                                                 </div>
                                                 <div>
@@ -144,21 +144,21 @@ export default function Index({ customers, filters }) {
                                         <td className="p-4 text-center text-slate-500 dark:text-slate-400">
                                             {(c.total_transactions ?? 0).toLocaleString()}
                                         </td>
-                                        <td className="p-4 font-bold text-emerald-600">
+                                        <td className="p-4 font-bold text-slate-700">
                                             Rp {Math.floor(parseFloat(c.lifetime_spending ?? 0)).toLocaleString()}
                                         </td>
                                         <td className="p-4 text-right">
                                             <div className="flex justify-end gap-1">
                                                 <Link
                                                     href={route("customers.show", c.id)}
-                                                    className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-xl transition-all"
+                                                    className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-primary-900/20 rounded-xl transition-all"
                                                     title="Lihat Detail"
                                                 >
                                                     <IconUser size={18} />
                                                 </Link>
                                                 <button
                                                     onClick={() => deleteCustomer(c.id, c.name)}
-                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
+                                                    className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-red-900/20 rounded-xl transition-all"
                                                     title="Hapus"
                                                 >
                                                     <IconTrash size={18} />
