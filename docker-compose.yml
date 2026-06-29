@@ -121,6 +121,7 @@ services:
       - certs:/etc/nginx/certs:ro
       - /var/run/docker.sock:/tmp/docker.sock:ro
       - ./logs/nginx-proxy:/var/log/nginx
+      - ./docker/nginx-proxy/custom_proxy.conf:/etc/nginx/conf.d/custom_proxy.conf:ro
     networks:
       - proxy-net
     logging:
