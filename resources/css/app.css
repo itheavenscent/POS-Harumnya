@@ -7,3 +7,15 @@
 @import 'tailwindcss/utilities';
 
 /* Google Fonts - loaded via HTML head for better performance */
+
+/* Custom Table Spacing Optimization (Reduce padding to decrease distance between data rows) */
+table th {
+    padding-top: 0.625rem !important;    /* py-2.5 (10px) - compact header vertical spacing */
+    padding-bottom: 0.625rem !important; /* py-2.5 (10px) */
+}
+
+table td {
+    padding-top: 0.5rem !important;      /* py-2 (8px) - compact data vertical spacing */
+    padding-bottom: 0.5rem !important;   /* py-2 (8px) */
+}
+

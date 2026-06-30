@@ -33,6 +33,7 @@ use App\Http\Controllers\Apps\POS\POSFeatureController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Laporan\LaporanKeuanganController;
 use App\Http\Controllers\Laporan\LaporanPenjualanController;
+use App\Http\Controllers\Laporan\LaporanMutasiController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
@@ -462,6 +463,10 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         ->middleware('permission:sales-people-edit')
         ->name('sales-people.targets.store');
 
+    Route::get('sales-people/productivity', [SalesPersonController::class, 'productivity'])
+        ->middleware('permission:sales-people-access')
+        ->name('sales-people.productivity');
+
     Route::resource('sales-people', SalesPersonController::class)
         ->middleware([
             'index' => 'permission:sales-people-access',
@@ -600,6 +605,10 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::get('keuangan', [LaporanKeuanganController::class, 'index'])
             ->middleware('permission:profits-access')
             ->name('keuangan');
+
+        Route::get('mutasi', [LaporanMutasiController::class, 'index'])
+            ->middleware('permission:reports-access')
+            ->name('mutasi');
     });
 
     // ─────────────────────────────────────────────────────────────────────────

@@ -171,4 +171,116 @@ class SalesPersonController extends Controller
 
         return back()->with('success', 'Target berhasil diperbarui!');
     }
+
+    /**
+     * Tampilan Ranking & Detail Produktivitas Sales
+     */
+    public function productivity(Request $request)
+    {
+        $user = auth()->user();
+        $isSuperAdmin = method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : ($user->hasRole('super-admin') || $user->hasRole('admin'));
+
+        // ── Filter params ─────────────────────────────────────────────────────
+        $storeId   = $request->input('store_id', $isSuperAdmin ? null : ($user->default_store_id ?? null));
+        $dateFrom  = $request->input('date_from', \Illuminate\Support\Carbon::now()->startOfMonth()->toDateString());
+        $dateTo    = $request->input('date_to', \Illuminate\Support\Carbon::now()->toDateString());
+        $salesPersonId = $request->input('sales_person_id');
+
+        $dateFromDt = \Illuminate\Support\Carbon::parse($dateFrom)->startOfDay();
+        $dateToDt   = \Illuminate\Support\Carbon::parse($dateTo)->endOfDay();
+        
+        $dateFromDtStr = $dateFromDt->toDateTimeString();
+        $dateToDtStr   = $dateToDt->toDateTimeString();
+
+        // ── Stores Dropdown ──
+        $stores = Store::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        // ── Sales People Dropdown (for filtering transactions) ──
+        $salesPeopleDropdown = SalesPerson::where('is_active', true)
+            ->when(!$isSuperAdmin && $user->default_store_id, function ($q) use ($user) {
+                $q->where('store_id', $user->default_store_id);
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'code']);
+
+        // ── 1. Ranking Query (Grouped by Sales Person) ──
+        $ranking = DB::table('sales')
+            ->join('sales_people', 'sales.sales_person_id', '=', 'sales_people.id')
+            ->leftJoin('stores', 'sales_people.store_id', '=', 'stores.id')
+            ->where('sales.status', 'completed')
+            ->whereNull('sales.deleted_at')
+            ->whereNull('sales_people.deleted_at')
+            ->whereBetween('sales.sold_at', [$dateFromDtStr, $dateToDtStr])
+            ->when($storeId, function ($q) use ($storeId) {
+                $q->where('sales.store_id', $storeId);
+            })
+            ->selectRaw('
+                sales_people.id,
+                sales_people.name,
+                sales_people.code,
+                stores.name as store_name,
+                COUNT(sales.id) as transactions_count,
+                COALESCE(SUM(sales.total), 0) as total_revenue,
+                COALESCE(AVG(sales.total), 0) as average_sales,
+                COALESCE((
+                    SELECT SUM(qty)
+                    FROM sale_items
+                    WHERE sale_items.sale_id IN (
+                        SELECT s.id
+                        FROM sales s
+                        WHERE s.sales_person_id = sales_people.id
+                          AND s.status = \'completed\'
+                          AND s.deleted_at IS NULL
+                          AND s.sold_at BETWEEN ? AND ?
+                          ' . ($storeId ? 'AND s.store_id = ?' : '') . '
+                    )
+                ), 0) as total_items_sold
+            ', $storeId ? [$dateFromDtStr, $dateToDtStr, $storeId] : [$dateFromDtStr, $dateToDtStr])
+            ->groupBy('sales_people.id', 'sales_people.name', 'sales_people.code', 'stores.name')
+            ->orderByDesc('total_revenue')
+            ->get()
+            ->map(fn ($r) => [
+                'id'                 => $r->id,
+                'name'               => $r->name,
+                'code'               => $r->code,
+                'store_name'         => $r->store_name,
+                'transactions_count' => (int) $r->transactions_count,
+                'total_revenue'      => (float) $r->total_revenue,
+                'average_sales'      => (float) $r->average_sales,
+                'total_items_sold'   => (int) $r->total_items_sold,
+            ]);
+
+        // ── 2. Detail Transactions Query ──
+        $transactionsQuery = \App\Models\Sale::query()
+            ->with(['salesPerson:id,name,code', 'store:id,name', 'customer:id,name'])
+            ->where('status', 'completed')
+            ->whereNotNull('sales_person_id')
+            ->whereBetween('sold_at', [$dateFromDtStr, $dateToDtStr])
+            ->when($storeId, function ($q) use ($storeId) {
+                $q->where('store_id', $storeId);
+            })
+            ->when($salesPersonId, function ($q) use ($salesPersonId) {
+                $q->where('sales_person_id', $salesPersonId);
+            })
+            ->orderByDesc('sold_at');
+
+        $transactions = $transactionsQuery->paginate(10)->withQueryString();
+
+        return Inertia::render('Dashboard/SalesPeople/Productivity', [
+            'ranking'             => $ranking,
+            'transactions'        => $transactions,
+            'stores'              => $stores,
+            'salesPeopleDropdown' => $salesPeopleDropdown,
+            'filters'             => [
+                'store_id'        => $storeId,
+                'date_from'       => $dateFrom,
+                'date_to'         => $dateTo,
+                'sales_person_id' => $salesPersonId,
+            ],
+            'isSuperAdmin'        => $isSuperAdmin,
+        ]);
+    }
 }
+

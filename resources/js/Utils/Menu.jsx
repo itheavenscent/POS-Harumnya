@@ -242,10 +242,22 @@ export default function Menu() {
                 },
                 {
                     title: "Sales",
-                    href: route("sales-people.index"),
-                    active: url.startsWith("/dashboard/sales-people"),
                     icon: <IconUserBolt size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["sales-people-access"]),
+                    subdetails: [
+                        {
+                            title: "Data Sales",
+                            href: route("sales-people.index"),
+                            active: url === "/dashboard/sales-people" || (url.startsWith("/dashboard/sales-people") && !url.includes("productivity")),
+                            permissions: hasAnyPermission(["sales-people-access"]),
+                        },
+                        {
+                            title: "Ranking Produktivitas",
+                            href: route("sales-people.productivity"),
+                            active: url.startsWith("/dashboard/sales-people/productivity"),
+                            permissions: hasAnyPermission(["sales-people-access"]),
+                        }
+                    ]
                 },
                 {
                     title: "Promo & Diskon",
@@ -302,6 +314,13 @@ export default function Menu() {
                     active: url.startsWith("/dashboard/laporan/keuangan"),
                     icon: <IconReportMoney size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["profits-access"]),
+                },
+                {
+                    title: "Mutasi Bahan & Kemasan",
+                    href: route("laporan.mutasi"),
+                    active: url.startsWith("/dashboard/laporan/mutasi"),
+                    icon: <IconHistory size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["reports-access"]),
                 },
             ],
         },
