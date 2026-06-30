@@ -19,6 +19,12 @@ class HandleInertiaRequests extends Middleware
      */
     public function version(Request $request): string|null
     {
+        if (file_exists($manifestPath = public_path('build/manifest.json'))) {
+            return md5_file($manifestPath);
+        }
+        if (file_exists($manifestPathV5 = public_path('build/.vite/manifest.json'))) {
+            return md5_file($manifestPathV5);
+        }
         return parent::version($request);
     }
 
