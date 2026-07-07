@@ -1640,7 +1640,7 @@ export default function Index({
 
             <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
                 {/* Mobile tab bar */}
-                <div className="lg:hidden flex-shrink-0 flex bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+                <div className="md:hidden flex-shrink-0 flex bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
                     <button onClick={() => setMobileView("catalog")} className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-colors ${mobileView === "catalog" ? "text-slate-700 border-b-2 border-primary-500" : "text-slate-400"}`}>
                         <IconFlask size={14} /> Katalog
                     </button>
@@ -1652,7 +1652,7 @@ export default function Index({
 
                 <div className="flex-1 flex overflow-hidden">
                     {/* ── LEFT: Catalog ────────────────────────────────────── */}
-                    <div className={`flex-1 flex flex-col overflow-hidden ${mobileView === "catalog" ? "flex" : "hidden lg:flex"}`}>
+                    <div className={`flex-1 flex flex-col overflow-hidden ${mobileView === "catalog" ? "flex" : "hidden md:flex"}`}>
                         {/* ── Header & Back Button ── */}
                         {selectedCategory && (
                             <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
@@ -1885,7 +1885,7 @@ export default function Index({
                     </div>
 
                     {/* ── RIGHT: Cart ───────────────────────────────────────── */}
-                    <div className={`w-full lg:w-[400px] xl:w-[460px] flex-shrink-0 flex flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 ${mobileView === "cart" ? "flex" : "hidden lg:flex"}`}>
+                    <div className={`w-full md:w-[340px] lg:w-[400px] xl:w-[460px] flex-shrink-0 flex flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 ${mobileView === "cart" ? "flex" : "hidden md:flex"}`}>
                         {/* Customer & Sales */}
                         <div className="flex-shrink-0 border-b border-slate-100 dark:border-slate-800 px-3 py-2.5 space-y-2.5">
                             {/* Sales Person Selector */}
