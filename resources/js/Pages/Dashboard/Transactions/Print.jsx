@@ -5,6 +5,7 @@ import {
     IconShoppingBag, IconCheck, IconBluetooth, IconBluetoothOff,
     IconBluetoothConnected, IconLoader2, IconAlertCircle,
 } from "@tabler/icons-react";
+import { useBluetoothContext } from "@/Context/BluetoothContext";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (v = 0) => Number(v || 0).toLocaleString("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 });
@@ -614,8 +615,6 @@ function InvoiceView({ sale, saleItems, payments, totalPaid, change, statusInfo 
 // ═════════════════════════════════════════════════════════════════════════════
 // Main Page
 // ═════════════════════════════════════════════════════════════════════════════
-import EscPosEncoder from 'esc-pos-encoder';
-import { useBluetoothContext } from '@/Context/BluetoothContext';
 
 export default function Print({ sale, fromTransaction }) {
     const [mode, setMode] = useState("thermal58");
