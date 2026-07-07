@@ -408,7 +408,7 @@ export default function Show({ recipes, variant, intensity, sizePreview }) {
                                                         type === "alcohol" ? "bg-blue-400" : "bg-slate-400"
                                                     }`} style={{ width: `${pct}%` }} />
                                                 </div>
-                                                <span className="text-xs text-slate-400 w-10 text-right tabular-nums">{pct.toFixed(1)}%</span>
+                                                <span className="text-xs text-slate-400 w-10 text-right tabular-nums">{pct.toFixed(2)}%</span>
                                             </div>
                                             {recipe.notes && (
                                                 <p className="text-xs text-slate-400 mt-0.5 italic">{recipe.notes}</p>

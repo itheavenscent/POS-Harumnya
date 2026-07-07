@@ -173,7 +173,7 @@ export default function Show({ stock, item, location, movements, stats, costHist
     const isIng = item.type === "ingredient";
     const currentQty = stock.quantity;
     const pctChange = stats?.total_in > 0
-        ? (((stats.total_in - stats.total_out) / stats.total_in) * 100).toFixed(1)
+        ? (((stats.total_in - stats.total_out) / stats.total_in) * 100).toFixed(2)
         : 0;
 
     return (

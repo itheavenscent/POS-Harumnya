@@ -13,7 +13,7 @@ class Purchase extends Model
     protected $fillable = [
         'purchase_number', 'supplier_id', 'destination_type', 'destination_id',
         'purchase_date', 'expected_delivery_date', 'actual_delivery_date', 'status',
-        'subtotal', 'tax', 'discount', 'shipping_cost', 'total',
+        'subtotal', 'tax', 'discount', 'shipping_cost', 'adjustment', 'total',
         'notes', 'cancellation_reason',
         'created_by', 'approved_by', 'approved_at', 'received_by', 'received_at',
     ];
@@ -29,6 +29,7 @@ class Purchase extends Model
         'tax'                    => 'decimal:2',
         'discount'               => 'decimal:2',
         'shipping_cost'          => 'decimal:2',
+        'adjustment'             => 'decimal:2',
         'total'                  => 'decimal:2',
         // FK users (unsignedBigInteger)
         'created_by'             => 'integer',

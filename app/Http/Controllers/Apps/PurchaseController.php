@@ -128,6 +128,7 @@ class PurchaseController extends Controller
                 'tax'                    => $v['tax']           ?? '0',
                 'discount'               => $v['discount']      ?? '0',
                 'shipping_cost'          => $v['shipping_cost'] ?? '0',
+                'adjustment'             => $v['adjustment']    ?? '0',
                 'notes'                  => $v['notes']         ?? null,
                 'created_by'             => auth()->id(),
             ]);
@@ -135,12 +136,16 @@ class PurchaseController extends Controller
             [$subtotal] = $this->upsertItems($purchase, $v['items']);
 
             $total = $this->bcAdd(
-                $this->bcSub(
-                    $this->bcAdd($subtotal, (string) ($v['tax'] ?? 0), 2),
-                    (string) ($v['discount'] ?? 0),
+                $this->bcAdd(
+                    $this->bcSub(
+                        $this->bcAdd($subtotal, (string) ($v['tax'] ?? 0), 2),
+                        (string) ($v['discount'] ?? 0),
+                        2
+                    ),
+                    (string) ($v['shipping_cost'] ?? 0),
                     2
                 ),
-                (string) ($v['shipping_cost'] ?? 0),
+                (string) ($v['adjustment'] ?? 0),
                 2
             );
 
@@ -252,6 +257,7 @@ class PurchaseController extends Controller
                 'tax'                    => $v['tax']           ?? '0',
                 'discount'               => $v['discount']      ?? '0',
                 'shipping_cost'          => $v['shipping_cost'] ?? '0',
+                'adjustment'             => $v['adjustment']    ?? '0',
                 'notes'                  => $v['notes']         ?? null,
             ]);
 
@@ -259,12 +265,16 @@ class PurchaseController extends Controller
             [$subtotal] = $this->upsertItems($purchase, $v['items']);
 
             $total = $this->bcAdd(
-                $this->bcSub(
-                    $this->bcAdd($subtotal, (string) ($v['tax'] ?? 0), 2),
-                    (string) ($v['discount'] ?? 0),
+                $this->bcAdd(
+                    $this->bcSub(
+                        $this->bcAdd($subtotal, (string) ($v['tax'] ?? 0), 2),
+                        (string) ($v['discount'] ?? 0),
+                        2
+                    ),
+                    (string) ($v['shipping_cost'] ?? 0),
                     2
                 ),
-                (string) ($v['shipping_cost'] ?? 0),
+                (string) ($v['adjustment'] ?? 0),
                 2
             );
 
@@ -335,14 +345,25 @@ class PurchaseController extends Controller
 
         $request->validate([
             'actual_delivery_date' => 'nullable|date',
+            'items'                => 'required|array',
+            'items.*.id'           => 'required|uuid',
+            'items.*.received_quantity' => 'required|integer',
         ]);
 
-        $purchase->update([
-            'status'               => 'received',
-            'received_by'          => auth()->id(),
-            'received_at'          => now(),
-            'actual_delivery_date' => $request->actual_delivery_date ?? today(),
-        ]);
+        DB::transaction(function () use ($purchase, $request) {
+            foreach ($request->items as $itemData) {
+                $purchase->items()->where('id', $itemData['id'])->update([
+                    'received_quantity' => $itemData['received_quantity'],
+                ]);
+            }
+
+            $purchase->update([
+                'status'               => 'received',
+                'received_by'          => auth()->id(),
+                'received_at'          => now(),
+                'actual_delivery_date' => $request->actual_delivery_date ?? today(),
+            ]);
+        });
 
         return back()->with('success', 'Barang diterima. Silakan selesaikan PO untuk memperbarui stok.');
     }
@@ -363,19 +384,39 @@ class PurchaseController extends Controller
         DB::transaction(function () use ($purchase) {
             $userId = auth()->id();
             $now    = now();
+            
+            $poolToDistribute = (float) $purchase->shipping_cost + (float) $purchase->adjustment;
+            $totalSubtotal = (float) $purchase->subtotal;
+            $totalReceivedQty = $purchase->items->sum('received_quantity');
 
             foreach ($purchase->items as $item) {
-                // quantity: integer SIGNED (negatif = retur ke supplier)
-                $qty       = (int)   $item->quantity;
-                // unit_price kolom decimal(15,2) — cast ke float untuk WAC
+                // quantity: updated to use received_quantity for stock addition
+                $qty       = (int)   $item->received_quantity;
                 $unitPrice = (float) $item->unit_price;
+                $itemSubtotal = (float) $item->subtotal;
+                
+                // Landed Cost calculation
+                $landedCost = $unitPrice;
+                if ($qty > 0) {
+                    if ($totalSubtotal > 0) {
+                        // Distribute proportionally by subtotal
+                        $allocatedPool = $poolToDistribute * ($itemSubtotal / $totalSubtotal);
+                        $landedCost += ($allocatedPool / $qty);
+                    } else if ($totalReceivedQty > 0) {
+                        // If all items are free, distribute proportionally by quantity
+                        $allocatedPool = $poolToDistribute * ($qty / $totalReceivedQty);
+                        $landedCost += ($allocatedPool / $qty);
+                    }
+                }
+                // Ensure landedCost is not less than 0 (e.g. if adjustment is highly negative)
+                $landedCost = max(0, round($landedCost, 4));
 
                 $stock = $this->findOrCreateStock(
                     $purchase->destination_type,
                     $purchase->destination_id,
                     $item->item_type,
                     $item->item_id,
-                    $unitPrice
+                    $landedCost
                 );
 
                 $qtyBefore = (int)   $stock->quantity;      // bigInteger SIGNED
@@ -386,7 +427,7 @@ class PurchaseController extends Controller
                 // WAC = (stok_lama × avg_lama + qty_baru × harga_beli) / stok_baru
                 if ($qtyAfter > 0) {
                     $newAvgCost = round(
-                        (($qtyBefore * $avgBefore) + ($qty * $unitPrice)) / $qtyAfter,
+                        (($qtyBefore * $avgBefore) + ($qty * $landedCost)) / $qtyAfter,
                         4
                     );
                 } elseif ($qtyAfter === 0) {
@@ -423,8 +464,8 @@ class PurchaseController extends Controller
                     'qty_before'       => $qtyBefore,
                     'qty_after'        => $qtyAfter,
                     // Nilai — presisi sesuai migration
-                    'unit_cost'        => $unitPrice,                       // decimal(15,4)
-                    'total_cost'       => round(abs($qty) * $unitPrice, 2), // decimal(15,2)
+                    'unit_cost'        => $landedCost,                      // decimal(15,4)
+                    'total_cost'       => round(abs($qty) * $landedCost, 2), // decimal(15,2)
                     'avg_cost_before'  => $avgBefore,                       // decimal(15,4)
                     'avg_cost_after'   => $newAvgCost,                      // decimal(15,4)
                     // Referensi dokumen
@@ -528,12 +569,14 @@ class PurchaseController extends Controller
             'tax'                    => 'nullable|numeric|min:0',
             'discount'               => 'nullable|numeric|min:0',
             'shipping_cost'          => 'nullable|numeric|min:0',
+            'adjustment'             => 'nullable|numeric',
             'notes'                  => 'nullable|string|max:2000',
             'items'                  => 'required|array|min:1',
             'items.*.item_type'      => 'required|in:ingredient,packaging_material',
             'items.*.item_id'        => 'required|uuid',
             'items.*.quantity'       => 'required|integer|not_in:0',
-            'items.*.unit_price'     => 'required|numeric|min:0',
+            'items.*.unit_price'     => 'nullable|numeric|min:0',
+            'items.*.is_free'        => 'nullable|boolean',
             'items.*.notes'          => 'nullable|string|max:500',
         ];
     }
@@ -567,9 +610,17 @@ class PurchaseController extends Controller
 
         foreach ($items as $item) {
             $qty       = (int)   $item['quantity'];
-            $rawPrice  = (float) $item['unit_price'];
-            $unitPrice = $isInt ? (int) round($rawPrice) : round($rawPrice, 2);
-            $lineTotal = $isInt ? (int) round($qty * $unitPrice) : round($qty * $unitPrice, 2);
+            $isFree    = !empty($item['is_free']);
+            
+            if ($isFree) {
+                $rawPrice  = 0.0;
+                $unitPrice = 0;
+                $lineTotal = 0;
+            } else {
+                $rawPrice  = (float) ($item['unit_price'] ?? 0);
+                $unitPrice = $isInt ? (int) round($rawPrice) : round($rawPrice, 2);
+                $lineTotal = $isInt ? (int) round($qty * $unitPrice) : round($qty * $unitPrice, 2);
+            }
             
             // Gunakan sprintf untuk memastikan string numerik murni (menghindari notasi scientific)
             $lineTotalStr = sprintf("%.2f", (float) $lineTotal);
@@ -581,6 +632,7 @@ class PurchaseController extends Controller
                 'quantity'   => $qty,
                 'unit_price' => $unitPrice,
                 'subtotal'   => $lineTotal,
+                'is_free'    => $isFree,
                 'notes'      => $item['notes'] ?? null,
             ]);
         }

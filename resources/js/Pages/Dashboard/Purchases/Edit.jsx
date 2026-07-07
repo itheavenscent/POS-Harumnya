@@ -132,6 +132,7 @@ export default function Edit({ purchase, suppliers, warehouses, stores, ingredie
         tax: String(parseFloat(purchase.tax) || 0),
         discount: String(parseFloat(purchase.discount) || 0),
         shipping_cost: String(parseFloat(purchase.shipping_cost) || 0),
+        adjustment: String(parseFloat(purchase.adjustment) || 0),
         notes: purchase.notes ?? "",
         items: (purchase.items ?? []).map((i) => {
             const qty = parseInt(i.quantity) || 0;
@@ -142,6 +143,7 @@ export default function Edit({ purchase, suppliers, warehouses, stores, ingredie
                 quantity: i.quantity,
                 total_price: String(qty * unitP), // Hitung Harga Total awal dari DB
                 unit_price: String(unitP),       // Simpan Harga Unit untuk dikirim ke backend
+                is_free: !!i.is_free,
                 notes: i.notes ?? "",
             };
         }),
@@ -155,7 +157,7 @@ export default function Edit({ purchase, suppliers, warehouses, stores, ingredie
     ], [ingredients, packagingMaterials]);
 
     const usedItemIds = data.items.map((i) => i.item_id).filter(Boolean);
-    const addItem = () => setData("items", [...data.items, { item_type: "ingredient", item_id: "", quantity: "", total_price: "0", unit_price: "0", notes: "" }]);
+    const addItem = () => setData("items", [...data.items, { item_type: "ingredient", item_id: "", quantity: "", total_price: "0", unit_price: "0", is_free: false, notes: "" }]);
     const removeItem = (idx) => setData("items", data.items.filter((_, i) => i !== idx));
 
     // Perhitungan otomatis Harga/Unit saat Qty atau Harga Total berubah
@@ -165,12 +167,23 @@ export default function Edit({ purchase, suppliers, warehouses, stores, ingredie
 
             const newItem = { ...item, [key]: val };
 
+            if (key === 'is_free' && val === true) {
+                newItem.total_price = "0";
+                newItem.unit_price = "0";
+                return newItem;
+            }
+
             const qty = parseInt(key === 'quantity' ? val : item.quantity) || 0;
             const total = parseFloat(key === 'total_price' ? val : item.total_price) || 0;
 
             if (qty > 0) {
                 newItem.unit_price = String(total / qty);
             } else {
+                newItem.unit_price = "0";
+            }
+            
+            if (newItem.is_free) {
+                newItem.total_price = "0";
                 newItem.unit_price = "0";
             }
 
@@ -205,6 +218,7 @@ export default function Edit({ purchase, suppliers, warehouses, stores, ingredie
     const total = subtotal
         + (parseFloat(data.tax) || 0)
         + (parseFloat(data.shipping_cost) || 0)
+        + (parseFloat(data.adjustment) || 0)
         - (parseFloat(data.discount) || 0);
 
     const submit = (e) => {
@@ -351,7 +365,14 @@ export default function Edit({ purchase, suppliers, warehouses, stores, ingredie
                                                 <MoneyInput
                                                     value={item.total_price}
                                                     onChange={(v) => updateItem(idx, "total_price", v)}
-                                                    className="w-full py-2.5 focus:ring-amber-500" />
+                                                    disabled={item.is_free}
+                                                    className={`w-full py-2.5 focus:ring-amber-500 ${item.is_free ? 'bg-slate-100 opacity-60 cursor-not-allowed' : ''}`} />
+                                                <label className="flex items-center gap-1.5 mt-2 cursor-pointer">
+                                                    <input type="checkbox" checked={item.is_free || false}
+                                                        onChange={(e) => updateItem(idx, "is_free", e.target.checked)}
+                                                        className="rounded text-amber-600 border-slate-300 focus:ring-amber-500 cursor-pointer" />
+                                                    <span className="text-xs font-bold text-slate-600">Free Item</span>
+                                                </label>
                                                 {errors[`items.${idx}.unit_price`] && (
                                                     <p className="text-red-500 text-xs mt-1">{errors[`items.${idx}.unit_price`]}</p>
                                                 )}
@@ -399,6 +420,7 @@ export default function Edit({ purchase, suppliers, warehouses, stores, ingredie
                             {[
                                 { label: "PPN / Tax", key: "tax" },
                                 { label: "Ongkos Kirim", key: "shipping_cost" },
+                                { label: "Adjustment", key: "adjustment" },
                                 { label: "Diskon", key: "discount" },
                             ].map(({ label, key }) => (
                                 <div key={key} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
@@ -415,6 +437,7 @@ export default function Edit({ purchase, suppliers, warehouses, stores, ingredie
                                     { label: "Subtotal", value: subtotal },
                                     { label: "PPN / Tax", value: parseFloat(data.tax) || 0 },
                                     { label: "Ongkir", value: parseFloat(data.shipping_cost) || 0 },
+                                    { label: "Adjustment", value: parseFloat(data.adjustment) || 0 },
                                     { label: "Diskon", value: -(parseFloat(data.discount) || 0) },
                                 ].map(({ label, value }) => (
                                     <div key={label} className="flex justify-between text-sm">

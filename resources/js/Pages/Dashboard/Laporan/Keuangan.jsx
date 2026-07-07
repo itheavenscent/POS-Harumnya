@@ -42,7 +42,7 @@ const compact = (v) => {
 };
 
 const num  = (v) => new Intl.NumberFormat('id-ID').format(v ?? 0);
-const pct  = (v) => `${(v ?? 0).toFixed(1)}%`;
+const pct  = (v) => `${(v ?? 0).toFixed(2)}%`;
 
 const marginColor = (m) =>
     m >= 50 ? C.success : m >= 30 ? C.warning : C.danger;
@@ -176,7 +176,7 @@ function MarginGauge({ value }) {
             </div>
             <div className="flex items-center justify-between mt-1.5">
                 <span className="text-[11px] text-slate-400">Gross Margin</span>
-                <span className="text-sm font-black" style={{ color }}>{value.toFixed(1)}%</span>
+                <span className="text-sm font-black" style={{ color }}>{value.toFixed(2)}%</span>
             </div>
         </div>
     );
@@ -298,12 +298,18 @@ export default function LaporanKeuangan({
                             {storeName}
                         </p>
                     </div>
-                    <button
-                        onClick={() => window.print()}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                    >
-                        <IconDownload size={13} /> Export
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <a href={route('laporan.keuangan.export', filters)}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-900/50 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors">
+                            <IconDownload size={13} /> Export Excel
+                        </a>
+                        <button
+                            onClick={() => window.print()}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                        >
+                            <IconDownload size={13} /> Cetak
+                        </button>
+                    </div>
                 </div>
 
                 {/* ── FILTER ───────────────────────────────────────────────── */}
@@ -509,7 +515,7 @@ export default function LaporanKeuangan({
                                         <div className="space-y-3 mb-5">
                                             {byPayment.map((p, i) => {
                                                 const share = totalPaymentAmt > 0
-                                                    ? ((p.amount / totalPaymentAmt) * 100).toFixed(1) : 0;
+                                                    ? ((p.amount / totalPaymentAmt) * 100).toFixed(2) : 0;
                                                 return (
                                                     <div key={i}>
                                                         <div className="flex items-center justify-between mb-1.5">
@@ -555,7 +561,7 @@ export default function LaporanKeuangan({
                                     <div className="space-y-3">
                                         {discountByCategory.map((d, i) => {
                                             const totalD = discountByCategory.reduce((a, b) => a + b.total_amount, 0);
-                                            const share  = totalD > 0 ? ((d.total_amount / totalD) * 100).toFixed(1) : 0;
+                                            const share  = totalD > 0 ? ((d.total_amount / totalD) * 100).toFixed(2) : 0;
                                             return (
                                                 <div key={i}>
                                                     <div className="flex items-center justify-between mb-1">
@@ -917,7 +923,7 @@ export default function LaporanKeuangan({
                                     <div className="flex-1 space-y-2">
                                         {discountByCategory.map((d, i) => {
                                             const total = discountByCategory.reduce((a, b) => a + b.total_amount, 0);
-                                            const share = total > 0 ? ((d.total_amount / total) * 100).toFixed(1) : 0;
+                                            const share = total > 0 ? ((d.total_amount / total) * 100).toFixed(2) : 0;
                                             return (
                                                 <div key={i} className="flex items-center justify-between">
                                                     <div className="flex items-center gap-2">

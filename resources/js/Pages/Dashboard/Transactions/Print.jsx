@@ -856,7 +856,7 @@ function InvoiceView({ sale, saleItems, payments, totalPaid, change, statusInfo 
                         cls="font-semibold text-slate-500 border-t border-slate-200 pt-1" />
                     <IRow
                         label="Gross Profit"
-                        val={`${fmt(sale.gross_profit)} (${parseFloat(sale.gross_margin_pct ?? 0).toFixed(1)}%)`}
+                        val={`${fmt(sale.gross_profit)} (${parseFloat(sale.gross_margin_pct ?? 0).toFixed(2)}%)`}
                         cls={`font-bold ${Number(sale.gross_profit) >= 0 ? "text-emerald-600" : "text-red-500"}`}
                     />
                 </div>

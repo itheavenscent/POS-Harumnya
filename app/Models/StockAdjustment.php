@@ -56,6 +56,7 @@ class StockAdjustment extends Model
             'loss'         => 'Barang Hilang',
             'found'        => 'Barang Ditemukan',
             'expired'      => 'Kadaluarsa',
+            'daily_mutation' => 'Mutasi Harian',
             'other'        => 'Lainnya',
             default        => ucfirst($this->type),
         };

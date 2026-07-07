@@ -145,6 +145,14 @@ class CustomerController extends Controller
             'is_active'     => true,
         ]));
 
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Pelanggan berhasil ditambahkan.',
+                'customer' => $customer,
+            ]);
+        }
+
         return back()->with('success', 'Pelanggan berhasil ditambahkan.');
     }
 }

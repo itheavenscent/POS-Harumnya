@@ -236,7 +236,7 @@ function ByLocation({ data, grandTotal }) {
                             {/* Value */}
                             <div className="text-right flex-shrink-0">
                                 <div className="font-black text-slate-800 dark:text-white">{fmt(loc.total_value)}</div>
-                                <div className="text-xs text-slate-400">{pct.toFixed(1)}% dari total</div>
+                                <div className="text-xs text-slate-400">{pct.toFixed(2)}% dari total</div>
                             </div>
                         </div>
 
@@ -319,7 +319,7 @@ function ByCategory({ data, grandTotal }) {
                                     {fmt(cat.total_value)}
                                 </td>
                                 <td className="py-3 px-3 text-right">
-                                    <span className="text-xs font-bold text-slate-500">{pct.toFixed(1)}%</span>
+                                    <span className="text-xs font-bold text-slate-500">{pct.toFixed(2)}%</span>
                                 </td>
                             </tr>
                         );

@@ -54,6 +54,10 @@ class LaporanPenjualanController extends Controller
         // sold_at adalah TIMESTAMP → pakai full day range
         $dateFromDt = Carbon::parse($dateFrom)->startOfDay();
         $dateToDt   = Carbon::parse($dateTo)->endOfDay();
+        
+        if ($dateFromDt->diffInDays($dateToDt) > 90) {
+            $dateFromDt = $dateToDt->copy()->subDays(90)->startOfDay();
+        }
 
         // ── Daftar toko (dropdown) ────────────────────────────────────────────
         $stores = DB::table('stores')
@@ -667,6 +671,74 @@ class LaporanPenjualanController extends Controller
             'memberTrend'        => $memberTrend,
             'recentTransactions' => $recentTransactions,
         ];
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $user         = auth()->user();
+        $isSuperAdmin = method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : false;
+        
+        $storeId  = $request->input('store_id', $isSuperAdmin ? null : ($user->default_store_id ?? null));
+        $dateFrom = $request->input('date_from', Carbon::now()->startOfMonth()->toDateString());
+        $dateTo   = $request->input('date_to', Carbon::now()->toDateString());
+        $status   = $request->input('status', 'completed');
+
+        $dateFromDt = Carbon::parse($dateFrom)->startOfDay();
+        $dateToDt   = Carbon::parse($dateTo)->endOfDay();
+        
+        if ($dateFromDt->diffInDays($dateToDt) > 90) {
+            $dateFromDt = $dateToDt->copy()->subDays(90)->startOfDay();
+        }
+
+        $sales = DB::table('sales')
+            ->leftJoin('customers',    'sales.customer_id',     '=', 'customers.id')
+            ->leftJoin('users',        'sales.cashier_id',      '=', 'users.id')
+            ->leftJoin('sales_people', 'sales.sales_person_id', '=', 'sales_people.id')
+            ->join('stores',           'sales.store_id',        '=', 'stores.id')
+            ->when($storeId, fn ($q) => $q->where('sales.store_id', $storeId))
+            ->when($status !== 'all', fn ($q) => $q->where('sales.status', $status))
+            ->whereBetween('sales.sold_at', [$dateFromDt, $dateToDt])
+            ->selectRaw('
+                sales.sale_number,
+                sales.sold_at,
+                sales.status,
+                sales.subtotal,
+                sales.discount_amount,
+                sales.total,
+                stores.name                                                     AS store_name,
+                COALESCE(sales.customer_name, customers.name)                   AS customer_name,
+                COALESCE(sales.cashier_name, users.name)                        AS cashier_name,
+                COALESCE(sales.sales_person_name, sales_people.name)            AS sales_person_name
+            ')
+            ->orderByDesc('sales.sold_at')
+            ->get();
+
+        $filename = "Laporan_Penjualan_{$dateFromDt->format('Ymd')}_{$dateToDt->format('Ymd')}.csv";
+
+        return new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($sales) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['No. Invoice', 'Tanggal', 'Waktu', 'Status', 'Toko', 'Pelanggan', 'Kasir', 'Sales Person', 'Gross Sales', 'Diskon', 'Total']);
+
+            foreach ($sales as $sale) {
+                fputcsv($handle, [
+                    $sale->sale_number,
+                    Carbon::parse($sale->sold_at)->format('Y-m-d'),
+                    Carbon::parse($sale->sold_at)->format('H:i:s'),
+                    $sale->status,
+                    $sale->store_name,
+                    $sale->customer_name ?? 'Walk-in',
+                    $sale->cashier_name ?? '-',
+                    $sale->sales_person_name ?? '-',
+                    $sale->subtotal,
+                    $sale->discount_amount,
+                    $sale->total,
+                ]);
+            }
+            fclose($handle);
+        }, 200, [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
     }
 }
 

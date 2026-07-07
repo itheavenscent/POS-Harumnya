@@ -146,7 +146,7 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
                             {
                                 label: "Avg Margin",
                                 value: sumStats.avg_margin ?? 0,
-                                display: v => `${parseFloat(v).toFixed(1)}%`,
+                                display: v => `${parseFloat(v).toFixed(2)}%`,
                                 color: "text-blue-600 dark:text-blue-400",
                             },
                         ].map(card => (
@@ -360,7 +360,7 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
                                                             : "text-red-500"
                                                     }`}>
                                                         <IconTrendingUp size={12}/>
-                                                        {parseFloat(sale.gross_margin_pct ?? 0).toFixed(1)}%
+                                                        {parseFloat(sale.gross_margin_pct ?? 0).toFixed(2)}%
                                                     </span>
                                                 </td>
 

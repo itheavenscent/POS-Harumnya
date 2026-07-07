@@ -110,6 +110,16 @@ export default function Mutasi({ mutations = [], stores = [], warehouses = [], f
                             <IconBuildingStore size={13} /> Lokasi: <span className="font-bold text-slate-800 dark:text-slate-200">{activeLocationName}</span>
                         </p>
                     </div>
+                    <div className="flex items-center gap-2">
+                        <a href={route('laporan.mutasi.export', filters)}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-900/50 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors">
+                            <IconDownload size={13} /> Export Excel
+                        </a>
+                        <button onClick={() => window.print()}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                            <IconDownload size={13} /> Cetak
+                        </button>
+                    </div>
                 </div>
 
                 {/* ── FILTER CARD ── */}

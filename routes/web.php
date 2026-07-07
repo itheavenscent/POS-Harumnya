@@ -370,6 +370,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     Route::prefix('stock-adjustments')->name('stock-adjustments.')->group(function () {
         Route::get('/', [StockAdjustmentController::class, 'index'])->name('index')->middleware('permission:stock-adjustment');
         Route::get('/create', [StockAdjustmentController::class, 'create'])->name('create')->middleware('permission:stock-adjustment');
+        Route::get('/create-delta', [StockAdjustmentController::class, 'createDelta'])->name('create-delta')->middleware('permission:stock-adjustment');
         Route::post('/', [StockAdjustmentController::class, 'store'])->name('store')->middleware('permission:stock-adjustment');
         Route::post('/current-stock', [StockAdjustmentController::class, 'getCurrentStock'])->name('current-stock')->middleware('permission:stock-adjustment');
         Route::get('/{id}', [StockAdjustmentController::class, 'show'])->name('show')->middleware('permission:stock-adjustment');
@@ -601,14 +602,23 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::get('penjualan', [LaporanPenjualanController::class, 'index'])
             ->middleware('permission:reports-access')
             ->name('penjualan');
+        Route::get('penjualan/export', [LaporanPenjualanController::class, 'exportExcel'])
+            ->middleware('permission:reports-access')
+            ->name('penjualan.export');
 
         Route::get('keuangan', [LaporanKeuanganController::class, 'index'])
             ->middleware('permission:profits-access')
             ->name('keuangan');
+        Route::get('keuangan/export', [LaporanKeuanganController::class, 'exportExcel'])
+            ->middleware('permission:profits-access')
+            ->name('keuangan.export');
 
         Route::get('mutasi', [LaporanMutasiController::class, 'index'])
             ->middleware('permission:reports-access')
             ->name('mutasi');
+        Route::get('mutasi/export', [LaporanMutasiController::class, 'exportExcel'])
+            ->middleware('permission:reports-access')
+            ->name('mutasi.export');
     });
 
     // ─────────────────────────────────────────────────────────────────────────

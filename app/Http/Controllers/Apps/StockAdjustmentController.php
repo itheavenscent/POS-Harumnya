@@ -80,6 +80,23 @@ class StockAdjustmentController extends Controller
         ]);
     }
 
+    public function createDelta()
+    {
+        return Inertia::render('Dashboard/StockAdjustments/CreateDelta', [
+            'warehouses'         => Warehouse::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
+            'stores'             => Store::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
+            'ingredients'        => Ingredient::where('is_active', true)
+                ->with('category:id,name')
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'unit', 'ingredient_category_id']),
+            'packagingMaterials' => PackagingMaterial::where('is_active', true)
+                ->with(['category:id,name', 'size:id,name'])
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'packaging_category_id', 'size_id']),
+            'typeOptions'        => $this->typeOptions(),
+        ]);
+    }
+
     // =========================================================================
     // STORE — simpan draft
     // =========================================================================
@@ -90,12 +107,14 @@ class StockAdjustmentController extends Controller
             'location_type'             => 'required|in:warehouse,store',
             'location_id'               => 'required|uuid',
             'adjustment_date'           => 'required|date',
-            'type'                      => 'required|in:stock_opname,damage,loss,found,expired,other',
+            'type'                      => 'required|in:stock_opname,damage,loss,found,expired,daily_mutation,other',
             'notes'                     => 'nullable|string|max:2000',
+            'is_delta'                  => 'nullable|boolean',
             'items'                     => 'required|array|min:1',
             'items.*.item_type'         => 'required|in:ingredient,packaging_material',
             'items.*.item_id'           => 'required|uuid',
-            'items.*.physical_quantity' => 'required|integer|min:0',
+            'items.*.physical_quantity' => 'nullable|integer|min:0',
+            'items.*.delta_quantity'    => 'nullable|integer',
             'items.*.notes'             => 'nullable|string|max:500',
         ]);
 
@@ -115,8 +134,10 @@ class StockAdjustmentController extends Controller
                 $stock       = $this->findStock($v['location_type'], $v['location_id'], $item['item_type'], $item['item_id']);
                 $systemQty   = $stock ? (int)   $stock->quantity     : 0;
                 $unitCost    = $stock ? (float) $stock->average_cost : 0.0;
-                $physicalQty = (int) $item['physical_quantity'];
-                $difference  = $physicalQty - $systemQty;
+                
+                $isDelta     = $v['is_delta'] ?? false;
+                $difference  = $isDelta ? (int) $item['delta_quantity'] : ((int) $item['physical_quantity'] - $systemQty);
+                $physicalQty = $systemQty + $difference;
                 $valueDiff   = round(abs($difference) * $unitCost, 2);
 
                 $adj->items()->create([
@@ -541,6 +562,7 @@ class StockAdjustmentController extends Controller
             ['value' => 'loss',         'label' => 'Barang Hilang'],
             ['value' => 'found',        'label' => 'Barang Ditemukan'],
             ['value' => 'expired',      'label' => 'Kadaluarsa'],
+            ['value' => 'daily_mutation', 'label' => 'Mutasi Harian'],
             ['value' => 'other',        'label' => 'Lainnya'],
         ];
     }

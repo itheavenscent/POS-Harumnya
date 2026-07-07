@@ -39,7 +39,7 @@ const compact = (v) => {
     return `Rp ${v}`;
 };
 const num = (v) => new Intl.NumberFormat('id-ID').format(v ?? 0);
-const pct = (v) => `${(v ?? 0).toFixed(1)}%`;
+const pct = (v) => `${(v ?? 0).toFixed(2)}%`;
 
 // ── Chart Tooltip ─────────────────────────────────────────────────────────────
 const ChartTip = ({ active, payload, label }) => {
@@ -249,10 +249,16 @@ export default function LaporanPenjualan({
                             {storeName}
                         </p>
                     </div>
-                    <button onClick={() => window.print()}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                        <IconDownload size={13} /> Export
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <a href={route('laporan.penjualan.export', filters)}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-900/50 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors">
+                            <IconDownload size={13} /> Export Excel
+                        </a>
+                        <button onClick={() => window.print()}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                            <IconDownload size={13} /> Cetak
+                        </button>
+                    </div>
                 </div>
 
                 {/* ── FILTER ───────────────────────────────────────────────── */}
@@ -454,7 +460,7 @@ export default function LaporanPenjualan({
                                         <div className="space-y-2 mt-2">
                                             {byGender.map((r, i) => {
                                                 const totalQty = byGender.reduce((a, b) => a + b.qty, 0);
-                                                const gPct = totalQty > 0 ? ((r.qty / totalQty) * 100).toFixed(1) : 0;
+                                                const gPct = totalQty > 0 ? ((r.qty / totalQty) * 100).toFixed(2) : 0;
                                                 const color  = GENDER_COLOR[r.gender] ?? PALETTE[i];
                                                 return (
                                                     <div key={i} className="flex items-center justify-between">

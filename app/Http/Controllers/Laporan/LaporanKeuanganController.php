@@ -45,6 +45,10 @@ class LaporanKeuanganController extends Controller
         // sold_at adalah TIMESTAMP → pakai full day range
         $dateFromDt = Carbon::parse($dateFrom)->startOfDay();
         $dateToDt   = Carbon::parse($dateTo)->endOfDay();
+        
+        if ($dateFromDt->diffInDays($dateToDt) > 90) {
+            $dateFromDt = $dateToDt->copy()->subDays(90)->startOfDay();
+        }
 
         // ── Daftar toko (dropdown) ────────────────────────────────────────────
         $stores = DB::table('stores')
@@ -619,5 +623,71 @@ class LaporanKeuanganController extends Controller
                 "DATE_FORMAT(sold_at, '%d %b')",
             ],
         };
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $user         = auth()->user();
+        $isSuperAdmin = method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : false;
+        
+        $storeId  = $request->input('store_id', $isSuperAdmin ? null : ($user->default_store_id ?? null));
+        $dateFrom = $request->input('date_from', Carbon::now()->startOfMonth()->toDateString());
+        $dateTo   = $request->input('date_to', Carbon::now()->toDateString());
+
+        $dateFromDt = Carbon::parse($dateFrom)->startOfDay();
+        $dateToDt   = Carbon::parse($dateTo)->endOfDay();
+        
+        if ($dateFromDt->diffInDays($dateToDt) > 90) {
+            $dateFromDt = $dateToDt->copy()->subDays(90)->startOfDay();
+        }
+
+        $sales = DB::table('sales')
+            ->leftJoin('customers',    'sales.customer_id',     '=', 'customers.id')
+            ->leftJoin('users',        'sales.cashier_id',      '=', 'users.id')
+            ->leftJoin('sales_people', 'sales.sales_person_id', '=', 'sales_people.id')
+            ->join('stores',           'sales.store_id',        '=', 'stores.id')
+            ->when($storeId, fn ($q) => $q->where('sales.store_id', $storeId))
+            ->where('sales.status', 'completed')
+            ->whereBetween('sales.sold_at', [$dateFromDt, $dateToDt])
+            ->selectRaw('
+                sales.sale_number,
+                sales.sold_at,
+                sales.subtotal,
+                sales.discount_amount,
+                sales.total,
+                sales.cogs_total,
+                sales.gross_profit,
+                sales.tax_amount,
+                stores.name                                                     AS store_name,
+                COALESCE(sales.customer_name, customers.name)                   AS customer_name
+            ')
+            ->orderByDesc('sales.sold_at')
+            ->get();
+
+        $filename = "Laporan_Keuangan_{$dateFromDt->format('Ymd')}_{$dateToDt->format('Ymd')}.csv";
+
+        return new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($sales) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['No. Invoice', 'Tanggal', 'Toko', 'Pelanggan', 'Gross Sales', 'Diskon', 'Pajak', 'Total Revenue', 'Total COGS', 'Gross Profit']);
+
+            foreach ($sales as $sale) {
+                fputcsv($handle, [
+                    $sale->sale_number,
+                    Carbon::parse($sale->sold_at)->format('Y-m-d H:i:s'),
+                    $sale->store_name,
+                    $sale->customer_name ?? 'Walk-in',
+                    $sale->subtotal,
+                    $sale->discount_amount,
+                    $sale->tax_amount,
+                    $sale->total,
+                    $sale->cogs_total,
+                    $sale->gross_profit,
+                ]);
+            }
+            fclose($handle);
+        }, 200, [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
     }
 }

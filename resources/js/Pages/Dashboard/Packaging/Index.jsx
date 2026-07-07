@@ -253,7 +253,7 @@ function MarginBadge({ item }) {
         <div className="text-right">
             <span className={`text-sm font-bold flex items-center justify-end gap-1 text-slate-700 dark:text-slate-300`}>
                 {isGood ? <IconTrendingUp size={13} /> : <IconTrendingDown size={13} />}
-                {margin.toFixed(1)}%
+                {margin.toFixed(2)}%
             </span>
             <span className={`text-[10px] text-slate-500 dark:text-slate-400`}>
                 {isGood ? "+" : ""}{fmt(profit)}/unit

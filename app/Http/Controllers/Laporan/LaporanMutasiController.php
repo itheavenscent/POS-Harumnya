@@ -32,6 +32,10 @@ class LaporanMutasiController extends Controller
 
         $dateFromDt = Carbon::parse($dateFrom)->startOfDay();
         $dateToDt   = Carbon::parse($dateTo)->endOfDay();
+        
+        if ($dateFromDt->diffInDays($dateToDt) > 90) {
+            $dateFromDt = $dateToDt->copy()->subDays(90)->startOfDay();
+        }
 
         // ── Stores & Warehouses dropdown list ──
         $stores = Store::where('is_active', true)->orderBy('name')->get(['id', 'name']);
@@ -244,6 +248,157 @@ class LaporanMutasiController extends Controller
                 'date_to'   => $dateTo,
             ],
             'isSuperAdmin' => $isSuperAdmin,
+        ]);
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $user = auth()->user();
+        
+        $location = $request->input('location');
+        $dateFrom = $request->input('date_from', Carbon::now()->startOfMonth()->toDateString());
+        $dateTo   = $request->input('date_to', Carbon::now()->toDateString());
+
+        $locationId = null;
+        $locationType = null;
+        if ($location && str_contains($location, ':')) {
+            [$locationType, $locationId] = explode(':', $location);
+        }
+
+        $dateFromDt = Carbon::parse($dateFrom)->startOfDay();
+        $dateToDt   = Carbon::parse($dateTo)->endOfDay();
+        
+        if ($dateFromDt->diffInDays($dateToDt) > 90) {
+            $dateFromDt = $dateToDt->copy()->subDays(90)->startOfDay();
+        }
+
+        $ingredients = Ingredient::where('is_active', true)->get(['id', 'name', 'code', 'unit']);
+        $packaging = PackagingMaterial::where('is_active', true)->with('size')->get(['id', 'name', 'code', 'unit', 'size_id']);
+
+        $movements = DB::table('stock_movements')
+            ->leftJoin('stock_adjustments', function ($join) {
+                $join->on('stock_movements.reference_id', '=', 'stock_adjustments.id')
+                     ->where('stock_movements.reference_type', '=', 'App\\Models\\StockAdjustment');
+            })
+            ->whereBetween('stock_movements.movement_date', [$dateFromDt, $dateToDt])
+            ->when($locationId, function ($q) use ($locationId, $locationType) {
+                $q->where('stock_movements.location_id', $locationId)
+                  ->where('stock_movements.location_type', $locationType);
+            })
+            ->select(
+                'stock_movements.item_type',
+                'stock_movements.item_id',
+                'stock_movements.movement_type',
+                'stock_adjustments.type as adjustment_type',
+                DB::raw('SUM(stock_movements.qty_change) as total_qty_change')
+            )
+            ->groupBy('stock_movements.item_type', 'stock_movements.item_id', 'stock_movements.movement_type', 'stock_adjustments.type')
+            ->get();
+
+        $movementsLookup = [];
+        foreach ($movements as $mv) {
+            $itemType = $mv->item_type;
+            $itemId = $mv->item_id;
+            $mType = $mv->movement_type;
+            $adjType = $mv->adjustment_type;
+            $change = (int) $mv->total_qty_change;
+
+            if (!isset($movementsLookup[$itemType][$itemId])) {
+                $movementsLookup[$itemType][$itemId] = [
+                    'stock_take' => 0, 'sell_through' => 0, 'purchase_order' => 0,
+                    'manufacturing' => 0, 'transfer' => 0, 'adjustment' => 0,
+                ];
+            }
+
+            if ($mType === 'purchase_in') {
+                $movementsLookup[$itemType][$itemId]['purchase_order'] += $change;
+            } elseif ($mType === 'sale_deduction') {
+                $movementsLookup[$itemType][$itemId]['sell_through'] += $change;
+            } elseif ($mType === 'transfer_in' || $mType === 'transfer_out') {
+                $movementsLookup[$itemType][$itemId]['transfer'] += $change;
+            } elseif ($mType === 'production_in' || $mType === 'production_out') {
+                $movementsLookup[$itemType][$itemId]['manufacturing'] += $change;
+            } elseif ($adjType === 'stock_opname') {
+                $movementsLookup[$itemType][$itemId]['stock_take'] += $change;
+            } else {
+                $movementsLookup[$itemType][$itemId]['adjustment'] += $change;
+            }
+        }
+
+        $currentIngredientStocks = [];
+        $currentPackagingStocks = [];
+        if ($locationType === 'store') {
+            $currentIngredientStocks = DB::table('store_stocks')->where('store_id', $locationId)->pluck('quantity', 'ingredient_id');
+            $currentPackagingStocks = DB::table('store_packaging_stocks')->where('store_id', $locationId)->pluck('quantity', 'packaging_material_id');
+        } elseif ($locationType === 'warehouse') {
+            $currentIngredientStocks = DB::table('warehouse_stocks')->where('warehouse_id', $locationId)->pluck('quantity', 'ingredient_id');
+            $currentPackagingStocks = DB::table('warehouse_packaging_stocks')->where('warehouse_id', $locationId)->pluck('quantity', 'packaging_material_id');
+        }
+
+        $qtyChangeAfter = [];
+        if ($locationId) {
+            $movementsAfter = DB::table('stock_movements')
+                ->where('movement_date', '>', $dateToDt)
+                ->where('location_id', $locationId)
+                ->where('location_type', $locationType)
+                ->select('item_type', 'item_id', DB::raw('SUM(qty_change) as total_qty_change'))
+                ->groupBy('item_type', 'item_id')
+                ->get();
+            foreach ($movementsAfter as $mv) {
+                $qtyChangeAfter[$mv->item_type][$mv->item_id] = (int) $mv->total_qty_change;
+            }
+        }
+
+        $mutations = [];
+        foreach ($ingredients as $ing) {
+            $current = (int) ($currentIngredientStocks[$ing->id] ?? 0);
+            $afterChange = (int) ($qtyChangeAfter['ingredient'][$ing->id] ?? 0);
+            $ending = $current - $afterChange;
+            $m = $movementsLookup['ingredient'][$ing->id] ?? [
+                'stock_take' => 0, 'sell_through' => 0, 'purchase_order' => 0,
+                'manufacturing' => 0, 'transfer' => 0, 'adjustment' => 0,
+            ];
+            $totalPeriodChange = $m['stock_take'] + $m['sell_through'] + $m['purchase_order'] + $m['manufacturing'] + $m['transfer'] + $m['adjustment'];
+            $beginning = $ending - $totalPeriodChange;
+            $mutations[] = [
+                'code' => $ing->code, 'name' => $ing->name, 'unit' => $ing->unit,
+                'beginning' => $beginning, 'stock_take' => $m['stock_take'], 'sell_through' => $m['sell_through'],
+                'purchase_order' => $m['purchase_order'], 'manufacturing' => $m['manufacturing'], 'transfer' => $m['transfer'],
+                'adjustment' => $m['adjustment'], 'ending' => $ending,
+            ];
+        }
+
+        foreach ($packaging as $pack) {
+            $current = (int) ($currentPackagingStocks[$pack->id] ?? 0);
+            $afterChange = (int) ($qtyChangeAfter['packaging_material'][$pack->id] ?? 0);
+            $ending = $current - $afterChange;
+            $m = $movementsLookup['packaging_material'][$pack->id] ?? [
+                'stock_take' => 0, 'sell_through' => 0, 'purchase_order' => 0,
+                'manufacturing' => 0, 'transfer' => 0, 'adjustment' => 0,
+            ];
+            $totalPeriodChange = $m['stock_take'] + $m['sell_through'] + $m['purchase_order'] + $m['manufacturing'] + $m['transfer'] + $m['adjustment'];
+            $beginning = $ending - $totalPeriodChange;
+            $mutations[] = [
+                'code' => $pack->code, 'name' => $pack->name, 'unit' => $pack->unit ?? ($pack->size?->name ?? 'pcs'),
+                'beginning' => $beginning, 'stock_take' => $m['stock_take'], 'sell_through' => $m['sell_through'],
+                'purchase_order' => $m['purchase_order'], 'manufacturing' => $m['manufacturing'], 'transfer' => $m['transfer'],
+                'adjustment' => $m['adjustment'], 'ending' => $ending,
+            ];
+        }
+
+        usort($mutations, fn($a, $b) => strcmp($a['name'], $b['name']));
+
+        $filename = "Laporan_Mutasi_{$dateFromDt->format('Ymd')}_{$dateToDt->format('Ymd')}.csv";
+        return new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($mutations) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Kode Item', 'Nama Item', 'Satuan', 'Stok Awal', 'Stock Opname', 'Terjual', 'Purchase Order', 'Produksi', 'Transfer', 'Adjustment', 'Stok Akhir']);
+            foreach ($mutations as $m) {
+                fputcsv($handle, [$m['code'], $m['name'], $m['unit'], $m['beginning'], $m['stock_take'], $m['sell_through'], $m['purchase_order'], $m['manufacturing'], $m['transfer'], $m['adjustment'], $m['ending']]);
+            }
+            fclose($handle);
+        }, 200, [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ]);
     }
 }

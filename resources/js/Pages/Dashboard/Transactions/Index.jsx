@@ -1049,6 +1049,15 @@ export default function Index({
     autoPromo = null,
 }) {
     // ── State: customer & sales ────────────────────────────────────────────────
+    const [localCustomers, setLocalCustomers] = useState(customers);
+    useEffect(() => {
+        setLocalCustomers(prev => {
+            const map = new Map();
+            prev.forEach(c => map.set(c.id, c));
+            customers.forEach(c => map.set(c.id, c));
+            return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+        });
+    }, [customers]);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [customerSearch, setCustomerSearch] = useState("");
     const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
@@ -1527,25 +1536,27 @@ export default function Index({
         e.preventDefault();
         if (!custName) { toast.error("Nama pelanggan wajib diisi"); return; }
         setIsSubmitting(true);
-        router.post(route("customers.store-ajax"), {
+        axios.post(route("customers.store-ajax"), {
             name: custName,
             phone: custPhone,
             birth_date: custBirthDate,
             gender: custGender,
-        }, {
-            onSuccess: () => {
-                setIsSubmitting(false);
-                setShowAddCustomer(false);
-                setCustName("");
-                setCustPhone("");
-                setCustBirthDate("");
-                setCustGender("");
-                toast.success("Pelanggan berhasil ditambahkan");
-            },
-            onError: (errs) => {
-                setIsSubmitting(false);
-                toast.error(errs?.phone || errs?.name || "Gagal menambah pelanggan");
-            }
+        }).then((res) => {
+            setIsSubmitting(false);
+            setShowAddCustomer(false);
+            setCustName("");
+            setCustPhone("");
+            setCustBirthDate("");
+            setCustGender("");
+            toast.success("Pelanggan berhasil ditambahkan");
+            
+            const newCust = res.data.customer;
+            setLocalCustomers(prev => [newCust, ...prev]);
+            setSelectedCustomer(newCust);
+        }).catch((err) => {
+            setIsSubmitting(false);
+            const errs = err.response?.data?.errors;
+            toast.error(errs?.phone?.[0] || errs?.name?.[0] || "Gagal menambah pelanggan");
         });
     };
 
@@ -1555,7 +1566,7 @@ export default function Index({
     };
 
     const filteredCustomers = useMemo(() => {
-        const list = customerSearch ? customers.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || (c.phone ?? "").includes(customerSearch)) : customers;
+        const list = customerSearch ? localCustomers.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || (c.phone ?? "").includes(customerSearch)) : localCustomers;
         return list.slice(0, 8);
     }, [customers, customerSearch]);
 
@@ -1913,8 +1924,8 @@ export default function Index({
                                         <div className="flex-1 relative">
                                             <IconSearch size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300" />
                                             <input
-                                                type="text" placeholder="Cari nama / no. HP..."
-                                                value={selectedCustomer ? selectedCustomer.name : customerSearch}
+                                                type="text" placeholder="Cari Nomor Telepon..."
+                                                value={selectedCustomer ? (selectedCustomer.phone || selectedCustomer.name) : customerSearch}
                                                 onClick={() => { if (selectedCustomer) { setSelectedCustomer(null); setCustomerSearch(""); } setShowCustomerDropdown(true); }}
                                                 onChange={e => { setCustomerSearch(e.target.value); setShowCustomerDropdown(true); if (selectedCustomer) setSelectedCustomer(null); }}
                                                 className="w-full h-8 pl-8 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white"
@@ -1927,7 +1938,7 @@ export default function Index({
                                     {selectedCustomer && (
                                         <div className="mt-1 flex flex-col gap-1">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <p className="text-[11px] text-slate-700 dark:text-slate-300 flex items-center gap-1"><IconCheck size={10} /> {selectedCustomer.name}</p>
+                                                <p className="text-[11px] text-slate-700 dark:text-slate-300 flex items-center gap-1"><IconCheck size={10} /> {selectedCustomer.phone || selectedCustomer.name}</p>
                                                 {Number(selectedCustomer.points ?? 0) > 0 && <span className="ml-auto text-[10px] text-slate-700 font-bold">{Number(selectedCustomer.points).toLocaleString("id-ID")} poin</span>}
                                             </div>
 
@@ -1961,8 +1972,8 @@ export default function Index({
                                             <button onClick={() => { setSelectedCustomer({ id: null, name: "Pelanggan Umum" }); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2.5 text-xs text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800">👤 Pelanggan Umum (Walk-in)</button>
                                             {filteredCustomers.map(c => (
                                                 <button key={c.id} onClick={() => { setSelectedCustomer(c); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0">
-                                                    <p className="font-semibold text-xs text-slate-800 dark:text-white">{c.name}</p>
-                                                    <p className="text-[10px] text-slate-400">{c.phone ?? c.code}</p>
+                                                    <p className="font-semibold text-xs text-slate-800 dark:text-white">{c.phone || "Tanpa No. HP"}</p>
+                                                    <p className="text-[10px] text-slate-400">{c.name}</p>
                                                 </button>
                                             ))}
                                         </div>

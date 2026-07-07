@@ -11,18 +11,27 @@ class PurchaseItem extends Model
 
     protected $fillable = [
         'purchase_id', 'item_type', 'item_id',
-        'quantity', 'unit_price', 'subtotal', 'notes',
+        'quantity', 'received_quantity', 'unit_price', 'subtotal', 'is_free', 'notes',
     ];
 
     protected $casts = [
         // ★ bigInteger SIGNED (retur bisa negatif)
-        'quantity'   => 'integer',
+        'quantity'          => 'integer',
+        'received_quantity' => 'integer',
         // ★ decimal(15,2) sesuai migration 006
-        'unit_price' => 'decimal:2',
-        'subtotal'   => 'decimal:2',
+        'unit_price'        => 'decimal:2',
+        'subtotal'          => 'decimal:2',
+        'is_free'           => 'boolean',
     ];
 
+    protected $appends = ['missing_quantity'];
+
     public function purchase() { return $this->belongsTo(Purchase::class); }
+
+    public function getMissingQuantityAttribute(): int
+    {
+        return $this->quantity - $this->received_quantity;
+    }
 
     // ─── Lazy-resolved item attributes (dipakai di Show page) ────────────────
     // Catatan: accessor ini melakukan query per-item.

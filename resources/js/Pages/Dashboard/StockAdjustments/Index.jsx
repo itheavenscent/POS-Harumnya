@@ -65,9 +65,14 @@ export default function Index({ adjustments, filters = {}, summary = {}, typeOpt
                     </h1>
                     <p className="text-sm text-slate-500">Stock opname, barang rusak, hilang, dan penyesuaian lainnya.</p>
                 </div>
-                <Button type="link" icon={<IconCirclePlus size={18} />}
-                    className="bg-orange-500 hover:bg-orange-600 text-white shadow-md"
-                    label="Buat Adjustment" href={route("stock-adjustments.create")} />
+                <div className="flex gap-2">
+                    <Button type="link" icon={<IconCirclePlus size={18} />}
+                        className="bg-orange-500 hover:bg-orange-600 text-white shadow-md"
+                        label="Buat Adjustment" href={route("stock-adjustments.create")} />
+                    <Button type="link" icon={<IconCirclePlus size={18} />}
+                        className="bg-teal-500 hover:bg-teal-600 text-white shadow-md"
+                        label="Buat Delta Adjustment" href={route("stock-adjustments.create-delta")} />
+                </div>
             </div>
 
             {/* Summary */}

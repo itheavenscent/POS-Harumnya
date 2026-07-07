@@ -48,7 +48,7 @@ function MarginBadge({ pct }) {
     const n = parseFloat(pct) || 0;
     return (
         <span className={`px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300`}>
-            {n.toFixed(1)}%
+            {n.toFixed(2)}%
         </span>
     );
 }

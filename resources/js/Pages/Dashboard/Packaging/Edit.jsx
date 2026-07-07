@@ -121,7 +121,7 @@ export default function Edit({ packaging, categories, sizes }) {
     const avgCost       = parseFloat(packaging.average_cost || 0);
     const effectivePrice = data.is_free ? 0 : data.selling_price;
     const margin = !data.is_free && effectivePrice > 0 && avgCost > 0
-        ? (((effectivePrice - avgCost) / effectivePrice) * 100).toFixed(1)
+        ? (((effectivePrice - avgCost) / effectivePrice) * 100).toFixed(2)
         : null;
     const subsidyPerUnit = data.is_free && avgCost > 0 ? avgCost : null;
 

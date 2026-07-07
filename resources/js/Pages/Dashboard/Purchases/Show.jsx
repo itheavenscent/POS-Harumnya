@@ -54,9 +54,27 @@ export default function Show({ purchase, movements = [] }) {
     const [showCompleteModal, setShowCompleteModal] = useState(false);
     const [cancelReason,      setCancelReason]      = useState("");
     const [arrivalDate,       setArrivalDate]       = useState(new Date().toISOString().split("T")[0]);
+    const [receivedQuantities, setReceivedQuantities] = useState({});
 
     const st   = STATUS_CFG[purchase.status] ?? STATUS_CFG.draft;
     const step = st.step;
+
+    const openReceiveModal = () => {
+        const initQty = {};
+        purchase.items?.forEach(i => {
+            initQty[i.id] = i.received_quantity ?? i.quantity;
+        });
+        setReceivedQuantities(initQty);
+        setShowReceiveModal(true);
+    };
+
+    const handleReceive = () => {
+        const payloadItems = Object.keys(receivedQuantities).map(id => ({
+            id,
+            received_quantity: parseInt(receivedQuantities[id]) || 0
+        }));
+        doAction(route("purchases.receive", purchase.id), { actual_delivery_date: arrivalDate, items: payloadItems }, "Barang diterima!");
+    };
 
     const doAction = (url, body, msg) =>
         router.post(url, body, {
@@ -95,22 +113,46 @@ export default function Show({ purchase, movements = [] }) {
             {/* ── Receive Modal ── */}
             {showReceiveModal && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-                        <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col">
+                        <h3 className="text-lg font-bold mb-3 flex items-center gap-2 shrink-0">
                             <IconTruck size={20} className="text-violet-600" /> Konfirmasi Penerimaan Barang
                         </h3>
-                        <p className="text-sm text-slate-500 mb-4">
-                            Tandai bahwa barang telah tiba di <strong>{purchase.destination_name}</strong>.
-                            Stok belum berubah — perbarui stok dengan klik <strong>Selesaikan</strong>.
+                        <p className="text-sm text-slate-500 mb-4 shrink-0">
+                            Konfirmasi jumlah barang yang benar-benar diterima. Stok belum berubah — perbarui stok dengan klik <strong>Selesaikan</strong>.
                         </p>
-                        <div className="mb-4">
+                        <div className="overflow-y-auto mb-4 border border-slate-200 rounded-xl">
+                            <table className="w-full text-left text-sm text-slate-600">
+                                <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
+                                    <tr>
+                                        <th className="px-4 py-2 font-bold text-xs uppercase">Item</th>
+                                        <th className="px-4 py-2 font-bold text-xs uppercase text-right">Dipesan</th>
+                                        <th className="px-4 py-2 font-bold text-xs uppercase text-right">Diterima</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {purchase.items?.map(i => (
+                                        <tr key={i.id} className="border-b border-slate-100 last:border-0">
+                                            <td className="px-4 py-2">{i.item_name}</td>
+                                            <td className="px-4 py-2 text-right font-medium">{fmtQty(i.quantity)} {i.item_unit}</td>
+                                            <td className="px-4 py-2 text-right w-32">
+                                                <input type="number" step="1" min="0"
+                                                    value={receivedQuantities[i.id] ?? ""}
+                                                    onChange={e => setReceivedQuantities(prev => ({ ...prev, [i.id]: e.target.value }))}
+                                                    className="w-full text-right p-1.5 text-sm border-slate-200 rounded-lg focus:ring-violet-500" />
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="mb-4 shrink-0">
                             <label className="block text-xs font-bold text-slate-600 mb-1">Tanggal Tiba Aktual</label>
                             <input type="date" value={arrivalDate} onChange={(e) => setArrivalDate(e.target.value)}
-                                className="w-full md:w-48 rounded-xl border-slate-200 text-sm" />
+                                className="w-full md:w-48 rounded-xl border-slate-200 text-sm focus:ring-violet-500" />
                         </div>
-                        <div className="flex gap-3 justify-end">
-                            <button onClick={() => setShowReceiveModal(false)} className="px-5 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm">Batal</button>
-                            <button onClick={() => doAction(route("purchases.receive", purchase.id), { actual_delivery_date: arrivalDate }, "Barang diterima!")}
+                        <div className="flex gap-3 justify-end shrink-0">
+                            <button onClick={() => setShowReceiveModal(false)} className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm">Batal</button>
+                            <button onClick={handleReceive}
                                 className="px-5 py-2 bg-violet-500 hover:bg-violet-600 text-white rounded-xl font-bold text-sm flex items-center gap-2">
                                 <IconTruck size={16} /> Konfirmasi
                             </button>
@@ -156,7 +198,7 @@ export default function Show({ purchase, movements = [] }) {
                             </button>
                         )}
                         {purchase.can_receive && (
-                            <button onClick={() => setShowReceiveModal(true)}
+                            <button onClick={openReceiveModal}
                                 className="flex items-center gap-2 px-5 py-2 bg-violet-500 hover:bg-violet-600 text-white rounded-xl text-sm font-bold shadow-md">
                                 <IconTruck size={16} /> Terima Barang
                             </button>
@@ -251,30 +293,45 @@ export default function Show({ purchase, movements = [] }) {
                                 <Table.Th>Item</Table.Th>
                                 <Table.Th>Tipe</Table.Th>
                                 <Table.Th className="text-right">Qty</Table.Th>
+                                {(step >= 3) && <Table.Th className="text-right">Diterima</Table.Th>}
                                 <Table.Th className="text-right">Harga/Unit</Table.Th>
                                 <Table.Th className="text-right">Subtotal</Table.Th>
                             </tr>
                         </Table.Thead>
                         <Table.Tbody>
-                            {purchase.items?.map((item) => (
-                                <tr key={item.id} className="border-b border-slate-100 dark:border-slate-800">
-                                    <Table.Td>
-                                        <div className="font-bold text-sm">{item.item_name}</div>
-                                        <div className="text-xs text-slate-400">{item.item_code}</div>
-                                        {item.notes && <div className="text-xs text-slate-400 italic">{item.notes}</div>}
-                                    </Table.Td>
-                                    <Table.Td>
-                                        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 capitalize">
-                                            {item.item_type.replace("_", " ")}
-                                        </span>
-                                    </Table.Td>
-                                    <Table.Td className="text-right font-bold">
-                                        {fmtQty(item.quantity)} <span className="text-xs text-slate-400">{item.item_unit}</span>
-                                    </Table.Td>
-                                    <Table.Td className="text-right text-sm">{fmtRp(item.unit_price)}</Table.Td>
-                                    <Table.Td className="text-right font-bold text-slate-700">{fmtRp(item.subtotal)}</Table.Td>
-                                </tr>
-                            ))}
+                            {purchase.items?.map((item) => {
+                                const isMissing = step >= 3 && item.received_quantity < item.quantity;
+                                return (
+                                    <tr key={item.id} className="border-b border-slate-100 dark:border-slate-800">
+                                        <Table.Td>
+                                            <div className="font-bold text-sm flex items-center gap-2">
+                                                {item.item_name}
+                                                {item.is_free ? <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded uppercase font-bold">Free</span> : null}
+                                            </div>
+                                            <div className="text-xs text-slate-400">{item.item_code}</div>
+                                            {item.notes && <div className="text-xs text-slate-400 italic">{item.notes}</div>}
+                                        </Table.Td>
+                                        <Table.Td>
+                                            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 capitalize">
+                                                {item.item_type.replace("_", " ")}
+                                            </span>
+                                        </Table.Td>
+                                        <Table.Td className="text-right font-bold">
+                                            {fmtQty(item.quantity)} <span className="text-xs text-slate-400">{item.item_unit}</span>
+                                        </Table.Td>
+                                        {(step >= 3) && (
+                                            <Table.Td className="text-right">
+                                                <div className="font-bold text-slate-700">{fmtQty(item.received_quantity)} <span className="text-xs text-slate-400">{item.item_unit}</span></div>
+                                                {isMissing && <div className="text-[10px] text-red-500 font-bold mt-0.5 whitespace-nowrap">Selisih: {fmtQty(item.quantity - item.received_quantity)}</div>}
+                                            </Table.Td>
+                                        )}
+                                        <Table.Td className="text-right text-sm">
+                                            {item.is_free ? <span className="text-xs text-slate-400 italic">Gratis</span> : fmtRp(item.unit_price)}
+                                        </Table.Td>
+                                        <Table.Td className="text-right font-bold text-slate-700">{item.is_free ? "Rp 0" : fmtRp(item.subtotal)}</Table.Td>
+                                    </tr>
+                                );
+                            })}
                         </Table.Tbody>
                     </Table>
                     <div className="p-5 border-t border-slate-200 flex justify-end">
@@ -283,6 +340,7 @@ export default function Show({ purchase, movements = [] }) {
                                 { label: "Subtotal",      value: purchase.subtotal },
                                 { label: "PPN / Tax",     value: purchase.tax },
                                 { label: "Ongkos Kirim",  value: purchase.shipping_cost },
+                                { label: "Adjustment",    value: purchase.adjustment },
                                 { label: "Diskon",        value: -parseInt(purchase.discount || 0) },
                             ].map(({ label, value }) => (
                                 <div key={label} className="flex justify-between">

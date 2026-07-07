@@ -112,7 +112,7 @@ function TrendBadge({ value }) {
                 : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
         }`}>
             {up ? <IconArrowUpRight size={11} /> : <IconArrowDownRight size={11} />}
-            {Math.abs(value).toFixed(1)}%
+            {Math.abs(value).toFixed(2)}%
         </span>
     );
 }
@@ -285,7 +285,7 @@ export default function Dashboard({
 
     const profitMargin = useMemo(() => {
         if (!kpi.totalRevenue) return 0;
-        return (((kpi.totalProfit ?? 0) / kpi.totalRevenue) * 100).toFixed(1);
+        return (((kpi.totalProfit ?? 0) / kpi.totalRevenue) * 100).toFixed(2);
     }, [kpi]);
 
     const stockAlertCount = lowStockIngredients.length + lowStockWarehouse.length;

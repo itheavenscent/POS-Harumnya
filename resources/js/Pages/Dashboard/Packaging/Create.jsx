@@ -112,7 +112,7 @@ export default function Create({ categories, sizes }) {
     // Harga efektif untuk kalkulasi margin
     const effectivePrice = data.is_free ? 0 : data.selling_price;
     const margin = !data.is_free && effectivePrice > 0 && data.purchase_price > 0
-        ? (((effectivePrice - data.purchase_price) / effectivePrice) * 100).toFixed(1)
+        ? (((effectivePrice - data.purchase_price) / effectivePrice) * 100).toFixed(2)
         : null;
 
     // Subsidi per unit jika gratis

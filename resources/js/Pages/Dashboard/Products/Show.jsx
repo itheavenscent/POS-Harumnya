@@ -32,7 +32,7 @@ function MarginRing({ percentage }) {
                     style={{ transition: 'stroke-dasharray 1s ease' }}/>
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl font-black text-slate-800">{pct.toFixed(1)}%</span>
+                <span className="text-2xl font-black text-slate-800">{pct.toFixed(2)}%</span>
                 <span className="text-xs text-slate-400 font-semibold">margin</span>
             </div>
         </div>
@@ -76,7 +76,7 @@ function CostBar({ label, value, total, color }) {
                 <span className="text-xs font-semibold text-slate-500">{label}</span>
                 <div className="text-right">
                     <span className="text-xs font-bold text-slate-700">{fmt(value)}</span>
-                    <span className="text-xs text-slate-400 ml-1">({pct.toFixed(1)}%)</span>
+                    <span className="text-xs text-slate-400 ml-1">({pct.toFixed(2)}%)</span>
                 </div>
             </div>
             <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -226,7 +226,7 @@ export default function Show({ product, recipesByType, costBreakdown }) {
                                                         {/* Total cost */}
                                                         <div className="text-right min-w-[90px]">
                                                             <div className="font-bold text-slate-800 text-sm">{fmt(recipe.total_cost)}</div>
-                                                            <div className="text-xs text-slate-400">{pct.toFixed(1)}% HPP</div>
+                                                            <div className="text-xs text-slate-400">{pct.toFixed(2)}% HPP</div>
                                                         </div>
                                                     </div>
                                                 </div>
