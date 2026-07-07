@@ -79,7 +79,7 @@ class PackagingSeeder extends Seeder
                 'name'                  => 'Botol Lady 30 ml',
                 'purchase_price'        => 5600.00,
                 'selling_price'         => 7500.00,
-                'is_available_as_addon' => false,
+                'is_available_as_addon' => true,
                 'sort_order'            => 1,
             ],
             [
@@ -88,7 +88,7 @@ class PackagingSeeder extends Seeder
                 'name'                  => 'Botol Prisma 30 ml',
                 'purchase_price'        => 5600.00,
                 'selling_price'         => 7500.00,
-                'is_available_as_addon' => false,
+                'is_available_as_addon' => true,
                 'sort_order'            => 2,
             ],
             [
@@ -97,7 +97,7 @@ class PackagingSeeder extends Seeder
                 'name'                  => 'Botol Drop 30 ml',
                 'purchase_price'        => 5600.00,
                 'selling_price'         => 7500.00,
-                'is_available_as_addon' => false,
+                'is_available_as_addon' => true,
                 'sort_order'            => 3,
             ],
             // ── Botol 50ml ────────────────────────────────────────────────────
@@ -107,7 +107,7 @@ class PackagingSeeder extends Seeder
                 'name'                  => 'Botol Orion 50 ml',
                 'purchase_price'        => 7500.00,
                 'selling_price'         => 10000.00,
-                'is_available_as_addon' => false,
+                'is_available_as_addon' => true,
                 'sort_order'            => 4,
             ],
             [
@@ -116,7 +116,7 @@ class PackagingSeeder extends Seeder
                 'name'                  => 'Botol Hexagon 50 ml',
                 'purchase_price'        => 7500.00,
                 'selling_price'         => 10000.00,
-                'is_available_as_addon' => false,
+                'is_available_as_addon' => true,
                 'sort_order'            => 5,
             ],
             // ── Botol 100ml ───────────────────────────────────────────────────
@@ -126,7 +126,7 @@ class PackagingSeeder extends Seeder
                 'name'                  => 'Botol Persegi 100 ml',
                 'purchase_price'        => 11000.00,
                 'selling_price'         => 15000.00,
-                'is_available_as_addon' => false,
+                'is_available_as_addon' => true,
                 'sort_order'            => 6,
             ],
 
@@ -154,16 +154,6 @@ class PackagingSeeder extends Seeder
 
             // ── Free / Promo Packaging ──────────────────────────────────────
             [
-                'packaging_category_id' => $botolCat,
-                'code'                  => 'B30-FREE',
-                'name'                  => 'Botol 30mL Free (Spinwheel)',
-                'purchase_price'        => 5600.00,
-                'selling_price'         => 0.00,
-                'is_available_as_addon' => true,
-                'is_free'               => true,
-                'sort_order'            => 3,
-            ],
-            [
                 'packaging_category_id' => $spunbondCat,
                 'code'                  => 'SBM',
                 'name'                  => 'Spunbond',
@@ -182,16 +172,6 @@ class PackagingSeeder extends Seeder
                 'is_available_as_addon' => true,
                 'is_free'               => true,
                 'sort_order'            => 5,
-            ],
-            [
-                'packaging_category_id' => $spunbondCat,
-                'code'                  => 'SBL',
-                'name'                  => 'Spunbond Besar Free',
-                'purchase_price'        => 2500.00,
-                'selling_price'         => 0.00,
-                'is_available_as_addon' => true,
-                'is_free'               => true,
-                'sort_order'            => 6,
             ],
         ];
 

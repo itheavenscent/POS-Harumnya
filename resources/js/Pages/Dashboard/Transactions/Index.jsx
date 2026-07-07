@@ -1679,7 +1679,10 @@ export default function Index({
                                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                                     {/* Card Parfum */}
                                     <button onClick={() => setSelectedCategory('parfum')} className="group relative p-4 rounded-2xl border-2 text-left transition-all border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-md">
-                                        <div className="flex items-start gap-2 mb-3">
+                                        <div className="flex items-start gap-3 mb-3">
+                                            <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
+                                                <IconFlask size={20} className="text-primary-600 dark:text-primary-400" />
+                                            </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">Pilih Parfum</p>
                                                 <span className="text-[10px] text-slate-400 mt-0.5 block">Varian, konsentrasi, ukuran</span>
@@ -1695,7 +1698,10 @@ export default function Index({
 
                                     {/* Card Kemasan */}
                                     <button onClick={() => setSelectedCategory('packaging')} className="group relative p-4 rounded-2xl border-2 text-left transition-all border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md">
-                                        <div className="flex items-start gap-2 mb-3">
+                                        <div className="flex items-start gap-3 mb-3">
+                                            <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0">
+                                                <IconBox size={20} className="text-orange-600 dark:text-orange-400" />
+                                            </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">Kemasan</p>
                                                 <span className="text-[10px] text-slate-400 mt-0.5 block">Botol, tutup spray, aksesoris</span>
@@ -1711,7 +1717,10 @@ export default function Index({
 
                                     {/* Card Paperbag */}
                                     <button onClick={() => setSelectedCategory('paperbag')} className="group relative p-4 rounded-2xl border-2 text-left transition-all border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-emerald-300 dark:hover:border-emerald-600 hover:shadow-md">
-                                        <div className="flex items-start gap-2 mb-3">
+                                        <div className="flex items-start gap-3 mb-3">
+                                            <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+                                                <IconShoppingBag size={20} className="text-emerald-600 dark:text-emerald-400" />
+                                            </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">Spunbond</p>
                                                 <span className="text-[10px] text-slate-400 mt-0.5 block">Tas spunbond eksklusif</span>
@@ -1841,19 +1850,29 @@ export default function Index({
                                             </p>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3">
                                                 {items.map((pkg, i) => {
+                                                    const bg = ["bg-orange-500", "bg-violet-500", "bg-rose-500", "bg-teal-500", "bg-sky-500", "bg-amber-500", "bg-indigo-500"][i % 7];
                                                     const inCart = cartPackagings.find(p => p.pkg.id === pkg.id);
                                                     return (
                                                         <button key={pkg.id} onClick={() => handleAddPkg(pkg)}
                                                             className={`group relative p-4 rounded-2xl border-2 text-left transition-all ${inCart ? "border-slate-300 dark:border-orange-600 shadow-md ring-2 ring-orange-500/20 bg-slate-50 dark:bg-orange-950/20" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-orange-600 hover:shadow-md"}`}>
                                                             
-                                                            <div className="flex items-start gap-2 mb-3">
+                                                            <div className="flex items-start gap-3 mb-3">
+                                                                <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                                                    {pkg.image_url ? (
+                                                                        <img src={pkg.image_url} alt={pkg.name} className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        <div className={`w-full h-full ${bg} flex items-center justify-center`}>
+                                                                            <IconBox size={20} className="text-white" />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                                 <div className="flex-1 min-w-0">
                                                                     <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">{pkg.name}</p>
                                                                     {pkg.code && <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">{pkg.code}</span>}
                                                                 </div>
                                                                 {inCart && (
                                                                     <span className="px-1.5 py-0.5 rounded text-[10px] font-black flex-shrink-0 bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
-                                                                        {inCart.qty}x di keranjang
+                                                                        {inCart.qty}x
                                                                     </span>
                                                                 )}
                                                                 {pkg.is_free && !inCart && (

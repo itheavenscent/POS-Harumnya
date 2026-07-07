@@ -4,6 +4,7 @@ import {
     IconArrowLeft, IconPrinter, IconBluetooth, IconBluetoothOff,
     IconBluetoothConnected, IconLoader2, IconAlertCircle, IconCheck
 } from "@tabler/icons-react";
+import { useBluetoothContext } from "@/Context/BluetoothContext";
 
 // ═════════════════════════════════════════════════════════════════════════════
 // ESC/POS Builder
@@ -43,19 +44,8 @@ class EscPos {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// Constants
+// Helpers
 // ═════════════════════════════════════════════════════════════════════════════
-const BT_SERVICES = [
-    "000018f0-0000-1000-8000-00805f9b34fb",
-    "e7810a71-73ae-499d-8c15-faa9aef0c3f2",
-    "49535343-fe7d-4ae5-8fa9-9fafd205e455",
-    "0000ff00-0000-1000-8000-00805f9b34fb",
-    "0000ffe0-0000-1000-8000-00805f9b34fb",
-    "0000fff0-0000-1000-8000-00805f9b34fb",
-    "00001101-0000-1000-8000-00805f9b34fb",
-    "0000fef5-0000-1000-8000-00805f9b34fb",
-    "0000fee7-0000-1000-8000-00805f9b34fb",
-];
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Helpers
@@ -79,206 +69,7 @@ const formatDate = (dateString) => {
 // ═════════════════════════════════════════════════════════════════════════════
 // Bluetooth helpers
 // ═════════════════════════════════════════════════════════════════════════════
-async function findWritableChar(server) {
-    await new Promise(r => setTimeout(r, 400));
-    try {
-        const services = await server.getPrimaryServices();
-        for (const svc of services) {
-            try {
-                await new Promise(r => setTimeout(r, 80));
-                const chars = await svc.getCharacteristics();
-                const char = chars.find(c => c.properties.writeWithoutResponse || c.properties.write);
-                if (char) return char;
-            } catch (_) { }
-        }
-    } catch (_) { }
-    for (const uuid of BT_SERVICES) {
-        try {
-            const svc = await server.getPrimaryService(uuid);
-            await new Promise(r => setTimeout(r, 100));
-            const chars = await svc.getCharacteristics();
-            const char = chars.find(c => c.properties.writeWithoutResponse || c.properties.write);
-            if (char) return char;
-        } catch (_) { }
-    }
-    return null;
-}
 
-// ═════════════════════════════════════════════════════════════════════════════
-// useBluetooth — FIXED: TDZ (Cannot access 'p' before initialization)
-//
-// Root cause: useEffect had connectGatt + handleDisconnect in its dep array,
-// but both were declared with useCallback *after* useEffect — bundler sees
-// the let/const bindings in TDZ when the module first evaluates.
-//
-// Fix: define connectGatt first → sync to a stable ref (connectGattRef) →
-// handleDisconnect uses the ref instead of the value → useEffect placed last,
-// only depends on [supported, handleDisconnect].
-// ═════════════════════════════════════════════════════════════════════════════
-function useBluetooth() {
-    const supported = typeof navigator !== "undefined" && !!navigator.bluetooth;
-
-    const [device, setDevice] = useState(null);
-    const [status, setStatus] = useState("idle");
-    const [error, setError] = useState(null);
-    const [devName, setDevName] = useState(() => {
-        try { return localStorage.getItem("bt_printer_name") || null; } catch (_) { return null; }
-    });
-
-    const charRef = useRef(null);
-    const deviceRef = useRef(null);
-    // Stable ref — lets handleDisconnect call connectGatt without a circular dep
-    const connectGattRef = useRef(null);
-
-    // ── 1. connectGatt — DEFINED FIRST ───────────────────────────────────────
-    const connectGatt = useCallback(async (dev) => {
-        if (dev.gatt.connected && charRef.current) return true;
-        const server = await dev.gatt.connect();
-        await new Promise(r => setTimeout(r, 500));
-        const char = await findWritableChar(server);
-        if (!char) {
-            throw new Error(
-                "Printer tidak merespon. Matikan & nyalakan printer, lalu coba lagi."
-            );
-        }
-        charRef.current = char;
-        return true;
-    }, []); // no deps — only touches refs and the `dev` argument
-
-    // Keep ref in sync on every render
-    connectGattRef.current = connectGatt;
-
-    // ── 2. handleDisconnect — DEFINED AFTER connectGatt ──────────────────────
-    const handleDisconnect = useCallback(async (dev) => {
-        charRef.current = null;
-        if (deviceRef.current && deviceRef.current.id === dev.id) {
-            setStatus("reconnecting");
-            let retries = 5;
-            while (retries-- > 0) {
-                await new Promise(r => setTimeout(r, 1500));
-                try {
-                    if (!deviceRef.current?.gatt?.connected) {
-                        await connectGattRef.current(dev); // ← ref, no circular dep
-                    }
-                    setStatus("connected");
-                    return;
-                } catch (_) { }
-            }
-        }
-        setStatus("idle");
-    }, []); // no deps — uses only refs
-
-    // ── 3. useEffect — DEFINED AFTER both callbacks ───────────────────────────
-    useEffect(() => {
-        if (supported && navigator.bluetooth.getDevices) {
-            navigator.bluetooth.getDevices().then(devices => {
-                if (devices.length === 0) return;
-
-                const lastId = localStorage.getItem("bt_printer_id");
-                const dev = devices.find(d => d.id === lastId) || devices[0];
-
-                deviceRef.current = dev;
-                setDevice(dev);
-                setDevName(dev.name || "Printer BT");
-
-                dev.addEventListener("gattserverdisconnected", () => handleDisconnect(dev));
-
-                if (lastId && dev) {
-                    setStatus("connecting");
-                    connectGattRef.current(dev) // ← ref, not dep
-                        .then(() => setStatus("connected"))
-                        .catch(err => {
-                            console.error("Auto-connect failed:", err);
-                            setStatus("idle");
-                        });
-                }
-            });
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [supported, handleDisconnect]);
-    // connectGatt intentionally omitted — accessed via stable connectGattRef
-
-    // ── connect ───────────────────────────────────────────────────────────────
-    const connect = useCallback(async () => {
-        if (!supported) {
-            setError("Butuh Chrome di Android/Desktop + HTTPS untuk Web Bluetooth.");
-            setStatus("error");
-            return;
-        }
-        setStatus("connecting");
-        setError(null);
-        try {
-            const dev = await navigator.bluetooth.requestDevice({
-                acceptAllDevices: true,
-                optionalServices: BT_SERVICES,
-            });
-            dev.addEventListener("gattserverdisconnected", () => handleDisconnect(dev));
-            await connectGattRef.current(dev);
-            deviceRef.current = dev;
-            setDevice(dev);
-            setDevName(dev.name || "Printer BT");
-            try {
-                localStorage.setItem("bt_printer_name", dev.name || "Printer BT");
-                localStorage.setItem("bt_printer_id", dev.id);
-            } catch (_) { }
-            setStatus("connected");
-        } catch (err) {
-            if (err.name === "NotFoundError") setStatus("idle");
-            else { setError(err.message); setStatus("error"); }
-        }
-    }, [supported, handleDisconnect]);
-
-    // ── reconnect ─────────────────────────────────────────────────────────────
-    const reconnect = useCallback(async () => {
-        if (!deviceRef.current) { connect(); return; }
-        setStatus("connecting");
-        setError(null);
-        try {
-            await connectGattRef.current(deviceRef.current);
-            setStatus("connected");
-        } catch (err) {
-            setError(err.message);
-            setStatus("error");
-        }
-    }, [connect]);
-
-    // ── disconnect ────────────────────────────────────────────────────────────
-    const disconnect = useCallback(() => {
-        charRef.current = null;
-        deviceRef.current = null;
-        device?.gatt?.disconnect();
-        setDevice(null);
-        setStatus("idle");
-    }, [device]);
-
-    // ── printBuffer ───────────────────────────────────────────────────────────
-    const printBuffer = useCallback(async (buffer) => {
-        if (!charRef.current || !deviceRef.current?.gatt?.connected) {
-            if (deviceRef.current) await connectGattRef.current(deviceRef.current);
-            else throw new Error("Printer belum terhubung. Tap 'Hubungkan' dulu.");
-        }
-        const data = new Uint8Array(buffer);
-        const CHUNK = 512;
-        for (let i = 0; i < data.length; i += CHUNK) {
-            const chunk = data.slice(i, i + CHUNK);
-            try {
-                if (charRef.current.properties.writeWithoutResponse)
-                    await charRef.current.writeValueWithoutResponse(chunk);
-                else
-                    await charRef.current.writeValue(chunk);
-            } catch (_) {
-                await connectGattRef.current(deviceRef.current);
-                if (charRef.current.properties.writeWithoutResponse)
-                    await charRef.current.writeValueWithoutResponse(chunk);
-                else
-                    await charRef.current.writeValue(chunk);
-            }
-            await new Promise(r => setTimeout(r, 40));
-        }
-    }, []); // no deps — uses only refs
-
-    return { supported, device, devName, status, error, connect, reconnect, disconnect, printBuffer };
-}
 
 // ═════════════════════════════════════════════════════════════════════════════
 // ESC/POS receipt builder
@@ -364,7 +155,7 @@ function buildShiftReceipt(drawer, summary) {
 export default function PrintShift({ drawer, summary }) {
     const [printing, setPrinting] = useState(false);
     const [printMsg, setPrintMsg] = useState(null);
-    const bt = useBluetooth();
+    const bt = useBluetoothContext();
 
 
     const handleBtPrint = async () => {
