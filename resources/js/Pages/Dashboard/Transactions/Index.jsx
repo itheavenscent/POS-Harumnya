@@ -1676,52 +1676,52 @@ export default function Index({
                         {/* ── Category Selection View ── */}
                         {!selectedCategory && (
                             <div className="flex-1 overflow-y-auto p-4 md:p-6">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                                     {/* Card Parfum */}
-                                    <button
-                                        onClick={() => setSelectedCategory('parfum')}
-                                        className="group relative p-5 rounded-[24px] border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-primary-500 hover:shadow-2xl hover:shadow-primary-500/10 transition-all duration-300 text-left overflow-hidden"
-                                    >
-                                        <div className="absolute top-0 right-0 w-24 h-24 bg-primary-500/5 rounded-full -mr-10 -mt-10 blur-xl group-hover:bg-primary-500/10 transition-colors" />
-                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20 mb-4 group-hover:scale-110 transition-transform">
-                                            <IconFlask size={24} className="text-white" />
+                                    <button onClick={() => setSelectedCategory('parfum')} className="group relative p-4 rounded-2xl border-2 text-left transition-all border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-md">
+                                        <div className="flex items-start gap-2 mb-3">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">Pilih Parfum</p>
+                                                <span className="text-[10px] text-slate-400 mt-0.5 block">Varian, konsentrasi, ukuran</span>
+                                            </div>
+                                            <span className="px-1.5 py-0.5 rounded text-[9px] font-black flex-shrink-0 bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">
+                                                Katalog
+                                            </span>
                                         </div>
-                                        <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Pilih Parfum</h3>
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">Pilih varian, konsentrasi, dan ukuran parfum favorit.</p>
-                                        <div className="mt-4 flex items-center gap-1.5 text-slate-700 font-bold text-xs">
-                                            Buka Katalog <IconChevronRight size={14} />
+                                        <div className="flex items-center justify-end">
+                                            <span className="text-[11px] text-slate-400 font-semibold">+ Pilih →</span>
                                         </div>
                                     </button>
 
                                     {/* Card Kemasan */}
-                                    <button
-                                        onClick={() => setSelectedCategory('packaging')}
-                                        className="group relative p-5 rounded-[24px] border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-orange-500 hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-300 text-left overflow-hidden"
-                                    >
-                                        <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-full -mr-10 -mt-10 blur-xl group-hover:bg-orange-500/10 transition-colors" />
-                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20 mb-4 group-hover:scale-110 transition-transform">
-                                            <IconBox size={24} className="text-white" />
+                                    <button onClick={() => setSelectedCategory('packaging')} className="group relative p-4 rounded-2xl border-2 text-left transition-all border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md">
+                                        <div className="flex items-start gap-2 mb-3">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">Kemasan</p>
+                                                <span className="text-[10px] text-slate-400 mt-0.5 block">Botol, tutup spray, aksesoris</span>
+                                            </div>
+                                            <span className="px-1.5 py-0.5 rounded text-[9px] font-black flex-shrink-0 bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
+                                                Katalog
+                                            </span>
                                         </div>
-                                        <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Kemasan</h3>
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">Botol, tutup spray, dan aksesoris kemasan lainnya.</p>
-                                        <div className="mt-4 flex items-center gap-1.5 text-slate-700 font-bold text-xs">
-                                            Buka Katalog <IconChevronRight size={14} />
+                                        <div className="flex items-center justify-end">
+                                            <span className="text-[11px] text-slate-400 font-semibold">+ Pilih →</span>
                                         </div>
                                     </button>
 
                                     {/* Card Paperbag */}
-                                    <button
-                                        onClick={() => setSelectedCategory('paperbag')}
-                                        className="group relative p-5 rounded-[24px] border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-500 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300 text-left overflow-hidden"
-                                    >
-                                        <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-10 -mt-10 blur-xl group-hover:bg-emerald-500/10 transition-colors" />
-                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-4 group-hover:scale-110 transition-transform">
-                                            <IconShoppingBag size={24} className="text-white" />
+                                    <button onClick={() => setSelectedCategory('paperbag')} className="group relative p-4 rounded-2xl border-2 text-left transition-all border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-emerald-300 dark:hover:border-emerald-600 hover:shadow-md">
+                                        <div className="flex items-start gap-2 mb-3">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">Spunbond</p>
+                                                <span className="text-[10px] text-slate-400 mt-0.5 block">Tas spunbond eksklusif</span>
+                                            </div>
+                                            <span className="px-1.5 py-0.5 rounded text-[9px] font-black flex-shrink-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                                Katalog
+                                            </span>
                                         </div>
-                                        <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Spunbond</h3>
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">Pilihan tas spunbond eksklusif untuk kemasan akhir.</p>
-                                        <div className="mt-4 flex items-center gap-1.5 text-slate-700 font-bold text-xs">
-                                            Buka Katalog <IconChevronRight size={14} />
+                                        <div className="flex items-center justify-end">
+                                            <span className="text-[11px] text-slate-400 font-semibold">+ Pilih →</span>
                                         </div>
                                     </button>
                                 </div>
@@ -1839,39 +1839,35 @@ export default function Index({
                                             <p className="text-[11px] text-slate-400 mb-3 uppercase tracking-wider font-bold">
                                                 Klik item untuk menambahkan langsung ke keranjang
                                             </p>
-                                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3">
                                                 {items.map((pkg, i) => {
-                                                    const bg = ["bg-orange-500", "bg-violet-500", "bg-rose-500", "bg-teal-500", "bg-sky-500", "bg-amber-500", "bg-indigo-500"][i % 7];
                                                     const inCart = cartPackagings.find(p => p.pkg.id === pkg.id);
                                                     return (
                                                         <button key={pkg.id} onClick={() => handleAddPkg(pkg)}
-                                                            className={`group flex flex-col rounded-2xl border-2 overflow-hidden text-left transition-all duration-200 ${inCart ? "border-slate-300 dark:border-orange-600 shadow-md ring-2 ring-orange-500/20" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-orange-600 hover:shadow-md"}`}>
-                                                            <div className="relative w-full aspect-square bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
-                                                                {pkg.image_url ? (
-                                                                    <img src={pkg.image_url} alt={pkg.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                                                                ) : (
-                                                                    <div className={`w-14 h-14 rounded-2xl ${bg} flex items-center justify-center`}>
-                                                                        <IconBox size={26} className="text-white" />
-                                                                    </div>
-                                                                )}
+                                                            className={`group relative p-4 rounded-2xl border-2 text-left transition-all ${inCart ? "border-slate-300 dark:border-orange-600 shadow-md ring-2 ring-orange-500/20 bg-slate-50 dark:bg-orange-950/20" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-orange-600 hover:shadow-md"}`}>
+                                                            
+                                                            <div className="flex items-start gap-2 mb-3">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">{pkg.name}</p>
+                                                                    {pkg.code && <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">{pkg.code}</span>}
+                                                                </div>
                                                                 {inCart && (
-                                                                    <span className="absolute top-2 right-2 w-6 h-6 bg-orange-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg">
-                                                                        {inCart.qty}
+                                                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-black flex-shrink-0 bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
+                                                                        {inCart.qty}x di keranjang
                                                                     </span>
                                                                 )}
-                                                                {pkg.is_free && (
-                                                                    <span className="absolute top-2 left-2 px-1.5 py-0.5 bg-emerald-500 text-white text-[9px] font-black rounded-lg shadow-lg">
+                                                                {pkg.is_free && !inCart && (
+                                                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-black flex-shrink-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
                                                                         GRATIS
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <div className={`p-2.5 flex-1 flex flex-col ${inCart ? "bg-slate-100 dark:bg-orange-950/20" : ""}`}>
-                                                                <p className="font-black text-slate-800 dark:text-white text-xs leading-tight line-clamp-2">{pkg.name}</p>
-                                                                {pkg.code && <p className="text-[10px] text-slate-400 font-mono mt-0.5">{pkg.code}</p>}
-                                                                <div className="mt-auto pt-1.5 flex items-center justify-between">
-                                                                    {!pkg.is_free && <span className="text-xs font-black text-slate-700">{fmt(pkg.selling_price)}</span>}
-                                                                    <span className="text-[10px] text-slate-700 font-bold ml-auto">+ Tambah →</span>
-                                                                </div>
+                                                            
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-xs font-black text-slate-700 dark:text-slate-300">
+                                                                    {pkg.is_free ? "Rp 0" : fmt(pkg.selling_price)}
+                                                                </span>
+                                                                <span className="text-[11px] text-slate-400 font-semibold">+ Tambah →</span>
                                                             </div>
                                                         </button>
                                                     );
