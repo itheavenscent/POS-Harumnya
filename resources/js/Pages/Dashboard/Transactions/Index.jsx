@@ -1675,53 +1675,53 @@ export default function Index({
 
                         {/* ── Category Selection View ── */}
                         {!selectedCategory && (
-                            <div className="flex-1 overflow-y-auto p-6">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <div className="flex-1 overflow-y-auto p-4 md:p-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                                     {/* Card Parfum */}
                                     <button
                                         onClick={() => setSelectedCategory('parfum')}
-                                        className="group relative p-8 rounded-[32px] border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-primary-500 hover:shadow-2xl hover:shadow-primary-500/10 transition-all duration-300 text-left overflow-hidden"
+                                        className="group relative p-5 rounded-[24px] border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-primary-500 hover:shadow-2xl hover:shadow-primary-500/10 transition-all duration-300 text-left overflow-hidden"
                                     >
-                                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-primary-500/10 transition-colors" />
-                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20 mb-6 group-hover:scale-110 transition-transform">
-                                            <IconFlask size={32} className="text-white" />
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-primary-500/5 rounded-full -mr-10 -mt-10 blur-xl group-hover:bg-primary-500/10 transition-colors" />
+                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20 mb-4 group-hover:scale-110 transition-transform">
+                                            <IconFlask size={24} className="text-white" />
                                         </div>
-                                        <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">Pilih Parfum</h3>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Pilih varian, konsentrasi, dan ukuran parfum favorit.</p>
-                                        <div className="mt-6 flex items-center gap-1.5 text-slate-700 font-bold text-sm">
-                                            Buka Katalog <IconChevronRight size={16} />
+                                        <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Pilih Parfum</h3>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">Pilih varian, konsentrasi, dan ukuran parfum favorit.</p>
+                                        <div className="mt-4 flex items-center gap-1.5 text-slate-700 font-bold text-xs">
+                                            Buka Katalog <IconChevronRight size={14} />
                                         </div>
                                     </button>
 
                                     {/* Card Kemasan */}
                                     <button
                                         onClick={() => setSelectedCategory('packaging')}
-                                        className="group relative p-8 rounded-[32px] border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-orange-500 hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-300 text-left overflow-hidden"
+                                        className="group relative p-5 rounded-[24px] border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-orange-500 hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-300 text-left overflow-hidden"
                                     >
-                                        <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-orange-500/10 transition-colors" />
-                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20 mb-6 group-hover:scale-110 transition-transform">
-                                            <IconBox size={32} className="text-white" />
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-full -mr-10 -mt-10 blur-xl group-hover:bg-orange-500/10 transition-colors" />
+                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20 mb-4 group-hover:scale-110 transition-transform">
+                                            <IconBox size={24} className="text-white" />
                                         </div>
-                                        <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">Kemasan</h3>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Botol, tutup spray, dan aksesoris kemasan lainnya.</p>
-                                        <div className="mt-6 flex items-center gap-1.5 text-slate-700 font-bold text-sm">
-                                            Buka Katalog <IconChevronRight size={16} />
+                                        <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Kemasan</h3>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">Botol, tutup spray, dan aksesoris kemasan lainnya.</p>
+                                        <div className="mt-4 flex items-center gap-1.5 text-slate-700 font-bold text-xs">
+                                            Buka Katalog <IconChevronRight size={14} />
                                         </div>
                                     </button>
 
                                     {/* Card Paperbag */}
                                     <button
                                         onClick={() => setSelectedCategory('paperbag')}
-                                        className="group relative p-8 rounded-[32px] border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-500 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300 text-left overflow-hidden"
+                                        className="group relative p-5 rounded-[24px] border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-500 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300 text-left overflow-hidden"
                                     >
-                                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-emerald-500/10 transition-colors" />
-                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-6 group-hover:scale-110 transition-transform">
-                                            <IconShoppingBag size={32} className="text-white" />
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-10 -mt-10 blur-xl group-hover:bg-emerald-500/10 transition-colors" />
+                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-4 group-hover:scale-110 transition-transform">
+                                            <IconShoppingBag size={24} className="text-white" />
                                         </div>
-                                        <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">Spunbond</h3>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Pilihan tas spunbond eksklusif untuk kemasan akhir.</p>
-                                        <div className="mt-6 flex items-center gap-1.5 text-slate-700 font-bold text-sm">
-                                            Buka Katalog <IconChevronRight size={16} />
+                                        <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">Spunbond</h3>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">Pilihan tas spunbond eksklusif untuk kemasan akhir.</p>
+                                        <div className="mt-4 flex items-center gap-1.5 text-slate-700 font-bold text-xs">
+                                            Buka Katalog <IconChevronRight size={14} />
                                         </div>
                                     </button>
                                 </div>
@@ -1839,7 +1839,7 @@ export default function Index({
                                             <p className="text-[11px] text-slate-400 mb-3 uppercase tracking-wider font-bold">
                                                 Klik item untuk menambahkan langsung ke keranjang
                                             </p>
-                                            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
                                                 {items.map((pkg, i) => {
                                                     const bg = ["bg-orange-500", "bg-violet-500", "bg-rose-500", "bg-teal-500", "bg-sky-500", "bg-amber-500", "bg-indigo-500"][i % 7];
                                                     const inCart = cartPackagings.find(p => p.pkg.id === pkg.id);
