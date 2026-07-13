@@ -384,11 +384,11 @@ export default function Show({ purchase, movements = [] }) {
                                         <Table.Td className="text-sm text-slate-500">{mv.location_name ?? mv.location_type}</Table.Td>
                                         <Table.Td className="text-right font-bold text-success-600">
                                             <span className="flex items-center justify-end gap-1">
-                                                <IconTrendingUp size={13} /> +{fmtQty(mv.quantity)}
+                                                <IconTrendingUp size={13} /> +{fmtQty(mv.qty_change)}
                                             </span>
                                         </Table.Td>
                                         <Table.Td className="text-right text-xs">
-                                            {fmtQty(mv.stock_before)} → <span className="font-bold">{fmtQty(mv.stock_after)}</span>
+                                            {fmtQty(mv.qty_before)} → <span className="font-bold">{fmtQty(mv.qty_after)}</span>
                                         </Table.Td>
                                         <Table.Td className="text-right text-xs">
                                             {fmtRp(mv.avg_cost_before)} → <span className="font-bold">{fmtRp(mv.avg_cost_after)}</span>

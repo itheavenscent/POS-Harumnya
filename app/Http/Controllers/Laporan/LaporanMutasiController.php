@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class LaporanMutasiController extends Controller
 {
@@ -388,17 +390,49 @@ class LaporanMutasiController extends Controller
 
         usort($mutations, fn($a, $b) => strcmp($a['name'], $b['name']));
 
-        $filename = "Laporan_Mutasi_{$dateFromDt->format('Ymd')}_{$dateToDt->format('Ymd')}.csv";
-        return new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($mutations) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Kode Item', 'Nama Item', 'Satuan', 'Stok Awal', 'Stock Opname', 'Terjual', 'Purchase Order', 'Produksi', 'Transfer', 'Adjustment', 'Stok Akhir']);
-            foreach ($mutations as $m) {
-                fputcsv($handle, [$m['code'], $m['name'], $m['unit'], $m['beginning'], $m['stock_take'], $m['sell_through'], $m['purchase_order'], $m['manufacturing'], $m['transfer'], $m['adjustment'], $m['ending']]);
-            }
-            fclose($handle);
-        }, 200, [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Mutasi Bahan & Kemasan');
+
+        $headers = [
+            'Kode Item', 'Nama Item', 'Satuan',
+            'Beginning Balance', 'Stock Take', 'Sell Through',
+            'Purchase Order', 'Manufacturing', 'Transfer',
+            'Adjustment', 'Ending Balance'
+        ];
+        
+        foreach ($headers as $col => $header) {
+            $sheet->setCellValueExplicit([$col + 1, 1], $header, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->getStyle([$col + 1, 1])->getFont()->setBold(true);
+        }
+
+        $row = 2;
+        foreach ($mutations as $m) {
+            $sheet->setCellValue([1, $row], $m['code']);
+            $sheet->setCellValue([2, $row], $m['name']);
+            $sheet->setCellValue([3, $row], $m['unit']);
+            $sheet->setCellValue([4, $row], $m['beginning']);
+            $sheet->setCellValue([5, $row], $m['stock_take']);
+            $sheet->setCellValue([6, $row], $m['sell_through']);
+            $sheet->setCellValue([7, $row], $m['purchase_order']);
+            $sheet->setCellValue([8, $row], $m['manufacturing']);
+            $sheet->setCellValue([9, $row], $m['transfer']);
+            $sheet->setCellValue([10, $row], $m['adjustment']);
+            $sheet->setCellValue([11, $row], $m['ending']);
+            $row++;
+        }
+
+        foreach(range(1, 11) as $columnID) {
+            $sheet->getColumnDimensionByColumn($columnID)->setAutoSize(true);
+        }
+
+        $filename = "Laporan_Mutasi_{$dateFromDt->format('Ymd')}_{$dateToDt->format('Ymd')}.xlsx";
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
     }
 }

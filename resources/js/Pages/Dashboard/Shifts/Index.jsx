@@ -100,7 +100,7 @@ export default function Index({ drawers, filters, isAdmin }) {
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Kasir</th>
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Buka</th>
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Tutup</th>
-                                    <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider text-right">Diharapkan</th>
+                                    <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider text-right">Modal Awal</th>
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Aksi</th>
                                 </tr>
                             </thead>
@@ -137,7 +137,7 @@ export default function Index({ drawers, filters, isAdmin }) {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-right text-sm font-bold text-slate-700 dark:text-slate-200">
-                                                    {fmt(drawer.expected_ending_cash)}
+                                                    {fmt(drawer.starting_cash)}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center justify-center gap-2">

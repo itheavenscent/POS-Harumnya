@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 /**
  * LaporanKeuanganController — PRODUCTION READY
@@ -31,7 +33,12 @@ use Inertia\Inertia;
  */
 class LaporanKeuanganController extends Controller
 {
-    public function index(Request $request)
+        public function index(Request $request)
+    {
+        $data = $this->getReportData($request);
+        return Inertia::render('Dashboard/Laporan/Keuangan', $data);
+    }
+    private function getReportData(Request $request)
     {
         $user         = auth()->user();
         $isSuperAdmin = method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : false;
@@ -526,7 +533,7 @@ class LaporanKeuanganController extends Controller
         // ══════════════════════════════════════════════════════════════════════
         //  RETURN
         // ══════════════════════════════════════════════════════════════════════
-        return Inertia::render('Dashboard/Laporan/Keuangan', [
+        return [
             'filters' => [
                 'store_id'  => $storeId,
                 'date_from' => $dateFromDt->toDateString(),
@@ -578,7 +585,7 @@ class LaporanKeuanganController extends Controller
             'discountAnalysis'    => $discountAnalysis,
             'discountByCategory'  => $discountByCategory,
             'detailTransactions'  => $detailTransactions,
-        ]);
+        ];
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -627,67 +634,149 @@ class LaporanKeuanganController extends Controller
 
     public function exportExcel(Request $request)
     {
-        $user         = auth()->user();
-        $isSuperAdmin = method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : false;
+        $data = $this->getReportData($request);
         
-        $storeId  = $request->input('store_id', $isSuperAdmin ? null : ($user->default_store_id ?? null));
-        $dateFrom = $request->input('date_from', Carbon::now()->startOfMonth()->toDateString());
-        $dateTo   = $request->input('date_to', Carbon::now()->toDateString());
-
-        $dateFromDt = Carbon::parse($dateFrom)->startOfDay();
-        $dateToDt   = Carbon::parse($dateTo)->endOfDay();
+        $spreadsheet = new Spreadsheet();
         
-        if ($dateFromDt->diffInDays($dateToDt) > 90) {
-            $dateFromDt = $dateToDt->copy()->subDays(90)->startOfDay();
+        // 1. Overview
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Overview');
+        $summary = $data['summary'];
+        $sheet->setCellValue('A1', 'Ringkasan Laporan Keuangan');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        
+        $overviewData = [
+            ['Gross Sales', $summary['grossSales']],
+            ['Total Discount', $summary['totalDiscount']],
+            ['Total Revenue', $summary['totalRevenue']],
+            ['Total COGS', $summary['totalCogs']],
+            ['Gross Profit', $summary['grossProfit']],
+            ['Gross Margin %', $summary['grossMarginPct'] . '%'],
+            ['Total Transaksi', $summary['totalTransactions']],
+            ['Rata-rata Order', $summary['avgOrderValue']],
+        ];
+        $row = 3;
+        foreach ($overviewData as $d) {
+            $sheet->setCellValue('A' . $row, $d[0]);
+            $sheet->setCellValue('B' . $row, $d[1]);
+            $row++;
+        }
+        
+        // 2. Tren & Grafik
+        $sheet2 = $spreadsheet->createSheet();
+        $sheet2->setTitle('Tren');
+        $sheet2->setCellValue('A1', 'Periode');
+        $sheet2->setCellValue('B1', 'Gross Sales');
+        $sheet2->setCellValue('C1', 'Discount');
+        $sheet2->setCellValue('D1', 'Revenue');
+        $sheet2->setCellValue('E1', 'COGS');
+        $sheet2->setCellValue('F1', 'Gross Profit');
+        $sheet2->getStyle('A1:F1')->getFont()->setBold(true);
+        $row = 2;
+        foreach ($data['trendData'] as $t) {
+            $sheet2->setCellValue('A' . $row, $t['label']);
+            $sheet2->setCellValue('B' . $row, $t['gross_sales']);
+            $sheet2->setCellValue('C' . $row, $t['discount']);
+            $sheet2->setCellValue('D' . $row, $t['revenue']);
+            $sheet2->setCellValue('E' . $row, $t['cogs']);
+            $sheet2->setCellValue('F' . $row, $t['gross_profit']);
+            $row++;
         }
 
-        $sales = DB::table('sales')
-            ->leftJoin('customers',    'sales.customer_id',     '=', 'customers.id')
-            ->leftJoin('users',        'sales.cashier_id',      '=', 'users.id')
-            ->leftJoin('sales_people', 'sales.sales_person_id', '=', 'sales_people.id')
-            ->join('stores',           'sales.store_id',        '=', 'stores.id')
-            ->when($storeId, fn ($q) => $q->where('sales.store_id', $storeId))
-            ->where('sales.status', 'completed')
-            ->whereBetween('sales.sold_at', [$dateFromDt, $dateToDt])
-            ->selectRaw('
-                sales.sale_number,
-                sales.sold_at,
-                sales.subtotal,
-                sales.discount_amount,
-                sales.total,
-                sales.cogs_total,
-                sales.gross_profit,
-                sales.tax_amount,
-                stores.name                                                     AS store_name,
-                COALESCE(sales.customer_name, customers.name)                   AS customer_name
-            ')
-            ->orderByDesc('sales.sold_at')
-            ->get();
+        // 3. Produk
+        $sheet3 = $spreadsheet->createSheet();
+        $sheet3->setTitle('Produk (Varian)');
+        $sheet3->setCellValue('A1', 'Varian');
+        $sheet3->setCellValue('B1', 'Gender');
+        $sheet3->setCellValue('C1', 'Qty Terjual');
+        $sheet3->setCellValue('D1', 'Revenue');
+        $sheet3->setCellValue('E1', 'COGS');
+        $sheet3->setCellValue('F1', 'Gross Profit');
+        $sheet3->getStyle('A1:F1')->getFont()->setBold(true);
+        $row = 2;
+        foreach ($data['byVariant'] as $v) {
+            $sheet3->setCellValue('A' . $row, $v['name']);
+            $sheet3->setCellValue('B' . $row, $v['gender']);
+            $sheet3->setCellValue('C' . $row, $v['qty']);
+            $sheet3->setCellValue('D' . $row, $v['revenue']);
+            $sheet3->setCellValue('E' . $row, $v['cogs']);
+            $sheet3->setCellValue('F' . $row, $v['gross_profit']);
+            $row++;
+        }
 
-        $filename = "Laporan_Keuangan_{$dateFromDt->format('Ymd')}_{$dateToDt->format('Ymd')}.csv";
+        // 4. Per Toko
+        $sheet4 = $spreadsheet->createSheet();
+        $sheet4->setTitle('Per Toko');
+        $sheet4->setCellValue('A1', 'Toko');
+        $sheet4->setCellValue('B1', 'Revenue');
+        $sheet4->setCellValue('C1', 'Transaksi');
+        $sheet4->getStyle('A1:C1')->getFont()->setBold(true);
+        $row = 2;
+        foreach ($data['byStore'] as $s) {
+            $sheet4->setCellValue('A' . $row, $s['name']);
+            $sheet4->setCellValue('B' . $row, $s['revenue']);
+            $sheet4->setCellValue('C' . $row, $s['transactions']);
+            $row++;
+        }
+        
+        // 5. Diskon
+        $sheet5 = $spreadsheet->createSheet();
+        $sheet5->setTitle('Diskon');
+        $sheet5->setCellValue('A1', 'Kategori Diskon');
+        $sheet5->setCellValue('B1', 'Jumlah Pemakaian');
+        $sheet5->setCellValue('C1', 'Total Diskon');
+        $sheet5->getStyle('A1:C1')->getFont()->setBold(true);
+        $row = 2;
+        foreach ($data['discountByCategory'] as $c) {
+            $sheet5->setCellValue('A' . $row, $c['category']);
+            $sheet5->setCellValue('B' . $row, $c['usage_count']);
+            $sheet5->setCellValue('C' . $row, $c['total_discount']);
+            $row++;
+        }
 
-        return new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($sales) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['No. Invoice', 'Tanggal', 'Toko', 'Pelanggan', 'Gross Sales', 'Diskon', 'Pajak', 'Total Revenue', 'Total COGS', 'Gross Profit']);
+        // 6. Detail Transaksi
+        $sheet6 = $spreadsheet->createSheet();
+        $sheet6->setTitle('Detail Transaksi');
+        $sheet6->setCellValue('A1', 'No. Invoice');
+        $sheet6->setCellValue('B1', 'Tanggal');
+        $sheet6->setCellValue('C1', 'Toko');
+        $sheet6->setCellValue('D1', 'Pelanggan');
+        $sheet6->setCellValue('E1', 'Total Revenue');
+        $sheet6->setCellValue('F1', 'Total COGS');
+        $sheet6->setCellValue('G1', 'Gross Profit');
+        $sheet6->getStyle('A1:G1')->getFont()->setBold(true);
+        $row = 2;
+        foreach ($data['detailTransactions'] as $tx) {
+            $sheet6->setCellValue('A' . $row, $tx['sale_number']);
+            $sheet6->setCellValue('B' . $row, $tx['sold_at']);
+            $sheet6->setCellValue('C' . $row, $tx['store_name']);
+            $sheet6->setCellValue('D' . $row, $tx['customer_name']);
+            $sheet6->setCellValue('E' . $row, $tx['total']);
+            $sheet6->setCellValue('F' . $row, $tx['cogs_total']);
+            $sheet6->setCellValue('G' . $row, $tx['gross_profit']);
+            $row++;
+        }
 
-            foreach ($sales as $sale) {
-                fputcsv($handle, [
-                    $sale->sale_number,
-                    Carbon::parse($sale->sold_at)->format('Y-m-d H:i:s'),
-                    $sale->store_name,
-                    $sale->customer_name ?? 'Walk-in',
-                    $sale->subtotal,
-                    $sale->discount_amount,
-                    $sale->tax_amount,
-                    $sale->total,
-                    $sale->cogs_total,
-                    $sale->gross_profit,
-                ]);
+        // Auto size columns for all sheets
+        foreach ($spreadsheet->getAllSheets() as $s) {
+            foreach (range('A', 'G') as $col) {
+                try {
+                    $s->getColumnDimension($col)->setAutoSize(true);
+                } catch (\Exception $e) {}
             }
-            fclose($handle);
-        }, 200, [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        }
+        $spreadsheet->setActiveSheetIndex(0);
+
+        $filters = $data['filters'];
+        $dateFrom = str_replace('-', '', $filters['date_from']);
+        $dateTo = str_replace('-', '', $filters['date_to']);
+        $filename = "Laporan_Keuangan_{$dateFrom}_{$dateTo}.xlsx";
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
     }
 }
