@@ -38,7 +38,7 @@ class VariantRecipe extends Model
 
     public function ingredient(): BelongsTo
     {
-        return $this->belongsTo(Ingredient::class);
+        return $this->belongsTo(Ingredient::class)->withTrashed();
     }
 
     // ─── Scopes ───────────────────────────────────────────────────────────────
@@ -87,14 +87,14 @@ class VariantRecipe extends Model
         // Hitung base volume per tipe dari recipe
         $baseByType = ['oil' => 0.0, 'alcohol' => 0.0, 'other' => 0.0];
         foreach ($recipes as $recipe) {
-            $type = $recipe->ingredient->category->ingredient_type ?? 'other';
+            $type = $recipe->ingredient?->category?->ingredient_type ?? 'other';
             $baseByType[$type] = round($baseByType[$type] + (float) $recipe->base_quantity, 4);
         }
 
         // Susun grup: type → [index, base_quantity]
         $groups = [];
         foreach ($recipes as $idx => $recipe) {
-            $type = $recipe->ingredient->category->ingredient_type ?? 'other';
+            $type = $recipe->ingredient?->category?->ingredient_type ?? 'other';
             $groups[$type][] = [
                 'index'    => $idx,
                 'base_qty' => (float) $recipe->base_quantity,
@@ -161,7 +161,7 @@ class VariantRecipe extends Model
     ): int {
         if ($baseTotalByType <= 0) return 0;
 
-        $type = $this->ingredient->category->ingredient_type ?? 'other';
+        $type = $this->ingredient?->category?->ingredient_type ?? 'other';
 
         $targetByType = [
             'oil'     => (int) $intensityQty->oil_quantity,
