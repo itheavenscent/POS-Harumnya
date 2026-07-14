@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { usePage } from "@inertiajs/react";
-import { IconX, IconChevronDown, IconChevronRight, IconMenu2, IconSun, IconMoon } from "@tabler/icons-react";
+import { usePage, Link } from "@inertiajs/react";
+import { IconX, IconChevronDown, IconChevronRight, IconMenu2, IconSun, IconMoon, IconLogout } from "@tabler/icons-react";
 import LinkItem from "@/Components/Dashboard/LinkItem";
 import LinkItemDropdown from "@/Components/Dashboard/LinkItemDropdown";
 import Menu from "@/Utils/Menu";
@@ -335,12 +335,50 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
                                         Harumnya v2.0
                                     </span>
                                 </div>
-                                {/* Theme toggle */}
+                                <div className="flex items-center gap-1.5">
+                                    {/* Theme toggle */}
+                                    {themeSwitcher && (
+                                        <button
+                                            onClick={themeSwitcher}
+                                            title={darkMode ? "Light Mode" : "Dark Mode"}
+                                            className="p-1.5 rounded-lg border-none cursor-pointer flex items-center
+                                                bg-transparent
+                                                text-[#A0C4C8]          dark:text-slate-500
+                                                hover:bg-[#E4F6F8]      hover:text-[#3A9DAA]
+                                                dark:hover:bg-slate-800 dark:hover:text-[#56B8C3]
+                                                transition-colors duration-200"
+                                        >
+                                            {darkMode
+                                                ? <IconSun size={16} strokeWidth={1.5} className="text-amber-500" />
+                                                : <IconMoon size={16} strokeWidth={1.5} />
+                                            }
+                                        </button>
+                                    )}
+                                    {/* Logout */}
+                                    <Link
+                                        href={route('logout')}
+                                        method="post"
+                                        as="button"
+                                        title="Logout"
+                                        className="p-1.5 rounded-lg border-none cursor-pointer flex items-center
+                                            bg-transparent
+                                            text-red-400            dark:text-red-500
+                                            hover:bg-red-50         hover:text-red-500
+                                            dark:hover:bg-red-900/20 dark:hover:text-red-400
+                                            transition-colors duration-200"
+                                    >
+                                        <IconLogout size={16} strokeWidth={1.5} />
+                                    </Link>
+                                </div>
+                            </>
+                        ) : (
+                            /* Collapsed: theme toggle & logout */
+                            <div className="flex flex-col gap-2">
                                 {themeSwitcher && (
                                     <button
                                         onClick={themeSwitcher}
                                         title={darkMode ? "Light Mode" : "Dark Mode"}
-                                        className="p-1.5 rounded-lg border-none cursor-pointer flex items-center
+                                        className="p-1.5 rounded-lg border-none cursor-pointer flex items-center justify-center
                                             bg-transparent
                                             text-[#A0C4C8]          dark:text-slate-500
                                             hover:bg-[#E4F6F8]      hover:text-[#3A9DAA]
@@ -353,26 +391,21 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
                                         }
                                     </button>
                                 )}
-                            </>
-                        ) : (
-                            /* Collapsed: hanya tampilkan theme toggle */
-                            themeSwitcher && (
-                                <button
-                                    onClick={themeSwitcher}
-                                    title={darkMode ? "Light Mode" : "Dark Mode"}
-                                    className="p-1.5 rounded-lg border-none cursor-pointer flex items-center
+                                <Link
+                                    href={route('logout')}
+                                    method="post"
+                                    as="button"
+                                    title="Logout"
+                                    className="p-1.5 rounded-lg border-none cursor-pointer flex items-center justify-center
                                         bg-transparent
-                                        text-[#A0C4C8]          dark:text-slate-500
-                                        hover:bg-[#E4F6F8]      hover:text-[#3A9DAA]
-                                        dark:hover:bg-slate-800 dark:hover:text-[#56B8C3]
+                                        text-red-400            dark:text-red-500
+                                        hover:bg-red-50         hover:text-red-500
+                                        dark:hover:bg-red-900/20 dark:hover:text-red-400
                                         transition-colors duration-200"
                                 >
-                                    {darkMode
-                                        ? <IconSun size={16} strokeWidth={1.5} className="text-amber-500" />
-                                        : <IconMoon size={16} strokeWidth={1.5} />
-                                    }
-                                </button>
-                            )
+                                    <IconLogout size={16} strokeWidth={1.5} />
+                                </Link>
+                            </div>
                         )}
                     </div>
                 </div>

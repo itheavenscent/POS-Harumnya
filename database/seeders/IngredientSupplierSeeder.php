@@ -13,6 +13,8 @@ class IngredientSupplierSeeder extends Seeder
         $now = now();
 
         // Clear existing records to ensure clean re-seeding in correct dependency order
+        DB::table('store_ingredient_stocks')->delete();
+        DB::table('warehouse_ingredient_stocks')->delete();
         DB::table('product_recipes')->delete();
         DB::table('variant_recipes')->delete();
         DB::table('ingredients')->delete();
@@ -24,6 +26,7 @@ class IngredientSupplierSeeder extends Seeder
             ['id' => Str::uuid()->toString(), 'code' => 'IC-001', 'name' => 'Fragrance Oil (Wanita)', 'ingredient_type' => 'oil', 'sort_order' => 1],
             ['id' => Str::uuid()->toString(), 'code' => 'IC-002', 'name' => 'Fragrance Oil (Pria)', 'ingredient_type' => 'oil', 'sort_order' => 2],
             ['id' => Str::uuid()->toString(), 'code' => 'IC-003', 'name' => 'Alcohol', 'ingredient_type' => 'alcohol', 'sort_order' => 3],
+            ['id' => Str::uuid()->toString(), 'code' => 'IC-004', 'name' => 'Additive/Carrier', 'ingredient_type' => 'other', 'sort_order' => 4],
         ];
 
         foreach ($categories as $cat) {
@@ -92,7 +95,7 @@ class IngredientSupplierSeeder extends Seeder
         // Kategori: IC-001 = Fragrance Oil Wanita, IC-002 = Fragrance Oil Pria
         //           IC-003 = Alcohol 99%
 
-        [$foWId, $foMId, $alcId] = array_column($categories, 'id');
+        [$foWId, $foMId, $alcId, $addId] = array_column($categories, 'id');
 
         // Format: [category_id, code, name, unit, average_cost_per_ml]
         // average_cost = Harga/1Kg ÷ 1000 (konversi ke per mL)
@@ -189,6 +192,19 @@ class IngredientSupplierSeeder extends Seeder
             // Sumber: Sheet "Material & Packing" → Alcohol (99%) = Rp 19.6/ml
             [$alcId, 'ING-AL-001', 'Ethanol 99%', 'ml', 19.6000],
             [$alcId, 'ING-MET-001', 'Metanol', 'ml', 15.0000],
+
+            // ── Additive / Carrier ───────────────────────────────────────────
+            // Sumber: Excel PERSEDIAAN HARUMNYA
+            [$addId, 'ING-ADD-DPG', 'DPG (Dipropylene Glycol)', 'ml', 40.6250],
+
+            // ── Fragrance Oil tambahan (dari Excel PERSEDIAAN HARUMNYA) ──────
+            [$foWId, 'ING-FO-W060', 'Laras Hati FO', 'ml', 642.2617],
+            [$foWId, 'ING-FO-W061', 'Shining Star FO', 'ml', 451.4192],
+            [$foWId, 'ING-FO-W062', 'ABE FO', 'ml', 896.8300],
+            [$foWId, 'ING-FO-W063', 'BOM FO', 'ml', 816.4900],
+            [$foWId, 'ING-FO-W064', 'DES FO', 'ml', 604.6500],
+            [$foWId, 'ING-FO-W065', 'MJ FO', 'ml', 776.4500],
+            [$foWId, 'ING-FO-W066', 'ROCK FO', 'ml', 1416.2200],
         ];
 
         foreach ($ingredients as [$catId, $code, $name, $unit, $avgCost]) {

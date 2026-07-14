@@ -71,6 +71,7 @@ class DiscountSeeder extends Seeder
         }
 
         // Clean old promo data to make it idempotent and cleanly refreshable
+        DB::table('discount_usages')->delete();
         DB::table('discount_types')->whereIn('code', ['SPINWHEEL', 'POIN-MEMBER', 'BUY1GET1'])->delete();
 
         DB::beginTransaction();

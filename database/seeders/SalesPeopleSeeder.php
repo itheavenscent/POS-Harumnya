@@ -12,6 +12,8 @@ class SalesPeopleSeeder extends Seeder
     {
         $now = now();
 
+        DB::table('sales_people')->delete();
+
         // FIX: gunakan kode toko yang konsisten dengan WarehouseStoreSeeder
         $storeJatim  = DB::table('stores')->where('code', 'STR-JOMBANG1')->first();
         $storeJateng = DB::table('stores')->where('code', 'STR-JOMBANG2')->first();

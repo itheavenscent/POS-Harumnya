@@ -13,6 +13,8 @@ class PackagingSeeder extends Seeder
         $now = now();
 
         // Clear existing packaging categories and materials to allow clean, idempotent re-seeding
+        DB::table('store_packaging_stocks')->delete();
+        DB::table('warehouse_packaging_stocks')->delete();
         DB::table('packaging_materials')->delete();
         DB::table('packaging_categories')->delete();
 
@@ -25,6 +27,8 @@ class PackagingSeeder extends Seeder
             ['id' => Str::uuid(), 'code' => 'PC-001', 'name' => 'Botol', 'sort_order' => 1],
             ['id' => Str::uuid(), 'code' => 'PC-002', 'name' => 'Gift Card', 'sort_order' => 2],
             ['id' => Str::uuid(), 'code' => 'PC-003', 'name' => 'Spunbond', 'sort_order' => 3],
+            ['id' => Str::uuid(), 'code' => 'PC-004', 'name' => 'Tutup', 'sort_order' => 4],
+            ['id' => Str::uuid(), 'code' => 'PC-005', 'name' => 'Ringspray', 'sort_order' => 5],
         ];
 
         foreach ($categories as $cat) {
@@ -59,7 +63,7 @@ class PackagingSeeder extends Seeder
         |   100 mL → purchase ~11.000
         |--------------------------------------------------------------------------
         */
-        [$botolCat, $giftCardCat, $spunbondCat] = array_column($categories, 'id');
+        [$botolCat, $giftCardCat, $spunbondCat, $tutupCat, $ringsprayCat] = array_column($categories, 'id');
 
         $materials = [
             // ── Botol Roll On 10ml ────────────────────────────────────────────
@@ -150,6 +154,178 @@ class PackagingSeeder extends Seeder
                 'is_available_as_addon' => true,
                 'is_free'               => false,
                 'sort_order'            => 2,
+            ],
+
+            // ── Botol Brand Spesifik (dari Excel PERSEDIAAN HARUMNYA) ────────
+            [
+                'packaging_category_id' => $botolCat,
+                'code'                  => 'PKG-PRADA30',
+                'name'                  => 'Botol Prada Paradox 30ml',
+                'purchase_price'        => 5250.00,
+                'selling_price'         => 7500.00,
+                'is_available_as_addon' => true,
+                'sort_order'            => 10,
+            ],
+            [
+                'packaging_category_id' => $botolCat,
+                'code'                  => 'PKG-DELINA25',
+                'name'                  => 'Botol Delina Doff 25ml',
+                'purchase_price'        => 4433.33,
+                'selling_price'         => 6000.00,
+                'is_available_as_addon' => true,
+                'sort_order'            => 11,
+            ],
+            [
+                'packaging_category_id' => $botolCat,
+                'code'                  => 'PKG-P10',
+                'name'                  => 'Botol P10',
+                'purchase_price'        => 1419.00,
+                'selling_price'         => 2000.00,
+                'is_available_as_addon' => true,
+                'sort_order'            => 12,
+            ],
+            [
+                'packaging_category_id' => $botolCat,
+                'code'                  => 'PKG-ROGL-BOT',
+                'name'                  => 'Botol Roll On 10ml Gold List',
+                'purchase_price'        => 767.33,
+                'selling_price'         => 1000.00,
+                'is_available_as_addon' => false,
+                'sort_order'            => 13,
+            ],
+            [
+                'packaging_category_id' => $botolCat,
+                'code'                  => 'PKG-ROGL-BALL',
+                'name'                  => 'Roll On 10ml Gold List',
+                'purchase_price'        => 767.33,
+                'selling_price'         => 1000.00,
+                'is_available_as_addon' => false,
+                'sort_order'            => 14,
+            ],
+            // ── Botol J'Adore 30ml ───────────────────────────────────────────
+            [
+                'packaging_category_id' => $botolCat,
+                'code'                  => 'PKG-JADORE-BOT',
+                'name'                  => 'Botol J\'Adore 30ml',
+                'purchase_price'        => 3155.97,
+                'selling_price'         => 7500.00,
+                'is_available_as_addon' => true,
+                'sort_order'            => 15,
+            ],
+            // ── Botol Geurlain 100ml ─────────────────────────────────────────
+            [
+                'packaging_category_id' => $botolCat,
+                'code'                  => 'PKG-GUER-BOT',
+                'name'                  => 'Botol Geurlain 100ml',
+                'purchase_price'        => 5665.53,
+                'selling_price'         => 15000.00,
+                'is_available_as_addon' => true,
+                'sort_order'            => 16,
+            ],
+            // ── Botol Gucci Floral 50ml ──────────────────────────────────────
+            [
+                'packaging_category_id' => $botolCat,
+                'code'                  => 'PKG-GUCCI-BOT',
+                'name'                  => 'Botol Gucci Floral 50ml',
+                'purchase_price'        => 4232.75,
+                'selling_price'         => 10000.00,
+                'is_available_as_addon' => true,
+                'sort_order'            => 17,
+            ],
+            // ── Botol Xerjoff 50ml ───────────────────────────────────────────
+            [
+                'packaging_category_id' => $botolCat,
+                'code'                  => 'PKG-XERJ-BOT',
+                'name'                  => 'Botol Xerjoff 50ml',
+                'purchase_price'        => 4123.56,
+                'selling_price'         => 10000.00,
+                'is_available_as_addon' => true,
+                'sort_order'            => 18,
+            ],
+
+            // ── Tutup (dari Excel PERSEDIAAN HARUMNYA) ───────────────────────
+            [
+                'packaging_category_id' => $tutupCat,
+                'code'                  => 'PKG-ROGL-TTP',
+                'name'                  => 'Tutup Roll On 10ml Gold List',
+                'purchase_price'        => 767.33,
+                'selling_price'         => 0.00,
+                'is_available_as_addon' => false,
+                'sort_order'            => 1,
+            ],
+            [
+                'packaging_category_id' => $tutupCat,
+                'code'                  => 'PKG-JADORE-TTP',
+                'name'                  => 'Tutup J\'Adore 30ml',
+                'purchase_price'        => 2610.22,
+                'selling_price'         => 0.00,
+                'is_available_as_addon' => false,
+                'sort_order'            => 2,
+            ],
+            [
+                'packaging_category_id' => $tutupCat,
+                'code'                  => 'PKG-GUER-TTP',
+                'name'                  => 'Tutup Geurlain 100ml',
+                'purchase_price'        => 4274.93,
+                'selling_price'         => 0.00,
+                'is_available_as_addon' => false,
+                'sort_order'            => 3,
+            ],
+            [
+                'packaging_category_id' => $tutupCat,
+                'code'                  => 'PKG-GUCCI-TTP',
+                'name'                  => 'Tutup Gucci Floral 50ml',
+                'purchase_price'        => 3517.65,
+                'selling_price'         => 0.00,
+                'is_available_as_addon' => false,
+                'sort_order'            => 4,
+            ],
+            [
+                'packaging_category_id' => $tutupCat,
+                'code'                  => 'PKG-XERJ-TTP',
+                'name'                  => 'Tutup Xerjoff 50ml',
+                'purchase_price'        => 3591.11,
+                'selling_price'         => 0.00,
+                'is_available_as_addon' => false,
+                'sort_order'            => 5,
+            ],
+
+            // ── Ringspray (dari Excel PERSEDIAAN HARUMNYA) ───────────────────
+            [
+                'packaging_category_id' => $ringsprayCat,
+                'code'                  => 'PKG-JADORE-RS',
+                'name'                  => 'Ringspray J\'Adore 30ml',
+                'purchase_price'        => 2437.18,
+                'selling_price'         => 0.00,
+                'is_available_as_addon' => false,
+                'sort_order'            => 1,
+            ],
+            [
+                'packaging_category_id' => $ringsprayCat,
+                'code'                  => 'PKG-GUER-RS',
+                'name'                  => 'Ringspray Geurlain 100ml',
+                'purchase_price'        => 3987.21,
+                'selling_price'         => 0.00,
+                'is_available_as_addon' => false,
+                'sort_order'            => 2,
+            ],
+            [
+                'packaging_category_id' => $ringsprayCat,
+                'code'                  => 'PKG-GUCCI-RS',
+                'name'                  => 'Ringspray Gucci Floral 50ml',
+                'purchase_price'        => 3075.97,
+                'selling_price'         => 0.00,
+                'is_available_as_addon' => false,
+                'sort_order'            => 3,
+            ],
+            [
+                'packaging_category_id' => $ringsprayCat,
+                'code'                  => 'PKG-XERJ-RS',
+                'name'                  => 'Ringspray Xerjoff 50ml',
+                'purchase_price'        => 2620.17,
+                'selling_price'         => 0.00,
+                'is_available_as_addon' => false,
+                'sort_order'            => 4,
             ],
 
             // ── Free / Promo Packaging ──────────────────────────────────────

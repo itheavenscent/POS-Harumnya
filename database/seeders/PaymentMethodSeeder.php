@@ -12,6 +12,8 @@ class PaymentMethodSeeder extends Seeder
     {
         $now = now();
 
+        DB::table('payment_methods')->delete();
+
         $methods = [
             [
                 'code'            => 'CASH',
