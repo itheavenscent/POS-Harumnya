@@ -819,7 +819,7 @@ class POSController extends Controller
      */
     private function getVariantsForStore(?Store $store): Collection
     {
-        $base = Variant::where('is_active', true)->orderBy('sort_order');
+        $base = Variant::where('is_active', true)->orderBy('name', 'asc');
 
         if (!$store || !$store->store_category_id) {
             return $base->get(['id', 'name', 'code', 'gender', 'image']);

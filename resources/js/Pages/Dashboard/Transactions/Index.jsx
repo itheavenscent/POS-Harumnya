@@ -543,6 +543,23 @@ function IntensityModal({ show, onClose, variant, intensities, loading, onSelect
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-2.5">
+                        {/* Opsi Custom Order (Komposisi Bebas) */}
+                        <div className="mb-1 border-b border-slate-100 dark:border-slate-800 pb-3">
+                            <button onClick={() => { onSelectCustom(variant); onClose(); }}
+                                className="group w-full relative p-3 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100/50 dark:bg-amber-950/20 hover:border-slate-300 hover:bg-slate-100 text-left transition-all duration-200">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center shadow-sm flex-shrink-0">
+                                        <IconAdjustments size={18} className="text-white" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-black text-slate-700 dark:text-amber-200 text-sm">Komposisi Bebas</p>
+                                        <span className="text-[10px] text-slate-700 dark:text-slate-300 block mt-0.5">Tentukan rasio ml minyak & alkohol sendiri</span>
+                                    </div>
+                                    <IconChevronRight size={14} className="text-slate-700 flex-shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                            </button>
+                        </div>
+
                         {intensities.map((intensity, i) => {
                             const c = INTENSITY_COLORS[i % INTENSITY_COLORS.length];
                             const oilPct = parseFloat(intensity.oil_ratio) || 0;
@@ -572,23 +589,6 @@ function IntensityModal({ show, onClose, variant, intensities, loading, onSelect
                                 </button>
                             );
                         })}
-
-                        {/* Opsi Custom Order (Komposisi Bebas) */}
-                        <div className="mt-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                            <button onClick={() => { onSelectCustom(variant); onClose(); }}
-                                className="group w-full relative p-3 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100/50 dark:bg-amber-950/20 hover:border-slate-300 hover:bg-slate-100 text-left transition-all duration-200">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center shadow-sm flex-shrink-0">
-                                        <IconAdjustments size={18} className="text-white" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="font-black text-slate-700 dark:text-amber-200 text-sm">Komposisi Bebas</p>
-                                        <span className="text-[10px] text-slate-700 dark:text-slate-300 block mt-0.5">Tentukan rasio ml minyak & alkohol sendiri</span>
-                                    </div>
-                                    <IconChevronRight size={14} className="text-slate-700 flex-shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" />
-                                </div>
-                            </button>
-                        </div>
                     </div>
                 )}
             </div>
