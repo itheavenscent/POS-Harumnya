@@ -342,7 +342,7 @@ class PackagingSeeder extends Seeder
             [
                 'packaging_category_id' => $spunbondCat,
                 'code'                  => 'KRS',
-                'name'                  => 'Plastic bag',
+                'name'                  => 'Plastik bag',
                 'purchase_price'        => 500.00,
                 'selling_price'         => 0.00,
                 'is_available_as_addon' => true,

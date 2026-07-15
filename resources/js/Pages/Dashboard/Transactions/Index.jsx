@@ -1715,8 +1715,8 @@ export default function Index({
                                         </div>
                                     </button>
 
-                                    {/* Card Paperbag */}
-                                    <button onClick={() => setSelectedCategory('paperbag')} className="group relative p-4 rounded-2xl border-2 text-left transition-all border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-emerald-300 dark:hover:border-emerald-600 hover:shadow-md">
+                                    {/* Card Spunbond */}
+                                    <button onClick={() => setSelectedCategory('spunbond')} className="group relative p-4 rounded-2xl border-2 text-left transition-all border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-emerald-300 dark:hover:border-emerald-600 hover:shadow-md">
                                         <div className="flex items-start gap-3 mb-3">
                                             <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
                                                 <IconShoppingBag size={20} className="text-emerald-600 dark:text-emerald-400" />
@@ -1829,13 +1829,13 @@ export default function Index({
                             </div>
                         )}
 
-                        {/* ── TAB KEMASAN / PAPERBAG Content ── */}
-                        {(selectedCategory === "packaging" || selectedCategory === "paperbag") && (
+                        {/* ── TAB KEMASAN / SPUNBOND Content ── */}
+                        {(selectedCategory === "packaging" || selectedCategory === "spunbond") && (
                             <div className="flex-1 overflow-y-auto p-4">
                                 {(() => {
                                     const items = packagingMaterials.filter(pkg => {
-                                        const isPaperbag = pkg.name.toLowerCase().includes('paper bag') || pkg.name.toLowerCase().includes('paperbag') || pkg.name.toLowerCase().includes('spunbond');
-                                        return selectedCategory === 'paperbag' ? isPaperbag : !isPaperbag;
+                                        const isSpunbond = pkg.name.toLowerCase().includes('kresek') || pkg.name.toLowerCase().includes('spunbond');
+                                        return selectedCategory === 'spunbond' ? isSpunbond : !isSpunbond;
                                     });
 
                                     return items.length === 0 ? (
