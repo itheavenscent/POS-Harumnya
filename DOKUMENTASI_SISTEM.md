@@ -430,8 +430,10 @@ Alur:
 5. Saat barang datang, quantity diterima dicatat dan status menjadi `received`.
 6. Saat PO diselesaikan, sistem:
    - Menambahkan stok ke lokasi tujuan.
-   - Menghitung landed cost dari harga item ditambah alokasi ongkir/adjustment.
-   - Menghitung Weighted Average Cost (WAC) baru.
+   - Menghitung landed cost per barang dengan cara:
+     1. Biaya barang yang hilang/rusak (selisih qty dipesan - qty diterima) diserap ke HPP barang yang diterima.
+     2. Menambahkan alokasi ongkir dan adjustment secara proporsional.
+   - Menghitung Weighted Average Cost (WAC) baru yang lebih akurat.
    - Update `average_cost` dan `total_value` stok.
    - Sinkron average cost ke master ingredient/packaging.
    - Membuat `stock_movements` dengan movement type `purchase_in`.

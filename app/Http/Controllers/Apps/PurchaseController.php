@@ -391,23 +391,32 @@ class PurchaseController extends Controller
 
             foreach ($purchase->items as $item) {
                 // quantity: updated to use received_quantity for stock addition
-                $qty       = (int)   $item->received_quantity;
-                $unitPrice = (float) $item->unit_price;
+                $qty        = (int)   $item->received_quantity;
+                $orderedQty = (int)   $item->quantity;
+                $unitPrice  = (float) $item->unit_price;
                 $itemSubtotal = (float) $item->subtotal;
                 
                 // Landed Cost calculation
-                $landedCost = $unitPrice;
                 if ($qty > 0) {
+                    // Menyerap biaya barang yang hilang (selisih = ordered - received)
+                    // Sehingga nilai HPP yang baru adalah total biaya (subtotal) / jumlah diterima
+                    $baseCost = $itemSubtotal / $qty;
+                    
                     if ($totalSubtotal > 0) {
                         // Distribute proportionally by subtotal
                         $allocatedPool = $poolToDistribute * ($itemSubtotal / $totalSubtotal);
-                        $landedCost += ($allocatedPool / $qty);
+                        $landedCost = $baseCost + ($allocatedPool / $qty);
                     } else if ($totalReceivedQty > 0) {
                         // If all items are free, distribute proportionally by quantity
                         $allocatedPool = $poolToDistribute * ($qty / $totalReceivedQty);
-                        $landedCost += ($allocatedPool / $qty);
+                        $landedCost = $baseCost + ($allocatedPool / $qty);
+                    } else {
+                        $landedCost = $baseCost;
                     }
+                } else {
+                    $landedCost = $unitPrice;
                 }
+                
                 // Ensure landedCost is not less than 0 (e.g. if adjustment is highly negative)
                 $landedCost = max(0, round($landedCost, 4));
 
