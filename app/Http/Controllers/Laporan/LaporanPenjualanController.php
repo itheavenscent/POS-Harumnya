@@ -677,7 +677,7 @@ class LaporanPenjualanController extends Controller
     {
         $user         = auth()->user();
         $isSuperAdmin = method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : false;
-        
+
         $storeId  = $request->input('store_id', $isSuperAdmin ? null : ($user->default_store_id ?? null));
         $dateFrom = $request->input('date_from', Carbon::now()->startOfMonth()->toDateString());
         $dateTo   = $request->input('date_to', Carbon::now()->toDateString());
@@ -685,7 +685,7 @@ class LaporanPenjualanController extends Controller
 
         $dateFromDt = Carbon::parse($dateFrom)->startOfDay();
         $dateToDt   = Carbon::parse($dateTo)->endOfDay();
-        
+
         if ($dateFromDt->diffInDays($dateToDt) > 90) {
             $dateFromDt = $dateToDt->copy()->subDays(90)->startOfDay();
         }
@@ -698,41 +698,105 @@ class LaporanPenjualanController extends Controller
             ->when($storeId, fn ($q) => $q->where('sales.store_id', $storeId))
             ->when($status !== 'all', fn ($q) => $q->where('sales.status', $status))
             ->whereBetween('sales.sold_at', [$dateFromDt, $dateToDt])
-            ->selectRaw('
-                sales.sale_number,
-                sales.sold_at,
-                sales.status,
-                sales.subtotal,
-                sales.discount_amount,
-                sales.total,
-                stores.name                                                     AS store_name,
-                COALESCE(sales.customer_name, customers.name)                   AS customer_name,
-                COALESCE(sales.cashier_name, users.name)                        AS cashier_name,
-                COALESCE(sales.sales_person_name, sales_people.name)            AS sales_person_name
-            ')
+            ->select([
+                'sales.id',
+                'sales.sale_number',
+                'sales.sold_at',
+                'sales.status',
+                'sales.subtotal',
+                'sales.discount_amount',
+                'sales.total',
+                'stores.name as store_name',
+                DB::raw('COALESCE(customers.phone, sales.customer_name) as customer_phone'),
+                DB::raw('COALESCE(sales.cashier_name, users.name) as cashier_name'),
+                DB::raw('COALESCE(sales.sales_person_name, sales_people.name) as sales_person_name'),
+            ])
             ->orderByDesc('sales.sold_at')
             ->get();
 
+        $saleIds = $sales->pluck('id')->toArray();
+
+        $saleItems = DB::table('sale_items')
+            ->whereIn('sale_id', $saleIds)
+            ->select(['sale_id', 'product_name', 'variant_name', 'intensity_code', 'size_ml', 'qty', 'unit_price', 'subtotal'])
+            ->get()
+            ->groupBy('sale_id');
+
+        $saleDiscounts = DB::table('sale_discounts')
+            ->whereIn('sale_id', $saleIds)
+            ->select(['sale_id', 'discount_name', 'discount_amount'])
+            ->get()
+            ->groupBy('sale_id');
+
+        $salePayments = DB::table('sale_payments')
+            ->whereIn('sale_id', $saleIds)
+            ->select(['sale_id', 'payment_method_name', 'amount'])
+            ->get()
+            ->groupBy('sale_id');
+
         $filename = "Laporan_Penjualan_{$dateFromDt->format('Ymd')}_{$dateToDt->format('Ymd')}.csv";
 
-        return new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($sales) {
+        return new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($sales, $saleItems, $saleDiscounts, $salePayments) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['No. Invoice', 'Tanggal', 'Waktu', 'Status', 'Toko', 'Pelanggan', 'Kasir', 'Sales Person', 'Gross Sales', 'Diskon', 'Total']);
+            fputcsv($handle, [
+                'No. Invoice', 'Tanggal', 'Waktu', 'Status', 'Toko',
+                'No.Telp', 'Kasir', 'Sales Person',
+                'Item', 'Variant', 'Qty',
+                'Gross Sales', 'Discount Applied', 'Total', 'Payment Method',
+            ]);
 
             foreach ($sales as $sale) {
-                fputcsv($handle, [
-                    $sale->sale_number,
-                    Carbon::parse($sale->sold_at)->format('Y-m-d'),
-                    Carbon::parse($sale->sold_at)->format('H:i:s'),
-                    $sale->status,
-                    $sale->store_name,
-                    $sale->customer_name ?? 'Walk-in',
-                    $sale->cashier_name ?? '-',
-                    $sale->sales_person_name ?? '-',
-                    $sale->subtotal,
-                    $sale->discount_amount,
-                    $sale->total,
-                ]);
+                $items    = $saleItems[$sale->id]    ?? collect();
+                $discApplied = ($saleDiscounts[$sale->id] ?? collect())
+                    ->map(fn ($d) => $d->discount_name . ' (-' . number_format($d->discount_amount, 0, ',', '.') . ')')
+                    ->implode('; ');
+                $payMethods = ($salePayments[$sale->id] ?? collect())
+                    ->map(fn ($p) => $p->payment_method_name)
+                    ->unique()
+                    ->implode(', ');
+
+                if ($items->isEmpty()) {
+                    fputcsv($handle, [
+                        $sale->sale_number,
+                        Carbon::parse($sale->sold_at)->format('Y-m-d'),
+                        Carbon::parse($sale->sold_at)->format('H:i:s'),
+                        $sale->status,
+                        $sale->store_name,
+                        $sale->customer_phone ?? '-',
+                        $sale->cashier_name ?? '-',
+                        $sale->sales_person_name ?? '-',
+                        '-', '-', 0,
+                        $sale->subtotal,
+                        $discApplied ?: '-',
+                        $sale->total,
+                        $payMethods ?: '-',
+                    ]);
+                } else {
+                    $first = true;
+                    foreach ($items as $item) {
+                        $itemName = $item->product_name
+                            ?: implode(' ', array_filter([$item->variant_name, $item->intensity_code, $item->size_ml ? $item->size_ml . 'ml' : null]));
+
+                        fputcsv($handle, [
+                            $first ? $sale->sale_number : '',
+                            $first ? Carbon::parse($sale->sold_at)->format('Y-m-d') : '',
+                            $first ? Carbon::parse($sale->sold_at)->format('H:i:s') : '',
+                            $first ? $sale->status : '',
+                            $first ? $sale->store_name : '',
+                            $first ? ($sale->customer_phone ?? '-') : '',
+                            $first ? ($sale->cashier_name ?? '-') : '',
+                            $first ? ($sale->sales_person_name ?? '-') : '',
+                            $itemName ?: '-',
+                            $item->variant_name ?? '-',
+                            $item->qty,
+                            $item->subtotal,
+                            $first ? ($discApplied ?: '-') : '',
+                            $first ? $sale->total : '',
+                            $first ? ($payMethods ?: '-') : '',
+                        ]);
+                        $first = false;
+                    }
+                }
             }
             fclose($handle);
         }, 200, [

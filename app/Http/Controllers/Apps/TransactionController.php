@@ -532,13 +532,8 @@ class TransactionController extends Controller
             $storeId = $user->default_store_id ?? null;
             $store = $storeId ? Store::with('storeCategory')->find($storeId) : null;
 
-            $variantQuery = Variant::where('is_active', true);
-
-            try {
-                $variantQuery->orderBy('sort_order');
-            } catch (\Exception $e) {
-                $variantQuery->orderBy('name');
-            }
+            $variantQuery = Variant::where('is_active', true)
+                ->orderBy('name');
 
             if ($store && $store->store_category_id) {
                 $category = $store->storeCategory;
@@ -609,13 +604,8 @@ class TransactionController extends Controller
             $storeId = $user->default_store_id ?? null;
             $store = $storeId ? Store::with('storeCategory')->find($storeId) : null;
 
-            $variantQuery = Variant::where('is_active', true);
-
-            try {
-                $variantQuery->orderBy('sort_order');
-            } catch (\Exception $e) {
-                $variantQuery->orderBy('name');
-            }
+            $variantQuery = Variant::where('is_active', true)
+                ->orderBy('name');
 
             if ($store && $store->store_category_id) {
                 $category = $store->storeCategory;

@@ -695,13 +695,48 @@ class PurchaseController extends Controller
      * Sync WAC ke tabel master agar HPP selalu tersedia tanpa JOIN ke stock tables.
      * Master menyimpan WAC dari PO terakhir per item.
      */
-    private function syncMasterAverageCost(string $itemType, string $itemId, float $newAvgCost): void
+    private function syncMasterAverageCost(string $itemType, string $itemId, float $fallbackCost): void
     {
+        $globalWac = $this->computeGlobalWac($itemType, $itemId) ?? $fallbackCost;
+
         match ($itemType) {
-            'ingredient'         => Ingredient::where('id', $itemId)->update(['average_cost' => $newAvgCost]),
-            'packaging_material' => PackagingMaterial::where('id', $itemId)->update(['average_cost' => $newAvgCost]),
+            'ingredient'         => Ingredient::where('id', $itemId)->update(['average_cost' => $globalWac]),
+            'packaging_material' => PackagingMaterial::where('id', $itemId)->update(['average_cost' => $globalWac]),
             default              => null,
         };
+    }
+
+    private function computeGlobalWac(string $itemType, string $itemId): ?float
+    {
+        $fk = $itemType === 'ingredient' ? 'ingredient_id' : 'packaging_material_id';
+
+        $rows = collect();
+
+        if ($itemType === 'ingredient') {
+            $rows = $rows->merge(
+                DB::table('warehouse_ingredient_stocks')->where('ingredient_id', $itemId)->select('quantity', 'average_cost')->get()
+            )->merge(
+                DB::table('store_ingredient_stocks')->where('ingredient_id', $itemId)->select('quantity', 'average_cost')->get()
+            );
+        } else {
+            $rows = $rows->merge(
+                DB::table('warehouse_packaging_stocks')->where('packaging_material_id', $itemId)->select('quantity', 'average_cost')->get()
+            )->merge(
+                DB::table('store_packaging_stocks')->where('packaging_material_id', $itemId)->select('quantity', 'average_cost')->get()
+            );
+        }
+
+        $totalQty   = 0;
+        $totalValue = 0.0;
+        foreach ($rows as $r) {
+            $qty = (int) $r->quantity;
+            if ($qty > 0) {
+                $totalQty   += $qty;
+                $totalValue += $qty * (float) $r->average_cost;
+            }
+        }
+
+        return $totalQty > 0 ? round($totalValue / $totalQty, 4) : null;
     }
 
     private function locationName(string $type, string $id): string

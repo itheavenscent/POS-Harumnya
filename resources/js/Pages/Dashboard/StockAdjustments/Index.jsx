@@ -7,7 +7,7 @@ import Button from "@/Components/Dashboard/Button";
 import {
     IconAdjustments, IconCirclePlus, IconDatabaseOff, IconEye,
     IconPencilCog, IconChartBar, IconClock, IconCheck,
-    IconTrendingUp, IconTrendingDown,
+    IconTrendingUp, IconTrendingDown, IconFileImport,
 } from "@tabler/icons-react";
 
 const STATUS_CFG = {
@@ -66,6 +66,9 @@ export default function Index({ adjustments, filters = {}, summary = {}, typeOpt
                     <p className="text-sm text-slate-500">Stock opname, barang rusak, hilang, dan penyesuaian lainnya.</p>
                 </div>
                 <div className="flex gap-2">
+                    <Button type="link" icon={<IconFileImport size={18} />}
+                        className="bg-indigo-500 hover:bg-indigo-600 text-white shadow-md"
+                        label="Import SOG" href={route("stock-adjustments.import")} />
                     <Button type="link" icon={<IconCirclePlus size={18} />}
                         className="bg-orange-500 hover:bg-orange-600 text-white shadow-md"
                         label="Buat Adjustment" href={route("stock-adjustments.create")} />

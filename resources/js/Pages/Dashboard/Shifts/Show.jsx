@@ -74,13 +74,20 @@ export default function Show({ drawer, summary, isAdmin }) {
                 <div className="flex-1 overflow-auto p-6">
                     <div className="max-w-4xl mx-auto space-y-6">
                         {/* Summary Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                                     <IconCash size={64} />
                                 </div>
                                 <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Mulai Shift</p>
                                 <p className="text-xl font-black text-slate-800 dark:text-white">{fmt(drawer.starting_cash)}</p>
+                            </div>
+                            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                    <IconCash size={64} />
+                                </div>
+                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Akhir Shift (Sistem)</p>
+                                <p className="text-xl font-black text-slate-800 dark:text-white">{fmt(drawer.expected_ending_cash)}</p>
                             </div>
                             <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -93,7 +100,7 @@ export default function Show({ drawer, summary, isAdmin }) {
                                 <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                                     <IconArrowLeft size={64} />
                                 </div>
-                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Selisih</p>
+                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Selisih (Aktual - Sistem)</p>
                                 <p className={`text-xl font-black ${Number(drawer.difference) >= 0 ? 'text-cyan-600' : 'text-rose-600'}`}>{fmt(drawer.difference)}</p>
                             </div>
                         </div>

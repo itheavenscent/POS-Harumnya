@@ -353,6 +353,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::post('/{id}/submit', [StockTransferController::class, 'submit'])->name('submit')->middleware('permission:stock-transfer');
         Route::post('/{id}/approve', [StockTransferController::class, 'approve'])->name('approve')->middleware('permission:stock-transfer');
         Route::post('/{id}/send', [StockTransferController::class, 'send'])->name('send')->middleware('permission:stock-transfer');
+        Route::get('/{id}/surat-jalan', [StockTransferController::class, 'suratJalan'])->name('surat-jalan')->middleware('permission:stock-transfer');
         Route::post('/{id}/receive', [StockTransferController::class, 'receive'])->name('receive')->middleware('permission:stock-transfer');
         Route::post('/{id}/cancel', [StockTransferController::class, 'cancel'])->name('cancel')->middleware('permission:stock-transfer');
         Route::delete('/{id}', [StockTransferController::class, 'destroy'])->name('destroy')->middleware('permission:stock-transfer');
@@ -371,6 +372,10 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::get('/', [StockAdjustmentController::class, 'index'])->name('index')->middleware('permission:stock-adjustment');
         Route::get('/create', [StockAdjustmentController::class, 'create'])->name('create')->middleware('permission:stock-adjustment');
         Route::get('/create-delta', [StockAdjustmentController::class, 'createDelta'])->name('create-delta')->middleware('permission:stock-adjustment');
+        Route::get('/import', [\App\Http\Controllers\Apps\StockAdjustmentImportController::class, 'index'])->name('import')->middleware('permission:stock-adjustment');
+        Route::get('/import/template', [\App\Http\Controllers\Apps\StockAdjustmentImportController::class, 'downloadTemplate'])->name('import.template')->middleware('permission:stock-adjustment');
+        Route::post('/import/validate', [\App\Http\Controllers\Apps\StockAdjustmentImportController::class, 'validate'])->name('import.validate')->middleware('permission:stock-adjustment');
+        Route::post('/import/store', [\App\Http\Controllers\Apps\StockAdjustmentImportController::class, 'import'])->name('import.store')->middleware('permission:stock-adjustment');
         Route::post('/', [StockAdjustmentController::class, 'store'])->name('store')->middleware('permission:stock-adjustment');
         Route::post('/current-stock', [StockAdjustmentController::class, 'getCurrentStock'])->name('current-stock')->middleware('permission:stock-adjustment');
         Route::get('/{id}', [StockAdjustmentController::class, 'show'])->name('show')->middleware('permission:stock-adjustment');

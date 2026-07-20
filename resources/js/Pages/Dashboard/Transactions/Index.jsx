@@ -1169,7 +1169,17 @@ export default function Index({
     }, []);
 
     // ── Derived ────────────────────────────────────────────────────────────────
-    const discountAmount = useMemo(() => selectedDiscount?.amount ?? 0, [selectedDiscount]);
+    const discountAmount = useMemo(() => {
+        if (!selectedDiscount) return 0;
+        if (selectedDiscount.id === "__manual__") return selectedDiscount.amount ?? 0;
+        if (selectedDiscount.type === 'percentage') {
+            const base = (carts_total ?? 0) + cartPackagings.reduce((s, p) => s + (p.pkg.is_free ? 0 : Number(p.pkg.selling_price || 0)) * p.qty, 0);
+            let amt = base * ((selectedDiscount.value ?? 0) / 100);
+            if (selectedDiscount.max_discount_amount > 0 && amt > selectedDiscount.max_discount_amount) amt = selectedDiscount.max_discount_amount;
+            return amt;
+        }
+        return selectedDiscount.amount ?? selectedDiscount.value ?? 0;
+    }, [selectedDiscount, carts_total, cartPackagings]);
     const subtotal = useMemo(() => carts_total ?? 0, [carts_total]);
     const pkgCartTotal = useMemo(() => cartPackagings.reduce((s, p) => s + (p.pkg.is_free ? 0 : Number(p.pkg.selling_price || 0)) * p.qty, 0), [cartPackagings]);
     const payable = useMemo(() => Math.max(subtotal + pkgCartTotal - discountAmount, 0), [subtotal, pkgCartTotal, discountAmount]);
@@ -1187,6 +1197,7 @@ export default function Index({
 
 
     // ── Effect: check eligible discounts when cart or customer changes ──────────
+    const cartFingerprint = useMemo(() => carts.map(c => `${c.id}:${c.qty}`).join(','), [carts]);
     useEffect(() => {
         if (carts.length === 0) { setEligiblePromos([]); return; }
         const params = {};
@@ -1196,7 +1207,6 @@ export default function Index({
                 if (res.data.success) {
                     const newEligible = res.data.data || [];
                     setEligiblePromos(newEligible);
-                    // Show pop-up for first new eligible promo not yet shown
                     const newPromo = newEligible.find(p => !shownEligibleIds.has(p.id));
                     if (newPromo) {
                         setShowEligibleModal(true);
@@ -1205,7 +1215,7 @@ export default function Index({
                 }
             })
             .catch(() => {});
-    }, [carts.length, selectedCustomer?.id]);
+    }, [cartFingerprint, selectedCustomer?.id]);
 
     // ── Fetch katalog varian POS ───────────────────────────────────────────────
     const fetchCatalogVariants = async () => {
@@ -1518,7 +1528,6 @@ export default function Index({
     const handleCheckout = () => { if (!carts.length) { toast.error("Keranjang kosong"); return; } setShowPaymentModal(true); };
 
     const handleSubmit = () => {
-        if (!selectedCustomer) { toast.error("Pelanggan wajib dipilih!"); return; }
         if (!selectedSalesPerson?.id) { toast.error("Sales wajib dipilih!"); return; }
         if (isCash && cash < payable) { toast.error("Jumlah bayar kurang dari total"); return; }
         setIsSubmitting(true);
@@ -1617,15 +1626,6 @@ export default function Index({
                 }}
             />
 
-            <DiscountModal
-                show={showDiscountModal}
-                onClose={() => setShowDiscountModal(false)}
-                discounts={discounts}
-                subtotal={subtotal + pkgCartTotal}
-                onSelect={setSelectedDiscount}
-            />
-
-
             {/* Loading overlay */}
             {(addingToCart || addingCustomToCart) && (
                 <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm">
@@ -1664,7 +1664,7 @@ export default function Index({
                                         <IconArrowLeft size={18} />
                                     </button>
                                     <h1 className="font-black text-slate-800 dark:text-white text-base capitalize">
-                                        {selectedCategory === 'packaging' ? 'Kemasan' : selectedCategory}
+                                        {selectedCategory === 'packaging' ? 'Botol' : selectedCategory === 'spunbond' ? 'Kemasan' : selectedCategory}
                                     </h1>
                                 </div>
                                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-lg">
@@ -1684,7 +1684,7 @@ export default function Index({
                                                 <IconFlask size={20} className="text-primary-600 dark:text-primary-400" />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">Pilih Parfum</p>
+                                                <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">Parfume</p>
                                                 <span className="text-[10px] text-slate-400 mt-0.5 block">Varian, konsentrasi, ukuran</span>
                                             </div>
                                             <span className="px-1.5 py-0.5 rounded text-[9px] font-black flex-shrink-0 bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">
@@ -1703,7 +1703,7 @@ export default function Index({
                                                 <IconBox size={20} className="text-orange-600 dark:text-orange-400" />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">Kemasan</p>
+                                                <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">Botol</p>
                                                 <span className="text-[10px] text-slate-400 mt-0.5 block">Botol, tutup spray, aksesoris</span>
                                             </div>
                                             <span className="px-1.5 py-0.5 rounded text-[9px] font-black flex-shrink-0 bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
@@ -1722,7 +1722,7 @@ export default function Index({
                                                 <IconShoppingBag size={20} className="text-emerald-600 dark:text-emerald-400" />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">Spunbond</p>
+                                                <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">Kemasan</p>
                                                 <span className="text-[10px] text-slate-400 mt-0.5 block">Tas spunbond eksklusif</span>
                                             </div>
                                             <span className="px-1.5 py-0.5 rounded text-[9px] font-black flex-shrink-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
@@ -2301,7 +2301,7 @@ export default function Index({
                 show={showDiscountModal}
                 onClose={() => setShowDiscountModal(false)}
                 discounts={discounts}
-                subtotal={subtotal}
+                subtotal={subtotal + pkgCartTotal}
                 onSelect={setSelectedDiscount}
                 eligiblePromos={eligiblePromos}
                 onPickReward={handleOpenRewardPicker}
