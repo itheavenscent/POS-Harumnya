@@ -147,10 +147,10 @@ export default function POSLayout({ children, headerActions }) {
                                 <button
                                     onClick={() => setIsCashModalOpen(true)}
                                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black text-slate-600 bg-slate-100 dark:text-slate-300 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700"
-                                    title="Cash In / Cash Out"
+                                    title="Kas Masuk / Kas Keluar"
                                 >
                                     <IconArrowsExchange size={15} />
-                                    <span className="hidden lg:inline">Cash In/Out</span>
+                                    <span className="hidden lg:inline">Kas Masuk/Keluar</span>
                                 </button>
                             </>
                         ) : (
@@ -279,7 +279,7 @@ export default function POSLayout({ children, headerActions }) {
                                 className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/50 transition-colors w-full"
                             >
                                 <IconArrowsExchange size={18} />
-                                <span className="font-medium text-sm text-left">Cash In / Cash Out</span>
+                                <span className="font-medium text-sm text-left">Kas Masuk / Kas Keluar</span>
                             </button>
                             <hr className="border-slate-200 dark:border-slate-700" />
                             <Link

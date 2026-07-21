@@ -2175,6 +2175,20 @@ export default function Index({
                                 {selectedDiscount ? <button onClick={e => { e.stopPropagation(); setSelectedDiscount(null); }} className="p-0.5 text-slate-400 hover:text-slate-700 flex-shrink-0"><IconX size={13} /></button> : <IconChevronRight size={13} className="text-slate-300 flex-shrink-0" />}
                             </button>
 
+                            {autoPromo && !carts.some(c => c.is_game_reward || c.points_amount !== null) && (
+                                <button onClick={() => {
+                                    if (autoPromo?.rewards && autoPromo.rewards.length > 0) {
+                                        setActiveGamePromo(autoPromo);
+                                        setShowGameModal(true);
+                                    } else {
+                                        setShowPromoModal(true);
+                                    }
+                                }}
+                                    className="w-full flex items-center justify-center gap-2.5 px-3 py-2 rounded-xl border-2 border-amber-400 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-all font-bold text-xs shadow-sm cursor-pointer mt-2">
+                                    🎡 Klaim Hadiah / Spin Wheel ({autoPromo.name})
+                                </button>
+                            )}
+
                             <div className="space-y-1">
                                 {subtotal > 0 && <div className="flex justify-between text-xs"><span className="text-slate-500">Parfum</span><span className="font-semibold text-slate-700 dark:text-slate-300">{fmt(subtotal)}</span></div>}
                                 {pkgCartTotal > 0 && <div className="flex justify-between text-xs"><span className="text-slate-500">Kemasan</span><span className="font-semibold text-slate-700 dark:text-slate-300">{fmt(pkgCartTotal)}</span></div>}

@@ -15,6 +15,7 @@ class CashDrawerTransaction extends Model
         'type',
         'amount',
         'description',
+        'photo',
         'user_id',
     ];
 

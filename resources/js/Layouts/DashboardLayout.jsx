@@ -26,7 +26,7 @@ export default function AppLayout({ children }) {
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 bg-slate-100 dark:text-slate-300 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700"
                         >
                             <IconArrowsExchange size={15} />
-                            Cash In / Cash Out
+                            Kas Masuk / Kas Keluar
                         </button>
                     </div>
                 )}

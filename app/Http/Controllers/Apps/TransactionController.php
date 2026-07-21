@@ -357,6 +357,120 @@ class TransactionController extends Controller
     // EXISTING ENDPOINTS (tidak berubah)
     // =========================================================================
 
+    public function cancelSale(Request $request, string $id)
+    {
+        $user = Auth::user();
+        if (! $user->hasRole('super-admin') && ! $user->hasRole('admin')) {
+            return back()->withErrors(['cancel' => 'Hanya admin yang dapat membatalkan transaksi.']);
+        }
+
+        $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        $sale = Sale::with('customer')->findOrFail($id);
+
+        if ($sale->status !== 'completed') {
+            return back()->withErrors(['cancel' => 'Hanya transaksi selesai yang dapat dibatalkan.']);
+        }
+
+        DB::transaction(function () use ($sale, $request, $user) {
+            $now = now();
+
+            // 1. Kembalikan stok — reverse semua StockMovement penjualan ini
+            $movements = \App\Models\StockMovement::where('reference_type', Sale::class)
+                ->where('reference_id', $sale->id)
+                ->where('movement_type', 'sale_deduction')
+                ->get();
+
+            foreach ($movements as $mv) {
+                $restoreQty = abs((int) $mv->qty_change);
+                if ($restoreQty === 0) continue;
+
+                if ($mv->item_type === 'reward_item') {
+                    \App\Models\RewardItem::where('id', $mv->item_id)
+                        ->increment('stock_qty', $restoreQty);
+                    continue;
+                }
+
+                $stock = $mv->item_type === 'ingredient'
+                    ? \App\Models\StoreIngredientStock::firstOrCreate(
+                        ['store_id' => $mv->location_id, 'ingredient_id' => $mv->item_id],
+                        ['quantity' => 0, 'average_cost' => 0, 'total_value' => 0])
+                    : \App\Models\StorePackagingStock::firstOrCreate(
+                        ['store_id' => $mv->location_id, 'packaging_material_id' => $mv->item_id],
+                        ['quantity' => 0, 'average_cost' => 0, 'total_value' => 0]);
+
+                $qtyBefore = (int) $stock->quantity;
+                $qtyAfter  = $qtyBefore + $restoreQty;
+                $avgCost   = (float) $stock->average_cost;
+
+                $stock->update([
+                    'quantity'    => $qtyAfter,
+                    'total_value' => round(max(0, $qtyAfter) * $avgCost, 2),
+                    'last_in_at'  => $now,
+                    'last_in_by'  => $user->id,
+                    'last_in_qty' => $restoreQty,
+                ]);
+
+                \App\Models\StockMovement::create([
+                    'location_type'    => $mv->location_type,
+                    'location_id'      => $mv->location_id,
+                    'movement_type'    => 'return_in',
+                    'item_type'        => $mv->item_type,
+                    'item_id'          => $mv->item_id,
+                    'qty_change'       => $restoreQty,
+                    'qty_before'       => $qtyBefore,
+                    'qty_after'        => $qtyAfter,
+                    'unit_cost'        => (float) $mv->unit_cost,
+                    'total_cost'       => round($restoreQty * (float) $mv->unit_cost, 2),
+                    'avg_cost_before'  => $avgCost,
+                    'avg_cost_after'   => $avgCost,
+                    'reference_type'   => Sale::class,
+                    'reference_id'     => $sale->id,
+                    'reference_number' => $sale->sale_number,
+                    'movement_date'    => $now->toDateString(),
+                    'created_by'       => $user->id,
+                    'notes'            => "Pembatalan transaksi {$sale->sale_number}",
+                ]);
+            }
+
+            // 2. Kembalikan poin loyalitas
+            if ($sale->customer_id && $sale->customer) {
+                $pointsEarned   = (int) ($sale->points_earned ?? 0);
+                $pointsRedeemed = (int) ($sale->points_redeemed ?? 0);
+
+                if ($pointsEarned > 0 || $pointsRedeemed > 0) {
+                    $netPointChange = $pointsRedeemed - $pointsEarned; // kembalikan redeemed, tarik earned
+                    if ($netPointChange !== 0) {
+                        $sale->customer->increment('points', $netPointChange);
+                    }
+
+                    CustomerPointLedger::create([
+                        'customer_id'    => $sale->customer_id,
+                        'type'           => 'adjusted',
+                        'points'         => $netPointChange,
+                        'balance_after'  => max(0, (int) $sale->customer->fresh()->points),
+                        'reference_type' => Sale::class,
+                        'reference_id'   => $sale->id,
+                        'notes'          => "Pembatalan transaksi {$sale->sale_number}",
+                        'created_by'     => $user->id,
+                    ]);
+                }
+            }
+
+            // 3. Tandai transaksi dibatalkan
+            $sale->update([
+                'status'              => 'cancelled',
+                'cancellation_reason' => $request->reason,
+                'cancelled_at'        => $now,
+                'cancelled_by'        => $user->id,
+            ]);
+        });
+
+        return back()->with('success', "Transaksi {$sale->sale_number} berhasil dibatalkan. Stok telah dikembalikan.");
+    }
+
     public function history(Request $request)
     {
         $user = Auth::user();

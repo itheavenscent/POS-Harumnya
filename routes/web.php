@@ -530,6 +530,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         // 1. Halaman
         Route::get('/', [TransactionController::class, 'index'])->name('index')->middleware('permission:transactions-access');
         Route::get('/history', [TransactionController::class, 'history'])->name('history')->middleware('permission:transactions-access');
+        Route::post('/{id}/cancel-sale', [TransactionController::class, 'cancelSale'])->name('cancel-sale')->middleware('permission:transactions-access');
         Route::get('/print/{saleNumber}', [TransactionController::class, 'print'])
             ->where('saleNumber', '.*')
             ->name('print')

@@ -266,6 +266,11 @@ export default function Current({ drawer, summary }) {
                                                 <p className="font-bold text-slate-800 dark:text-white truncate">{tx.description}</p>
                                                 <p className="text-[10px] text-slate-500 font-medium">{new Date(tx.created_at).toLocaleTimeString()}</p>
                                             </div>
+                                            {tx.photo && (
+                                                <a href={`/storage/${tx.photo}`} target="_blank" rel="noopener" className="flex-shrink-0">
+                                                    <img src={`/storage/${tx.photo}`} alt="Bukti" className="w-12 h-12 rounded-lg object-cover border border-slate-200 dark:border-slate-700 hover:scale-105 transition-transform" />
+                                                </a>
+                                            )}
                                             <div className="text-right">
                                                 <p className={`font-black ${tx.type === 'cash_in' ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                     {tx.type === 'cash_in' ? '+' : '-'}{fmt(tx.amount)}
