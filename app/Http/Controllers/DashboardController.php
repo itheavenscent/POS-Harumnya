@@ -34,7 +34,7 @@ class DashboardController extends Controller
     {
         $user         = auth()->user();
         $isSuperAdmin = method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : false;
-        $isAdmin      = ! $isSuperAdmin && method_exists($user, 'hasRole') ? $user->hasRole('admin') : false;
+        $isAdmin      = ! $isSuperAdmin && (($user->hasRole('admin') ?? false) || $user->can('view-all-stores'));
 
         // Siapa yang boleh filter toko:
         //   • Super-admin → bisa pilih semua toko, default null (semua)

@@ -19,7 +19,7 @@ class LaporanMutasiController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $isSuperAdmin = method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : ($user->hasRole('super-admin') || $user->hasRole('admin'));
+        $isSuperAdmin = (method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : ($user->hasRole('super-admin') || $user->hasRole('admin'))) || $user->can('view-all-stores');
 
         // ── Filter params ─────────────────────────────────────────────────────
         $location = $request->input('location'); // format 'store:{id}' atau 'warehouse:{id}'

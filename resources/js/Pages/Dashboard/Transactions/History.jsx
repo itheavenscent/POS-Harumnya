@@ -5,7 +5,8 @@ import Pagination from "@/Components/Dashboard/Pagination";
 import {
     IconDatabaseOff, IconSearch, IconHistory, IconReceipt,
     IconPrinter, IconFilter, IconX, IconTrendingUp, IconCalendar,
-    IconRefresh, IconEye, IconUser, IconFlask, IconBox, IconBuildingStore
+    IconRefresh, IconEye, IconUser, IconFlask, IconBox, IconBuildingStore,
+    IconFileSpreadsheet
 } from "@tabler/icons-react";
 
 const defaultFilters = { q: "", date_from: "", date_to: "", status: "", store_id: "" };
@@ -36,7 +37,7 @@ const STATUS_LABEL = {
     refunded: "Refund", pending: "Pending", draft: "Draft",
 };
 
-export default function History({ sales, filters, summary = {}, stores = [], isAdmin = false }) {
+export default function History({ sales, filters, summary = {}, stores = [], isAdmin = false, canCancelSale = false }) {
     const [filterData,   setFilterData]   = useState({ ...defaultFilters, ...filters });
     const [showFilters,  setShowFilters]  = useState(false);
     const [selectedSale, setSelectedSale] = useState(null);
@@ -78,6 +79,13 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
     const currentPage = sales?.current_page ?? 1;
     const perPage     = Number(sales?.per_page || 20);
     const hasFilter   = filterData.q || filterData.date_from || filterData.date_to || filterData.status || filterData.store_id;
+
+    // URL export mengikuti filter aktif
+    const exportUrl = (() => {
+        const params = Object.fromEntries(Object.entries(filterData).filter(([, v]) => v));
+        const qs = new URLSearchParams(params).toString();
+        return route("transactions.history.export") + (qs ? `?${qs}` : "");
+    })();
 
     // Summary dari controller — gunakan kolom decimal langsung
     const sumStats = summary && typeof summary === "object" ? summary : {};
@@ -124,6 +132,10 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
                             Filter
                             {hasFilter && <span className="w-2 h-2 rounded-full bg-primary-500"/>}
                         </button>
+                        <a href={exportUrl} target="_blank" rel="noopener"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-900 dark:text-emerald-400 text-sm font-medium transition-colors">
+                            <IconFileSpreadsheet size={18}/> Export Excel
+                        </a>
                         <Link href={route("transactions.index")}
                             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium transition-colors shadow-lg shadow-primary-500/30">
                             <IconReceipt size={18}/> Transaksi Baru
@@ -563,7 +575,7 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
                         {/* Footer */}
                         <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex justify-between gap-3">
                             <div>
-                                {isAdmin && selectedSale.status === "completed" && (
+                                {canCancelSale && selectedSale.status === "completed" && (
                                     <button onClick={() => setShowCancelSale(true)}
                                         className="px-6 py-2.5 rounded-xl bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 text-sm font-bold flex items-center gap-2 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors">
                                         <IconX size={18}/> Batalkan Transaksi

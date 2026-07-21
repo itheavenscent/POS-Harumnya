@@ -158,7 +158,7 @@ class CashDrawerController extends Controller
 
         $query = CashDrawer::with(['cashier', 'store']);
 
-        if (!$isSuperAdmin && !$user->hasRole('admin')) {
+        if (!$isSuperAdmin && !$user->hasRole('admin') && !$user->can('view-all-stores')) {
             $query->where('store_id', $user->default_store_id);
         }
 
@@ -175,7 +175,7 @@ class CashDrawerController extends Controller
         return Inertia::render('Dashboard/Shifts/Index', [
             'drawers' => $drawers,
             'filters' => $request->only(['date_from', 'date_to']),
-            'isAdmin' => $isSuperAdmin || $user->hasRole('admin'),
+            'isAdmin' => $isSuperAdmin || $user->hasRole('admin') || $user->can('view-all-stores'),
         ]);
     }
 
@@ -187,7 +187,7 @@ class CashDrawerController extends Controller
         return Inertia::render('Dashboard/Shifts/Show', [
             'drawer' => $drawer,
             'summary' => $summary,
-            'isAdmin' => Auth::user()->hasRole('super-admin') || Auth::user()->hasRole('admin'),
+            'isAdmin' => Auth::user()->hasRole('super-admin') || Auth::user()->hasRole('admin') || Auth::user()->can('view-all-stores'),
         ]);
     }
 

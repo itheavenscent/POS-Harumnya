@@ -42,7 +42,7 @@ class LaporanPenjualanController extends Controller
     public function index(Request $request)
     {
         $user         = auth()->user();
-        $isSuperAdmin = method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : false;
+        $isSuperAdmin = (method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : false) || $user->can('view-all-stores');
 
         // ── Filter params ─────────────────────────────────────────────────────
         $storeId  = $request->input('store_id', $isSuperAdmin ? null : ($user->default_store_id ?? null));
@@ -676,7 +676,7 @@ class LaporanPenjualanController extends Controller
     public function exportExcel(Request $request)
     {
         $user         = auth()->user();
-        $isSuperAdmin = method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : false;
+        $isSuperAdmin = (method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : false) || $user->can('view-all-stores');
 
         $storeId  = $request->input('store_id', $isSuperAdmin ? null : ($user->default_store_id ?? null));
         $dateFrom = $request->input('date_from', Carbon::now()->startOfMonth()->toDateString());

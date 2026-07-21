@@ -530,7 +530,8 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         // 1. Halaman
         Route::get('/', [TransactionController::class, 'index'])->name('index')->middleware('permission:transactions-access');
         Route::get('/history', [TransactionController::class, 'history'])->name('history')->middleware('permission:transactions-access');
-        Route::post('/{id}/cancel-sale', [TransactionController::class, 'cancelSale'])->name('cancel-sale')->middleware('permission:transactions-access');
+        Route::get('/history/export', [TransactionController::class, 'exportHistory'])->name('history.export')->middleware('permission:transactions-access');
+        Route::post('/{id}/cancel-sale', [TransactionController::class, 'cancelSale'])->name('cancel-sale')->middleware('permission:transactions-cancel');
         Route::get('/print/{saleNumber}', [TransactionController::class, 'print'])
             ->where('saleNumber', '.*')
             ->name('print')
@@ -606,24 +607,24 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     Route::prefix('laporan')->name('laporan.')->group(function () {
 
         Route::get('penjualan', [LaporanPenjualanController::class, 'index'])
-            ->middleware('permission:reports-access')
+            ->middleware('permission:reports-sales')
             ->name('penjualan');
         Route::get('penjualan/export', [LaporanPenjualanController::class, 'exportExcel'])
-            ->middleware('permission:reports-access')
+            ->middleware('permission:reports-sales')
             ->name('penjualan.export');
 
         Route::get('keuangan', [LaporanKeuanganController::class, 'index'])
-            ->middleware('permission:profits-access')
+            ->middleware('permission:reports-finance')
             ->name('keuangan');
         Route::get('keuangan/export', [LaporanKeuanganController::class, 'exportExcel'])
-            ->middleware('permission:profits-access')
+            ->middleware('permission:reports-finance')
             ->name('keuangan.export');
 
         Route::get('mutasi', [LaporanMutasiController::class, 'index'])
-            ->middleware('permission:reports-access')
+            ->middleware('permission:reports-stock')
             ->name('mutasi');
         Route::get('mutasi/export', [LaporanMutasiController::class, 'exportExcel'])
-            ->middleware('permission:reports-access')
+            ->middleware('permission:reports-stock')
             ->name('mutasi.export');
     });
 
