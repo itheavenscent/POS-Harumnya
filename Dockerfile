@@ -68,8 +68,13 @@ RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
 # Install PHP dependencies (production only)
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
+# Entrypoint: sinkronkan public -> shared volume untuk nginx
+COPY docker/scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh \
+    && mkdir -p /var/www/public-shared
+
 RUN chown -R www-data:www-data /var/www
 USER www-data
 
 EXPOSE 9000
-CMD ["php-fpm"]
+CMD ["/usr/local/bin/entrypoint.sh"]
