@@ -56,24 +56,27 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www
 
 # Copy application source
-COPY . /var/www
+COPY --chown=www-data:www-data . /var/www
 
 # Copy Vite build output from node-builder stage
-COPY --from=node-builder /var/www/public/build /var/www/public/build
+COPY --chown=www-data:www-data --from=node-builder /var/www/public/build /var/www/public/build
 
 # Set permissions
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
-    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+
+# Change user so composer installs dependencies with correct ownership
+USER www-data
 
 # Install PHP dependencies (production only)
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Entrypoint: sinkronkan public -> shared volume untuk nginx
+USER root
 COPY docker/scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh \
-    && mkdir -p /var/www/public-shared
+    && mkdir -p /var/www/public-shared \
+    && chown www-data:www-data /var/www/public-shared
 
-RUN chown -R www-data:www-data /var/www
 USER www-data
 
 EXPOSE 9000
