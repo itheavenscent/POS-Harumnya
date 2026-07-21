@@ -440,33 +440,78 @@ class RecipeController extends Controller
         $intensities = Intensity::where('is_active', true)->orderBy('code')->get(['code', 'name', 'oil_ratio', 'alcohol_ratio']);
         $ingredients = Ingredient::where('is_active', true)->orderBy('code')->get(['code', 'name', 'unit']);
 
-        $templatePath = storage_path('app/templates/template_import_variant_recipe.xlsx');
+        // Build workbook dari scratch — tidak bergantung pada file base yang bisa hilang.
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
 
-        if (!file_exists($templatePath)) {
-            $basePath = public_path('templates/template_import_variant_recipe.xlsx');
-            if (!file_exists($basePath)) {
-                abort(404, 'Template file tidak ditemukan.');
+        // ── Sheet 1: Import Data ──
+        $dataSheet = $spreadsheet->getActiveSheet();
+        $dataSheet->setTitle('Import Data');
+
+        $dataSheet->setCellValue('A1', 'TEMPLATE IMPORT FORMULA VARIANT');
+        $dataSheet->mergeCells('A1:F1');
+        $dataSheet->getStyle('A1')->applyFromArray([
+            'font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => '7C3AED']],
+            'alignment' => ['horizontal' => 'center'],
+        ]);
+
+        $dataSheet->setCellValue('A2',
+            'Isi data mulai baris 4. WAJIB: variant_code, intensity_code, ingredient_code, base_quantity. '
+            . 'Total base_quantity per kombinasi = 30ml. Lihat sheet "Referensi Kode". '
+            . 'Template dibuat: ' . now()->format('d/m/Y H:i') . ' WIB.'
+        );
+        $dataSheet->mergeCells('A2:F2');
+        $dataSheet->getStyle('A2')->applyFromArray([
+            'font' => ['size' => 9, 'italic' => true, 'color' => ['rgb' => 'B45309']],
+            'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'FEF3C7']],
+            'alignment' => ['wrapText' => true],
+        ]);
+
+        $headers = ['variant_code', 'intensity_code', 'ingredient_code', 'base_quantity', 'unit', 'notes'];
+        foreach ($headers as $i => $h) {
+            $col = chr(65 + $i);
+            $dataSheet->setCellValue("{$col}3", $h);
+            $dataSheet->getStyle("{$col}3")->applyFromArray([
+                'font' => ['bold' => true, 'size' => 10, 'color' => ['rgb' => '1E293B']],
+                'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'E2E8F0']],
+                'borders' => ['bottom' => ['borderStyle' => 'thin']],
+            ]);
+        }
+
+        // Baris contoh
+        $examples = [
+            ['FOF', 'EDP', 'BB-001', 12, 'ml', 'Contoh — hapus baris ini'],
+            ['FOF', 'EDP', 'ALC-001', 18, 'ml', 'Contoh — hapus baris ini'],
+        ];
+        $r = 4;
+        foreach ($examples as $ex) {
+            foreach ($ex as $ci => $cv) {
+                $dataSheet->setCellValue(chr(65 + $ci) . $r, $cv);
             }
-            if (!is_dir(dirname($templatePath))) {
-                mkdir(dirname($templatePath), 0755, true);
-            }
-            copy($basePath, $templatePath);
+            $dataSheet->getStyle("A{$r}:F{$r}")->getFont()->setItalic(true)->getColor()->setRGB('94A3B8');
+            $r++;
         }
 
-        $spreadsheet = IOFactory::load($templatePath);
-
-        $refSheet = $spreadsheet->getSheetByName('Referensi Kode');
-        if ($refSheet) {
-            $this->fillReferenceSheet($refSheet, $variants, $intensities, $ingredients);
+        foreach (range('A', 'F') as $col) {
+            $dataSheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        $dataSheet = $spreadsheet->getSheetByName('Import Data');
-        if ($dataSheet) {
-            $dataSheet->getCell('A2')->setValue(
-                'Isi data sesuai kolom. WAJIB: variant_code, intensity_code, ingredient_code, base_quantity. '
-                . 'Template dibuat: ' . now()->format('d/m/Y H:i') . ' WIB.'
-            );
+        // ── Sheet 2: Referensi Kode ──
+        $refSheet = $spreadsheet->createSheet();
+        $refSheet->setTitle('Referensi Kode');
+        $refSheet->setCellValue('A1', 'DAFTAR KODE REFERENSI');
+        $refSheet->mergeCells('A1:C1');
+        $refSheet->getStyle('A1')->applyFromArray([
+            'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => '0F172A']],
+            'alignment' => ['horizontal' => 'center'],
+        ]);
+        $this->fillReferenceSheet($refSheet, $variants, $intensities, $ingredients);
+        foreach (range('A', 'C') as $col) {
+            $refSheet->getColumnDimension($col)->setAutoSize(true);
         }
+
+        $spreadsheet->setActiveSheetIndex(0);
 
         $filename = 'template_import_formula_variant_' . now()->format('Ymd_His') . '.xlsx';
         $tmpDir   = storage_path('app/tmp');

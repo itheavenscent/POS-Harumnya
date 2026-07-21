@@ -15,18 +15,61 @@ export default function CashTransactionModal({ isOpen, onClose }) {
 
     if (!isOpen) return null;
 
-    const handlePhotoSelect = (file) => {
+    const [compressing, setCompressing] = useState(false);
+
+    // Kompres gambar via canvas: resize max 1280px, kualitas JPEG 0.7.
+    // Cegah error 413 (Request Entity Too Large) akibat foto kamera HP yang besar.
+    const compressImage = (file) =>
+        new Promise((resolve, reject) => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+                const maxDim = 1280;
+                let { width, height } = img;
+                if (width > maxDim || height > maxDim) {
+                    if (width >= height) { height = Math.round(height * maxDim / width); width = maxDim; }
+                    else { width = Math.round(width * maxDim / height); height = maxDim; }
+                }
+                const canvas = document.createElement("canvas");
+                canvas.width = width;
+                canvas.height = height;
+                canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+                canvas.toBlob(
+                    (blob) => {
+                        if (!blob) return reject(new Error("compress failed"));
+                        resolve(new File([blob], "cash-proof.jpg", { type: "image/jpeg" }));
+                    },
+                    "image/jpeg",
+                    0.7
+                );
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("load failed")); };
+            img.src = url;
+        });
+
+    const handlePhotoSelect = async (file) => {
         if (!file) return;
         if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) {
             toast.error("Hanya foto JPG/PNG/WebP yang diterima");
             return;
         }
-        if (file.size > 5 * 1024 * 1024) {
-            toast.error("Ukuran foto maksimal 5MB");
-            return;
+        setCompressing(true);
+        try {
+            const compressed = await compressImage(file);
+            setData("photo", compressed);
+            setPhotoPreview(URL.createObjectURL(compressed));
+        } catch {
+            // Fallback ke file asli jika kompresi gagal
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error("Ukuran foto maksimal 5MB");
+            } else {
+                setData("photo", file);
+                setPhotoPreview(URL.createObjectURL(file));
+            }
+        } finally {
+            setCompressing(false);
         }
-        setData("photo", file);
-        setPhotoPreview(URL.createObjectURL(file));
     };
 
     const removePhoto = () => {
@@ -172,10 +215,20 @@ export default function CashTransactionModal({ isOpen, onClose }) {
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
-                                className="w-full h-24 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 transition-all flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-cyan-600"
+                                disabled={compressing}
+                                className="w-full h-24 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 transition-all flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-cyan-600 disabled:opacity-50"
                             >
-                                <IconCamera size={24} />
-                                <span className="text-xs font-bold">Ambil Foto / Pilih dari Galeri</span>
+                                {compressing ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+                                        <span className="text-xs font-bold">Memproses foto...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <IconCamera size={24} />
+                                        <span className="text-xs font-bold">Ambil Foto / Pilih dari Galeri</span>
+                                    </>
+                                )}
                             </button>
                         )}
                         {errors.photo && <p className="mt-1 text-xs text-red-500 font-medium">{errors.photo}</p>}
