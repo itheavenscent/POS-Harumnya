@@ -161,6 +161,7 @@ class StockTransferController extends Controller
 
         $transfer->from_name = $this->locationName($transfer->from_location_type, $transfer->from_location_id);
         $transfer->to_name   = $this->locationName($transfer->to_location_type,   $transfer->to_location_id);
+        $transfer->can_edit  = $transfer->canEdit();
 
         $transfer->items->each(function ($item) use ($transfer) {
             [$name, $code, $unit] = $this->resolveItem($item->item_type, $item->item_id);

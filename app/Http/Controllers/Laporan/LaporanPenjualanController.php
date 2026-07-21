@@ -724,7 +724,7 @@ class LaporanPenjualanController extends Controller
 
         $saleDiscounts = DB::table('sale_discounts')
             ->whereIn('sale_id', $saleIds)
-            ->select(['sale_id', 'discount_name', 'discount_amount'])
+            ->select(['sale_id', 'discount_name', 'applied_amount'])
             ->get()
             ->groupBy('sale_id');
 
@@ -748,7 +748,7 @@ class LaporanPenjualanController extends Controller
             foreach ($sales as $sale) {
                 $items    = $saleItems[$sale->id]    ?? collect();
                 $discApplied = ($saleDiscounts[$sale->id] ?? collect())
-                    ->map(fn ($d) => $d->discount_name . ' (-' . number_format($d->discount_amount, 0, ',', '.') . ')')
+                    ->map(fn ($d) => $d->discount_name . ' (-' . number_format($d->applied_amount, 0, ',', '.') . ')')
                     ->implode('; ');
                 $payMethods = ($salePayments[$sale->id] ?? collect())
                     ->map(fn ($p) => $p->payment_method_name)

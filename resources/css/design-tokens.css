@@ -107,20 +107,20 @@
   --touch-target-min: 2.75rem;
   --touch-target-comfortable: 3rem;
 
-  /* === Border Radius (Force Square for Brutalist style) === */
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
-  --radius-2xl: 0px;
+  /* === Border Radius (lembut membulat) === */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
   --radius-full: 9999px;
 
-  /* === Shadows (Solid neo-brutalist borders instead of blur) === */
-  --shadow-sm: 2px 2px 0px 0px rgba(0, 0, 0, 1);
-  --shadow-md: 4px 4px 0px 0px rgba(0, 0, 0, 1);
-  --shadow-lg: 6px 6px 0px 0px rgba(0, 0, 0, 1);
-  --shadow-xl: 8px 8px 0px 0px rgba(0, 0, 0, 1);
-  --shadow-glow: 4px 4px 0px 0px rgba(0, 0, 0, 1);
+  /* === Shadows (soft blur halus, bukan offset keras) === */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 2px 8px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 6px 16px rgba(15, 23, 42, 0.07);
+  --shadow-xl: 0 10px 28px rgba(15, 23, 42, 0.08);
+  --shadow-glow: 0 1px 3px rgba(15, 23, 42, 0.06);
 
   /* === Transitions === */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -224,11 +224,11 @@ body {
 
 .product-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .product-card:active {
-  transform: scale(0.98);
+  transform: scale(0.985);
 }
 
 /* Quick amount button */
