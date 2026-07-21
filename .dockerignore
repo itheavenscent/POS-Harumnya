@@ -1,0 +1,12 @@
+/node_modules
+/vendor
+/.git
+/.github
+/.vscode
+/.idea
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+/public/build
+.env

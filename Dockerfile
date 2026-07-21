@@ -1,7 +1,7 @@
 # ================================
 # Stage 1: Build frontend assets
 # ================================
-FROM node:20-alpine AS node-builder
+FROM node:24-alpine AS node-builder
 
 WORKDIR /var/www
 
@@ -62,7 +62,8 @@ COPY --chown=www-data:www-data . /var/www
 COPY --chown=www-data:www-data --from=node-builder /var/www/public/build /var/www/public/build
 
 # Set permissions
-RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache \
+    && chown www-data:www-data /var/www
 
 # Change user so composer installs dependencies with correct ownership
 USER www-data
