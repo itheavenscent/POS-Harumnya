@@ -17,12 +17,15 @@ import {
     IconReceipt,
     IconTransfer,
     IconBox,
+    IconPrinter,
 } from "@tabler/icons-react";
 
 import OpenShiftModal from "@/Components/Dashboard/OpenShiftModal";
 import CloseShiftModal from "@/Components/Dashboard/CloseShiftModal";
 import POSSidebar from "@/Components/POS/POSSidebar";
 import CashTransactionModal from "@/Components/POS/CashTransactionModal";
+import PrinterConnectModal from "@/Components/POS/PrinterConnectModal";
+import { useBluetoothContext } from "@/Context/BluetoothContext";
 
 export default function POSLayout({ children, headerActions }) {
     const { component, props } = usePage();
@@ -34,6 +37,10 @@ export default function POSLayout({ children, headerActions }) {
     const [isOpenShiftModalOpen, setIsOpenShiftModalOpen] = useState(false);
     const [isCloseShiftModalOpen, setIsCloseShiftModalOpen] = useState(false);
     const [isCashModalOpen, setIsCashModalOpen] = useState(false);
+    const [isPrinterModalOpen, setIsPrinterModalOpen] = useState(false);
+    const bt = useBluetoothContext();
+    const printerConnected = bt?.status === "connected";
+    const printerBusy = bt?.status === "connecting" || bt?.status === "reconnecting";
     const [sidebarOpen, setSidebarOpen] = useState(() => {
         try { return localStorage.getItem("pos_sidebar_open") !== "false"; } catch { return true; }
     });
@@ -173,6 +180,23 @@ export default function POSLayout({ children, headerActions }) {
                             <div className="hidden lg:block w-px h-7 bg-slate-200 dark:bg-slate-700" />
                         </div>
                     )}
+
+                    {/* Printer Connect */}
+                    <button
+                        onClick={() => setIsPrinterModalOpen(true)}
+                        className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all border ${
+                            printerConnected
+                                ? "text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800"
+                                : "text-slate-500 bg-slate-100 dark:text-slate-400 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700"
+                        }`}
+                        title="Printer Thermal"
+                    >
+                        <IconPrinter size={15} />
+                        <span className="hidden lg:inline">{printerConnected ? "Printer" : "Printer"}</span>
+                        <span className={`w-2 h-2 rounded-full ${
+                            printerConnected ? "bg-emerald-500" : printerBusy ? "bg-amber-400 animate-pulse" : "bg-slate-400"
+                        }`} />
+                    </button>
 
                     {/* Fullscreen Toggle */}
                     <button
@@ -350,6 +374,11 @@ export default function POSLayout({ children, headerActions }) {
                     onClose={() => setIsCashModalOpen(false)}
                 />
             )}
+
+            <PrinterConnectModal
+                isOpen={isPrinterModalOpen}
+                onClose={() => setIsPrinterModalOpen(false)}
+            />
         </div>
     );
 }
