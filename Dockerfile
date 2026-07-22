@@ -9,6 +9,8 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
+# VITE_APP_NAME di-embed saat build; .env belum ada di tahap ini → set eksplisit.
+ENV VITE_APP_NAME=Harumnya
 RUN npm run build
 
 # ================================

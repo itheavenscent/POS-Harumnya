@@ -7,7 +7,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ThemeSwitcherProvider } from './Context/ThemeSwitcherContext';
 import { BluetoothProvider } from './Context/BluetoothContext';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'Harumnya';
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,

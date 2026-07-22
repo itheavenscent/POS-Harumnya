@@ -34,26 +34,30 @@ class POSFeatureController extends Controller
 
         if ($type === 'ingredient') {
             $stocks = StoreIngredientStock::with(['ingredient.category'])
-                ->where('store_id', $storeId)
+                ->join('ingredients', 'store_ingredient_stocks.ingredient_id', '=', 'ingredients.id')
+                ->where('store_ingredient_stocks.store_id', $storeId)
                 ->when($request->search, function ($query, $search) {
-                    $query->whereHas('ingredient', function ($q) use ($search) {
-                        $q->where('name', 'ilike', "%{$search}%")
-                          ->orWhere('code', 'ilike', "%{$search}%");
+                    $query->where(function ($q) use ($search) {
+                        $q->where('ingredients.name', 'ilike', "%{$search}%")
+                          ->orWhere('ingredients.code', 'ilike', "%{$search}%");
                     });
                 })
-                ->latest('updated_at')
+                ->orderBy('ingredients.name')
+                ->select('store_ingredient_stocks.*')
                 ->paginate(20)
                 ->withQueryString();
         } else {
             $stocks = StorePackagingStock::with(['packagingMaterial.category', 'packagingMaterial.size'])
-                ->where('store_id', $storeId)
+                ->join('packaging_materials', 'store_packaging_stocks.packaging_material_id', '=', 'packaging_materials.id')
+                ->where('store_packaging_stocks.store_id', $storeId)
                 ->when($request->search, function ($query, $search) {
-                    $query->whereHas('packagingMaterial', function ($q) use ($search) {
-                        $q->where('name', 'ilike', "%{$search}%")
-                          ->orWhere('code', 'ilike', "%{$search}%");
+                    $query->where(function ($q) use ($search) {
+                        $q->where('packaging_materials.name', 'ilike', "%{$search}%")
+                          ->orWhere('packaging_materials.code', 'ilike', "%{$search}%");
                     });
                 })
-                ->latest('updated_at')
+                ->orderBy('packaging_materials.name')
+                ->select('store_packaging_stocks.*')
                 ->paginate(20)
                 ->withQueryString();
         }
