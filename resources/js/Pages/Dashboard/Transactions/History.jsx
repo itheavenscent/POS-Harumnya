@@ -37,7 +37,7 @@ const STATUS_LABEL = {
     refunded: "Refund", pending: "Pending", draft: "Draft",
 };
 
-export default function History({ sales, filters, summary = {}, stores = [], isAdmin = false, canCancelSale = false }) {
+export default function History({ sales, filters, summary = {}, stores = [], isAdmin = false, canCancelSale = false, canPrint = false }) {
     const [filterData,   setFilterData]   = useState({ ...defaultFilters, ...filters });
     const [showFilters,  setShowFilters]  = useState(false);
     const [selectedSale, setSelectedSale] = useState(null);
@@ -409,13 +409,15 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
                                                             title="Detail Transaksi">
                                                             <IconEye size={18}/>
                                                         </button>
-                                                        <Link
-                                                            href={route("transactions.print", sale.sale_number)}
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-500 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/50 transition-colors"
-                                                            title="Cetak Struk">
-                                                            <IconPrinter size={18}/>
-                                                        </Link>
+                                                        {canPrint && (
+                                                            <Link
+                                                                href={route("transactions.print", sale.sale_number)}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-500 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/50 transition-colors"
+                                                                title="Cetak Struk">
+                                                                <IconPrinter size={18}/>
+                                                            </Link>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -586,9 +588,11 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
                                 <button onClick={() => setSelectedSale(null)} className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                                     Tutup
                                 </button>
-                                <Link href={route("transactions.print", selectedSale.sale_number)} className="px-6 py-2.5 rounded-xl bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-sm font-bold flex items-center gap-2 hover:scale-[1.02] transition-transform">
-                                    <IconPrinter size={18}/> Cetak Struk
-                                </Link>
+                                {canPrint && (
+                                    <Link href={route("transactions.print", selectedSale.sale_number)} className="px-6 py-2.5 rounded-xl bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-sm font-bold flex items-center gap-2 hover:scale-[1.02] transition-transform">
+                                        <IconPrinter size={18}/> Cetak Struk
+                                    </Link>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -9,12 +9,10 @@ use Illuminate\Support\Str;
 /**
  * VariantSeeder
  *
- * Sumber data: Sheet "CEWEK COWOK" — Varian_Harumnya.xlsx (versi terbaru)
- *
- * Catatan warna Excel:
- *   - Merah dihapus dari seed: MRT, COCO, NO5, DEL, TEAS, TTV
- *   - Biru/hijau disesuaikan: LIM ditambahkan, JPM menjadi SH, VCS menjadi VSC
- *   - MISS disesuaikan menjadi Miss Dior sesuai nama di Excel
+ * Sumber data: Sheet "CEWEK COWOK" — Varian Harumnya (1).xlsx
+ *   - Kolom CEWEK (A-C): Varian | Brand | SKU  → gender female
+ *   - Kolom COWOK (D-F): Varian | Brand | SKU  → gender male
+ *   - Brand disimpan di kolom `description`.
  */
 class VariantSeeder extends Seeder
 {
@@ -29,102 +27,99 @@ class VariantSeeder extends Seeder
         DB::table('store_categories')->delete();
         DB::table('variants')->delete();
 
-        // Format: [code, name, gender]
-        // Wanita (51 items) + Pria (24 items) dari Sheet "CEWEK COWOK"
+        // Format: [code, name, gender, brand|null]
         $variants = [
-            // ── Wanita ────────────────────────────────────────────────────────
-            ['NAG',   'Nagita',                    'female'],
-            ['GRT',   'Green Tea',                 'unisex'],
-            ['RIA',   'Euphoria',                  'female'],
-            ['LIM',   'L\'Imperatrice 3',          'female'],
-            ['GI',    'Garuda Indonesia',          'unisex'],
-            ['FOF',   'Flight Of Fancy',           'female'],
-            ['CLP',   'Cloud Pink',                'female'],
-            ['PINK',  'Pink Chifon',               'female'],
-            ['HER',   'Her',                       'female'],
-            ['HERI',  'Her Intense',               'female'],
-            ['GDS',   'Goddess',                   'female'],
-            ['BOA',   'Omnia',                     'female'],
-            ['BLAN',  'Blanche',                   'unisex'],
-            ['GG',    'Good Girl',                 'female'],
-            ['GGB',   'Good Girl Blush',           'female'],
-            ['NOMA',  'Nomade',                    'female'],
-            ['BOUQ',  'Blooming Bouquet',          'female'],
-            ['MISS',  'Miss Dior',                 'female'],
-            ['EAC',   'Eau Capitale',              'unisex'],
-            ['CTA',   'Cherry in The Air',         'female'],
-            ['WAY',   'My Way',                    'female'],
-            ['WAYN',  'My Way Nectar',             'female'],
-            ['SIF',   'Si Fiori',                  'female'],
-            ['BLOM',  'Bloom',                     'female'],
-            ['FLO',   'Flora',                     'female'],
-            ['TWIL',  'Twilly',                    'female'],
-            ['JPS',   'Scandal',                   'female'],
-            ['POPY',  'Scarlet Poppy',             'unisex'],
-            ['JME',   'English Pear Freesia',      'unisex'],
-            ['VIVA',  'Viva La Juicy',             'female'],
-            ['EDEN',  'Eden Sparkling Lychee',     'female'],
-            ['CANDY', 'Vanilla Candy',             'female'],
-            ['VIE',   'La Vie Est Belle',          'female'],
-            ['IDOL',  'Idole Nectar',              'female'],
-            ['BRO',   'Baccarat 540',              'unisex'],
-            ['BATH',  'Bubble Bath',               'unisex'],
-            ['BREAK', 'Coffee Break',              'unisex'],
-            ['MVR',   'Vanilla Rose',              'unisex'],
-            ['MJP',   'Perfect',                   'female'],
-            ['FAME',  'Fame',                      'female'],
-            ['IS',    'Incanto Shine',             'female'],
-            ['MUSK',  'White Musk',                'unisex'],
-            ['SCN',   'Scandalous',                'female'],
-            ['VBS',   'Bombshell Escape',          'female'],
-            ['VB',    'Bombshell',                 'female'],
-            ['VSC',   'Coconut Passion',           'female'],
-            ['ROWI',  'Romantic Wish',             'female'],
-            ['BOP',   'Black Opium',               'female'],
-            ['BOPR',  'Black Opium Red',           'female'],
-            ['LIB',   'Libre',                     'female'],
-            ['ORC',   'Orchid',                    'female'],
+            // ── CEWEK (Female) — 48 varian ───────────────────────────────────
+            ['NAG',   'Nagita',                     'female', null],
+            ['GRT',   'Green Tea',                  'female', null],
+            ['LIM',   "L'Imperatrice 3 (Euphoria)", 'female', 'Dolce & Gabbana'],
+            ['GI',    'Garuda Indonesia',           'female', null],
+            ['FOF',   'Flight Of Fancy',            'female', 'Anna Sui'],
+            ['CLP',   'Cloud Pink',                 'female', 'Ariana Grande'],
+            ['PINK',  'Pink Chifon',                'female', 'Bath & Body Works'],
+            ['HER',   'Her',                        'female', 'Burberry'],
+            ['GDS',   'Goddess',                    'female', 'Burberry'],
+            ['BOA',   'Omnia',                      'female', 'Bvlgari'],
+            ['BLAN',  'Blanche',                    'female', 'Byredo'],
+            ['GG',    'Good Girl',                  'female', 'Carolina Herrera'],
+            ['GGB',   'Good Girl Blush',            'female', 'Carolina Herrera'],
+            ['NOMA',  'Nomade',                     'female', 'Chloe'],
+            ['BOUQ',  'Blooming Bouquet',           'female', 'Christian Dior'],
+            ['MISS',  'Miss Dior',                  'female', 'Christian Dior'],
+            ['EAC',   'Eau Capitale',               'female', 'Diptyque'],
+            ['CTA',   'Cherry in The Air',          'female', 'Escada'],
+            ['WAY',   'My Way',                      'female', 'Giorgio Armani'],
+            ['SIF',   'Si Fiori',                   'female', 'Giorgio Armani'],
+            ['BLOM',  'Bloom',                      'female', 'Gucci'],
+            ['FLO',   'Flora',                      'female', 'Gucci'],
+            ['TWIL',  'Twilly',                     'female', 'Hermes'],
+            ['JPS',   'Scandal',                    'female', 'Jean Paul Gaultier'],
+            ['POPY',  'Scarlet Poppy',              'female', 'Jo Malone'],
+            ['JME',   'English Pear Freesia',       'female', 'Jo Malone'],
+            ['VIVA',  'Viva La Juicy',              'female', 'Juicy Couture'],
+            ['EDEN',  'Eden Sparkling Lychee',      'female', 'Kayali'],
+            ['CANDY', 'Vanilla Candy',              'female', 'Kayali'],
+            ['VIE',   'La Vie Est Belle',           'female', 'Lancome'],
+            ['IDOL',  'Idole Nectar',               'female', 'Lancome'],
+            ['BRO',   'Baccarat 540',               'female', 'Maison Francis Kurkdjian'],
+            ['BATH',  'Bubble Bath',                'female', 'Maison Margiela'],
+            ['BREAK', 'Coffee Break',               'female', 'Maison Margiela'],
+            ['MVR',   'Vanilla Rose',               'female', 'Mancera'],
+            ['MJP',   'Perfect',                    'female', 'Marc Jacobs'],
+            ['FAME',  'Fame',                       'female', 'Paco Rabbane'],
+            ['IS',    'Incanto Shine',              'female', 'Salvatore Feragamo'],
+            ['MUSK',  'White Musk',                 'female', 'The Body Shop'],
+            ['SCN',   'Scandalous',                 'female', "Victoria's Secret"],
+            ['VBS',   'Bombshell Escape',           'female', "Victoria's Secret"],
+            ['VB',    'Bombshell',                  'female', "Victoria's Secret"],
+            ['VSC',   'Coconut Passion',            'female', "Victoria's Secret"],
+            ['ROWI',  'Romantic Wish',              'female', "Victoria's Secret"],
+            ['BOP',   'Black Opium',                'female', 'Yves Saint Laurent'],
+            ['BOPR',  'Black Opium Red',            'female', 'Yves Saint Laurent'],
+            ['LIB',   'Libre',                      'female', 'Yves Saint Laurent'],
+            ['ORC',   'Orchid',                     'female', 'Zara'],
 
-            // ── Pria ──────────────────────────────────────────────────────────
-            ['BE',    'Blue Emotion',              'male'],
-            ['BLACK', 'Black',                     'male'],
-            ['BS',    'Blue Seduction',            'male'],
-            ['WANT',  'The Most Wanted',           'male'],
-            ['HERO',  'Hero',                      'male'],
-            ['BLEU',  'Bleu De Chance',            'male'],
-            ['SVG',   'Sauvage',                   'male'],
-            ['SVGE',  'Sauvage Elixir',            'male'],
-            ['HOME',  'Homme',                     'male'],
-            ['CAV',   'Aventus',                   'male'],
-            ['DDB',   'Desire Blue',               'male'],
-            ['SWY',   'Stronger With You',         'male'],
-            ['MANX',  'Man X',                     'male'],
-            ['SH',    'Scandal Homme',             'male'],
-            ['JMW',   'Wood Sage Sea Salt',        'unisex'],
-            ['SANT',  'Santal 33',                 'unisex'],
-            ['ONE',   'One Million Lucky',         'male'],
-            ['ONER',  'One Million Royal',         'male'],
-            ['BM',    'Black Musk',                'unisex'],
-            ['BIR',   'Born in Roma',              'male'],
-            ['EROF',  'Eros Flame',                'male'],
-            ['EROS',  'Eros',                      'male'],
-            ['Y',     'Y',                         'male'],
-            ['SELF',  'My Self',                   'male'],
+            // ── COWOK (Male) — 23 varian ─────────────────────────────────────
+            ['BE',    'Blue Emotion',               'male', 'Aigner'],
+            ['BLACK', 'Black',                       'male', 'Aigner'],
+            ['BS',    'Blue Seduction',             'male', 'Antonio Banderas'],
+            ['WANT',  'The Most Wanted',            'male', 'Azzaro'],
+            ['HERO',  'Hero',                        'male', 'Burberry'],
+            ['BLEU',  'Bleu De Chanel',             'male', 'Chanel'],
+            ['SVG',   'Sauvage',                    'male', 'Christian Dior'],
+            ['SVGE',  'Sauvage Elixir',             'male', 'Christian Dior'],
+            ['HOME',  'Homme',                       'male', 'Christian Dior'],
+            ['CAV',   'Aventus',                    'male', 'Creed'],
+            ['DDB',   'Desire Blue',                'male', 'Dunhill'],
+            ['SWY',   'Stronger With You',          'male', 'Giorgio Armani'],
+            ['MANX',  'Man X',                       'male', 'Hallowen'],
+            ['SH',    'Scandal Homme',              'male', 'Jean Paul Gaultier'],
+            ['JMW',   'Wood Sage Sea Salt',         'male', 'Jo Malone'],
+            ['SANT',  'Santal 33',                  'male', 'Le Labo'],
+            ['ONE',   'One Million Lucky',          'male', 'Paco Rabbane'],
+            ['ONER',  'One Million Royal',          'male', 'Paco Rabbane'],
+            ['BM',    'Black Musk',                 'male', 'The Body Shop'],
+            ['BIR',   'Born in Roma',               'male', 'Valentino'],
+            ['EROF',  'Eros Flame',                 'male', 'Versace'],
+            ['EROS',  'Eros',                        'male', 'Versace'],
+            ['Y',     'Y',                           'male', 'Yves Saint Laurent'],
         ];
 
+        $sortOrder = 0;
         foreach ($variants as $v) {
             DB::table('variants')->insert([
                 'id'          => Str::uuid(),
                 'code'        => $v[0],
                 'name'        => $v[1],
                 'gender'      => $v[2],
-                'description' => null,
+                'description' => $v[3], // brand
                 'is_active'   => true,
+                'sort_order'  => $sortOrder++,
                 'created_at'  => $now,
                 'updated_at'  => $now,
             ]);
         }
 
-        $this->command->info('✓ Variants seeded (' . count($variants) . ' variants).');
+        $this->command->info('✓ Variants seeded (' . count($variants) . ' variants: 48 female + 23 male).');
     }
 }

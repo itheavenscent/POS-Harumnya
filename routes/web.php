@@ -535,7 +535,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::get('/print/{saleNumber}', [TransactionController::class, 'print'])
             ->where('saleNumber', '.*')
             ->name('print')
-            ->middleware('permission:transactions-access');
+            ->middleware('permission:transactions-print');
 
         // 2. API
         Route::get('/get-variants-pos', [TransactionController::class, 'getVariantsForPOS'])->name('get-variants-pos')->middleware('permission:transactions-access');

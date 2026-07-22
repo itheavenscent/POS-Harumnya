@@ -105,6 +105,7 @@ class POSFeatureController extends Controller
             'sales' => $sales,
             'filters' => $request->only(['search']),
             'activeCashDrawer' => $activeCashDrawer,
+            'canPrint' => $user->can('transactions-print'),
         ]);
     }
 

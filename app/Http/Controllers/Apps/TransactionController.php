@@ -688,6 +688,7 @@ class TransactionController extends Controller
             'stores'        => $stores,
             'isAdmin'       => $isAdmin,
             'canCancelSale' => $user->can('transactions-cancel'),
+            'canPrint'      => $user->can('transactions-print'),
         ]);
     }
 

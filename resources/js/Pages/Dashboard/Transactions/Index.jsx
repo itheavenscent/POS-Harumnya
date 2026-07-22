@@ -1855,45 +1855,45 @@ export default function Index({
                                             <p className="text-[11px] text-slate-400 mb-3 uppercase tracking-wider font-bold">
                                                 Klik item untuk menambahkan langsung ke keranjang
                                             </p>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
                                                 {items.map((pkg, i) => {
                                                     const bg = ["bg-orange-500", "bg-violet-500", "bg-rose-500", "bg-teal-500", "bg-sky-500", "bg-amber-500", "bg-indigo-500"][i % 7];
                                                     const inCart = cartPackagings.find(p => p.pkg.id === pkg.id);
                                                     return (
                                                         <button key={pkg.id} onClick={() => handleAddPkg(pkg)}
-                                                            className={`group relative p-4 rounded-2xl border-2 text-left transition-all ${inCart ? "border-slate-300 dark:border-orange-600 shadow-md ring-2 ring-orange-500/20 bg-slate-50 dark:bg-orange-950/20" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-orange-600 hover:shadow-md"}`}>
-                                                            
-                                                            <div className="flex items-start gap-3 mb-3">
-                                                                <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                                                                    {pkg.image_url ? (
-                                                                        <img src={pkg.image_url} alt={pkg.name} className="w-full h-full object-cover" />
-                                                                    ) : (
-                                                                        <div className={`w-full h-full ${bg} flex items-center justify-center`}>
-                                                                            <IconBox size={20} className="text-white" />
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">{pkg.name}</p>
-                                                                    {pkg.code && <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">{pkg.code}</span>}
-                                                                </div>
+                                                            className={`group relative flex flex-col rounded-2xl border-2 text-left overflow-hidden transition-all ${inCart ? "border-orange-400 dark:border-orange-600 ring-2 ring-orange-500/20 bg-slate-50 dark:bg-orange-950/20" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md"}`}>
+
+                                                            {/* Gambar besar — aspect persegi, object-contain agar botol utuh */}
+                                                            <div className="relative aspect-square w-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
+                                                                {pkg.image_url ? (
+                                                                    <img src={pkg.image_url} alt={pkg.name} className="w-full h-full object-contain p-2" />
+                                                                ) : (
+                                                                    <div className={`w-full h-full ${bg} flex items-center justify-center`}>
+                                                                        <IconBox size={44} className="text-white/90" />
+                                                                    </div>
+                                                                )}
                                                                 {inCart && (
-                                                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-black flex-shrink-0 bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
+                                                                    <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[11px] font-black bg-orange-500 text-white shadow-sm">
                                                                         {inCart.qty}x
                                                                     </span>
                                                                 )}
                                                                 {pkg.is_free && !inCart && (
-                                                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-black flex-shrink-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                                                    <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-white shadow-sm">
                                                                         GRATIS
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="text-xs font-black text-slate-700 dark:text-slate-300">
-                                                                    {pkg.is_free ? "Rp 0" : fmt(pkg.selling_price)}
-                                                                </span>
-                                                                <span className="text-[11px] text-slate-400 font-semibold">+ Tambah →</span>
+
+                                                            {/* Info */}
+                                                            <div className="flex flex-col gap-1 p-3">
+                                                                <p className="font-black text-slate-800 dark:text-white text-sm leading-tight line-clamp-2">{pkg.name}</p>
+                                                                {pkg.code && <span className="text-[10px] text-slate-400 font-mono">{pkg.code}</span>}
+                                                                <div className="flex items-center justify-between mt-1">
+                                                                    <span className="text-sm font-black text-slate-700 dark:text-slate-300">
+                                                                        {pkg.is_free ? "Rp 0" : fmt(pkg.selling_price)}
+                                                                    </span>
+                                                                    <span className="text-[11px] text-orange-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity">+ Tambah</span>
+                                                                </div>
                                                             </div>
                                                         </button>
                                                     );

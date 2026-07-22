@@ -27,6 +27,7 @@ class RolePermissionSeeder extends Seeder
             'transactions-void',
             'transactions-refund',
             'transactions-cancel',
+            'transactions-print',
             'transactions-all',
 
             // ── Products & Catalog ───────────────────────────────────────────
@@ -205,7 +206,7 @@ class RolePermissionSeeder extends Seeder
         $reportsFinance = ['reports-finance', 'profits-access'];
         $reportsStock   = ['reports-stock'];
 
-        $transaksiView  = ['transactions-access', 'transactions-all'];
+        $transaksiView  = ['transactions-access', 'transactions-all', 'transactions-print'];
         $shiftView      = ['cash-drawers-access', 'cash-drawers-print'];
 
         // Lokasi (lihat semua)
@@ -356,7 +357,7 @@ class RolePermissionSeeder extends Seeder
         $cashier->syncPermissions($merge(
             ['dashboard-access'],
             // POS / Transaksi (fulfillment pakai transactions-*) — scoped ke toko sendiri
-            ['transactions-access', 'transactions-create'],
+            ['transactions-access', 'transactions-create', 'transactions-print'],
             // Shift Kasir
             ['cash-drawers-access', 'cash-drawers-open', 'cash-drawers-close', 'cash-drawers-print'],
             // Laporan penjualan
