@@ -2144,9 +2144,9 @@ export default function Index({
 
                     {/* Body — selalu 2 kolom (juga di tab kecil) agar tidak perlu scroll */}
                     <div className="flex-1 overflow-y-auto p-2 sm:p-3">
-                        <div className="mx-auto max-w-4xl grid grid-cols-2 gap-2 sm:gap-3">
-                            {/* ── Kolom kiri: Sales + Pelanggan ── */}
-                            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 space-y-2.5 h-fit">
+                        <div className="mx-auto max-w-4xl grid grid-cols-3 gap-2 sm:gap-3">
+                            {/* ── Kolom kanan (kecil): Sales + Pelanggan ── */}
+                            <div className="col-span-1 order-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 space-y-2.5 h-fit">
                                 {/* Sales Person (wajib) */}
                                 <div className="relative">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><IconUser size={10} /> Sales <span className="text-red-500">*</span></label>
@@ -2212,8 +2212,8 @@ export default function Index({
                                 </div>
                             </div>
 
-                            {/* ── Kolom kanan: Metode & tunai ── */}
-                            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 space-y-2.5 h-fit">
+                            {/* ── Kolom kiri (besar): Metode & tunai ── */}
+                            <div className="col-span-2 order-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 space-y-2.5 h-fit">
                                 <div>
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Metode Pembayaran</p>
                                     <div className="grid grid-cols-2 gap-2">
