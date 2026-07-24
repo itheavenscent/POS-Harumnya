@@ -2131,161 +2131,134 @@ export default function Index({
             {/* ── Halaman Pembayaran (full-screen, bukan modal) ───────────────── */}
             {showPaymentModal && (
                 <div className="fixed inset-0 z-50 flex flex-col bg-slate-50 dark:bg-slate-950">
-                    {/* Header halaman */}
-                    <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center gap-3">
-                        <button onClick={() => setShowPaymentModal(false)} className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors" title="Kembali ke keranjang">
-                            <IconArrowLeft size={20} />
+                    {/* Header halaman — slim */}
+                    <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 py-2 flex items-center gap-2">
+                        <button onClick={() => setShowPaymentModal(false)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors" title="Kembali ke keranjang">
+                            <IconArrowLeft size={18} />
                         </button>
-                        <h1 className="font-black text-slate-800 dark:text-white text-base flex items-center gap-2">
-                            <span className="w-8 h-8 rounded-xl bg-primary-100 dark:bg-slate-800 flex items-center justify-center"><IconReceipt size={16} className="text-slate-700" /></span>
-                            Pembayaran
+                        <h1 className="font-black text-slate-800 dark:text-white text-sm flex items-center gap-1.5">
+                            <IconReceipt size={16} className="text-primary-600" /> Pembayaran
                         </h1>
+                        <span className="ml-auto text-lg font-black text-primary-600">{fmt(payable)}</span>
                     </div>
 
-                    {/* Body — 2 kolom di layar lebar */}
-                    <div className="flex-1 overflow-y-auto p-4 md:p-6">
-                        <div className="mx-auto max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-                            {/* ── Kolom kiri: Sales, Pelanggan, Ringkasan ── */}
-                            <div className="space-y-4">
-                                {/* Sales Person Selector (wajib) */}
-                                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><IconUser size={10} /> Sales Person <span className="text-red-500">*</span></p>
+                    {/* Body — 2 kolom di layar lebar, rapat agar minim scroll */}
+                    <div className="flex-1 overflow-y-auto p-3">
+                        <div className="mx-auto max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-3">
+                            {/* ── Kolom kiri: Sales + Pelanggan ── */}
+                            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 space-y-2.5 h-fit">
+                                {/* Sales Person (wajib) */}
+                                <div className="relative">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><IconUser size={10} /> Sales <span className="text-red-500">*</span></label>
                                     <div className="relative">
+                                        <IconSearch size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300" />
+                                        <input
+                                            type="text" placeholder="Pilih Sales..."
+                                            value={selectedSalesPerson ? selectedSalesPerson.name : salesSearch}
+                                            onClick={() => { if (selectedSalesPerson) { setSelectedSalesPerson(null); setSalesSearch(""); } setShowSalesDropdown(true); }}
+                                            onChange={e => { setSalesSearch(e.target.value); setShowSalesDropdown(true); if (selectedSalesPerson) setSelectedSalesPerson(null); }}
+                                            className={`w-full h-9 pl-8 pr-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white bg-slate-50 dark:bg-slate-800 ${selectedSalesPerson ? "border-slate-200 dark:border-slate-700" : "border-red-200 dark:border-red-900/50"}`}
+                                        />
+                                    </div>
+                                    {showSalesDropdown && !selectedSalesPerson && (
+                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-30 overflow-hidden max-h-44 overflow-y-auto">
+                                            {salesPeople.filter(s => s.name.toLowerCase().includes(salesSearch.toLowerCase())).map(s => (
+                                                <button key={s.id} onClick={() => { setSelectedSalesPerson(s); setShowSalesDropdown(false); setSalesSearch(""); }} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                                                    <p className="font-semibold text-xs text-slate-800 dark:text-white">{s.name}</p>
+                                                    <p className="text-[10px] text-slate-400">{s.code}</p>
+                                                </button>
+                                            ))}
+                                            {salesPeople.length === 0 && <p className="p-3 text-center text-xs text-slate-400">Belum ada sales</p>}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Pelanggan */}
+                                <div className="relative" ref={customerRef}>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><IconUser size={10} /> Pelanggan</label>
+                                    <div className="flex items-center gap-2">
                                         <div className="flex-1 relative">
-                                            <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                                            <IconSearch size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300" />
                                             <input
-                                                type="text" placeholder="Pilih Sales..."
-                                                value={selectedSalesPerson ? selectedSalesPerson.name : salesSearch}
-                                                onClick={() => { if (selectedSalesPerson) { setSelectedSalesPerson(null); setSalesSearch(""); } setShowSalesDropdown(true); }}
-                                                onChange={e => { setSalesSearch(e.target.value); setShowSalesDropdown(true); if (selectedSalesPerson) setSelectedSalesPerson(null); }}
-                                                className="w-full h-11 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white"
+                                                type="text" placeholder="Cari Nomor Telepon..."
+                                                value={selectedCustomer ? (selectedCustomer.phone || selectedCustomer.name) : customerSearch}
+                                                onClick={() => { if (selectedCustomer) { setSelectedCustomer(null); setCustomerSearch(""); } setShowCustomerDropdown(true); }}
+                                                onChange={e => { setCustomerSearch(e.target.value); setShowCustomerDropdown(true); if (selectedCustomer) setSelectedCustomer(null); }}
+                                                className="w-full h-9 pl-8 pr-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white"
                                             />
                                         </div>
-                                        {showSalesDropdown && !selectedSalesPerson && (
-                                            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 overflow-hidden max-h-52 overflow-y-auto">
-                                                {salesPeople.filter(s => s.name.toLowerCase().includes(salesSearch.toLowerCase())).map(s => (
-                                                    <button key={s.id} onClick={() => { setSelectedSalesPerson(s); setShowSalesDropdown(false); setSalesSearch(""); }} className="w-full text-left px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0">
-                                                        <p className="font-semibold text-sm text-slate-800 dark:text-white">{s.name}</p>
-                                                        <p className="text-[11px] text-slate-400">{s.code}</p>
-                                                    </button>
-                                                ))}
-                                                {salesPeople.length === 0 && <p className="p-3 text-center text-xs text-slate-400">Belum ada sales</p>}
-                                            </div>
-                                        )}
+                                        <button onClick={() => setShowAddCustomer(true)} className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-primary-950/30 text-slate-700 flex items-center justify-center hover:bg-primary-100 flex-shrink-0" title="Tambah Pelanggan Baru">
+                                            <IconUserPlus size={15} />
+                                        </button>
                                     </div>
-                                </div>
-
-                                {/* Customer Selector */}
-                                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><IconUser size={10} /> Pelanggan</p>
-                                    <div className="relative" ref={customerRef}>
-                                        <div className="flex items-center gap-2">
-                                            <div className="flex-1 relative">
-                                                <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
-                                                <input
-                                                    type="text" placeholder="Cari Nomor Telepon..."
-                                                    value={selectedCustomer ? (selectedCustomer.phone || selectedCustomer.name) : customerSearch}
-                                                    onClick={() => { if (selectedCustomer) { setSelectedCustomer(null); setCustomerSearch(""); } setShowCustomerDropdown(true); }}
-                                                    onChange={e => { setCustomerSearch(e.target.value); setShowCustomerDropdown(true); if (selectedCustomer) setSelectedCustomer(null); }}
-                                                    className="w-full h-11 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white"
-                                                />
-                                            </div>
-                                            <button onClick={() => setShowAddCustomer(true)} className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-primary-950/30 text-slate-700 flex items-center justify-center hover:bg-primary-100 flex-shrink-0" title="Tambah Pelanggan Baru">
-                                                <IconUserPlus size={16} />
-                                            </button>
+                                    {selectedCustomer && (
+                                        <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                                            <p className="text-[11px] text-slate-700 dark:text-slate-300 flex items-center gap-1"><IconCheck size={11} /> {selectedCustomer.phone || selectedCustomer.name}</p>
+                                            {Number(selectedCustomer.points ?? 0) > 0 && <span className="text-[10px] text-slate-500 font-bold">{Number(selectedCustomer.points).toLocaleString("id-ID")} poin</span>}
+                                            {Number(selectedCustomer.points ?? 0) >= loyalty_reward_threshold && <span className="ml-auto text-[10px] font-black text-amber-600">🏆 Reward tersedia</span>}
                                         </div>
-                                        {selectedCustomer && (
-                                            <div className="mt-2 flex flex-col gap-1">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <p className="text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1"><IconCheck size={12} /> {selectedCustomer.phone || selectedCustomer.name}</p>
-                                                    {Number(selectedCustomer.points ?? 0) > 0 && <span className="ml-auto text-[11px] text-slate-700 font-bold">{Number(selectedCustomer.points).toLocaleString("id-ID")} poin</span>}
-                                                </div>
-                                                {Number(selectedCustomer.points ?? 0) >= loyalty_reward_threshold ? (
-                                                    <div className="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 flex items-center gap-2 shadow-sm">
-                                                        <span className="text-base flex-shrink-0">🏆</span>
-                                                        <div className="flex-1">
-                                                            <p className="text-[11px] font-black text-slate-700 dark:text-slate-300 leading-tight">Reward Tersedia!</p>
-                                                            <p className="text-[10px] text-slate-500">{loyalty_reward_description || "Reward diskon tersedia"}</p>
-                                                        </div>
-                                                    </div>
-                                                ) : Number(selectedCustomer.points ?? 0) > 0 && (
-                                                    <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
-                                                        <div className="flex justify-between items-center mb-1">
-                                                            <p className="text-[10px] font-bold text-slate-500">Progress Reward</p>
-                                                            <p className="text-[10px] font-bold text-slate-500">{selectedCustomer.points} / {loyalty_reward_threshold}</p>
-                                                        </div>
-                                                        <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                                            <div className="h-full bg-amber-500 rounded-full transition-all" style={{ width: `${Math.min((selectedCustomer.points / loyalty_reward_threshold) * 100, 100)}%` }} />
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                        {showCustomerDropdown && !selectedCustomer && (
-                                            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 overflow-hidden max-h-60 overflow-y-auto">
-                                                <button onClick={() => { setSelectedCustomer({ id: null, name: "Pelanggan Umum" }); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2.5 text-sm text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800">👤 Pelanggan Umum (Walk-in)</button>
-                                                {filteredCustomers.map(c => (
-                                                    <button key={c.id} onClick={() => { setSelectedCustomer(c); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0">
-                                                        <p className="font-semibold text-sm text-slate-800 dark:text-white">{c.phone || "Tanpa No. HP"}</p>
-                                                        <p className="text-[11px] text-slate-400">{c.name}</p>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
+                                    )}
+                                    {showCustomerDropdown && !selectedCustomer && (
+                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-30 overflow-hidden max-h-44 overflow-y-auto">
+                                            <button onClick={() => { setSelectedCustomer({ id: null, name: "Pelanggan Umum" }); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2 text-xs text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800">👤 Pelanggan Umum (Walk-in)</button>
+                                            {filteredCustomers.map(c => (
+                                                <button key={c.id} onClick={() => { setSelectedCustomer(c); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                                                    <p className="font-semibold text-xs text-slate-800 dark:text-white">{c.phone || "Tanpa No. HP"}</p>
+                                                    <p className="text-[10px] text-slate-400">{c.name}</p>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
 
-                                {/* Ringkasan biaya */}
-                                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
-                                    {subtotal > 0 && <div className="flex justify-between text-sm"><span className="text-slate-500">Parfum</span><span className="font-semibold">{fmt(subtotal)}</span></div>}
-                                    {pkgCartTotal > 0 && <div className="flex justify-between text-sm"><span className="text-slate-500">Kemasan</span><span className="font-semibold">{fmt(pkgCartTotal)}</span></div>}
-                                    {discountAmount > 0 && <div className="flex justify-between text-sm"><span className="text-slate-700">{selectedDiscount?.name}</span><span className="text-slate-700 font-bold">-{fmt(discountAmount)}</span></div>}
-                                    <div className="flex justify-between items-center border-t border-slate-200 dark:border-slate-700 pt-2">
-                                        <span className="font-black text-slate-800 dark:text-white">Total Bayar</span>
-                                        <span className="text-2xl font-black text-slate-700 dark:text-slate-300">{fmt(payable)}</span>
+                                {/* Ringkasan biaya ringkas */}
+                                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
+                                    {subtotal > 0 && <div className="flex justify-between text-xs"><span className="text-slate-500">Parfum</span><span className="font-semibold text-slate-700 dark:text-slate-300">{fmt(subtotal)}</span></div>}
+                                    {pkgCartTotal > 0 && <div className="flex justify-between text-xs"><span className="text-slate-500">Kemasan</span><span className="font-semibold text-slate-700 dark:text-slate-300">{fmt(pkgCartTotal)}</span></div>}
+                                    {discountAmount > 0 && <div className="flex justify-between text-xs"><span className="text-slate-700">{selectedDiscount?.name || "Diskon"}</span><span className="text-slate-700 font-bold">-{fmt(discountAmount)}</span></div>}
+                                    <div className="flex justify-between items-center pt-1">
+                                        <span className="font-black text-slate-800 dark:text-white text-sm">Total</span>
+                                        <span className="text-lg font-black text-primary-600">{fmt(payable)}</span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* ── Kolom kanan: Metode pembayaran & tunai ── */}
-                            <div className="space-y-4">
-                                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-                                    <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Metode Pembayaran</p>
+                            {/* ── Kolom kanan: Metode & tunai ── */}
+                            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 space-y-2.5 h-fit">
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Metode Pembayaran</p>
                                     <div className="grid grid-cols-2 gap-2">
                                         {paymentMethods.map(method => (
                                             <button key={method.id} onClick={() => setSelectedPaymentId(method.id)}
-                                                className={`p-3 rounded-xl border-2 text-left transition-all ${selectedPaymentId === method.id ? "border-primary-500 bg-slate-100 dark:bg-primary-950/30" : "border-slate-200 dark:border-slate-700"}`}>
-                                                <p className="font-bold text-sm text-slate-700 dark:text-slate-300">{method.name}</p>
-                                                <p className="text-xs text-slate-400 capitalize">{method.type}</p>
+                                                className={`px-3 py-2 rounded-lg border-2 text-left transition-all flex items-center justify-between gap-1 ${selectedPaymentId === method.id ? "border-primary-500 bg-slate-100 dark:bg-primary-950/30" : "border-slate-200 dark:border-slate-700"}`}>
+                                                <span className="font-bold text-sm text-slate-700 dark:text-slate-300 truncate">{method.name}</span>
+                                                {selectedPaymentId === method.id && <IconCheck size={14} className="text-primary-600 flex-shrink-0" />}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
                                 {isCash && (
-                                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
-                                        <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Nominal Cepat</p>
-                                        <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-2 pt-1">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Nominal Cepat</p>
+                                        <div className="grid grid-cols-4 gap-1.5">
                                             {[payable, Math.ceil(payable / 10000) * 10000, Math.ceil(payable / 50000) * 50000, Math.ceil(payable / 100000) * 100000]
                                                 .filter((v, i, a) => a.indexOf(v) === i && v >= payable).slice(0, 4)
                                                 .map(amt => (
                                                     <button key={amt} onClick={() => setCashInput(String(amt))}
-                                                        className={`py-2.5 rounded-xl text-sm font-bold transition-all ${Number(cashInput) === amt ? "bg-primary-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"}`}>
-                                                        {fmt(amt)}
+                                                        className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${Number(cashInput) === amt ? "bg-primary-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"}`}>
+                                                        {(amt / 1000).toLocaleString("id-ID")}rb
                                                     </button>
                                                 ))}
                                         </div>
-                                        <div>
-                                            <label className="text-xs font-bold text-slate-500 block mb-1.5">Jumlah Diterima</label>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
-                                                <input type="text" inputMode="numeric" value={cashInput} onChange={e => setCashInput(e.target.value.replace(/\D/g, ""))} placeholder="0"
-                                                    className="w-full h-12 pl-10 pr-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xl font-black focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
-                                            </div>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</span>
+                                            <input type="text" inputMode="numeric" value={cashInput} onChange={e => setCashInput(e.target.value.replace(/\D/g, ""))} placeholder="Jumlah diterima"
+                                                className="w-full h-11 pl-10 pr-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-lg font-black focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
                                         </div>
                                         {cash >= payable && payable > 0 && (
-                                            <div className="flex justify-between items-center p-3 bg-slate-100 dark:bg-emerald-950/30 border border-slate-300 dark:border-slate-700 rounded-xl">
-                                                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Kembalian</span>
-                                                <span className="text-2xl font-black text-slate-700 dark:text-slate-300">{fmt(kembalian)}</span>
+                                            <div className="flex justify-between items-center px-3 py-2 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-slate-700 rounded-lg">
+                                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Kembalian</span>
+                                                <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">{fmt(kembalian)}</span>
                                             </div>
                                         )}
                                     </div>
@@ -2295,16 +2268,12 @@ export default function Index({
                     </div>
 
                     {/* Footer sticky */}
-                    <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-4">
-                        <div className="mx-auto max-w-5xl flex items-center gap-3">
-                            <div className="hidden sm:flex flex-col">
-                                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Total Bayar</span>
-                                <span className="text-xl font-black text-slate-800 dark:text-white">{fmt(payable)}</span>
-                            </div>
-                            <button onClick={() => setShowPaymentModal(false)} className="px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 transition-colors">Kembali</button>
+                    <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-3 py-2.5">
+                        <div className="mx-auto max-w-4xl flex items-center gap-2">
+                            <button onClick={() => setShowPaymentModal(false)} className="px-4 py-2.5 rounded-lg border-2 border-slate-200 dark:border-slate-700 font-bold text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 transition-colors">Kembali</button>
                             <button onClick={handleSubmit} disabled={(isCash && cash < payable) || isSubmitting || !selectedPaymentId}
-                                className={`flex-1 py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all ${(!isCash || cash >= payable) && !isSubmitting && selectedPaymentId ? "bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-600/25" : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"}`}>
-                                {isSubmitting ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Memproses...</> : <><IconReceipt size={15} /> Selesaikan Transaksi</>}
+                                className={`flex-1 py-2.5 rounded-lg font-black text-sm flex items-center justify-center gap-2 transition-all ${(!isCash || cash >= payable) && !isSubmitting && selectedPaymentId ? "bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-600/25" : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"}`}>
+                                {isSubmitting ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Memproses...</> : <><IconReceipt size={15} /> Selesaikan · {fmt(payable)}</>}
                             </button>
                         </div>
                     </div>
