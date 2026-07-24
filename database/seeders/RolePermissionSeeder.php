@@ -36,6 +36,7 @@ class RolePermissionSeeder extends Seeder
             'products-edit',
             'products-delete',
             'products-recalculate',
+            'intensity-size-prices-access',   // Master data "Harga Intensitas" (dipisah dari products-edit)
 
             // ── Variants ─────────────────────────────────────────────────────
             'variants-access',
@@ -296,6 +297,7 @@ class RolePermissionSeeder extends Seeder
                 $locationAll,
                 $bahanProduk,
                 $masterVarian,
+                ['intensity-size-prices-access'],
             ),
 
             // Purchasing
@@ -307,6 +309,7 @@ class RolePermissionSeeder extends Seeder
                 $locationAll,
                 $bahanProduk,
                 $masterVarian,
+                ['intensity-size-prices-access'],
             ),
 
             // OCSC — stok semua kecuali produksi & transfer

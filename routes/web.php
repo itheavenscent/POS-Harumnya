@@ -125,7 +125,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         ]);
 
     Route::resource('intensity-size-prices', IntensitySizePriceController::class)
-        ->middleware('permission:products-edit');
+        ->middleware('permission:intensity-size-prices-access');
 
     Route::resource('suppliers', SupplierController::class)
         ->except('show')

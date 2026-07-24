@@ -23,7 +23,7 @@ class LaporanMutasiController extends Controller
 
         // ── Filter params ─────────────────────────────────────────────────────
         $location = $request->input('location'); // format 'store:{id}' atau 'warehouse:{id}'
-        $itemType = $request->input('item_type'); // '' | 'ingredient' | 'packaging'
+        $filterItemType = $request->input('item_type'); // '' | 'ingredient' | 'packaging'
         $dateFrom = $request->input('date_from', Carbon::now()->startOfMonth()->toDateString());
         $dateTo   = $request->input('date_to', Carbon::now()->toDateString());
 
@@ -169,7 +169,7 @@ class LaporanMutasiController extends Controller
         $mutations = [];
 
         // Ingredients
-        if ($itemType !== 'packaging')
+        if ($filterItemType !== 'packaging')
         foreach ($ingredients as $ing) {
             $current = (int) ($currentIngredientStocks[$ing->id] ?? 0);
             $afterChange = (int) ($qtyChangeAfter['ingredient'][$ing->id] ?? 0);
@@ -205,7 +205,7 @@ class LaporanMutasiController extends Controller
         }
 
         // Packaging Materials
-        if ($itemType !== 'ingredient')
+        if ($filterItemType !== 'ingredient')
         foreach ($packaging as $pack) {
             $current = (int) ($currentPackagingStocks[$pack->id] ?? 0);
             $afterChange = (int) ($qtyChangeAfter['packaging_material'][$pack->id] ?? 0);
@@ -249,7 +249,7 @@ class LaporanMutasiController extends Controller
             'warehouses'   => $warehouses,
             'filters'      => [
                 'location'  => $location ?? '',
-                'item_type' => $itemType ?? '',
+                'item_type' => $filterItemType ?? '',
                 'date_from' => $dateFrom,
                 'date_to'   => $dateTo,
             ],
@@ -262,7 +262,7 @@ class LaporanMutasiController extends Controller
         $user = auth()->user();
         
         $location = $request->input('location');
-        $itemType = $request->input('item_type');
+        $filterItemType = $request->input('item_type');
         $dateFrom = $request->input('date_from', Carbon::now()->startOfMonth()->toDateString());
         $dateTo   = $request->input('date_to', Carbon::now()->toDateString());
 
@@ -378,7 +378,7 @@ class LaporanMutasiController extends Controller
         }
 
         $mutations = [];
-        if ($itemType !== 'packaging')
+        if ($filterItemType !== 'packaging')
         foreach ($ingredients as $ing) {
             $current = (int) ($currentIngredientStocks[$ing->id] ?? 0);
             $afterChange = (int) ($qtyChangeAfter['ingredient'][$ing->id] ?? 0);
@@ -397,7 +397,7 @@ class LaporanMutasiController extends Controller
             ];
         }
 
-        if ($itemType !== 'ingredient')
+        if ($filterItemType !== 'ingredient')
         foreach ($packaging as $pack) {
             $current = (int) ($currentPackagingStocks[$pack->id] ?? 0);
             $afterChange = (int) ($qtyChangeAfter['packaging_material'][$pack->id] ?? 0);

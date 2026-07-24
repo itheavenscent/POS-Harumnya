@@ -1463,7 +1463,10 @@ export default function Index({
                 }
                 setSelectedPkgs([]);
                 setSelectedReward(null);
-                stateSetter(false); setMobileView("cart");
+                stateSetter(false);
+                // Kembali ke halaman katalog (landing Parfume/Botol/Kemasan) setelah item masuk keranjang.
+                setSelectedCategory(null);
+                setMobileView("catalog");
                 setPendingOrder(null);
                 setShowPackagingModal(false);
             },
@@ -1527,6 +1530,9 @@ export default function Index({
             return [...prev, { pkg, qty: 1 }];
         });
         toast.success(`${pkg.name} ditambahkan`);
+        // Kembali ke halaman katalog (landing Parfume/Botol/Kemasan) setelah item masuk keranjang.
+        setSelectedCategory(null);
+        setMobileView("catalog");
     };
 
     const handleUpdatePkgQty = (pkgId, delta) =>
@@ -1908,101 +1914,7 @@ export default function Index({
 
                     {/* ── RIGHT: Cart ───────────────────────────────────────── */}
                     <div className={`w-full md:w-[340px] lg:w-[400px] xl:w-[460px] flex-shrink-0 flex flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 ${mobileView === "cart" ? "flex" : "hidden md:flex"}`}>
-                        {/* Customer & Sales */}
-                        <div className="flex-shrink-0 border-b border-slate-100 dark:border-slate-800 px-3 py-2.5 space-y-2.5">
-                            {/* Sales Person Selector */}
-                            <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><IconUser size={10} /> Sales Person</p>
-                                <div className="relative">
-                                    <div className="flex-1 relative">
-                                        <IconSearch size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300" />
-                                        <input
-                                            type="text" placeholder="Pilih Sales..."
-                                            value={selectedSalesPerson ? selectedSalesPerson.name : salesSearch}
-                                            onClick={() => { if (selectedSalesPerson) { setSelectedSalesPerson(null); setSalesSearch(""); } setShowSalesDropdown(true); }}
-                                            onChange={e => { setSalesSearch(e.target.value); setShowSalesDropdown(true); if (selectedSalesPerson) setSelectedSalesPerson(null); }}
-                                            className="w-full h-8 pl-8 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white"
-                                        />
-                                    </div>
-                                    {showSalesDropdown && !selectedSalesPerson && (
-                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 overflow-hidden max-h-40 overflow-y-auto">
-                                            {salesPeople.filter(s => s.name.toLowerCase().includes(salesSearch.toLowerCase())).map(s => (
-                                                <button key={s.id} onClick={() => { setSelectedSalesPerson(s); setShowSalesDropdown(false); setSalesSearch(""); }} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0">
-                                                    <p className="font-semibold text-xs text-slate-800 dark:text-white">{s.name}</p>
-                                                    <p className="text-[10px] text-slate-400">{s.code}</p>
-                                                </button>
-                                            ))}
-                                            {salesPeople.length === 0 && <p className="p-3 text-center text-xs text-slate-400">Belum ada sales</p>}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Customer Selector */}
-                            <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><IconUser size={10} /> Pelanggan</p>
-                                <div className="relative" ref={customerRef}>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex-1 relative">
-                                            <IconSearch size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300" />
-                                            <input
-                                                type="text" placeholder="Cari Nomor Telepon..."
-                                                value={selectedCustomer ? (selectedCustomer.phone || selectedCustomer.name) : customerSearch}
-                                                onClick={() => { if (selectedCustomer) { setSelectedCustomer(null); setCustomerSearch(""); } setShowCustomerDropdown(true); }}
-                                                onChange={e => { setCustomerSearch(e.target.value); setShowCustomerDropdown(true); if (selectedCustomer) setSelectedCustomer(null); }}
-                                                className="w-full h-8 pl-8 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white"
-                                            />
-                                        </div>
-                                        <button onClick={() => setShowAddCustomer(true)} className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-primary-950/30 text-slate-700 flex items-center justify-center hover:bg-primary-100 flex-shrink-0" title="Tambah Pelanggan Baru">
-                                            <IconUserPlus size={14} />
-                                        </button>
-                                    </div>
-                                    {selectedCustomer && (
-                                        <div className="mt-1 flex flex-col gap-1">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <p className="text-[11px] text-slate-700 dark:text-slate-300 flex items-center gap-1"><IconCheck size={10} /> {selectedCustomer.phone || selectedCustomer.name}</p>
-                                                {Number(selectedCustomer.points ?? 0) > 0 && <span className="ml-auto text-[10px] text-slate-700 font-bold">{Number(selectedCustomer.points).toLocaleString("id-ID")} poin</span>}
-                                            </div>
-
-                                            {/* Loyalty Reward Progress/Notification */}
-                                            {Number(selectedCustomer.points ?? 0) >= loyalty_reward_threshold ? (
-                                                <div className="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 flex items-center gap-2 animate-pulse shadow-sm">
-                                                    <span className="text-base flex-shrink-0">🏆</span>
-                                                    <div className="flex-1">
-                                                        <p className="text-[10px] font-black text-slate-700 dark:text-slate-300 leading-tight">Reward Tersedia!</p>
-                                                        <p className="text-[9px] text-slate-700 dark:text-slate-700">{loyalty_reward_description || "Reward diskon tersedia"}</p>
-                                                    </div>
-                                                </div>
-                                            ) : Number(selectedCustomer.points ?? 0) > 0 && (
-                                                <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
-                                                    <div className="flex justify-between items-center mb-1">
-                                                        <p className="text-[9px] font-bold text-slate-500">Progress Reward</p>
-                                                        <p className="text-[9px] font-bold text-slate-500">{selectedCustomer.points} / {loyalty_reward_threshold}</p>
-                                                    </div>
-                                                    <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                                        <div
-                                                            className="h-full bg-amber-500 rounded-full transition-all"
-                                                            style={{ width: `${Math.min((selectedCustomer.points / loyalty_reward_threshold) * 100, 100)}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                    {showCustomerDropdown && !selectedCustomer && (
-                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 overflow-hidden max-h-48 overflow-y-auto">
-                                            <button onClick={() => { setSelectedCustomer({ id: null, name: "Pelanggan Umum" }); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2.5 text-xs text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800">👤 Pelanggan Umum (Walk-in)</button>
-                                            {filteredCustomers.map(c => (
-                                                <button key={c.id} onClick={() => { setSelectedCustomer(c); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0">
-                                                    <p className="font-semibold text-xs text-slate-800 dark:text-white">{c.phone || "Tanpa No. HP"}</p>
-                                                    <p className="text-[10px] text-slate-400">{c.name}</p>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                        {/* Sales Person & Pelanggan dipindah ke halaman Pembayaran */}
 
                         {/* Held carts */}
                         {heldCarts.length > 0 && (
@@ -2216,74 +2128,180 @@ export default function Index({
                 </div>
             </div>
 
-            {/* ── Payment Modal ──────────────────────────────────────────────── */}
+            {/* ── Halaman Pembayaran (full-screen, bukan modal) ───────────────── */}
             {showPaymentModal && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-                    <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => setShowPaymentModal(false)} />
-                    <div className="relative bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md overflow-hidden flex flex-col" style={{ maxHeight: "92vh" }}>
-                        <div className="sm:hidden flex justify-center pt-3 pb-1 flex-shrink-0"><div className="w-10 h-1 bg-slate-200 dark:bg-slate-700 rounded-full" /></div>
-                        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
-                            <h3 className="font-black text-slate-800 dark:text-white flex items-center gap-2">
-                                <span className="w-8 h-8 rounded-xl bg-primary-100 dark:bg-slate-800 flex items-center justify-center"><IconReceipt size={16} className="text-slate-700" /></span>
-                                Pembayaran
-                            </h3>
-                            <button onClick={() => setShowPaymentModal(false)} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-100 hover:text-slate-700 flex items-center justify-center transition-colors"><IconX size={16} /></button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                            <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 space-y-2">
-                                {selectedCustomer && <div className="pb-2 border-b border-slate-200 dark:border-slate-700"><span className="text-xs text-slate-600 dark:text-slate-400">👤 {selectedCustomer.name}</span></div>}
-                                {subtotal > 0 && <div className="flex justify-between text-sm"><span className="text-slate-500">Parfum</span><span className="font-semibold">{fmt(subtotal)}</span></div>}
-                                {pkgCartTotal > 0 && <div className="flex justify-between text-sm"><span className="text-slate-500">Kemasan</span><span className="font-semibold">{fmt(pkgCartTotal)}</span></div>}
-                                {discountAmount > 0 && <div className="flex justify-between text-sm"><span className="text-slate-700">{selectedDiscount?.name}</span><span className="text-slate-700 font-bold">-{fmt(discountAmount)}</span></div>}
-                                <div className="flex justify-between items-center border-t border-slate-200 dark:border-slate-700 pt-2">
-                                    <span className="font-black text-slate-800 dark:text-white">Total Bayar</span>
-                                    <span className="text-2xl font-black text-slate-700 dark:text-slate-300">{fmt(payable)}</span>
+                <div className="fixed inset-0 z-50 flex flex-col bg-slate-50 dark:bg-slate-950">
+                    {/* Header halaman */}
+                    <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center gap-3">
+                        <button onClick={() => setShowPaymentModal(false)} className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors" title="Kembali ke keranjang">
+                            <IconArrowLeft size={20} />
+                        </button>
+                        <h1 className="font-black text-slate-800 dark:text-white text-base flex items-center gap-2">
+                            <span className="w-8 h-8 rounded-xl bg-primary-100 dark:bg-slate-800 flex items-center justify-center"><IconReceipt size={16} className="text-slate-700" /></span>
+                            Pembayaran
+                        </h1>
+                    </div>
+
+                    {/* Body — 2 kolom di layar lebar */}
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6">
+                        <div className="mx-auto max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                            {/* ── Kolom kiri: Sales, Pelanggan, Ringkasan ── */}
+                            <div className="space-y-4">
+                                {/* Sales Person Selector (wajib) */}
+                                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><IconUser size={10} /> Sales Person <span className="text-red-500">*</span></p>
+                                    <div className="relative">
+                                        <div className="flex-1 relative">
+                                            <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                                            <input
+                                                type="text" placeholder="Pilih Sales..."
+                                                value={selectedSalesPerson ? selectedSalesPerson.name : salesSearch}
+                                                onClick={() => { if (selectedSalesPerson) { setSelectedSalesPerson(null); setSalesSearch(""); } setShowSalesDropdown(true); }}
+                                                onChange={e => { setSalesSearch(e.target.value); setShowSalesDropdown(true); if (selectedSalesPerson) setSelectedSalesPerson(null); }}
+                                                className="w-full h-11 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white"
+                                            />
+                                        </div>
+                                        {showSalesDropdown && !selectedSalesPerson && (
+                                            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 overflow-hidden max-h-52 overflow-y-auto">
+                                                {salesPeople.filter(s => s.name.toLowerCase().includes(salesSearch.toLowerCase())).map(s => (
+                                                    <button key={s.id} onClick={() => { setSelectedSalesPerson(s); setShowSalesDropdown(false); setSalesSearch(""); }} className="w-full text-left px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                                                        <p className="font-semibold text-sm text-slate-800 dark:text-white">{s.name}</p>
+                                                        <p className="text-[11px] text-slate-400">{s.code}</p>
+                                                    </button>
+                                                ))}
+                                                {salesPeople.length === 0 && <p className="p-3 text-center text-xs text-slate-400">Belum ada sales</p>}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Customer Selector */}
+                                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><IconUser size={10} /> Pelanggan</p>
+                                    <div className="relative" ref={customerRef}>
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1 relative">
+                                                <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                                                <input
+                                                    type="text" placeholder="Cari Nomor Telepon..."
+                                                    value={selectedCustomer ? (selectedCustomer.phone || selectedCustomer.name) : customerSearch}
+                                                    onClick={() => { if (selectedCustomer) { setSelectedCustomer(null); setCustomerSearch(""); } setShowCustomerDropdown(true); }}
+                                                    onChange={e => { setCustomerSearch(e.target.value); setShowCustomerDropdown(true); if (selectedCustomer) setSelectedCustomer(null); }}
+                                                    className="w-full h-11 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white"
+                                                />
+                                            </div>
+                                            <button onClick={() => setShowAddCustomer(true)} className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-primary-950/30 text-slate-700 flex items-center justify-center hover:bg-primary-100 flex-shrink-0" title="Tambah Pelanggan Baru">
+                                                <IconUserPlus size={16} />
+                                            </button>
+                                        </div>
+                                        {selectedCustomer && (
+                                            <div className="mt-2 flex flex-col gap-1">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <p className="text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1"><IconCheck size={12} /> {selectedCustomer.phone || selectedCustomer.name}</p>
+                                                    {Number(selectedCustomer.points ?? 0) > 0 && <span className="ml-auto text-[11px] text-slate-700 font-bold">{Number(selectedCustomer.points).toLocaleString("id-ID")} poin</span>}
+                                                </div>
+                                                {Number(selectedCustomer.points ?? 0) >= loyalty_reward_threshold ? (
+                                                    <div className="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 flex items-center gap-2 shadow-sm">
+                                                        <span className="text-base flex-shrink-0">🏆</span>
+                                                        <div className="flex-1">
+                                                            <p className="text-[11px] font-black text-slate-700 dark:text-slate-300 leading-tight">Reward Tersedia!</p>
+                                                            <p className="text-[10px] text-slate-500">{loyalty_reward_description || "Reward diskon tersedia"}</p>
+                                                        </div>
+                                                    </div>
+                                                ) : Number(selectedCustomer.points ?? 0) > 0 && (
+                                                    <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
+                                                        <div className="flex justify-between items-center mb-1">
+                                                            <p className="text-[10px] font-bold text-slate-500">Progress Reward</p>
+                                                            <p className="text-[10px] font-bold text-slate-500">{selectedCustomer.points} / {loyalty_reward_threshold}</p>
+                                                        </div>
+                                                        <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-amber-500 rounded-full transition-all" style={{ width: `${Math.min((selectedCustomer.points / loyalty_reward_threshold) * 100, 100)}%` }} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        {showCustomerDropdown && !selectedCustomer && (
+                                            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 overflow-hidden max-h-60 overflow-y-auto">
+                                                <button onClick={() => { setSelectedCustomer({ id: null, name: "Pelanggan Umum" }); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2.5 text-sm text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800">👤 Pelanggan Umum (Walk-in)</button>
+                                                {filteredCustomers.map(c => (
+                                                    <button key={c.id} onClick={() => { setSelectedCustomer(c); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                                                        <p className="font-semibold text-sm text-slate-800 dark:text-white">{c.phone || "Tanpa No. HP"}</p>
+                                                        <p className="text-[11px] text-slate-400">{c.name}</p>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Ringkasan biaya */}
+                                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
+                                    {subtotal > 0 && <div className="flex justify-between text-sm"><span className="text-slate-500">Parfum</span><span className="font-semibold">{fmt(subtotal)}</span></div>}
+                                    {pkgCartTotal > 0 && <div className="flex justify-between text-sm"><span className="text-slate-500">Kemasan</span><span className="font-semibold">{fmt(pkgCartTotal)}</span></div>}
+                                    {discountAmount > 0 && <div className="flex justify-between text-sm"><span className="text-slate-700">{selectedDiscount?.name}</span><span className="text-slate-700 font-bold">-{fmt(discountAmount)}</span></div>}
+                                    <div className="flex justify-between items-center border-t border-slate-200 dark:border-slate-700 pt-2">
+                                        <span className="font-black text-slate-800 dark:text-white">Total Bayar</span>
+                                        <span className="text-2xl font-black text-slate-700 dark:text-slate-300">{fmt(payable)}</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Metode Pembayaran</p>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {paymentMethods.map(method => (
-                                        <button key={method.id} onClick={() => setSelectedPaymentId(method.id)}
-                                            className={`p-3 rounded-xl border-2 text-left transition-all ${selectedPaymentId === method.id ? "border-primary-500 bg-slate-100 dark:bg-primary-950/30" : "border-slate-200 dark:border-slate-700"}`}>
-                                            <p className={`font-bold text-sm ${selectedPaymentId === method.id ? "text-slate-700 dark:text-slate-300" : "text-slate-700 dark:text-slate-300"}`}>{method.name}</p>
-                                            <p className="text-xs text-slate-400 capitalize">{method.type}</p>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            {isCash && (
-                                <div className="space-y-3">
-                                    <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Nominal Cepat</p>
+
+                            {/* ── Kolom kanan: Metode pembayaran & tunai ── */}
+                            <div className="space-y-4">
+                                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
+                                    <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Metode Pembayaran</p>
                                     <div className="grid grid-cols-2 gap-2">
-                                        {[payable, Math.ceil(payable / 10000) * 10000, Math.ceil(payable / 50000) * 50000, Math.ceil(payable / 100000) * 100000]
-                                            .filter((v, i, a) => a.indexOf(v) === i && v >= payable).slice(0, 4)
-                                            .map(amt => (
-                                                <button key={amt} onClick={() => setCashInput(String(amt))}
-                                                    className={`py-2.5 rounded-xl text-sm font-bold transition-all ${Number(cashInput) === amt ? "bg-primary-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"}`}>
-                                                    {fmt(amt)}
-                                                </button>
-                                            ))}
+                                        {paymentMethods.map(method => (
+                                            <button key={method.id} onClick={() => setSelectedPaymentId(method.id)}
+                                                className={`p-3 rounded-xl border-2 text-left transition-all ${selectedPaymentId === method.id ? "border-primary-500 bg-slate-100 dark:bg-primary-950/30" : "border-slate-200 dark:border-slate-700"}`}>
+                                                <p className="font-bold text-sm text-slate-700 dark:text-slate-300">{method.name}</p>
+                                                <p className="text-xs text-slate-400 capitalize">{method.type}</p>
+                                            </button>
+                                        ))}
                                     </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-500 block mb-1.5">Jumlah Diterima</label>
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
-                                            <input type="text" inputMode="numeric" value={cashInput} onChange={e => setCashInput(e.target.value.replace(/\D/g, ""))} placeholder="0"
-                                                className="w-full h-12 pl-10 pr-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xl font-black focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
-                                        </div>
-                                    </div>
-                                    {cash >= payable && payable > 0 && (
-                                        <div className="flex justify-between items-center p-3 bg-slate-100 dark:bg-emerald-950/30 border border-slate-300 dark:border-slate-700 rounded-xl">
-                                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Kembalian</span>
-                                            <span className="text-2xl font-black text-slate-700 dark:text-slate-300">{fmt(kembalian)}</span>
-                                        </div>
-                                    )}
                                 </div>
-                            )}
+                                {isCash && (
+                                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
+                                        <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Nominal Cepat</p>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {[payable, Math.ceil(payable / 10000) * 10000, Math.ceil(payable / 50000) * 50000, Math.ceil(payable / 100000) * 100000]
+                                                .filter((v, i, a) => a.indexOf(v) === i && v >= payable).slice(0, 4)
+                                                .map(amt => (
+                                                    <button key={amt} onClick={() => setCashInput(String(amt))}
+                                                        className={`py-2.5 rounded-xl text-sm font-bold transition-all ${Number(cashInput) === amt ? "bg-primary-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"}`}>
+                                                        {fmt(amt)}
+                                                    </button>
+                                                ))}
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold text-slate-500 block mb-1.5">Jumlah Diterima</label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
+                                                <input type="text" inputMode="numeric" value={cashInput} onChange={e => setCashInput(e.target.value.replace(/\D/g, ""))} placeholder="0"
+                                                    className="w-full h-12 pl-10 pr-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xl font-black focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
+                                            </div>
+                                        </div>
+                                        {cash >= payable && payable > 0 && (
+                                            <div className="flex justify-between items-center p-3 bg-slate-100 dark:bg-emerald-950/30 border border-slate-300 dark:border-slate-700 rounded-xl">
+                                                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Kembalian</span>
+                                                <span className="text-2xl font-black text-slate-700 dark:text-slate-300">{fmt(kembalian)}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                        <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex gap-3 flex-shrink-0">
-                            <button onClick={() => setShowPaymentModal(false)} className="px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 transition-colors">Batal</button>
+                    </div>
+
+                    {/* Footer sticky */}
+                    <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-4">
+                        <div className="mx-auto max-w-5xl flex items-center gap-3">
+                            <div className="hidden sm:flex flex-col">
+                                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Total Bayar</span>
+                                <span className="text-xl font-black text-slate-800 dark:text-white">{fmt(payable)}</span>
+                            </div>
+                            <button onClick={() => setShowPaymentModal(false)} className="px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 transition-colors">Kembali</button>
                             <button onClick={handleSubmit} disabled={(isCash && cash < payable) || isSubmitting || !selectedPaymentId}
                                 className={`flex-1 py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all ${(!isCash || cash >= payable) && !isSubmitting && selectedPaymentId ? "bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-600/25" : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"}`}>
                                 {isSubmitting ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Memproses...</> : <><IconReceipt size={15} /> Selesaikan Transaksi</>}

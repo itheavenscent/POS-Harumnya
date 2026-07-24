@@ -189,8 +189,21 @@ class LaporanPenjualanController extends Controller
             ->whereBetween('sales.sold_at', [$dateFromDt, $dateToDt])
             ->sum('sale_items.qty');
 
+        // Kartu "Total Transaksi" harus menampilkan semua transaksi yang selesai + dibatalkan,
+        // dan kartu "Dibatalkan" harus menghitung transaksi batal — keduanya tidak boleh
+        // ikut terfilter oleh dropdown status (yang default-nya 'completed').
+        $statusCounts = DB::table('sales')
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
+            ->whereBetween('sold_at', [$dateFromDt, $dateToDt])
+            ->whereIn('status', ['completed', 'cancelled'])
+            ->selectRaw("
+                COUNT(*)                                              AS total_all,
+                SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled_all
+            ")
+            ->first();
+
         return [
-            'totalTransactions' => (int)   $summary->total_transactions,
+            'totalTransactions' => (int)   $statusCounts->total_all,
             'totalRevenue'      => (float) round($summary->total_revenue, 2),
             'grossSales'        => (float) round($summary->gross_sales, 2),
             'totalDiscount'     => (float) round($summary->total_discount, 2),
@@ -200,7 +213,7 @@ class LaporanPenjualanController extends Controller
             'activeCashiers'    => (int)   $summary->active_cashiers,
             'activeStores'      => (int)   $summary->active_stores,
             'completedCount'    => (int)   $summary->completed_count,
-            'cancelledCount'    => (int)   $summary->cancelled_count,
+            'cancelledCount'    => (int)   $statusCounts->cancelled_all,
             'refundedCount'     => (int)   $summary->refunded_count,
             'memberTx'          => (int)   $summary->member_tx,
             'walkinTx'          => (int)   $summary->walkin_tx,

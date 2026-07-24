@@ -14,6 +14,17 @@ const defaultFilters = { q: "", date_from: "", date_to: "", status: "", store_id
 const fmt = (v = 0) =>
     Number(v || 0).toLocaleString("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 });
 
+// Cek apakah transaksi terjadi pada hari yang sama (hari H).
+// Pembatalan hanya boleh di hari H — selaras dengan rule HPP di backend.
+const isSameDay = (soldAt) => {
+    if (!soldAt) return false;
+    const d = new Date(soldAt);
+    const now = new Date();
+    return d.getFullYear() === now.getFullYear()
+        && d.getMonth() === now.getMonth()
+        && d.getDate() === now.getDate();
+};
+
 // Format sold_at (timestamp) menjadi tanggal & waktu
 const fmtSoldAt = (soldAt) => {
     if (!soldAt) return { date: "-", time: "" };
@@ -578,10 +589,16 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
                         <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex justify-between gap-3">
                             <div>
                                 {canCancelSale && selectedSale.status === "completed" && (
-                                    <button onClick={() => setShowCancelSale(true)}
-                                        className="px-6 py-2.5 rounded-xl bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 text-sm font-bold flex items-center gap-2 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors">
-                                        <IconX size={18}/> Batalkan Transaksi
-                                    </button>
+                                    isSameDay(selectedSale.sold_at) ? (
+                                        <button onClick={() => setShowCancelSale(true)}
+                                            className="px-6 py-2.5 rounded-xl bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 text-sm font-bold flex items-center gap-2 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors">
+                                            <IconX size={18}/> Batalkan Transaksi
+                                        </button>
+                                    ) : (
+                                        <p className="text-xs text-slate-400 dark:text-slate-500 max-w-[16rem]">
+                                            Pembatalan hanya dapat dilakukan pada hari yang sama dengan transaksi (hari H).
+                                        </p>
+                                    )
                                 )}
                             </div>
                             <div className="flex gap-3">
