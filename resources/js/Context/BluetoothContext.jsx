@@ -12,28 +12,51 @@ const BT_SERVICES = [
     "0000fee7-0000-1000-8000-00805f9b34fb",
 ];
 
+// Simpan service+characteristic yang berhasil agar reconnect langsung nembak
+// tanpa scan ulang seluruh service (jauh lebih cepat).
+function cacheChar(svc, char) {
+    try {
+        localStorage.setItem("bt_printer_svc", svc.uuid);
+        localStorage.setItem("bt_printer_char", char.uuid);
+    } catch (_) { }
+}
+
 async function findWritableChar(server) {
-    await new Promise(r => setTimeout(r, 400));
+    // 1. Fast-path: pakai service+char yang sudah pernah berhasil (paling cepat).
+    try {
+        const cs = localStorage.getItem("bt_printer_svc");
+        const cc = localStorage.getItem("bt_printer_char");
+        if (cs && cc) {
+            const svc = await server.getPrimaryService(cs);
+            const chars = await svc.getCharacteristics();
+            const hit = chars.find(c => c.uuid === cc)
+                ?? chars.find(c => c.properties.writeWithoutResponse || c.properties.write);
+            if (hit) { cacheChar(svc, hit); return hit; }
+        }
+    } catch (_) { }
+
+    // 2. Targeted: coba daftar UUID printer thermal yang umum dulu (cepat,
+    //    tanpa enumerasi seluruh service perangkat).
+    for (const uuid of BT_SERVICES) {
+        try {
+            const svc = await server.getPrimaryService(uuid);
+            const chars = await svc.getCharacteristics();
+            const char = chars.find(c => c.properties.writeWithoutResponse || c.properties.write);
+            if (char) { cacheChar(svc, char); return char; }
+        } catch (_) { }
+    }
+
+    // 3. Fallback: enumerasi semua service (untuk printer non-standar).
     try {
         const services = await server.getPrimaryServices();
         for (const svc of services) {
             try {
-                await new Promise(r => setTimeout(r, 80));
                 const chars = await svc.getCharacteristics();
                 const char = chars.find(c => c.properties.writeWithoutResponse || c.properties.write);
-                if (char) return char;
+                if (char) { cacheChar(svc, char); return char; }
             } catch (_) { }
         }
     } catch (_) { }
-    for (const uuid of BT_SERVICES) {
-        try {
-            const svc = await server.getPrimaryService(uuid);
-            await new Promise(r => setTimeout(r, 100));
-            const chars = await svc.getCharacteristics();
-            const char = chars.find(c => c.properties.writeWithoutResponse || c.properties.write);
-            if (char) return char;
-        } catch (_) { }
-    }
     return null;
 }
 
@@ -57,7 +80,9 @@ export function BluetoothProvider({ children }) {
     const connectGatt = useCallback(async (dev) => {
         if (dev.gatt.connected && charRef.current) return true;
         const server = await dev.gatt.connect();
-        await new Promise(r => setTimeout(r, 500));
+        // Settle singkat setelah GATT connect (cukup untuk printer murah),
+        // dipangkas dari 500ms agar konek terasa cepat.
+        await new Promise(r => setTimeout(r, 150));
         const char = await findWritableChar(server);
         if (!char) {
             let hint = "";
