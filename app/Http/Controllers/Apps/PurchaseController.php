@@ -523,13 +523,65 @@ class PurchaseController extends Controller
 
         $request->validate(['reason' => 'nullable|string|max:1000']);
 
-        $purchase->update([
-            'status'              => 'cancelled',
-            'cancellation_reason' => $request->reason ?? null,
-        ]);
+        DB::transaction(function () use ($purchase, $request) {
+            // PO dibatalkan → kolom qty terima direset 0 (belum ada barang diterima).
+            $purchase->items()->update(['received_quantity' => 0]);
+
+            $purchase->update([
+                'status'              => 'cancelled',
+                'cancellation_reason' => $request->reason ?? null,
+            ]);
+        });
 
         return to_route('purchases.index')
             ->with('success', 'Purchase Order dibatalkan.');
+    }
+
+    // =========================================================================
+    // EDIT TANGGAL TERIMA / QTY TERIMA setelah konfirmasi
+    // Tanggal terima boleh diedit saat status received / completed.
+    // Qty terima hanya boleh diedit saat status received (stok belum diterapkan).
+    // =========================================================================
+
+    public function updateReceipt(Request $request, string $id)
+    {
+        $purchase = Purchase::with('items')->findOrFail($id);
+
+        if (! in_array($purchase->status, ['received', 'completed'], true)) {
+            return back()->withErrors(['status' => 'Tanggal terima hanya bisa diedit pada PO yang sudah diterima/selesai.']);
+        }
+
+        $poDate = \Carbon\Carbon::parse($purchase->purchase_date)->format('Y-m-d');
+
+        $request->validate([
+            'actual_delivery_date'      => ['required', 'date', 'after_or_equal:' . $poDate],
+            'items'                     => ['nullable', 'array'],
+            'items.*.id'                => ['required', 'uuid'],
+            'items.*.received_quantity' => ['required', 'integer', 'min:0'],
+        ], [
+            'actual_delivery_date.after_or_equal' => "Tanggal terima tidak boleh sebelum tanggal PO ({$poDate}).",
+        ]);
+
+        DB::transaction(function () use ($purchase, $request) {
+            // Qty terima hanya bisa diubah saat masih 'received' (stok belum diterapkan via complete()).
+            if ($purchase->status === 'received' && $request->filled('items')) {
+                foreach ($request->items as $itemData) {
+                    $purchase->items()->where('id', $itemData['id'])->update([
+                        'received_quantity' => (int) $itemData['received_quantity'],
+                    ]);
+                }
+            }
+
+            $purchase->update(['actual_delivery_date' => $request->actual_delivery_date]);
+
+            // Sinkronkan movement_date agar Laporan Mutasi tetap berbasis tanggal terima.
+            StockMovement::where('reference_type', Purchase::class)
+                ->where('reference_id', $purchase->id)
+                ->where('movement_type', 'purchase_in')
+                ->update(['movement_date' => $request->actual_delivery_date]);
+        });
+
+        return back()->with('success', 'Tanggal terima berhasil diperbarui.');
     }
 
     // =========================================================================

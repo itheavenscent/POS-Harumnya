@@ -374,6 +374,12 @@ class TransactionController extends Controller
             return back()->withErrors(['cancel' => 'Hanya transaksi selesai yang dapat dibatalkan.']);
         }
 
+        // Rule HPP: pembatalan hanya boleh di hari yang sama (hari H) dengan transaksi.
+        // Membatalkan transaksi hari lampau merusak perhitungan HPP/COGS periode yang sudah ditutup.
+        if (! \Illuminate\Support\Carbon::parse($sale->sold_at)->isToday()) {
+            return back()->withErrors(['cancel' => 'Pembatalan hanya dapat dilakukan pada hari yang sama dengan transaksi (hari H).']);
+        }
+
         DB::transaction(function () use ($sale, $request, $user) {
             $now = now();
 

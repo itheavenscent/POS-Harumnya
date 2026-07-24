@@ -425,6 +425,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::post('/{id}/submit', [PurchaseController::class, 'submit'])->name('submit')->middleware('permission:purchases-submit');
         Route::post('/{id}/approve', [PurchaseController::class, 'approve'])->name('approve')->middleware('permission:purchases-approve');
         Route::post('/{id}/receive', [PurchaseController::class, 'receive'])->name('receive')->middleware('permission:purchases-receive');
+        Route::put('/{id}/receipt', [PurchaseController::class, 'updateReceipt'])->name('update-receipt')->middleware('permission:purchases-receive');
         Route::post('/{id}/complete', [PurchaseController::class, 'complete'])->name('complete')->middleware('permission:purchases-complete');
         Route::post('/{id}/cancel', [PurchaseController::class, 'cancel'])->name('cancel')->middleware('permission:purchases-cancel');
     });

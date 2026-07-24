@@ -51,6 +51,7 @@ function ConfirmModal({ open, onConfirm, onClose, title, description, confirmLab
 export default function Show({ purchase, movements = [] }) {
     const [showCancelModal,   setShowCancelModal]   = useState(false);
     const [showReceiveModal,  setShowReceiveModal]  = useState(false);
+    const [showReceiptModal,  setShowReceiptModal]  = useState(false);
     const [showCompleteModal, setShowCompleteModal] = useState(false);
     const [cancelReason,      setCancelReason]      = useState("");
     const [arrivalDate,       setArrivalDate]       = useState(new Date().toISOString().split("T")[0]);
@@ -73,6 +74,33 @@ export default function Show({ purchase, movements = [] }) {
     };
 
     const poDate = (purchase.purchase_date ?? "").split("T")[0];
+
+    const openReceiptModal = () => {
+        const initQty = {};
+        purchase.items?.forEach(i => { initQty[i.id] = i.received_quantity ?? 0; });
+        setReceivedQuantities(initQty);
+        const existing = (purchase.actual_delivery_date ?? "").split("T")[0];
+        const today = new Date().toISOString().split("T")[0];
+        setArrivalDate(existing || (poDate && today < poDate ? poDate : today));
+        setShowReceiptModal(true);
+    };
+
+    const handleUpdateReceipt = () => {
+        if (arrivalDate && poDate && arrivalDate < poDate) {
+            toast.error(`Tanggal terima tidak boleh sebelum tanggal PO (${fmtDate(poDate)}).`);
+            return;
+        }
+        // Qty terima hanya dikirim (dan diubah backend) saat status 'received'.
+        const payloadItems = purchase.status === "received"
+            ? Object.keys(receivedQuantities).map(id => ({ id, received_quantity: parseInt(receivedQuantities[id]) || 0 }))
+            : [];
+        router.put(route("purchases.update-receipt", purchase.id),
+            { actual_delivery_date: arrivalDate, items: payloadItems },
+            {
+                onSuccess: () => { toast.success("Tanggal terima diperbarui."); setShowReceiptModal(false); },
+                onError: (e) => toast.error(Object.values(e)[0]),
+            });
+    };
 
     const handleReceive = () => {
         if (arrivalDate && poDate && arrivalDate < poDate) {
@@ -115,6 +143,63 @@ export default function Show({ purchase, movements = [] }) {
                             <button onClick={() => setShowCancelModal(false)} className="px-5 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm">Kembali</button>
                             <button onClick={() => doAction(route("purchases.cancel", purchase.id), { reason: cancelReason }, "PO dibatalkan.")}
                                 className="px-5 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-sm">Ya, Batalkan</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Edit Tgl / Qty Terima Modal ── */}
+            {showReceiptModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col">
+                        <h3 className="text-lg font-bold mb-3 flex items-center gap-2 shrink-0">
+                            <IconPencilCog size={20} className="text-amber-600" /> Edit Tanggal / Qty Terima
+                        </h3>
+                        <p className="text-sm text-slate-500 mb-4 shrink-0">
+                            {purchase.status === "completed"
+                                ? "PO sudah selesai — hanya tanggal terima yang bisa diubah. Qty terima terkunci karena stok sudah diperbarui."
+                                : "Ubah tanggal terima dan/atau qty diterima."}
+                        </p>
+                        <div className="mb-4 shrink-0">
+                            <label className="block text-xs font-bold text-slate-600 mb-1">Tanggal Tiba Aktual</label>
+                            <input type="date" value={arrivalDate} min={poDate || undefined}
+                                onChange={(e) => setArrivalDate(e.target.value)}
+                                className="w-full md:w-48 rounded-xl border-slate-200 text-sm focus:ring-amber-500" />
+                            <p className="text-[11px] text-slate-400 mt-1">Tidak boleh sebelum tanggal PO ({fmtDate(poDate)}).</p>
+                        </div>
+                        {purchase.status === "received" && (
+                            <div className="overflow-y-auto mb-4 border border-slate-200 rounded-xl">
+                                <table className="w-full text-left text-sm text-slate-600">
+                                    <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
+                                        <tr>
+                                            <th className="px-4 py-2 font-bold text-xs uppercase">Item</th>
+                                            <th className="px-4 py-2 font-bold text-xs uppercase text-right">Dipesan</th>
+                                            <th className="px-4 py-2 font-bold text-xs uppercase text-right">Diterima</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {purchase.items?.map(i => (
+                                            <tr key={i.id} className="border-b border-slate-100 last:border-0">
+                                                <td className="px-4 py-2">{i.item_name}</td>
+                                                <td className="px-4 py-2 text-right font-medium">{fmtQty(i.quantity)} {i.item_unit}</td>
+                                                <td className="px-4 py-2 text-right w-32">
+                                                    <input type="number" step="1" min="0"
+                                                        value={receivedQuantities[i.id] ?? ""}
+                                                        onChange={e => setReceivedQuantities(prev => ({ ...prev, [i.id]: e.target.value }))}
+                                                        className="w-full text-right p-1.5 text-sm border-slate-200 rounded-lg focus:ring-amber-500" />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                        <div className="flex gap-3 justify-end shrink-0">
+                            <button onClick={() => setShowReceiptModal(false)} className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm">Batal</button>
+                            <button onClick={handleUpdateReceipt}
+                                className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-sm flex items-center gap-2">
+                                <IconPencilCog size={16} /> Simpan
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -219,6 +304,12 @@ export default function Show({ purchase, movements = [] }) {
                             <button onClick={() => setShowCompleteModal(true)}
                                 className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-success-600 to-success-700 text-white rounded-xl text-sm font-bold shadow-md">
                                 <IconCheck size={16} /> Selesaikan &amp; Update Stok
+                            </button>
+                        )}
+                        {(purchase.status === "received" || purchase.status === "completed") && (
+                            <button onClick={openReceiptModal}
+                                className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-sm font-bold hover:bg-amber-100">
+                                <IconPencilCog size={16} /> Edit Tgl / Qty Terima
                             </button>
                         )}
                         {purchase.can_cancel && (

@@ -6,5 +6,23 @@
             "ziggy-js": ["./vendor/tightenco/ziggy"]
         }
     },
-    "exclude": ["node_modules", "public"]
+    "exclude": ["node_modules", "public"],
+    "typeAcquisition": {
+        "exclude": [
+            "babel__core",
+            "babel__generator",
+            "babel__template",
+            "babel__traverse",
+            "d3-array",
+            "d3-color",
+            "d3-ease",
+            "d3-interpolate",
+            "d3-path",
+            "d3-scale",
+            "d3-shape",
+            "d3-time",
+            "d3-timer",
+            "use-sync-external-store"
+        ]
+    }
 }
