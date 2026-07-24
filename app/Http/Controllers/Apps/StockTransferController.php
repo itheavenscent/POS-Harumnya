@@ -117,16 +117,6 @@ class StockTransferController extends Controller
             return back()->withErrors(['to_location_id' => 'Lokasi asal dan tujuan tidak boleh sama.']);
         }
 
-        // Validasi stok tersedia sebelum menyimpan
-        foreach ($v['items'] as $idx => $item) {
-            $stock     = $this->findStock($v['from_location_type'], $v['from_location_id'], $item['item_type'], $item['item_id']);
-            $available = $stock ? (int) $stock->quantity : 0;
-            if ((int) $item['quantity_requested'] > $available) {
-                $name = $this->resolveItemName($item['item_type'], $item['item_id']);
-                return back()->withErrors(["items.{$idx}.quantity_requested" => "Stok {$name} tidak mencukupi. Tersedia: {$available}"]);
-            }
-        }
-
         DB::transaction(function () use ($v) {
             $transfer = StockTransfer::create([
                 'transfer_number'       => StockTransfer::generateNumber(),
@@ -173,6 +163,7 @@ class StockTransferController extends Controller
 
         $transfer->from_name = $this->locationName($transfer->from_location_type, $transfer->from_location_id);
         $transfer->to_name   = $this->locationName($transfer->to_location_type,   $transfer->to_location_id);
+        $transfer->can_edit  = $transfer->canEdit();
 
         $transfer->items->each(function ($item) use ($transfer) {
             [$name, $code, $unit] = $this->resolveItem($item->item_type, $item->item_id);
@@ -249,15 +240,6 @@ class StockTransferController extends Controller
             'items.*.quantity_requested' => 'required|integer|min:1',
             'items.*.notes'              => 'nullable|string|max:500',
         ]);
-
-        foreach ($v['items'] as $idx => $item) {
-            $stock     = $this->findStock($transfer->from_location_type, $transfer->from_location_id, $item['item_type'], $item['item_id']);
-            $available = $stock ? (int) $stock->quantity : 0;
-            if ((int) $item['quantity_requested'] > $available) {
-                $name = $this->resolveItemName($item['item_type'], $item['item_id']);
-                return back()->withErrors(["items.{$idx}.quantity_requested" => "Stok {$name} tidak mencukupi. Tersedia: {$available}"]);
-            }
-        }
 
         DB::transaction(function () use ($transfer, $v) {
             $transfer->update([
@@ -464,7 +446,8 @@ class StockTransferController extends Controller
                     'last_in_qty'  => $rcvQty,
                 ]);
 
-                // StockMovement — sesuai migration (sudah benar sejak awal)
+                $this->syncMasterAverageCost($item->item_type, $item->item_id, $newAvgCost);
+
                 StockMovement::create([
                     'location_type'    => $transfer->to_location_type,
                     'location_id'      => $transfer->to_location_id,
@@ -497,6 +480,45 @@ class StockTransferController extends Controller
 
         return to_route('stock-transfers.show', $id)
             ->with('success', 'Transfer diterima. Stok berhasil masuk ke lokasi tujuan!');
+    }
+
+    // =========================================================================
+    // EXPORT: Surat Jalan PDF
+    // =========================================================================
+
+    public function suratJalan(string $id)
+    {
+        $transfer = StockTransfer::with([
+            'items', 'creator:id,name', 'approver:id,name',
+            'sender:id,name', 'receiver:id,name',
+        ])->findOrFail($id);
+
+        $fromName = $this->locationName($transfer->from_location_type, $transfer->from_location_id);
+        $toName   = $this->locationName($transfer->to_location_type, $transfer->to_location_id);
+
+        $items = $transfer->items->map(function ($item) {
+            [$name, $code, $unit] = $this->resolveItem($item->item_type, $item->item_id);
+            return [
+                'code'          => $code,
+                'name'          => $name,
+                'unit'          => $unit,
+                'qty_requested' => (int) $item->quantity_requested,
+                'qty_sent'      => (int) $item->quantity_sent,
+                'notes'         => $item->notes,
+            ];
+        })->toArray();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.surat-jalan', [
+            'transfer' => $transfer,
+            'fromName' => $fromName,
+            'toName'   => $toName,
+            'items'    => $items,
+        ]);
+
+        $pdf->setPaper('a4', 'portrait');
+
+        $filename = "Surat_Jalan_{$transfer->transfer_number}.pdf";
+        return $pdf->download($filename);
     }
 
     // =========================================================================
@@ -641,6 +663,48 @@ class StockTransferController extends Controller
         }
         $p = PackagingMaterial::with('size')->find($id);
         return [$p?->name ?? '-', $p?->code ?? '-', $p?->size?->name ?? 'pcs'];
+    }
+
+    private function syncMasterAverageCost(string $itemType, string $itemId, float $fallbackCost): void
+    {
+        $globalWac = $this->computeGlobalWac($itemType, $itemId) ?? $fallbackCost;
+
+        match ($itemType) {
+            'ingredient'         => Ingredient::where('id', $itemId)->update(['average_cost' => $globalWac]),
+            'packaging_material' => PackagingMaterial::where('id', $itemId)->update(['average_cost' => $globalWac]),
+            default              => null,
+        };
+    }
+
+    private function computeGlobalWac(string $itemType, string $itemId): ?float
+    {
+        $rows = collect();
+
+        if ($itemType === 'ingredient') {
+            $rows = $rows->merge(
+                DB::table('warehouse_ingredient_stocks')->where('ingredient_id', $itemId)->select('quantity', 'average_cost')->get()
+            )->merge(
+                DB::table('store_ingredient_stocks')->where('ingredient_id', $itemId)->select('quantity', 'average_cost')->get()
+            );
+        } else {
+            $rows = $rows->merge(
+                DB::table('warehouse_packaging_stocks')->where('packaging_material_id', $itemId)->select('quantity', 'average_cost')->get()
+            )->merge(
+                DB::table('store_packaging_stocks')->where('packaging_material_id', $itemId)->select('quantity', 'average_cost')->get()
+            );
+        }
+
+        $totalQty   = 0;
+        $totalValue = 0.0;
+        foreach ($rows as $r) {
+            $qty = (int) $r->quantity;
+            if ($qty > 0) {
+                $totalQty   += $qty;
+                $totalValue += $qty * (float) $r->average_cost;
+            }
+        }
+
+        return $totalQty > 0 ? round($totalValue / $totalQty, 4) : null;
     }
 
     private function resolveItemName(string $type, string $id): string

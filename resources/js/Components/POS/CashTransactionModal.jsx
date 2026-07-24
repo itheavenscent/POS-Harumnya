@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useForm } from "@inertiajs/react";
-import { IconX, IconArrowsExchange, IconArrowUpRight, IconArrowDownLeft, IconCheck } from "@tabler/icons-react";
+import { IconX, IconArrowsExchange, IconArrowUpRight, IconArrowDownLeft, IconCheck, IconCamera, IconTrash } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 
 export default function CashTransactionModal({ isOpen, onClose }) {
@@ -8,16 +8,85 @@ export default function CashTransactionModal({ isOpen, onClose }) {
         type: "cash_in",
         amount: "",
         description: "",
+        photo: null,
     });
+    const [photoPreview, setPhotoPreview] = useState(null);
+    const fileInputRef = useRef(null);
 
     if (!isOpen) return null;
+
+    const [compressing, setCompressing] = useState(false);
+
+    // Kompres gambar via canvas: resize max 1280px, kualitas JPEG 0.7.
+    // Cegah error 413 (Request Entity Too Large) akibat foto kamera HP yang besar.
+    const compressImage = (file) =>
+        new Promise((resolve, reject) => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+                const maxDim = 1280;
+                let { width, height } = img;
+                if (width > maxDim || height > maxDim) {
+                    if (width >= height) { height = Math.round(height * maxDim / width); width = maxDim; }
+                    else { width = Math.round(width * maxDim / height); height = maxDim; }
+                }
+                const canvas = document.createElement("canvas");
+                canvas.width = width;
+                canvas.height = height;
+                canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+                canvas.toBlob(
+                    (blob) => {
+                        if (!blob) return reject(new Error("compress failed"));
+                        resolve(new File([blob], "cash-proof.jpg", { type: "image/jpeg" }));
+                    },
+                    "image/jpeg",
+                    0.7
+                );
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("load failed")); };
+            img.src = url;
+        });
+
+    const handlePhotoSelect = async (file) => {
+        if (!file) return;
+        if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) {
+            toast.error("Hanya foto JPG/PNG/WebP yang diterima");
+            return;
+        }
+        setCompressing(true);
+        try {
+            const compressed = await compressImage(file);
+            setData("photo", compressed);
+            setPhotoPreview(URL.createObjectURL(compressed));
+        } catch {
+            // Fallback ke file asli jika kompresi gagal
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error("Ukuran foto maksimal 5MB");
+            } else {
+                setData("photo", file);
+                setPhotoPreview(URL.createObjectURL(file));
+            }
+        } finally {
+            setCompressing(false);
+        }
+    };
+
+    const removePhoto = () => {
+        setData("photo", null);
+        if (photoPreview) URL.revokeObjectURL(photoPreview);
+        setPhotoPreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
         post(route("cash-drawers.store-transaction"), {
+            forceFormData: true,
             onSuccess: () => {
                 toast.success("Transaksi kas berhasil dicatat");
                 reset();
+                removePhoto();
                 onClose();
             },
         });
@@ -26,7 +95,7 @@ export default function CashTransactionModal({ isOpen, onClose }) {
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -34,8 +103,8 @@ export default function CashTransactionModal({ isOpen, onClose }) {
                             <IconArrowsExchange size={20} />
                         </div>
                         <div>
-                            <h3 className="font-bold text-slate-800 dark:text-white">Cash In / Cash Out</h3>
-                            <p className="text-[10px] text-slate-400 font-medium">Catat pengeluaran/pemasukan kas shift</p>
+                            <h3 className="font-bold text-slate-800 dark:text-white">Kas Masuk / Kas Keluar</h3>
+                            <p className="text-[10px] text-slate-400 font-medium">Catat pemasukan/pengeluaran kas shift</p>
                         </div>
                     </div>
                     <button
@@ -59,7 +128,7 @@ export default function CashTransactionModal({ isOpen, onClose }) {
                             }`}
                         >
                             <IconArrowDownLeft size={18} />
-                            <span className="font-bold text-sm">Cash In</span>
+                            <span className="font-bold text-sm">Kas Masuk</span>
                         </button>
                         <button
                             type="button"
@@ -71,7 +140,7 @@ export default function CashTransactionModal({ isOpen, onClose }) {
                             }`}
                         >
                             <IconArrowUpRight size={18} />
-                            <span className="font-bold text-sm">Cash Out</span>
+                            <span className="font-bold text-sm">Kas Keluar</span>
                         </button>
                     </div>
 
@@ -116,6 +185,53 @@ export default function CashTransactionModal({ isOpen, onClose }) {
                             required
                         />
                         {errors.description && <p className="mt-1 text-xs text-red-500 font-medium">{errors.description}</p>}
+                    </div>
+
+                    {/* Photo */}
+                    <div>
+                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                            Foto Bukti (Opsional)
+                        </label>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            accept="image/jpeg,image/jpg,image/png,image/webp"
+                            capture="environment"
+                            className="hidden"
+                            onChange={(e) => handlePhotoSelect(e.target.files[0])}
+                        />
+                        {photoPreview ? (
+                            <div className="relative rounded-xl overflow-hidden border-2 border-slate-100 dark:border-slate-800">
+                                <img src={photoPreview} alt="Bukti transaksi" className="w-full h-40 object-cover" />
+                                <button
+                                    type="button"
+                                    onClick={removePhoto}
+                                    className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg"
+                                >
+                                    <IconTrash size={16} />
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={compressing}
+                                className="w-full h-24 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 transition-all flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-cyan-600 disabled:opacity-50"
+                            >
+                                {compressing ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+                                        <span className="text-xs font-bold">Memproses foto...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <IconCamera size={24} />
+                                        <span className="text-xs font-bold">Ambil Foto / Pilih dari Galeri</span>
+                                    </>
+                                )}
+                            </button>
+                        )}
+                        {errors.photo && <p className="mt-1 text-xs text-red-500 font-medium">{errors.photo}</p>}
                     </div>
 
                     {/* Footer */}

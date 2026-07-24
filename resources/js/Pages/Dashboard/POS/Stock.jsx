@@ -96,7 +96,9 @@ export default function Stock({ stocks, filters }) {
                                     stocks.data.map((stock) => {
                                         const item = stock.ingredient || stock.packaging_material || stock.packagingMaterial;
                                         const isLow = stock.min_stock !== null && stock.quantity < stock.min_stock;
-                                        
+                                        const isOil = (item?.category?.name || "").toUpperCase().includes("OIL");
+                                        const displayName = isOil ? `Oil - ${item?.name}` : item?.name;
+
                                         return (
                                             <tr key={stock.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                                                 <td className="px-6 py-4">
@@ -109,7 +111,7 @@ export default function Stock({ stocks, filters }) {
                                                         </div>
                                                         <div>
                                                             <p className="text-sm font-bold text-slate-800 dark:text-white">
-                                                                {item?.name}
+                                                                {displayName}
                                                             </p>
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-[10px] font-mono text-slate-400 uppercase">

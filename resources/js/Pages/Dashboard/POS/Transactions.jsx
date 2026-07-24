@@ -20,7 +20,7 @@ const fmtSoldAt = (soldAt) => {
     };
 };
 
-export default function Transactions({ sales, filters }) {
+export default function Transactions({ sales, filters, canPrint = false }) {
     const [search, setSearch] = React.useState(filters.search || "");
     const [selectedSale, setSelectedSale] = React.useState(null);
     const [debouncedSearch] = useDebounce(search, 500);
@@ -144,14 +144,16 @@ export default function Transactions({ sales, filters }) {
                                                     >
                                                         <IconEye size={16} />
                                                     </button>
-                                                    <Link
-                                                        href={route("transactions.print", sale.sale_number)}
-                                                        target="_blank"
-                                                        className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-cyan-600 hover:border-cyan-200 transition-all shadow-sm"
-                                                        title="Cetak Struk"
-                                                    >
-                                                        <IconPrinter size={16} />
-                                                    </Link>
+                                                    {canPrint && (
+                                                        <Link
+                                                            href={route("transactions.print", sale.sale_number)}
+                                                            target="_blank"
+                                                            className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-cyan-600 hover:border-cyan-200 transition-all shadow-sm"
+                                                            title="Cetak Struk"
+                                                        >
+                                                            <IconPrinter size={16} />
+                                                        </Link>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -310,9 +312,11 @@ export default function Transactions({ sales, filters }) {
                             <button onClick={() => setSelectedSale(null)} className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                                 Tutup
                             </button>
-                            <Link href={route("transactions.print", selectedSale.sale_number)} className="px-6 py-2.5 rounded-xl bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-sm font-bold flex items-center gap-2 hover:scale-[1.02] transition-transform">
-                                <IconPrinter size={18}/> Cetak Struk
-                            </Link>
+                            {canPrint && (
+                                <Link href={route("transactions.print", selectedSale.sale_number)} className="px-6 py-2.5 rounded-xl bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-sm font-bold flex items-center gap-2 hover:scale-[1.02] transition-transform">
+                                    <IconPrinter size={18}/> Cetak Struk
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </div>

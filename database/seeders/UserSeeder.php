@@ -55,6 +55,41 @@ class UserSeeder extends Seeder
         $admin->syncRoles([$superAdminRole]);
         $rows[] = ['Admin Pusat', 'admin@harumnya.com', 'super-admin', 'WH-PUSAT', '-'];
 
+        // ── User back-office per Role ─────────────────────────────────────────
+        $roleUsers = [
+            ['Accounting', 'accounting@harumnya.com', 'accounting'],
+            ['Finance',    'finance@harumnya.com',    'finance'],
+            ['Logistik',   'logistik@harumnya.com',   'logistik'],
+            ['Purchasing', 'purchasing@harumnya.com', 'purchasing'],
+            ['OCSC',       'ocsc@harumnya.com',       'ocsc'],
+            ['OC',         'oc@harumnya.com',         'oc'],
+            ['Marketing',  'marketing@harumnya.com',  'marketing'],
+            ['HR',         'hr@harumnya.com',         'hr'],
+        ];
+
+        foreach ($roleUsers as [$nama, $email, $roleName]) {
+            $role = Role::where('name', $roleName)->first();
+            if (! $role) {
+                $this->command->warn("⚠ Role {$roleName} tidak ditemukan, skip user {$email}.");
+                continue;
+            }
+
+            $u = User::firstOrCreate(
+                ['email' => $email],
+                [
+                    'name'                 => $nama,
+                    'password'             => bcrypt('password'),
+                    'default_warehouse_id' => $whPusat->id,
+                    'default_store_id'     => null,
+                ]
+            );
+            if (! $u->wasRecentlyCreated) {
+                $u->update(['default_warehouse_id' => $whPusat->id]);
+            }
+            $u->syncRoles([$role]);
+            $rows[] = [$nama, $email, $roleName, 'WH-PUSAT', '-'];
+        }
+
         // ── Kasir per Toko ────────────────────────────────────────────────────
         $cashierMap = [
             ['STR-JOMBANG1', 'WH-JATIM', 'Kasir Jombang 1', 'kasir.jombang1@harumnya.com'],

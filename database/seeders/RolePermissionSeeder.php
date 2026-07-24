@@ -19,12 +19,15 @@ class RolePermissionSeeder extends Seeder
 
             // ── Dashboard ────────────────────────────────────────────────────
             'dashboard-access',
+            'view-all-stores',   // sinyal scope: lihat data semua toko (bukan hanya toko default)
 
             // ── Transactions / POS ───────────────────────────────────────────
             'transactions-access',
             'transactions-create',
             'transactions-void',
             'transactions-refund',
+            'transactions-cancel',
+            'transactions-print',
             'transactions-all',
 
             // ── Products & Catalog ───────────────────────────────────────────
@@ -197,207 +200,195 @@ class RolePermissionSeeder extends Seeder
             Permission::firstOrCreate(['name' => $permission]);
         }
 
-        // ── ROLES ──────────────────────────────────────────────────────────────
+        // ── GRUP PERMISSION (reusable) ─────────────────────────────────────────
 
-        // Daftar semua role yang dikelola seeder ini. Role lain di luar daftar
-        // (mis. sisa data lama) akan dihapus agar konsisten.
-        $managedRoles = [
-            'super-admin', 'cashier',
-            'accounting', 'finance', 'logistik', 'purchasing',
-            'ocsc', 'oc', 'marketing', 'hr',
+        $reportsSales   = ['reports-access', 'reports-sales'];
+        $reportsFinance = ['reports-finance', 'profits-access'];
+        $reportsStock   = ['reports-stock'];
+
+        $transaksiView  = ['transactions-access', 'transactions-all', 'transactions-print'];
+        $shiftView      = ['cash-drawers-access', 'cash-drawers-print'];
+
+        // Lokasi (lihat semua)
+        $locationAll = [
+            'stores-access', 'warehouses-access',
+            'store-categories-access', 'categories-access',
         ];
-        Role::whereNotIn('name', $managedRoles)->delete();
-
-        // ── Kumpulan permission yang dipakai berulang ─────────────────────────
-
-        // Lokasi & Tempat (semua)
-        $lokasiAll = [
-            'warehouses-access',
-            'stores-access',
-            'store-categories-access',
-        ];
-
-        // Bahan Baku & Produk (semua aksi)
-        $bahanProdukAll = [
-            'ingredients-access', 'ingredients-create', 'ingredients-edit', 'ingredients-delete',
-            'packaging-access',   'packaging-create',   'packaging-edit',   'packaging-delete',
-            'recipes-access',     'recipes-create',     'recipes-edit',     'recipes-delete', 'recipes-import',
-            'products-access',    'products-edit',      'products-recalculate',
+        // Lokasi & tempat (kelola toko + kategori toko)
+        $locationManage = [
+            'stores-access', 'stores-create', 'stores-edit', 'stores-delete',
+            'store-categories-access', 'store-categories-create', 'store-categories-edit', 'store-categories-delete',
         ];
 
-        // Master Data — Varian
-        $masterVarian = [
-            'variants-access', 'variants-create', 'variants-edit', 'variants-delete',
-        ];
-
-        // Manajemen Stok (semua)
-        $stokAll = [
+        // Manajemen stok penuh
+        $stockAll = [
             'stock-access', 'stock-warehouse-access', 'stock-store-access',
             'stock-transfer', 'stock-adjustment', 'stock-repack',
-            'repacks-access', 'repacks-create', 'repacks-edit', 'repacks-delete',
-            'repacks-complete', 'repacks-cancel',
+            'repacks-access', 'repacks-create', 'repacks-edit', 'repacks-delete', 'repacks-complete', 'repacks-cancel',
+        ];
+        // Manajemen stok tanpa produksi (repack) & tanpa transfer
+        $stockNoProdNoTransfer = [
+            'stock-access', 'stock-warehouse-access', 'stock-store-access', 'stock-adjustment',
         ];
 
-        // Manajemen Stok tanpa Produksi (repack) & Transfer Stok — untuk OCSC
-        $stokNoProdTransfer = [
-            'stock-access', 'stock-warehouse-access', 'stock-store-access',
-            'stock-adjustment',
+        // Bahan baku & produk (penuh)
+        $bahanProduk = [
+            'ingredients-access', 'ingredients-create', 'ingredients-edit', 'ingredients-delete',
+            'packaging-access', 'packaging-create', 'packaging-edit', 'packaging-delete',
+            'products-access', 'products-create', 'products-edit', 'products-delete', 'products-recalculate',
         ];
+
+        // Master data varian
+        $masterVarian = [
+            'variants-access', 'variants-create', 'variants-edit', 'variants-delete',
+            'intensities-access', 'intensities-create', 'intensities-edit', 'intensities-delete',
+            'sizes-access', 'sizes-create', 'sizes-edit', 'sizes-delete',
+            'categories-access', 'categories-create', 'categories-edit', 'categories-delete',
+            'recipes-access', 'recipes-create', 'recipes-edit', 'recipes-delete', 'recipes-import',
+        ];
+
+        // Purchase order penuh + supplier
+        $purchaseAll = [
+            'purchases-access', 'purchases-create', 'purchases-edit', 'purchases-delete',
+            'purchases-submit', 'purchases-approve', 'purchases-receive', 'purchases-complete', 'purchases-cancel',
+            'suppliers-access', 'suppliers-create', 'suppliers-edit', 'suppliers-delete',
+        ];
+
+        $paymentMethods = [
+            'payment-methods-access', 'payment-methods-create', 'payment-methods-edit', 'payment-methods-delete',
+            'payment-settings-access',
+        ];
+
+        $discountsAll = ['discounts-access', 'discounts-create', 'discounts-edit', 'discounts-delete'];
+        $customersAll = ['customers-access', 'customers-create', 'customers-edit', 'customers-delete', 'customers-export'];
+        $salesPeopleAll = ['sales-people-access', 'sales-people-create', 'sales-people-edit', 'sales-people-delete'];
+
+        $merge = fn (...$groups) => array_values(array_unique(array_merge(...$groups)));
+
+        // ── ROLES ──────────────────────────────────────────────────────────────
+
+        $roleMatrix = [
+
+            // Accounting (Reporting)
+            'accounting' => $merge(
+                ['dashboard-access'],
+                $reportsSales, $reportsFinance, $reportsStock,   // + Laporan Mutasi Bahan & Kemasan
+                $transaksiView, $shiftView,
+                $locationManage, $locationAll,
+                ['transactions-cancel'],
+            ),
+
+            // Finance
+            'finance' => $merge(
+                ['dashboard-access'],
+                $reportsSales, $reportsFinance, $reportsStock,
+                $transaksiView, $shiftView,
+                ['transactions-cancel'],
+                $paymentMethods,
+                $locationAll,
+            ),
+
+            // Logistik (Gudang)
+            'logistik' => $merge(
+                ['dashboard-access'],
+                $stockAll,
+                $reportsSales, $reportsStock,
+                $locationAll,
+                $bahanProduk,
+                $masterVarian,
+            ),
+
+            // Purchasing
+            'purchasing' => $merge(
+                ['dashboard-access'],
+                $purchaseAll,
+                $stockAll,
+                $reportsSales, $reportsStock,
+                $locationAll,
+                $bahanProduk,
+                $masterVarian,
+            ),
+
+            // OCSC — stok semua kecuali produksi & transfer
+            'ocsc' => $merge(
+                ['dashboard-access'],
+                $stockNoProdNoTransfer,
+                $bahanProduk,
+                $locationAll,
+                $reportsSales, $reportsStock,
+            ),
+
+            // OC
+            'oc' => $merge(
+                ['dashboard-access'],
+                $reportsSales,
+                $transaksiView,
+                $locationAll,
+            ),
+
+            // Marketing
+            'marketing' => $merge(
+                ['dashboard-access'],
+                $discountsAll,                    // Promo & diskon + Hadiah/Reward (reward pakai discounts-*)
+                $customersAll,
+                $transaksiView,
+                $reportsSales,
+                $locationAll,
+            ),
+
+            // HR
+            'hr' => $merge(
+                ['dashboard-access'],
+                $salesPeopleAll,
+                $locationAll,
+            ),
+        ];
+
+        // Bersihkan role lama yang tidak terpakai (kecuali yang dikelola di sini + super-admin + cashier)
+        $managedRoles = array_merge(array_keys($roleMatrix), ['super-admin', 'cashier']);
+        Role::whereNotIn('name', $managedRoles)->delete();
 
         // ── Super Admin — akses semua ─────────────────────────────────────────
         $superAdmin = Role::firstOrCreate(['name' => 'super-admin']);
         $superAdmin->syncPermissions(Permission::all());
 
-        // ── Accounting (Reporting) ────────────────────────────────────────────
-        // Dashboard, Laporan (penjualan+keuangan), Transaksi, Cancel order, Lokasi all
-        $accounting = Role::firstOrCreate(['name' => 'accounting']);
-        $accounting->syncPermissions(array_merge([
-            'dashboard-access',
-            'reports-access',            // Laporan Penjualan
-            'profits-access',            // Laporan Keuangan
-            'reports-stock',             // Laporan Mutasi Bahan & Kemasan
-            'transactions-access',       // Riwayat Transaksi + Histori Shift
-            'transactions-void',         // Cancel order
-        ], $lokasiAll));
-
-        // ── Finance ───────────────────────────────────────────────────────────
-        // Dashboard, Laporan all, Transaksi all, Metode pembayaran, Lokasi all
-        $finance = Role::firstOrCreate(['name' => 'finance']);
-        $finance->syncPermissions(array_merge([
-            'dashboard-access',
-            'reports-access',            // Laporan Penjualan
-            'profits-access',            // Laporan Keuangan
-            'reports-stock',             // Laporan Mutasi
-            'transactions-access',
-            'transactions-void',
-            'transactions-refund',
-            'transactions-all',
-            'payment-methods-access',
-        ], $lokasiAll));
-
-        // ── Logistik (Gudang) ─────────────────────────────────────────────────
-        // Dashboard, Stok all, Laporan (penjualan+mutasi), Lokasi all,
-        // Bahan Baku & Produk all, Master Varian
-        $logistik = Role::firstOrCreate(['name' => 'logistik']);
-        $logistik->syncPermissions(array_merge(
-            [
-                'dashboard-access',
-                'reports-access',        // Laporan Penjualan
-                'reports-stock',         // Laporan Mutasi
-            ],
-            $stokAll,
-            $lokasiAll,
-            $bahanProdukAll,
-            $masterVarian,
-        ));
-
-        // ── Purchasing ────────────────────────────────────────────────────────
-        // Sama seperti Logistik + Purchase Order (full)
-        $purchasing = Role::firstOrCreate(['name' => 'purchasing']);
-        $purchasing->syncPermissions(array_merge(
-            [
-                'dashboard-access',
-                'reports-access',
-                'reports-stock',
-                'purchases-access', 'purchases-create', 'purchases-edit', 'purchases-delete',
-                'purchases-submit', 'purchases-approve', 'purchases-receive',
-                'purchases-complete', 'purchases-cancel',
-            ],
-            $stokAll,
-            $lokasiAll,
-            $bahanProdukAll,
-            $masterVarian,
-        ));
-
-        // ── OCSC ──────────────────────────────────────────────────────────────
-        // Stok (all kecuali produksi & transfer), Bahan & Produk all, Lokasi all,
-        // Laporan (penjualan+mutasi)
-        $ocsc = Role::firstOrCreate(['name' => 'ocsc']);
-        $ocsc->syncPermissions(array_merge(
-            [
-                'dashboard-access',
-                'reports-access',
-                'reports-stock',
-            ],
-            $stokNoProdTransfer,
-            $lokasiAll,
-            $bahanProdukAll,
-        ));
-
-        // ── OC ────────────────────────────────────────────────────────────────
-        // Dashboard, Laporan penjualan, Riwayat transaksi, Lokasi all
-        $oc = Role::firstOrCreate(['name' => 'oc']);
-        $oc->syncPermissions(array_merge([
-            'dashboard-access',
-            'reports-access',            // Laporan Penjualan
-            'transactions-access',       // Riwayat Transaksi
-        ], $lokasiAll));
-
-        // ── Marketing ─────────────────────────────────────────────────────────
-        // Promo & diskon, Hadiah/Reward, Pelanggan, Riwayat transaksi,
-        // Laporan penjualan, Lokasi all
-        $marketing = Role::firstOrCreate(['name' => 'marketing']);
-        $marketing->syncPermissions(array_merge([
-            'dashboard-access',
-            'discounts-access', 'discounts-create', 'discounts-edit', 'discounts-delete', // Promo + Hadiah/Reward
-            'customers-access', 'customers-create', 'customers-edit', 'customers-delete', 'customers-export',
-            'transactions-access',       // Riwayat Transaksi
-            'reports-access',            // Laporan Penjualan
-        ], $lokasiAll));
-
-        // ── HR ────────────────────────────────────────────────────────────────
-        // Dashboard, Sales, Lokasi all
-        $hr = Role::firstOrCreate(['name' => 'hr']);
-        $hr->syncPermissions(array_merge([
-            'dashboard-access',
-            'sales-people-access', 'sales-people-create', 'sales-people-edit', 'sales-people-delete',
-        ], $lokasiAll));
-
-        // ── Kasir / Sales ─────────────────────────────────────────────────────
-        // Dashboard (toko sendiri), Transaksi all, Laporan penjualan, Fulfillment,
-        // Sales (ranking produktivitas). POS diakses via redirect ke transactions.
+        // ── Cashier / Sales — POS di tokonya + laporan penjualan + fulfillment + sales ranking
         $cashier = Role::firstOrCreate(['name' => 'cashier']);
-        $cashier->syncPermissions([
-            'dashboard-access',
-
-            // POS / Transaksi (semua aksi transaksi)
-            'transactions-access',       // POS, Riwayat, Fulfillment (pos.fulfillment.*)
-            'transactions-create',
-            'transactions-void',
-            'transactions-refund',
-
+        $cashier->syncPermissions($merge(
+            ['dashboard-access'],
+            // POS / Transaksi (fulfillment pakai transactions-*) — scoped ke toko sendiri
+            ['transactions-access', 'transactions-create', 'transactions-print'],
             // Shift Kasir
-            'cash-drawers-access',
-            'cash-drawers-open',
-            'cash-drawers-close',
-            'cash-drawers-print',
+            ['cash-drawers-access', 'cash-drawers-open', 'cash-drawers-close', 'cash-drawers-print'],
+            // Laporan penjualan
+            $reportsSales,
+            // Katalog (read only)
+            ['products-access', 'variants-access', 'intensities-access', 'sizes-access', 'packaging-access'],
+            // Pelanggan
+            ['customers-access', 'customers-create'],
+            // Diskon (lihat)
+            ['discounts-access'],
+            // Stok toko (lihat)
+            ['stock-access', 'stock-store-access'],
+            // Sales (ranking produktivitas)
+            ['sales-people-access'],
+        ));
 
-            // Laporan Penjualan
-            'reports-access',
+        // ── Buat/sinkronkan role bermatriks ───────────────────────────────────
+        $summaryRows = [
+            ['super-admin', $superAdmin->permissions()->count()],
+            ['cashier',     $cashier->permissions()->count()],
+        ];
 
-            // Sales — Ranking Produktivitas
-            'sales-people-access',
-
-            // Pelanggan (dibutuhkan saat transaksi POS)
-            'customers-access',
-            'customers-create',
-        ]);
+        foreach ($roleMatrix as $roleName => $perms) {
+            // Semua role back-office boleh lihat data semua toko.
+            $perms = $merge($perms, ['view-all-stores']);
+            $role = Role::firstOrCreate(['name' => $roleName]);
+            $role->syncPermissions($perms);
+            $summaryRows[] = [$roleName, $role->permissions()->count()];
+        }
 
         $this->command->info('✓ Roles & Permissions seeded successfully.');
-        $this->command->table(
-            ['Role', 'Jumlah Permission'],
-            [
-                ['super-admin', $superAdmin->permissions()->count()],
-                ['accounting',  $accounting->permissions()->count()],
-                ['finance',     $finance->permissions()->count()],
-                ['logistik',    $logistik->permissions()->count()],
-                ['purchasing',  $purchasing->permissions()->count()],
-                ['ocsc',        $ocsc->permissions()->count()],
-                ['oc',          $oc->permissions()->count()],
-                ['marketing',   $marketing->permissions()->count()],
-                ['hr',          $hr->permissions()->count()],
-                ['cashier',     $cashier->permissions()->count()],
-            ]
-        );
+        $this->command->table(['Role', 'Jumlah Permission'], $summaryRows);
     }
 }

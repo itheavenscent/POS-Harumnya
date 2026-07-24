@@ -357,6 +357,235 @@ class TransactionController extends Controller
     // EXISTING ENDPOINTS (tidak berubah)
     // =========================================================================
 
+    public function cancelSale(Request $request, string $id)
+    {
+        $user = Auth::user();
+        if (! $user->can('transactions-cancel')) {
+            return back()->withErrors(['cancel' => 'Anda tidak memiliki izin membatalkan transaksi.']);
+        }
+
+        $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        $sale = Sale::with('customer')->findOrFail($id);
+
+        if ($sale->status !== 'completed') {
+            return back()->withErrors(['cancel' => 'Hanya transaksi selesai yang dapat dibatalkan.']);
+        }
+
+        DB::transaction(function () use ($sale, $request, $user) {
+            $now = now();
+
+            // 1. Kembalikan stok — reverse semua StockMovement penjualan ini
+            $movements = \App\Models\StockMovement::where('reference_type', Sale::class)
+                ->where('reference_id', $sale->id)
+                ->where('movement_type', 'sale_deduction')
+                ->get();
+
+            foreach ($movements as $mv) {
+                $restoreQty = abs((int) $mv->qty_change);
+                if ($restoreQty === 0) continue;
+
+                if ($mv->item_type === 'reward_item') {
+                    \App\Models\RewardItem::where('id', $mv->item_id)
+                        ->increment('stock_qty', $restoreQty);
+                    continue;
+                }
+
+                $stock = $mv->item_type === 'ingredient'
+                    ? \App\Models\StoreIngredientStock::firstOrCreate(
+                        ['store_id' => $mv->location_id, 'ingredient_id' => $mv->item_id],
+                        ['quantity' => 0, 'average_cost' => 0, 'total_value' => 0])
+                    : \App\Models\StorePackagingStock::firstOrCreate(
+                        ['store_id' => $mv->location_id, 'packaging_material_id' => $mv->item_id],
+                        ['quantity' => 0, 'average_cost' => 0, 'total_value' => 0]);
+
+                $qtyBefore = (int) $stock->quantity;
+                $qtyAfter  = $qtyBefore + $restoreQty;
+                $avgCost   = (float) $stock->average_cost;
+
+                $stock->update([
+                    'quantity'    => $qtyAfter,
+                    'total_value' => round(max(0, $qtyAfter) * $avgCost, 2),
+                    'last_in_at'  => $now,
+                    'last_in_by'  => $user->id,
+                    'last_in_qty' => $restoreQty,
+                ]);
+
+                \App\Models\StockMovement::create([
+                    'location_type'    => $mv->location_type,
+                    'location_id'      => $mv->location_id,
+                    'movement_type'    => 'return_in',
+                    'item_type'        => $mv->item_type,
+                    'item_id'          => $mv->item_id,
+                    'qty_change'       => $restoreQty,
+                    'qty_before'       => $qtyBefore,
+                    'qty_after'        => $qtyAfter,
+                    'unit_cost'        => (float) $mv->unit_cost,
+                    'total_cost'       => round($restoreQty * (float) $mv->unit_cost, 2),
+                    'avg_cost_before'  => $avgCost,
+                    'avg_cost_after'   => $avgCost,
+                    'reference_type'   => Sale::class,
+                    'reference_id'     => $sale->id,
+                    'reference_number' => $sale->sale_number,
+                    'movement_date'    => $now->toDateString(),
+                    'created_by'       => $user->id,
+                    'notes'            => "Pembatalan transaksi {$sale->sale_number}",
+                ]);
+            }
+
+            // 2. Kembalikan poin loyalitas
+            if ($sale->customer_id && $sale->customer) {
+                $pointsEarned   = (int) ($sale->points_earned ?? 0);
+                $pointsRedeemed = (int) ($sale->points_redeemed ?? 0);
+
+                if ($pointsEarned > 0 || $pointsRedeemed > 0) {
+                    $netPointChange = $pointsRedeemed - $pointsEarned; // kembalikan redeemed, tarik earned
+                    if ($netPointChange !== 0) {
+                        $sale->customer->increment('points', $netPointChange);
+                    }
+
+                    CustomerPointLedger::create([
+                        'customer_id'    => $sale->customer_id,
+                        'type'           => 'adjusted',
+                        'points'         => $netPointChange,
+                        'balance_after'  => max(0, (int) $sale->customer->fresh()->points),
+                        'reference_type' => Sale::class,
+                        'reference_id'   => $sale->id,
+                        'notes'          => "Pembatalan transaksi {$sale->sale_number}",
+                        'created_by'     => $user->id,
+                    ]);
+                }
+            }
+
+            // 3. Tandai transaksi dibatalkan
+            $sale->update([
+                'status'              => 'cancelled',
+                'cancellation_reason' => $request->reason,
+                'cancelled_at'        => $now,
+                'cancelled_by'        => $user->id,
+            ]);
+        });
+
+        return back()->with('success', "Transaksi {$sale->sale_number} berhasil dibatalkan. Stok telah dikembalikan.");
+    }
+
+    /**
+     * Export riwayat transaksi ke CSV (detail per item), menghormati filter & scope aktif.
+     */
+    public function exportHistory(Request $request)
+    {
+        $user = Auth::user();
+
+        $isAdmin        = $user->hasRole('super-admin') || $user->hasRole('admin') || $user->can('view-all-stores');
+        $filterStoreId  = $request->filled('store_id') ? $request->store_id : null;
+        $defaultStoreId = $user->default_store_id;
+
+        $query = Sale::with([
+            'items', 'discounts', 'payments.paymentMethod',
+            'customer:id,name,phone', 'cashier:id,name',
+            'salesPerson:id,name', 'store:id,name',
+        ])->latest('sold_at');
+
+        if ($isAdmin) {
+            if ($filterStoreId) $query->where('store_id', $filterStoreId);
+        } else {
+            $query->where('store_id', $defaultStoreId)->where('cashier_id', $user->id);
+        }
+
+        if ($request->filled('date_from')) $query->whereDate('sold_at', '>=', $request->date_from);
+        if ($request->filled('date_to'))   $query->whereDate('sold_at', '<=', $request->date_to);
+        if ($request->filled('status'))    $query->where('status', $request->status);
+        if ($request->filled('sale_number')) {
+            $query->where('sale_number', 'ilike', "%{$request->sale_number}%");
+        }
+        if ($request->filled('q')) {
+            $q = $request->q;
+            $query->where(fn ($inner) =>
+                $inner->where('sale_number', 'ilike', "%{$q}%")
+                      ->orWhere('customer_name', 'ilike', "%{$q}%")
+                      ->orWhereHas('customer', fn ($c) => $c->where('name', 'ilike', "%{$q}%"))
+            );
+        }
+
+        $sales = $query->get();
+
+        $filename = 'Riwayat_Transaksi_' . now()->format('Ymd_His') . '.csv';
+
+        return new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($sales) {
+            $handle = fopen('php://output', 'w');
+            // BOM agar Excel baca UTF-8
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, [
+                'No. Invoice', 'Tanggal', 'Waktu', 'Status', 'Toko',
+                'No.Telp', 'Pelanggan', 'Kasir', 'Sales Person',
+                'Item', 'Variant', 'Intensitas', 'Ukuran (ml)', 'Qty',
+                'Harga Satuan', 'Subtotal Item',
+                'Diskon Transaksi', 'Total Transaksi', 'Metode Pembayaran',
+            ]);
+
+            foreach ($sales as $sale) {
+                $discApplied = $sale->discounts
+                    ->map(fn ($d) => $d->discount_name . ' (-' . number_format((float) $d->applied_amount, 0, ',', '.') . ')')
+                    ->implode('; ');
+                $payMethods = $sale->payments
+                    ->map(fn ($p) => $p->payment_method_name ?? optional($p->paymentMethod)->name)
+                    ->filter()->unique()->implode(', ');
+                $phone = optional($sale->customer)->phone ?? $sale->customer_name ?? '-';
+                $custName = optional($sale->customer)->name ?? $sale->customer_name ?? 'Umum';
+
+                if ($sale->items->isEmpty()) {
+                    fputcsv($handle, [
+                        $sale->sale_number,
+                        \Illuminate\Support\Carbon::parse($sale->sold_at)->format('Y-m-d'),
+                        \Illuminate\Support\Carbon::parse($sale->sold_at)->format('H:i:s'),
+                        $sale->status, optional($sale->store)->name,
+                        $phone, $custName,
+                        optional($sale->cashier)->name ?? $sale->cashier_name ?? '-',
+                        optional($sale->salesPerson)->name ?? $sale->sales_person_name ?? '-',
+                        '-', '-', '-', '-', 0, 0, 0,
+                        $discApplied ?: '-', $sale->total, $payMethods ?: '-',
+                    ]);
+                    continue;
+                }
+
+                $first = true;
+                foreach ($sale->items as $item) {
+                    $itemName = $item->product_name
+                        ?: implode(' ', array_filter([$item->variant_name, $item->intensity_code, $item->size_ml ? $item->size_ml . 'ml' : null]));
+                    fputcsv($handle, [
+                        $first ? $sale->sale_number : '',
+                        $first ? \Illuminate\Support\Carbon::parse($sale->sold_at)->format('Y-m-d') : '',
+                        $first ? \Illuminate\Support\Carbon::parse($sale->sold_at)->format('H:i:s') : '',
+                        $first ? $sale->status : '',
+                        $first ? optional($sale->store)->name : '',
+                        $first ? $phone : '',
+                        $first ? $custName : '',
+                        $first ? (optional($sale->cashier)->name ?? $sale->cashier_name ?? '-') : '',
+                        $first ? (optional($sale->salesPerson)->name ?? $sale->sales_person_name ?? '-') : '',
+                        $itemName ?: '-',
+                        $item->variant_name ?? '-',
+                        $item->intensity_code ?? '-',
+                        $item->size_ml ?? '-',
+                        $item->qty,
+                        $item->unit_price,
+                        $item->subtotal,
+                        $first ? ($discApplied ?: '-') : '',
+                        $first ? $sale->total : '',
+                        $first ? ($payMethods ?: '-') : '',
+                    ]);
+                    $first = false;
+                }
+            }
+
+            fclose($handle);
+        }, 200, [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
     public function history(Request $request)
     {
         $user = Auth::user();
@@ -366,7 +595,7 @@ class TransactionController extends Controller
             return redirect()->route('pos.transactions');
         }
 
-        $isAdmin = $user->hasRole('super-admin') || $user->hasRole('admin') || $user->hasPermissionTo('transactions-all');
+        $isAdmin = $user->hasRole('super-admin') || $user->hasRole('admin') || $user->can('view-all-stores');
 
         // Admin sees all stores; non-admin is limited to their default store
         $filterStoreId = $request->filled('store_id') ? $request->store_id : null;
@@ -453,11 +682,13 @@ class TransactionController extends Controller
             : collect();
 
         return Inertia::render('Dashboard/Transactions/History', [
-            'sales'    => $sales,
-            'filters'  => $request->only('date_from', 'date_to', 'q', 'sale_number', 'status', 'store_id'),
-            'summary'  => $summary,
-            'stores'   => $stores,
-            'isAdmin'  => $isAdmin,
+            'sales'         => $sales,
+            'filters'       => $request->only('date_from', 'date_to', 'q', 'sale_number', 'status', 'store_id'),
+            'summary'       => $summary,
+            'stores'        => $stores,
+            'isAdmin'       => $isAdmin,
+            'canCancelSale' => $user->can('transactions-cancel'),
+            'canPrint'      => $user->can('transactions-print'),
         ]);
     }
 
@@ -532,13 +763,8 @@ class TransactionController extends Controller
             $storeId = $user->default_store_id ?? null;
             $store = $storeId ? Store::with('storeCategory')->find($storeId) : null;
 
-            $variantQuery = Variant::where('is_active', true);
-
-            try {
-                $variantQuery->orderBy('sort_order');
-            } catch (\Exception $e) {
-                $variantQuery->orderBy('name');
-            }
+            $variantQuery = Variant::where('is_active', true)
+                ->orderBy('name');
 
             if ($store && $store->store_category_id) {
                 $category = $store->storeCategory;
@@ -609,13 +835,8 @@ class TransactionController extends Controller
             $storeId = $user->default_store_id ?? null;
             $store = $storeId ? Store::with('storeCategory')->find($storeId) : null;
 
-            $variantQuery = Variant::where('is_active', true);
-
-            try {
-                $variantQuery->orderBy('sort_order');
-            } catch (\Exception $e) {
-                $variantQuery->orderBy('name');
-            }
+            $variantQuery = Variant::where('is_active', true)
+                ->orderBy('name');
 
             if ($store && $store->store_category_id) {
                 $category = $store->storeCategory;

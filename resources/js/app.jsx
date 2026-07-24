@@ -7,7 +7,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ThemeSwitcherProvider } from './Context/ThemeSwitcherContext';
 import { BluetoothProvider } from './Context/BluetoothContext';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'Harumnya';
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
@@ -27,3 +27,10 @@ createInertiaApp({
         color: '#4B5563',
     },
 });
+
+// ── PWA: daftarkan service worker ──────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+    });
+}

@@ -125,6 +125,7 @@ class CashDrawerController extends Controller
             'type' => 'required|in:cash_in,cash_out',
             'amount' => 'required|numeric|min:0',
             'description' => 'required|string|max:255',
+            'photo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120',
         ]);
 
         $user = Auth::user();
@@ -133,11 +134,17 @@ class CashDrawerController extends Controller
             ->where('status', 'open')
             ->firstOrFail();
 
+        $photoPath = null;
+        if ($request->hasFile('photo')) {
+            $photoPath = $request->file('photo')->store('cash-transactions', 'public');
+        }
+
         CashDrawerTransaction::create([
             'cash_drawer_id' => $drawer->id,
             'type' => $request->type,
             'amount' => $request->amount,
             'description' => $request->description,
+            'photo' => $photoPath,
             'user_id' => $user->id,
         ]);
 
@@ -149,10 +156,9 @@ class CashDrawerController extends Controller
         $user = Auth::user();
         $isSuperAdmin = $user->hasRole('super-admin');
 
-        $query = CashDrawer::with(['cashier', 'store'])
-            ->where('status', 'closed');
+        $query = CashDrawer::with(['cashier', 'store']);
 
-        if (!$isSuperAdmin && !$user->hasRole('admin')) {
+        if (!$isSuperAdmin && !$user->hasRole('admin') && !$user->can('view-all-stores')) {
             $query->where('store_id', $user->default_store_id);
         }
 
@@ -169,7 +175,7 @@ class CashDrawerController extends Controller
         return Inertia::render('Dashboard/Shifts/Index', [
             'drawers' => $drawers,
             'filters' => $request->only(['date_from', 'date_to']),
-            'isAdmin' => $isSuperAdmin || $user->hasRole('admin'),
+            'isAdmin' => $isSuperAdmin || $user->hasRole('admin') || $user->can('view-all-stores'),
         ]);
     }
 
@@ -181,7 +187,7 @@ class CashDrawerController extends Controller
         return Inertia::render('Dashboard/Shifts/Show', [
             'drawer' => $drawer,
             'summary' => $summary,
-            'isAdmin' => Auth::user()->hasRole('super-admin') || Auth::user()->hasRole('admin'),
+            'isAdmin' => Auth::user()->hasRole('super-admin') || Auth::user()->hasRole('admin') || Auth::user()->can('view-all-stores'),
         ]);
     }
 

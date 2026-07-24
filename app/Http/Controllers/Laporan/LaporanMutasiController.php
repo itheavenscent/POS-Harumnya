@@ -19,7 +19,7 @@ class LaporanMutasiController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $isSuperAdmin = method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : ($user->hasRole('super-admin') || $user->hasRole('admin'));
+        $isSuperAdmin = (method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : ($user->hasRole('super-admin') || $user->hasRole('admin'))) || $user->can('view-all-stores');
 
         // ── Filter params ─────────────────────────────────────────────────────
         $location = $request->input('location'); // format 'store:{id}' atau 'warehouse:{id}'
@@ -334,26 +334,47 @@ class LaporanMutasiController extends Controller
 
         $currentIngredientStocks = [];
         $currentPackagingStocks = [];
-        if ($locationType === 'store') {
-            $currentIngredientStocks = DB::table('store_stocks')->where('store_id', $locationId)->pluck('quantity', 'ingredient_id');
-            $currentPackagingStocks = DB::table('store_packaging_stocks')->where('store_id', $locationId)->pluck('quantity', 'packaging_material_id');
-        } elseif ($locationType === 'warehouse') {
-            $currentIngredientStocks = DB::table('warehouse_stocks')->where('warehouse_id', $locationId)->pluck('quantity', 'ingredient_id');
-            $currentPackagingStocks = DB::table('warehouse_packaging_stocks')->where('warehouse_id', $locationId)->pluck('quantity', 'packaging_material_id');
+        if ($locationId) {
+            if ($locationType === 'store') {
+                $currentIngredientStocks = DB::table('store_ingredient_stocks')->where('store_id', $locationId)->pluck('quantity', 'ingredient_id')->toArray();
+                $currentPackagingStocks = DB::table('store_packaging_stocks')->where('store_id', $locationId)->pluck('quantity', 'packaging_material_id')->toArray();
+            } else {
+                $currentIngredientStocks = DB::table('warehouse_ingredient_stocks')->where('warehouse_id', $locationId)->pluck('quantity', 'ingredient_id')->toArray();
+                $currentPackagingStocks = DB::table('warehouse_packaging_stocks')->where('warehouse_id', $locationId)->pluck('quantity', 'packaging_material_id')->toArray();
+            }
+        } else {
+            $storeIng = DB::table('store_ingredient_stocks')->select('ingredient_id', DB::raw('SUM(quantity) as qty'))->groupBy('ingredient_id')->get();
+            $warehouseIng = DB::table('warehouse_ingredient_stocks')->select('ingredient_id', DB::raw('SUM(quantity) as qty'))->groupBy('ingredient_id')->get();
+            foreach ($storeIng as $s) {
+                $currentIngredientStocks[$s->ingredient_id] = ($currentIngredientStocks[$s->ingredient_id] ?? 0) + $s->qty;
+            }
+            foreach ($warehouseIng as $w) {
+                $currentIngredientStocks[$w->ingredient_id] = ($currentIngredientStocks[$w->ingredient_id] ?? 0) + $w->qty;
+            }
+
+            $storePack = DB::table('store_packaging_stocks')->select('packaging_material_id', DB::raw('SUM(quantity) as qty'))->groupBy('packaging_material_id')->get();
+            $warehousePack = DB::table('warehouse_packaging_stocks')->select('packaging_material_id', DB::raw('SUM(quantity) as qty'))->groupBy('packaging_material_id')->get();
+            foreach ($storePack as $s) {
+                $currentPackagingStocks[$s->packaging_material_id] = ($currentPackagingStocks[$s->packaging_material_id] ?? 0) + $s->qty;
+            }
+            foreach ($warehousePack as $w) {
+                $currentPackagingStocks[$w->packaging_material_id] = ($currentPackagingStocks[$w->packaging_material_id] ?? 0) + $w->qty;
+            }
         }
 
+        $movementsAfter = DB::table('stock_movements')
+            ->where('movement_date', '>', $dateToDt)
+            ->when($locationId, function ($q) use ($locationId, $locationType) {
+                $q->where('location_id', $locationId)
+                  ->where('location_type', $locationType);
+            })
+            ->select('item_type', 'item_id', DB::raw('SUM(qty_change) as total_qty_change'))
+            ->groupBy('item_type', 'item_id')
+            ->get();
+
         $qtyChangeAfter = [];
-        if ($locationId) {
-            $movementsAfter = DB::table('stock_movements')
-                ->where('movement_date', '>', $dateToDt)
-                ->where('location_id', $locationId)
-                ->where('location_type', $locationType)
-                ->select('item_type', 'item_id', DB::raw('SUM(qty_change) as total_qty_change'))
-                ->groupBy('item_type', 'item_id')
-                ->get();
-            foreach ($movementsAfter as $mv) {
-                $qtyChangeAfter[$mv->item_type][$mv->item_id] = (int) $mv->total_qty_change;
-            }
+        foreach ($movementsAfter as $mv) {
+            $qtyChangeAfter[$mv->item_type][$mv->item_id] = (int) $mv->total_qty_change;
         }
 
         $mutations = [];

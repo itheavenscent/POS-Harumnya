@@ -639,6 +639,12 @@ export default function Print({ sale, fromTransaction }) {
     const is58 = mode === "thermal58";
     const statusInfo = STATUS_LABELS[sale.status] ?? { label: sale.status, cls: "bg-slate-100 text-slate-500" };
 
+    useEffect(() => {
+        if (bt.supported && bt.status === "idle" && bt.devName) {
+            bt.reconnect().catch(() => {});
+        }
+    }, []);
+
     const handleBtPrint = async () => {
         setPrinting(true);
         setPrintMsg(null);
@@ -647,7 +653,7 @@ export default function Print({ sale, fromTransaction }) {
                 setPrintMsg({ ok: true, text: "Menghubungkan ke printer..." });
                 if (bt.devName) await bt.reconnect();
                 else await bt.connect();
-                await new Promise(r => setTimeout(r, 1000));
+                await new Promise(r => setTimeout(r, 800));
             }
             const buf = buildReceipt(sale, saleItems, payments, change);
             await bt.printBuffer(buf);
@@ -744,15 +750,13 @@ export default function Print({ sale, fromTransaction }) {
                                         className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${BT_UI.cls}`}>
                                         {BT_UI.icon} {BT_UI.label}
                                     </button>
-                                    {bt.status === "connected" && (
-                                        <button onClick={handleBtPrint} disabled={printing}
-                                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm font-semibold text-white disabled:opacity-60">
-                                            {printing
-                                                ? <><IconLoader2 size={14} className="animate-spin" /> Mengirim...</>
-                                                : <><IconPrinter size={14} /> Cetak Bluetooth</>
-                                            }
-                                        </button>
-                                    )}
+                                    <button onClick={handleBtPrint} disabled={printing || bt.status === "connecting" || bt.status === "reconnecting"}
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm font-semibold text-white disabled:opacity-60">
+                                        {printing
+                                            ? <><IconLoader2 size={14} className="animate-spin" /> Mengirim...</>
+                                            : <><IconPrinter size={14} /> Cetak Bluetooth</>
+                                        }
+                                    </button>
                                     {bt.error && (
                                         <div className="flex flex-col gap-1 w-full">
                                             <span className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-3 py-1.5 rounded-lg">

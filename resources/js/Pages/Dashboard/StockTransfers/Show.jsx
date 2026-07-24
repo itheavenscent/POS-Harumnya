@@ -6,6 +6,7 @@ import {
     IconArrowLeft, IconArrowRight, IconTransfer, IconCheck, IconX,
     IconSend, IconDownload, IconAlertTriangle, IconHistory,
     IconClock, IconPencilCog, IconTrendingUp, IconTrendingDown,
+    IconFileText,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 
@@ -166,27 +167,38 @@ export default function Show({ transfer, movements = [] }) {
                             />
                         </div>
                         <div className="space-y-2 mb-5 max-h-60 overflow-y-auto pr-1">
-                            {transfer.items.map((item) => (
-                                <div key={item.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                                    <div className="flex-1">
-                                        <div className="font-bold text-sm">{item.item_name}</div>
-                                        <div className="text-xs text-slate-400">
-                                            {item.item_unit} · Dikirim: {fmtQty(item.quantity_sent)}
+                            {transfer.items.map((item) => {
+                                const sent = parseInt(item.quantity_sent) || 0;
+                                const rcvd = parseInt(rcvdQtys[item.id] ?? item.quantity_sent) || 0;
+                                const diff = sent - rcvd;
+                                return (
+                                    <div key={item.id} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-bold text-sm">{item.item_name}</div>
+                                            <div className="text-xs text-slate-400">
+                                                {item.item_unit} · Dikirim: {fmtQty(sent)}
+                                            </div>
+                                            {diff !== 0 && (
+                                                <div className={`text-xs font-bold mt-0.5 ${diff > 0 ? 'text-red-600' : 'text-teal-600'}`}>
+                                                    Selisih: {diff > 0 ? `-${diff}` : `+${Math.abs(diff)}`} {item.item_unit}
+                                                    {diff > 0 && ' (kurang)'}
+                                                    {diff < 0 && ' (lebih)'}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="w-28 flex-shrink-0">
+                                            <input
+                                                type="number"
+                                                step="1"
+                                                min="0"
+                                                value={rcvdQtys[item.id] ?? item.quantity_sent}
+                                                onChange={(e) => setRcvdQtys({ ...rcvdQtys, [item.id]: e.target.value })}
+                                                className={`w-full rounded-xl border-slate-200 text-sm text-right ${diff !== 0 ? 'border-amber-300 bg-amber-50' : ''}`}
+                                            />
                                         </div>
                                     </div>
-                                    {/* quantity_received → bigInteger: step=1 */}
-                                    <div className="w-28">
-                                        <input
-                                            type="number"
-                                            step="1"
-                                            min="0"
-                                            value={rcvdQtys[item.id] ?? item.quantity_sent}
-                                            onChange={(e) => setRcvdQtys({ ...rcvdQtys, [item.id]: e.target.value })}
-                                            className="w-full rounded-xl border-slate-200 text-sm text-right"
-                                        />
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                         <div className="flex gap-3 justify-end">
                             <button onClick={() => setShowReceiveModal(false)}
@@ -272,6 +284,15 @@ export default function Show({ transfer, movements = [] }) {
                                 className="flex items-center gap-2 px-5 py-2 bg-success-500 hover:bg-success-600 text-white rounded-xl text-sm font-bold shadow-md">
                                 <IconDownload size={16} /> Terima
                             </button>
+                        )}
+                        {["in_transit", "completed"].includes(transfer.status) && (
+                            <a
+                                href={route("stock-transfers.surat-jalan", transfer.id)}
+                                target="_blank"
+                                className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl text-sm font-bold hover:bg-indigo-100"
+                            >
+                                <IconFileText size={16} /> Surat Jalan
+                            </a>
                         )}
                         {["draft", "pending", "approved"].includes(transfer.status) && (
                             <button onClick={() => setShowCancelModal(true)}
@@ -377,11 +398,10 @@ export default function Show({ transfer, movements = [] }) {
                             <tr>
                                 <Table.Th>Item</Table.Th>
                                 <Table.Th>Tipe</Table.Th>
-                                {/* Qty → bigInteger → tampilkan sebagai integer */}
                                 <Table.Th className="text-right">Diminta</Table.Th>
                                 <Table.Th className="text-right">Dikirim</Table.Th>
                                 <Table.Th className="text-right">Diterima</Table.Th>
-                                {/* unit_cost → decimal(15,4) */}
+                                <Table.Th className="text-right">Tidak Diterima</Table.Th>
                                 <Table.Th className="text-right">Unit Cost</Table.Th>
                                 <Table.Th className="text-right">Total Nilai</Table.Th>
                                 {["draft", "pending", "approved"].includes(transfer.status) && (
@@ -426,7 +446,13 @@ export default function Show({ transfer, movements = [] }) {
                                             {fmtQty(item.quantity_received)}{" "}
                                             <span className="text-xs text-slate-400">{item.item_unit}</span>
                                         </Table.Td>
-                                        {/* unit_cost → decimal(15,4) */}
+                                        <Table.Td className={`text-right font-bold ${
+                                            (parseInt(item.quantity_sent || 0) - parseInt(item.quantity_received || 0)) > 0
+                                                ? "text-red-600" : "text-slate-700"
+                                        }`}>
+                                            {fmtQty(Math.max(0, parseInt(item.quantity_sent || 0) - parseInt(item.quantity_received || 0)))}{" "}
+                                            <span className="text-xs text-slate-400">{item.item_unit}</span>
+                                        </Table.Td>
                                         <Table.Td className="text-right text-sm">{fmt(item.unit_cost)}</Table.Td>
                                         <Table.Td className="text-right font-bold text-slate-700">
                                             {fmt(valuableQty * parseFloat(item.unit_cost || 0))}

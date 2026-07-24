@@ -386,6 +386,8 @@ class StockAdjustmentController extends Controller
 
                 $stock->update($stockUpdate);
 
+                $this->syncMasterAverageCost($item->item_type, $item->item_id, $newAvgCost);
+
                 StockMovement::create([
                     'location_type'    => $adj->location_type,
                     'location_id'      => $adj->location_id,
@@ -554,6 +556,48 @@ class StockAdjustmentController extends Controller
         return $type === 'ingredient'
             ? (Ingredient::find($id)?->name        ?? '-')
             : (PackagingMaterial::find($id)?->name ?? '-');
+    }
+
+    private function syncMasterAverageCost(string $itemType, string $itemId, float $fallbackCost): void
+    {
+        $globalWac = $this->computeGlobalWac($itemType, $itemId) ?? $fallbackCost;
+
+        match ($itemType) {
+            'ingredient'         => Ingredient::where('id', $itemId)->update(['average_cost' => $globalWac]),
+            'packaging_material' => PackagingMaterial::where('id', $itemId)->update(['average_cost' => $globalWac]),
+            default              => null,
+        };
+    }
+
+    private function computeGlobalWac(string $itemType, string $itemId): ?float
+    {
+        $rows = collect();
+
+        if ($itemType === 'ingredient') {
+            $rows = $rows->merge(
+                DB::table('warehouse_ingredient_stocks')->where('ingredient_id', $itemId)->select('quantity', 'average_cost')->get()
+            )->merge(
+                DB::table('store_ingredient_stocks')->where('ingredient_id', $itemId)->select('quantity', 'average_cost')->get()
+            );
+        } else {
+            $rows = $rows->merge(
+                DB::table('warehouse_packaging_stocks')->where('packaging_material_id', $itemId)->select('quantity', 'average_cost')->get()
+            )->merge(
+                DB::table('store_packaging_stocks')->where('packaging_material_id', $itemId)->select('quantity', 'average_cost')->get()
+            );
+        }
+
+        $totalQty   = 0;
+        $totalValue = 0.0;
+        foreach ($rows as $r) {
+            $qty = (int) $r->quantity;
+            if ($qty > 0) {
+                $totalQty   += $qty;
+                $totalValue += $qty * (float) $r->average_cost;
+            }
+        }
+
+        return $totalQty > 0 ? round($totalValue / $totalQty, 4) : null;
     }
 
     private function typeOptions(): array

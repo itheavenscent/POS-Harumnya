@@ -5,7 +5,8 @@ import Pagination from "@/Components/Dashboard/Pagination";
 import {
     IconDatabaseOff, IconSearch, IconHistory, IconReceipt,
     IconPrinter, IconFilter, IconX, IconTrendingUp, IconCalendar,
-    IconRefresh, IconEye, IconUser, IconFlask, IconBox, IconBuildingStore
+    IconRefresh, IconEye, IconUser, IconFlask, IconBox, IconBuildingStore,
+    IconFileSpreadsheet
 } from "@tabler/icons-react";
 
 const defaultFilters = { q: "", date_from: "", date_to: "", status: "", store_id: "" };
@@ -36,10 +37,27 @@ const STATUS_LABEL = {
     refunded: "Refund", pending: "Pending", draft: "Draft",
 };
 
-export default function History({ sales, filters, summary = {}, stores = [], isAdmin = false }) {
+export default function History({ sales, filters, summary = {}, stores = [], isAdmin = false, canCancelSale = false, canPrint = false }) {
     const [filterData,   setFilterData]   = useState({ ...defaultFilters, ...filters });
     const [showFilters,  setShowFilters]  = useState(false);
     const [selectedSale, setSelectedSale] = useState(null);
+    const [showCancelSale, setShowCancelSale] = useState(false);
+    const [cancelReason, setCancelReason]     = useState("");
+    const [cancellingSale, setCancellingSale] = useState(false);
+
+    const handleCancelSale = () => {
+        if (!selectedSale || !cancelReason.trim()) return;
+        setCancellingSale(true);
+        router.post(route("transactions.cancel-sale", selectedSale.id), { reason: cancelReason }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setShowCancelSale(false);
+                setCancelReason("");
+                setSelectedSale(null);
+            },
+            onFinish: () => setCancellingSale(false),
+        });
+    };
 
     useEffect(() => { setFilterData({ ...defaultFilters, ...filters }); }, [filters]);
 
@@ -61,6 +79,13 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
     const currentPage = sales?.current_page ?? 1;
     const perPage     = Number(sales?.per_page || 20);
     const hasFilter   = filterData.q || filterData.date_from || filterData.date_to || filterData.status || filterData.store_id;
+
+    // URL export mengikuti filter aktif
+    const exportUrl = (() => {
+        const params = Object.fromEntries(Object.entries(filterData).filter(([, v]) => v));
+        const qs = new URLSearchParams(params).toString();
+        return route("transactions.history.export") + (qs ? `?${qs}` : "");
+    })();
 
     // Summary dari controller — gunakan kolom decimal langsung
     const sumStats = summary && typeof summary === "object" ? summary : {};
@@ -107,6 +132,10 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
                             Filter
                             {hasFilter && <span className="w-2 h-2 rounded-full bg-primary-500"/>}
                         </button>
+                        <a href={exportUrl} target="_blank" rel="noopener"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-900 dark:text-emerald-400 text-sm font-medium transition-colors">
+                            <IconFileSpreadsheet size={18}/> Export Excel
+                        </a>
                         <Link href={route("transactions.index")}
                             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium transition-colors shadow-lg shadow-primary-500/30">
                             <IconReceipt size={18}/> Transaksi Baru
@@ -380,13 +409,15 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
                                                             title="Detail Transaksi">
                                                             <IconEye size={18}/>
                                                         </button>
-                                                        <Link
-                                                            href={route("transactions.print", sale.sale_number)}
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-500 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/50 transition-colors"
-                                                            title="Cetak Struk">
-                                                            <IconPrinter size={18}/>
-                                                        </Link>
+                                                        {canPrint && (
+                                                            <Link
+                                                                href={route("transactions.print", sale.sale_number)}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-500 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/50 transition-colors"
+                                                                title="Cetak Struk">
+                                                                <IconPrinter size={18}/>
+                                                            </Link>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -544,13 +575,66 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
                         </div>
 
                         {/* Footer */}
-                        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3">
-                            <button onClick={() => setSelectedSale(null)} className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                                Tutup
+                        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex justify-between gap-3">
+                            <div>
+                                {canCancelSale && selectedSale.status === "completed" && (
+                                    <button onClick={() => setShowCancelSale(true)}
+                                        className="px-6 py-2.5 rounded-xl bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 text-sm font-bold flex items-center gap-2 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors">
+                                        <IconX size={18}/> Batalkan Transaksi
+                                    </button>
+                                )}
+                            </div>
+                            <div className="flex gap-3">
+                                <button onClick={() => setSelectedSale(null)} className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                                    Tutup
+                                </button>
+                                {canPrint && (
+                                    <Link href={route("transactions.print", selectedSale.sale_number)} className="px-6 py-2.5 rounded-xl bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-sm font-bold flex items-center gap-2 hover:scale-[1.02] transition-transform">
+                                        <IconPrinter size={18}/> Cetak Struk
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Cancel Sale Modal */}
+            {showCancelSale && selectedSale && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => setShowCancelSale(false)} />
+                    <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-6">
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1 flex items-center gap-2">
+                            <IconX size={20} className="text-red-500" /> Batalkan Transaksi
+                        </h3>
+                        <p className="text-sm text-slate-500 mb-4">
+                            Transaksi <strong className="font-mono">{selectedSale.sale_number}</strong> akan dibatalkan.
+                            Stok akan dikembalikan dan poin pelanggan disesuaikan. Tindakan ini tidak dapat diurungkan.
+                        </p>
+                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                            Alasan Pembatalan
+                        </label>
+                        <textarea
+                            value={cancelReason}
+                            onChange={(e) => setCancelReason(e.target.value)}
+                            rows={3}
+                            placeholder="Contoh: Salah input, pelanggan membatalkan..."
+                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-white text-sm font-medium focus:outline-none focus:border-red-400 transition-all resize-none mb-4"
+                        />
+                        <div className="flex justify-end gap-3">
+                            <button onClick={() => { setShowCancelSale(false); setCancelReason(""); }}
+                                className="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                                Batal
                             </button>
-                            <Link href={route("transactions.print", selectedSale.sale_number)} className="px-6 py-2.5 rounded-xl bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-sm font-bold flex items-center gap-2 hover:scale-[1.02] transition-transform">
-                                <IconPrinter size={18}/> Cetak Struk
-                            </Link>
+                            <button
+                                onClick={handleCancelSale}
+                                disabled={!cancelReason.trim() || cancellingSale}
+                                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-bold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                {cancellingSale
+                                    ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    : <IconX size={16}/>}
+                                Konfirmasi Pembatalan
+                            </button>
                         </div>
                     </div>
                 </div>

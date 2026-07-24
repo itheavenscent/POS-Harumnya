@@ -164,7 +164,7 @@ export default function ProductGrid({
     addingProductId,
     searchInputRef,
 }) {
-    // Filter products by category and search
+    // Filter products by category and search, then sort alphabetically
     const filteredProducts = products.filter((product) => {
         const matchesCategory =
             !selectedCategory || product.category_id === selectedCategory;
@@ -173,7 +173,7 @@ export default function ProductGrid({
             product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             product.barcode?.toLowerCase().includes(searchQuery.toLowerCase());
         return matchesCategory && matchesSearch;
-    });
+    }).sort((a, b) => (a.title || "").localeCompare(b.title || "", "id"));
 
     return (
         <div className="h-full flex flex-col">

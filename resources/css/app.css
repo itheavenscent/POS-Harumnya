@@ -19,3 +19,27 @@ table td {
     padding-bottom: 0.5rem !important;   /* py-2 (8px) */
 }
 
+/* === Transisi halus global untuk elemen interaktif ===
+   Membuat seluruh app terasa smooth tanpa mengedit tiap komponen. */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"],
+.transition-smooth {
+    transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hormati preferensi reduce-motion */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}
+
