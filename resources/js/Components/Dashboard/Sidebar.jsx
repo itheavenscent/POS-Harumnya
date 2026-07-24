@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { usePage, Link } from "@inertiajs/react";
-import { IconX, IconChevronDown, IconChevronRight, IconMenu2, IconSun, IconMoon, IconLogout } from "@tabler/icons-react";
+import { IconX, IconChevronDown, IconChevronRight, IconMenu2, IconSun, IconMoon, IconLogout, IconSearch, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand } from "@tabler/icons-react";
 import LinkItem from "@/Components/Dashboard/LinkItem";
 import LinkItemDropdown from "@/Components/Dashboard/LinkItemDropdown";
 import Menu from "@/Utils/Menu";
@@ -21,6 +21,21 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
     const menuNavigation = Menu();
     const [openSections, setOpenSections] = useState({});
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+    const filteredMenu = useMemo(() => {
+        if (!searchQuery.trim()) return menuNavigation;
+        const q = searchQuery.toLowerCase().trim();
+        return menuNavigation.map((section) => {
+            const filteredDetails = section.details.filter((detail) => {
+                const matchesTitle = detail.title?.toLowerCase().includes(q);
+                const matchesSub = detail.subdetails?.some(sub => sub.title?.toLowerCase().includes(q));
+                return matchesTitle || matchesSub;
+            });
+            return { ...section, details: filteredDetails };
+        }).filter(section => section.details.length > 0);
+    }, [searchQuery, menuNavigation]);
 
     // State sidebarOpen sekarang dikelola di dalam Sidebar sendiri
     const [sidebarOpen, setSidebarOpen] = useState(
@@ -48,9 +63,9 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
         return (
             <div className="
                 flex flex-col h-full w-full relative overflow-hidden
-                bg-white            dark:bg-slate-950
+                bg-[#fbfbfb]        dark:bg-slate-950
                 border-r
-                border-[#D5EFF1]    dark:border-slate-800
+                border-[#e8e8e8]    dark:border-slate-800
                 transition-colors duration-300
             ">
                 <style>{`
@@ -135,22 +150,13 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
                     }
                 `}</style>
 
-                {/* Top accent bar */}
-                <div className="absolute top-0 left-0 right-0 h-[3px] z-10
-                    bg-gradient-to-r from-[#0D3339] via-[#56B8C3] to-[#82CDD6]
-                    dark:bg-gradient-to-r dark:from-slate-900 dark:via-[#56B8C3] dark:to-slate-900" />
-
                 <div className="sb-wrap relative z-10 flex flex-col h-full pt-[3px]">
 
                     {/* ── Logo + Toggle Button ── */}
-                    <div className="
-                        flex-shrink-0 flex items-center justify-between
-                        px-3.5 h-16
-                        bg-white            dark:bg-slate-900
-                        border-b
-                        border-[#E0F0F2]    dark:border-slate-800
-                        transition-colors duration-300
-                    ">
+                    <div className={`
+                        flex-shrink-0 flex transition-colors duration-300
+                        ${expanded ? 'flex-row items-center justify-between px-3.5 h-16' : 'flex-col gap-2.5 py-4 px-1 items-center justify-center'}
+                    `}>
                         <a href="/" className="flex items-center gap-3 no-underline min-w-0">
                             <div className="w-[38px] h-[38px] rounded-[11px] overflow-hidden flex-shrink-0
                                 border-2 border-[rgba(86,184,195,0.3)] dark:border-slate-700"
@@ -188,66 +194,57 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
                             <button
                                 onClick={toggleSidebar}
                                 title={sidebarOpen ? "Ciutkan sidebar" : "Perluas sidebar"}
-                                className="p-1.5 rounded-lg border-none cursor-pointer flex items-center
-                                    bg-transparent
-                                    text-[#A0C4C8]          dark:text-slate-500
-                                    hover:bg-[#F0FAFB]      hover:text-[#3A9DAA]
-                                    dark:hover:bg-slate-800 dark:hover:text-slate-300
-                                    transition-colors duration-200"
+                                className="bg-white dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 flex items-center justify-center rounded-[9px] size-[32px] cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-200"
                             >
-                                <IconMenu2 size={18} />
+                                {sidebarOpen ? (
+                                    <IconLayoutSidebarLeftCollapse size={16} className="text-slate-500 dark:text-slate-300" />
+                                ) : (
+                                    <IconLayoutSidebarLeftExpand size={16} className="text-slate-500 dark:text-slate-300" />
+                                )}
                             </button>
                         )}
                     </div>
 
-                    {/* ── User Card ── */}
-                    <div className="
-                        flex-shrink-0 m-2.5 mb-1.5 p-3 rounded-[13px]
-                        border transition-all duration-300
-                        bg-[#F0FAFB]            dark:bg-slate-800/60
-                        border-[rgba(86,184,195,0.2)] dark:border-slate-700
-                    ">
-                        {expanded ? (
-                            <div className="flex items-center gap-3">
-                                <img
-                                    src={auth.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(auth.user.name)}&background=56B8C3&color=fff`}
-                                    className="w-10 h-10 rounded-full flex-shrink-0
-                                        border-2 border-[rgba(86,184,195,0.4)] dark:border-slate-600"
-                                    alt={auth.user.name}
-                                />
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[13px] font-bold truncate transition-colors duration-300
-                                        text-[#0D2B30] dark:text-slate-100">
-                                        {auth.user.name}
-                                    </p>
-                                    <p className="text-[11px] mt-0.5 truncate transition-colors duration-300
-                                        text-[#5A8A90] dark:text-slate-400">
-                                        {auth.user.email}
-                                    </p>
-                                    <span className="inline-flex items-center mt-1.5 px-2.5 py-[3px] rounded-full
-                                        text-[9px] font-extrabold uppercase tracking-[1px]
-                                        bg-[#E4F6F8]    text-[#3A9DAA]
-                                        dark:bg-[rgba(86,184,195,0.15)] dark:text-[#56B8C3]
-                                        border border-[rgba(86,184,195,0.25)] dark:border-[rgba(86,184,195,0.2)]">
-                                        {auth.roles[0] || 'User'}
-                                    </span>
-                                </div>
+                    {/* ── Search Bar Feature ── */}
+                    {expanded ? (
+                        <div className="flex-shrink-0 relative mx-2.5 my-2">
+                            <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
+                                <IconSearch size={15} />
                             </div>
-                        ) : (
-                            <div className="flex justify-center">
-                                <img
-                                    src={auth.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(auth.user.name)}&background=56B8C3&color=fff`}
-                                    className="w-9 h-9 rounded-full
-                                        border-2 border-[rgba(86,184,195,0.4)] dark:border-slate-600"
-                                    alt={auth.user.name}
-                                />
-                            </div>
-                        )}
-                    </div>
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Cari menu..."
+                                className="w-full pl-8 pr-7 py-1.5 bg-[#FFFFF] dark:bg-slate-900 border border-[rgba(86,184,195,0.2)] dark:border-slate-800 rounded-lg text-[12px] font-medium text-slate-850 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[#56B8C3] focus:border-[#56B8C3] transition-all"
+                            />
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery("")}
+                                    className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 bg-transparent border-none cursor-pointer"
+                                >
+                                    <IconX size={13} />
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="flex-shrink-0 flex justify-center my-2">
+                            <button
+                                onClick={toggleSidebar}
+                                className="flex items-center justify-center size-8 rounded-lg bg-[#F0FAFB] dark:bg-slate-900 border border-[rgba(86,184,195,0.2)] dark:border-slate-800 text-[#56B8C3] hover:text-[#3A9DAA] dark:text-slate-500 dark:hover:text-slate-350 transition-colors cursor-pointer"
+                            >
+                                <IconSearch size={15} />
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Boundary line below search bar */}
+                    <div className="border-b border-[#e8e8e8] dark:border-slate-850 w-full mt-3 mb-2" />
+
 
                     {/* ── Nav ── */}
                     <nav className="sb-scroll flex-1 min-h-0 overflow-y-auto py-2">
-                        {menuNavigation.map((section, index) => {
+                        {filteredMenu.map((section, index) => {
                             const hasPermission = section.details.some(d => d.permissions === true);
                             if (!hasPermission) return null;
                             const isOpen = openSections[index] !== false;
@@ -275,10 +272,6 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
                                                         : <IconChevronRight size={13} />}
                                                 </span>
                                             </button>
-                                            <div className="mx-4 mt-0.5 mb-1 h-px
-                                                bg-gradient-to-r
-                                                from-[#E0F0F2]      to-transparent
-                                                dark:from-slate-800 dark:to-transparent" />
                                         </>
                                     )}
 
@@ -316,96 +309,82 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
                     </nav>
 
                     {/* ── Footer ── */}
-                    <div className="
-                        flex-shrink-0 flex items-center px-4 py-3
-                        border-t transition-colors duration-300
-                        border-[#E8F5F6]    dark:border-slate-800
-                        bg-[#F0FAFB]        dark:bg-slate-900
-                    " style={{ justifyContent: expanded ? "space-between" : "center" }}>
-                        {expanded ? (
-                            <>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-[5px] h-[5px] rounded-full bg-[#56B8C3]"
-                                        style={{
-                                            boxShadow: "0 0 6px rgba(86,184,195,0.5)",
-                                            animation: "sbPulse 2.5s ease-in-out infinite",
-                                        }} />
-                                    <span className="text-[10px] font-semibold uppercase tracking-[1.2px] transition-colors duration-300
-                                        text-[#A8CACF] dark:text-slate-600">
-                                        Harumnya v2.0
+                    <div className="flex-shrink-0 border-t border-[#e8e8e8] dark:border-slate-800 flex flex-col gap-2 items-center pb-[14px] pt-[12px] px-[12px] relative bg-[#fbfbfb] dark:bg-slate-950">
+                        {/* User Card */}
+                        <div
+                            onClick={() => setUserMenuOpen(!userMenuOpen)}
+                            className="bg-[#fbfbfb] dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-slate-800 border border-[#e8e8e8] dark:border-slate-800 flex gap-[10px] items-center p-2 relative rounded-[10px] shrink-0 w-full cursor-pointer transition-colors"
+                            data-node-id="2550:127"
+                        >
+                            {/* Avatar */}
+                            {auth.user.avatar ? (
+                                <img
+                                    src={auth.user.avatar}
+                                    className="w-8 h-8 rounded-full flex-shrink-0 border border-[#afd8dc] object-cover"
+                                    alt={auth.user.name}
+                                />
+                            ) : (
+                                <div className="bg-[#defafd] dark:bg-slate-800 border border-[#afd8dc] dark:border-slate-700 flex items-center justify-center rounded-full flex-shrink-0 size-[32px]">
+                                    <span className="font-bold text-[11px] bg-clip-text bg-gradient-to-b from-[#54b8c3] to-[#39a1ac] text-transparent leading-none">
+                                        {auth.user.name ? auth.user.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : 'AP'}
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                    {/* Theme toggle */}
+                            )}
+
+                            {expanded && (
+                                <>
+                                    {/* Identity */}
+                                    <div className="flex flex-1 flex-col gap-px items-start min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+                                        <p className="font-semibold text-[12.5px] text-[#0f172a] dark:text-white leading-[16px] truncate w-full text-left">
+                                            {auth.user.name}
+                                        </p>
+                                        <p className="font-medium text-[10px] text-[#94a3b8] dark:text-slate-400 leading-[13px] truncate w-full text-left">
+                                            {auth.roles[0] || 'User'}
+                                        </p>
+                                    </div>
+                                    {/* Caret */}
+                                    <div className="text-slate-400 dark:text-slate-500 shrink-0">
+                                        <IconChevronDown size={14} className={userMenuOpen ? "rotate-180 transition-transform" : "transition-transform"} />
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Dropdown Menu Popover */}
+                        {userMenuOpen && (
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                                <div className={`absolute bottom-full mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-150 ${expanded ? 'left-3 w-[calc(100%-24px)]' : 'left-3 w-[160px]'}`}>
                                     {themeSwitcher && (
                                         <button
-                                            onClick={themeSwitcher}
-                                            title={darkMode ? "Light Mode" : "Dark Mode"}
-                                            className="p-1.5 rounded-lg border-none cursor-pointer flex items-center
-                                                bg-transparent
-                                                text-[#A0C4C8]          dark:text-slate-500
-                                                hover:bg-[#E4F6F8]      hover:text-[#3A9DAA]
-                                                dark:hover:bg-slate-800 dark:hover:text-[#56B8C3]
-                                                transition-colors duration-200"
+                                            onClick={() => {
+                                                themeSwitcher();
+                                                setUserMenuOpen(false);
+                                            }}
+                                            className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-200 flex items-center gap-2 transition-colors cursor-pointer border-none bg-transparent"
                                         >
-                                            {darkMode
-                                                ? <IconSun size={16} strokeWidth={1.5} className="text-amber-500" />
-                                                : <IconMoon size={16} strokeWidth={1.5} />
-                                            }
+                                            {darkMode ? <IconSun size={15} className="text-amber-500" /> : <IconMoon size={15} />}
+                                            <span>{darkMode ? 'Mode Terang' : 'Mode Gelap'}</span>
                                         </button>
                                     )}
-                                    {/* Logout */}
                                     <Link
                                         href={route('logout')}
                                         method="post"
                                         as="button"
-                                        title="Logout"
-                                        className="p-1.5 rounded-lg border-none cursor-pointer flex items-center
-                                            bg-transparent
-                                            text-red-400            dark:text-red-500
-                                            hover:bg-red-50         hover:text-red-500
-                                            dark:hover:bg-red-900/20 dark:hover:text-red-400
-                                            transition-colors duration-200"
+                                        onClick={() => setUserMenuOpen(false)}
+                                        className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 text-red-650 dark:text-red-405 flex items-center gap-2 transition-colors cursor-pointer border-none bg-transparent"
                                     >
-                                        <IconLogout size={16} strokeWidth={1.5} />
+                                        <IconLogout size={15} />
+                                        <span>Keluar</span>
                                     </Link>
                                 </div>
                             </>
-                        ) : (
-                            /* Collapsed: theme toggle & logout */
-                            <div className="flex flex-col gap-2">
-                                {themeSwitcher && (
-                                    <button
-                                        onClick={themeSwitcher}
-                                        title={darkMode ? "Light Mode" : "Dark Mode"}
-                                        className="p-1.5 rounded-lg border-none cursor-pointer flex items-center justify-center
-                                            bg-transparent
-                                            text-[#A0C4C8]          dark:text-slate-500
-                                            hover:bg-[#E4F6F8]      hover:text-[#3A9DAA]
-                                            dark:hover:bg-slate-800 dark:hover:text-[#56B8C3]
-                                            transition-colors duration-200"
-                                    >
-                                        {darkMode
-                                            ? <IconSun size={16} strokeWidth={1.5} className="text-amber-500" />
-                                            : <IconMoon size={16} strokeWidth={1.5} />
-                                        }
-                                    </button>
-                                )}
-                                <Link
-                                    href={route('logout')}
-                                    method="post"
-                                    as="button"
-                                    title="Logout"
-                                    className="p-1.5 rounded-lg border-none cursor-pointer flex items-center justify-center
-                                        bg-transparent
-                                        text-red-400            dark:text-red-500
-                                        hover:bg-red-50         hover:text-red-500
-                                        dark:hover:bg-red-900/20 dark:hover:text-red-400
-                                        transition-colors duration-200"
-                                >
-                                    <IconLogout size={16} strokeWidth={1.5} />
-                                </Link>
-                            </div>
+                        )}
+
+                        {expanded && (
+                            <p className="font-medium text-[10px] text-[#94a3b8] dark:text-slate-500 text-center w-full mt-1">
+                                ©️ 2026 Harumnya. All Right Reserved.
+                            </p>
                         )}
                     </div>
                 </div>

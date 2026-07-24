@@ -1,16 +1,19 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, router } from '@inertiajs/react';
+import { useTheme } from '@/Context/ThemeSwitcherContext';
 import {
     IconBox, IconFlask, IconMoneybag, IconUsers, IconBuildingStore,
     IconTrendingUp, IconShoppingCart, IconAlertTriangle, IconCash,
     IconDiscount2, IconStar, IconArrowUpRight, IconArrowDownRight,
     IconPackage, IconUserCheck, IconLock, IconLockOpen, IconChartBar,
     IconReceipt, IconPercentage, IconChartPie, IconFilter,
-    IconCalendar, IconCurrencyDollar, IconRefresh,
+    IconCalendar, IconCurrencyDollar, IconRefresh, IconDownload,
+    IconLayoutGrid, IconStack3, IconChevronDown, IconSun, IconMoon,
 } from '@tabler/icons-react';
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import {
     AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+    LineChart, Line,
     RadarChart, Radar, PolarGrid, PolarAngleAxis,
     ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts';
@@ -27,16 +30,29 @@ function Card({ children, className = '', style }) {
     );
 }
 
-function Widget({ title, subtitle, color, icon, total }) {
+function Widget({ title, subtitle, icon, total }) {
     return (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
-                {icon}
+        <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex flex-col gap-[14px] items-start p-[16px] rounded-[16px] w-full shadow-sm">
+            <div className="flex gap-[12px] items-center w-full">
+                <div
+                    className="size-9 p-2 bg-gradient-to-b from-[#f4f4f4] to-[#fefefe] dark:from-slate-800 dark:to-slate-900 rounded-[10px] border-[3px] border-solid border-white dark:border-slate-950 inline-flex justify-center items-center overflow-hidden flex-shrink-0"
+                    style={{ boxShadow: '0px 0px 0.225px 0.225px rgba(0,0,0,0.07), 0px 0px 0.225px 0.675px rgba(0,0,0,0.05), 0px 2.698px 2.923px -1.349px rgba(0,0,0,0.25), 0px 0.899px 3.598px 0.899px rgba(0,0,0,0.12), 0px 0px 0px 4px #f2f2f2' }}
+                >
+                    <div className="size-5 relative overflow-hidden flex items-center justify-center text-slate-600 dark:text-slate-350">
+                        {icon}
+                    </div>
+                </div>
+                <p className="font-medium text-[16px] text-slate-900 dark:text-slate-100 leading-tight truncate">
+                    {subtitle}
+                </p>
             </div>
-            <div className="min-w-0">
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider truncate">{subtitle}</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums leading-tight">{total?.toLocaleString('id-ID')}</p>
-                <p className="text-xs text-slate-400 truncate">{title}</p>
+            <div className="flex flex-col gap-[4px] items-start leading-[1.4] w-full">
+                <p className="font-bold text-[26px] text-slate-900 dark:text-white leading-none">
+                    {total?.toLocaleString('id-ID')}
+                </p>
+                <p className="font-medium text-[14px] text-slate-500 dark:text-slate-400 leading-tight truncate w-full">
+                    {title}
+                </p>
             </div>
         </div>
     );
@@ -60,6 +76,95 @@ const GENDER_COLOR = {
     unknown: '#94a3b8',
 };
 
+// ─── INTENSITY STYLES ──────────────────────────────────────────────────────────
+const getIntensityStyle = (name) => {
+    const norm = name?.toLowerCase() || '';
+    if (norm.includes('parfum') || norm.includes('edp')) {
+        return {
+            fill: 'url(#gEdp)',
+            solid: '#3982aa',
+            bg: 'linear-gradient(180deg, #62b6e4 0%, #3982aa 100%)'
+        };
+    }
+    if (norm.includes('toilette') || norm.includes('edt')) {
+        return {
+            fill: 'url(#gEdt)',
+            solid: '#c09628',
+            bg: 'linear-gradient(180deg, #ebc96e 0%, #c09628 100%)'
+        };
+    }
+    if (norm.includes('cologne') || norm.includes('edc')) {
+        return {
+            fill: 'url(#gEdc)',
+            solid: '#5b8f87',
+            bg: 'linear-gradient(180deg, #77bbb0 0%, #5b8f87 100%)'
+        };
+    }
+    return {
+        fill: 'url(#gOther)',
+        solid: '#694aa3',
+        bg: 'linear-gradient(180deg, #8f77bb 0%, #694aa3 100%)'
+    };
+};
+
+const getSizeStyle = (name) => {
+    const norm = name?.toLowerCase() || '';
+    if (norm.includes('30 ml') || norm.includes('30ml')) {
+        return {
+            gradient: 'linear-gradient(180deg, #62b6e4 0%, #3982aa 100%)',
+            border: '#1b87c3'
+        };
+    }
+    if (norm.includes('100 ml') || norm.includes('100ml')) {
+        return {
+            gradient: 'linear-gradient(180deg, #ebc96e 0%, #c09628 100%)',
+            border: '#c1941b'
+        };
+    }
+    if (norm.includes('50 ml') || norm.includes('50ml')) {
+        return {
+            gradient: 'linear-gradient(180deg, #77bbb0 0%, #5b8f87 100%)',
+            border: '#499286'
+        };
+    }
+    if (norm.includes('10 ml') || norm.includes('10ml')) {
+        return {
+            gradient: 'linear-gradient(180deg, #8f77bb 0%, #694aa3 100%)',
+            border: '#561ebe'
+        };
+    }
+    return {
+        gradient: 'linear-gradient(180deg, #94a3b8 0%, #64748b 100%)',
+        border: '#475569'
+    };
+};
+
+const getPaymentStyle = (name) => {
+    const norm = name?.toLowerCase() || '';
+    if (norm.includes('qris')) {
+        return {
+            gradient: 'linear-gradient(180deg, #54b8c3 0%, #39a1ac 100%)',
+            color: '#39a1ac'
+        };
+    }
+    if (norm.includes('tunai') || norm.includes('cash')) {
+        return {
+            gradient: 'linear-gradient(180deg, #62b6e4 0%, #3982aa 100%)',
+            color: '#3982aa'
+        };
+    }
+    if (norm.includes('transfer') || norm.includes('bank') || norm.includes('debit')) {
+        return {
+            gradient: 'linear-gradient(180deg, #ebc96e 0%, #c09628 100%)',
+            color: '#c09628'
+        };
+    }
+    return {
+        gradient: 'linear-gradient(180deg, #8f77bb 0%, #694aa3 100%)',
+        color: '#694aa3'
+    };
+};
+
 // ─── FORMAT ───────────────────────────────────────────────────────────────────
 const idr = (v) =>
     new Intl.NumberFormat('id-ID', {
@@ -75,6 +180,17 @@ const compact = (v) => {
 };
 
 const num = (v) => new Intl.NumberFormat('id-ID').format(v ?? 0);
+
+const splitDateTime = (dateStr) => {
+    if (!dateStr) return { date: '-', time: '' };
+    const parts = dateStr.split(' ');
+    if (parts.length >= 4) {
+        const time = parts[parts.length - 1];
+        const date = parts.slice(0, parts.length - 1).join(' ');
+        return { date, time };
+    }
+    return { date: dateStr, time: '' };
+};
 
 // ─── CHART TOOLTIP ────────────────────────────────────────────────────────────
 const ChartTip = ({ active, payload, label }) => {
@@ -118,47 +234,29 @@ function TrendBadge({ value }) {
 }
 
 // ─── KPI CARD ─────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, sub, icon: Icon, accent = C.primary, gradient = false }) {
-    if (gradient) return (
-        <Card
-            className="border-0 text-white shadow-lg"
-            style={{ background: `linear-gradient(135deg, ${accent}ee, ${accent}bb)` }}
-        >
-            <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold opacity-80 mb-2 uppercase tracking-wider">{label}</p>
-                    <p className="text-2xl font-bold leading-none truncate">{value}</p>
-                    {sub && <div className="text-xs opacity-70 mt-1.5">{sub}</div>}
-                </div>
-                {Icon && (
-                    <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0 ml-3">
-                        <Icon size={20} />
-                    </div>
-                )}
-            </div>
-        </Card>
-    );
+function KpiCard({ label, value, sub, icon: Icon, accent = C.primary }) {
     return (
-        <Card className="relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-xl" style={{ background: accent }} />
-            <div className="flex items-start justify-between mt-1">
-                <div className="flex-1 min-w-0">
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-1.5">
-                        {label}
-                    </p>
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white leading-none truncate">{value}</p>
-                    {sub && <div className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">{sub}</div>}
-                </div>
-                {Icon && (
-                    <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ml-3"
-                        style={{ background: accent + '18' }}
-                    >
-                        <Icon size={18} style={{ color: accent }} strokeWidth={1.8} />
+        <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex flex-col gap-[14px] items-start pb-[16px] pt-[15px] px-[16px] rounded-[16px] w-full overflow-hidden">
+            {/* Icon + Label row */}
+            <div className="flex gap-[12px] items-start shrink-0">
+                <div
+                    className="size-9 p-2 bg-gradient-to-b from-[#f4f4f4] to-[#fefefe] dark:from-slate-800 dark:to-slate-900 rounded-[10px] border-[3px] border-solid border-white dark:border-slate-950 inline-flex justify-center items-center overflow-hidden flex-shrink-0"
+                    style={{ boxShadow: '0px 0px 0.225px 0.225px rgba(0,0,0,0.07), 0px 0px 0.225px 0.675px rgba(0,0,0,0.05), 0px 2.698px 2.923px -1.349px rgba(0,0,0,0.25), 0px 0.899px 3.598px 0.899px rgba(0,0,0,0.12), 0px 0px 0px 4px #f2f2f2' }}
+                >
+                    <div className="size-5 relative overflow-hidden flex items-center justify-center">
+                        {Icon && <Icon size={18} style={{ color: accent }} strokeWidth={1.8} />}
                     </div>
-                )}
+                </div>
+                <div className="flex flex-col justify-center h-[36px]">
+                    <p className="font-medium text-[16px] text-slate-900 dark:text-slate-100 leading-[1.4]">{label}</p>
+                </div>
             </div>
-        </Card>
+            {/* Value row */}
+            <div className="flex flex-col gap-[4px] items-start leading-[1.4] overflow-hidden w-full">
+                <p className="font-bold text-[26px] text-slate-900 dark:text-white leading-none truncate w-full">{value}</p>
+                {sub && <div className="font-medium text-[14px] text-slate-500 dark:text-slate-400 leading-tight w-full">{sub}</div>}
+            </div>
+        </div>
     );
 }
 
@@ -185,9 +283,9 @@ function STitle({ icon: Icon, children, sub, accent = C.primary }) {
 // ─── EMPTY STATE ──────────────────────────────────────────────────────────────
 function EmptyState({ message = 'Belum ada data', icon = '📊' }) {
     return (
-        <div className="flex flex-col items-center justify-center py-10 gap-2">
-            <span className="text-3xl">{icon}</span>
-            <p className="text-sm text-slate-400 dark:text-slate-500">{message}</p>
+        <div className="flex flex-col items-center justify-center py-8 px-4 gap-3 w-full border border-dashed border-[#e8e8e8] dark:border-slate-800 rounded-[12px] bg-[#fafafa]/50 dark:bg-slate-900/50">
+            <span className="text-3xl filter drop-shadow-[0px_2px_4px_rgba(0,0,0,0.08)]">{icon}</span>
+            <p className="text-[13px] font-medium text-slate-400 dark:text-slate-500 text-center">{message}</p>
         </div>
     );
 }
@@ -229,12 +327,116 @@ function StockItem({ item, variant = 'warning' }) {
     );
 }
 
-// ─── TABS ─────────────────────────────────────────────────────────────────────
+// ─── TAB BUTTON (SOLID Principle: Single Responsibility Component) ─────────────
+function TabButton({ tabKey, active, label, icon: Icon, badgeCount, onClick }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`group flex gap-[7px] h-[30px] items-center px-[12px] rounded-[8px] transition-all text-[12px] whitespace-nowrap ${
+                active
+                    ? 'bg-white dark:bg-slate-800 border border-[#e5e5e5] dark:border-slate-700 shadow-[0px_1px_3px_0px_rgba(15,23,41,0.08)] font-semibold text-slate-900 dark:text-slate-100'
+                    : 'border border-transparent font-medium text-[#4d5360] dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40'
+            }`}
+        >
+            <Icon
+                size={15}
+                className={
+                    active
+                        ? tabKey === 'overview'
+                            ? 'text-teal-600 dark:text-teal-400'
+                            : 'text-slate-700 dark:text-slate-200'
+                        : 'text-slate-400 dark:text-slate-500 transition-colors group-hover:text-slate-600 dark:group-hover:text-slate-350'
+                }
+            />
+            <span>{label}</span>
+            {badgeCount > 0 && (
+                <span className="bg-[#fdecec] dark:bg-red-950/40 text-[#c73939] dark:text-red-400 px-[6px] py-[1px] rounded-full font-bold text-[9.5px] leading-none ml-1.5 flex-shrink-0">
+                    {badgeCount}
+                </span>
+            )}
+        </button>
+    );
+}
+
+// ─── TOPBAR (SOLID Principle: Single Responsibility Component & Figma Design Match) ───
+function Topbar({
+    stores = [],
+    currentStore = null,
+    selectedStore = '',
+    changeStore,
+    canFilterStore = false,
+    isSuperAdmin = false,
+}) {
+    const { darkMode, themeSwitcher } = useTheme();
+
+    const subtitleText = useMemo(() => {
+        if (currentStore) {
+            return `Menampilkan data ${currentStore.name} · Live`;
+        }
+        return `Menampilkan data Semua Toko · ${stores.length} toko aktif`;
+    }, [currentStore, stores]);
+
+    return (
+        <div className="bg-transparent flex gap-[12px] items-center py-1 relative w-full" data-node-id="2550:137" data-name="Topbar">
+            <div className="content-stretch flex flex-[1_0_0] flex-col gap-[3px] items-start min-w-px overflow-clip relative" data-node-id="2550:138" data-name="Title">
+                <p className="font-semibold text-[22px] text-slate-900 dark:text-white leading-tight" data-node-id="2550:139">
+                    Dashboard
+                </p>
+                <p className="font-medium text-slate-500 dark:text-slate-400 text-[14px] leading-tight" data-node-id="2550:140">
+                    {subtitleText}
+                </p>
+            </div>
+            
+            <div className="flex gap-[8px] items-center shrink-0" data-node-id="2550:141" data-name="Topbar Actions">
+                {canFilterStore && stores.length > 0 && (
+                    <div className="relative bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex items-center h-[34px] rounded-[9px] w-[150px]" data-node-id="2550:142" data-name="Store Selector">
+                        <div className="absolute left-[10px] top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 pointer-events-none" data-node-id="2550:143" data-name="icon/store">
+                            <IconBuildingStore size={16} />
+                        </div>
+                        <select
+                            value={selectedStore}
+                            onChange={(e) => changeStore(e.target.value)}
+                            className="appearance-none bg-transparent bg-none border-none w-full h-full py-0 pl-[34px] pr-[32px] text-[12px] font-medium text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-0 cursor-pointer truncate"
+                            data-node-id="2550:146"
+                        >
+                            {isSuperAdmin && (
+                                <option value="">Semua Toko</option>
+                            )}
+                            {stores.map((s) => (
+                                <option key={s.id} value={s.id}>
+                                    {s.name}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="absolute right-[8px] top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none" data-node-id="2550:147" data-name="icon/caret">
+                            <IconChevronDown size={14} />
+                        </div>
+                    </div>
+                )}
+
+                <button
+                    type="button"
+                    onClick={themeSwitcher}
+                    className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex items-center justify-center rounded-[9px] shrink-0 size-[34px] hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400"
+                    data-node-id="2550:149"
+                    data-name="IconButton"
+                >
+                    <div className="size-[16px] flex items-center justify-center" data-node-id="2550:150" data-name="icon/mode">
+                        {darkMode ? <IconSun size={16} /> : <IconMoon size={16} />}
+                    </div>
+                </button>
+            </div>
+        </div>
+    );
+}
+
+// ─── TABS CONFIG ──────────────────────────────────────────────────────────────
 const TABS = [
-    { key: 'overview',    label: 'Overview',    icon: IconChartPie    },
+    { key: 'overview',    label: 'Overview',    icon: IconLayoutGrid  },
     { key: 'penjualan',   label: 'Penjualan',   icon: IconTrendingUp  },
-    { key: 'produk',      label: 'Produk',      icon: IconFlask       },
-    { key: 'operasional', label: 'Operasional', icon: IconFilter      },
+    { key: 'produk',      label: 'Produk',      icon: IconBox         },
+    { key: 'operasional', label: 'Operasional', icon: IconStack3      },
     { key: 'toko',        label: 'Toko',        icon: IconBuildingStore },
 ];
 
@@ -255,6 +457,59 @@ export default function Dashboard({
     const [sd, setSd] = useState(startDate || '');
     const [ed, setEd] = useState(endDate || '');
     const [selectedStore, setSelectedStore] = useState(selectedStoreId ?? '');
+
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+    const [tempSd, setTempSd] = useState(sd);
+    const [tempEd, setTempEd] = useState(ed);
+
+    useEffect(() => {
+        setTempSd(sd);
+        setTempEd(ed);
+    }, [sd, ed]);
+
+    const formatToYmd = (date) => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    };
+
+    const handlePreset = (days) => {
+        const today = new Date();
+        let start;
+        if (days === 0) {
+            start = today;
+        } else if (days === 'month') {
+            start = new Date(today.getFullYear(), today.getMonth(), 1);
+        } else {
+            start = new Date();
+            start.setDate(today.getDate() - days);
+        }
+        setTempSd(formatToYmd(start));
+        setTempEd(formatToYmd(today));
+    };
+
+    const applyDates = () => {
+        setSd(tempSd);
+        setEd(tempEd);
+        changeFilter(tempSd, tempEd, selectedStore || null);
+        setIsCalendarOpen(false);
+    };
+
+    const formatDateDisplay = (dateStr) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return dateStr;
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+    };
+
+    const dateDisplayString = useMemo(() => {
+        if (sd && ed) {
+            return `${formatDateDisplay(sd)} – ${formatDateDisplay(ed)}`;
+        }
+        return 'Pilih Tanggal';
+    }, [sd, ed]);
 
     const changeFilter = useCallback((newSd, newEd, newStoreId) => {
         const params = {};
@@ -306,7 +561,7 @@ export default function Dashboard({
     return (
         <>
             <Head title="Dashboard" />
-            <div className="space-y-5 pb-8">
+            <div className="bg-white dark:bg-slate-900 flex flex-col gap-5 w-full relative pb-8">
 
                 {/* ── ERROR ─────────────────────────────────────────────────── */}
                 {error && (
@@ -319,112 +574,137 @@ export default function Dashboard({
                     </div>
                 )}
 
-                {/* ── STORE BANNER ──────────────────────────────────────────── */}
-                {currentStore ? (
-                    <div className="flex items-center gap-3 p-3.5 rounded-xl bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800">
-                        <div className="w-9 h-9 rounded-lg bg-primary-500 flex items-center justify-center flex-shrink-0">
-                            <IconBuildingStore size={18} className="text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-[10px] text-primary-600 dark:text-primary-400 font-semibold uppercase tracking-wider">
-                                {canFilterStore ? 'Filter Toko Aktif' : 'Toko Aktif'}
-                            </p>
-                            <p className="text-sm font-bold text-primary-900 dark:text-primary-100 truncate">
-                                {currentStore.name}
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-xs text-slate-500 dark:text-slate-400">Live</span>
-                        </div>
-                    </div>
-                ) : canFilterStore && !selectedStore ? (
-                    <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
-                        <div className="w-9 h-9 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
-                            <IconBuildingStore size={18} className="text-slate-500 dark:text-slate-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                                Menampilkan Data
-                            </p>
-                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                                Semua Toko
-                            </p>
-                        </div>
-                        <span className="text-xs text-slate-400 dark:text-slate-500 flex-shrink-0">
-                            {stores.length} toko aktif
-                        </span>
-                    </div>
-                ) : null}
+                {/* ── TOPBAR (Figma Design Match: Title, Subtitle, Store Selector & Theme Toggle) ── */}
+                <Topbar
+                    stores={stores}
+                    currentStore={currentStore}
+                    selectedStore={selectedStore}
+                    changeStore={changeStore}
+                    canFilterStore={canFilterStore}
+                    isSuperAdmin={isSuperAdmin}
+                />
 
                 {/* ── TABS + PERIOD ─────────────────────────────────────────── */}
                 <div className="flex items-center justify-between gap-3 flex-wrap">
-                    {/* Tabs */}
-                    <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1 flex-wrap">
+                    {/* Tabs (SOLID Principle: Single Responsibility Component & Figma Design Match) */}
+                    <div className="bg-[#fbfbfb] dark:bg-slate-900/60 border border-[#e8e8e8] dark:border-slate-800 flex gap-[2px] items-center p-[4px] rounded-[8px] overflow-x-auto scrollbar-none">
                         {visibleTabs.map((t) => (
-                            <button
+                            <TabButton
                                 key={t.key}
+                                tabKey={t.key}
+                                active={activeTab === t.key}
+                                label={t.label}
+                                icon={t.icon}
+                                badgeCount={t.key === 'operasional' ? stockAlertCount : 0}
                                 onClick={() => setActiveTab(t.key)}
-                                className={`relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-                                    activeTab === t.key
-                                        ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-sm'
-                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                                }`}
-                            >
-                                <t.icon size={13} />
-                                <span className="hidden sm:inline">{t.label}</span>
-                                {t.key === 'operasional' && stockAlertCount > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
-                                        {stockAlertCount}
-                                    </span>
-                                )}
-                            </button>
+                            />
                         ))}
                     </div>
 
-                    {/* Filters: Store + Period */}
-                    <div className="flex items-center gap-2 flex-wrap">
-
-                        {/* Store filter — only for super-admin / admin */}
-                        {canFilterStore && stores.length > 0 && (
-                            <div className="flex items-center gap-2">
-                                <IconBuildingStore size={14} className="text-slate-400 flex-shrink-0" />
-                                <select
-                                    value={selectedStore}
-                                    onChange={(e) => changeStore(e.target.value)}
-                                    className="text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer max-w-[180px] truncate"
-                                >
-                                    {isSuperAdmin && (
-                                        <option value="">Semua Toko</option>
-                                    )}
-                                    {stores.map((s) => (
-                                        <option key={s.id} value={s.id}>
-                                            {s.name}
-                                        </option>
-                                    ))}
-                                </select>
+                    {/* Filters: Period & Export */}
+                    <div className="relative flex items-center gap-2 flex-wrap">
+                        {/* Figma Chip Calendar Range Picker Trigger */}
+                        <button
+                            type="button"
+                            onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                            className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex gap-[7px] items-center h-[34px] pl-[11px] pr-[12px] rounded-[8px] hover:bg-slate-50 dark:hover:bg-slate-800/60 shadow-sm transition-colors cursor-pointer select-none"
+                            data-node-id="2550:192"
+                            data-name="Chip / Calendar Range Picker"
+                        >
+                            <div className="relative shrink-0 size-[15px]" data-node-id="2550:193" data-name="icon/calendar">
+                                <IconCalendar size={15} className="absolute inset-0 size-full text-slate-500 dark:text-slate-400" />
                             </div>
+                            <p className="font-medium text-[12.5px] text-slate-900 dark:text-slate-100 whitespace-nowrap" data-node-id="2550:198">
+                                {dateDisplayString}
+                            </p>
+                        </button>
+
+                        {/* Calendar Dropdown Popover Modal */}
+                        {isCalendarOpen && (
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setIsCalendarOpen(false)} />
+                                <div className="absolute right-0 top-full mt-2 w-[320px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                                    {/* Presets */}
+                                    <div className="mb-4">
+                                        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Pilihan Cepat</p>
+                                        <div className="grid grid-cols-2 gap-1.5">
+                                            <button
+                                                type="button"
+                                                onClick={() => handlePreset(0)}
+                                                className="text-xs text-left px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-700/60 font-medium text-slate-700 dark:text-slate-200 transition-colors"
+                                            >
+                                                Hari Ini
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handlePreset(6)}
+                                                className="text-xs text-left px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-700/60 font-medium text-slate-700 dark:text-slate-200 transition-colors"
+                                            >
+                                                7 Hari Terakhir
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handlePreset(29)}
+                                                className="text-xs text-left px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-700/60 font-medium text-slate-700 dark:text-slate-200 transition-colors"
+                                            >
+                                                30 Hari Terakhir
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handlePreset('month')}
+                                                className="text-xs text-left px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-700/60 font-medium text-slate-700 dark:text-slate-200 transition-colors"
+                                            >
+                                                Bulan Ini
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Custom dates */}
+                                    <div className="space-y-3 mb-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Rentang Kustom</p>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="block text-[10px] text-slate-450 dark:text-slate-500 font-medium mb-1">Dari</label>
+                                                <input
+                                                    type="date"
+                                                    value={tempSd}
+                                                    onChange={(e) => setTempSd(e.target.value)}
+                                                    className="w-full text-xs px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-750 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] text-slate-450 dark:text-slate-500 font-medium mb-1">Sampai</label>
+                                                <input
+                                                    type="date"
+                                                    value={tempEd}
+                                                    onChange={(e) => setTempEd(e.target.value)}
+                                                    className="w-full text-xs px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-750 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Action buttons */}
+                                    <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsCalendarOpen(false)}
+                                            className="text-xs px-3 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold text-slate-500 dark:text-slate-450 transition-colors"
+                                        >
+                                            Batal
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={applyDates}
+                                            disabled={!tempSd || !tempEd}
+                                            className="text-xs px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 disabled:opacity-50 font-bold text-white shadow-sm transition-colors"
+                                        >
+                                            Terapkan
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
                         )}
-
-                        {/* Date Range selectors */}
-                        <div className="flex items-center gap-2">
-                            <IconCalendar size={14} className="text-slate-400" />
-                            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pr-1.5 focus-within:ring-2 focus-within:ring-primary-500 overflow-hidden">
-                                <input
-                                    type="date"
-                                    value={sd}
-                                    onChange={handleStartDateChange}
-                                    className="text-xs bg-transparent border-none text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-0 py-1.5 pl-3"
-                                />
-                                <span className="text-slate-300 dark:text-slate-600">-</span>
-                                <input
-                                    type="date"
-                                    value={ed}
-                                    onChange={handleEndDateChange}
-                                    className="text-xs bg-transparent border-none text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-0 py-1.5 pl-2"
-                                />
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -453,21 +733,21 @@ export default function Dashboard({
                                 icon={<IconUsers size={20} strokeWidth={1.5} />}
                                 total={counts.customers ?? 0} />
                         </div>
-
+                        
                         {/* Financial KPI */}
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                            <KpiCard gradient label="Total Pendapatan" value={compact(kpi.totalRevenue)}
+                            <KpiCard label="Total Pendapatan" value={compact(kpi.totalRevenue)}
                                 sub={
                                     <div className="space-y-1">
-                                        <div className="opacity-80 truncate">{idr(kpi.totalRevenue)}</div>
+                                        <div className="truncate">{idr(kpi.totalRevenue)}</div>
                                         <TrendBadge value={kpi.trendRevenue} />
                                     </div>
                                 }
                                 icon={IconMoneybag} accent={C.primary} />
-                            <KpiCard gradient label="Total Profit" value={compact(kpi.totalProfit)}
+                            <KpiCard label="Total Profit" value={compact(kpi.totalProfit)}
                                 sub={
                                     <div className="space-y-1">
-                                        <div className="opacity-80">Margin {profitMargin}%</div>
+                                        <div>Margin {profitMargin}%</div>
                                         <TrendBadge value={kpi.trendProfit} />
                                     </div>
                                 }
@@ -480,226 +760,349 @@ export default function Dashboard({
                                     </div>
                                 }
                                 icon={IconChartBar} accent={C.info} />
-                            <KpiCard label="Hari Ini" value={num(kpi.todayTransactions)}
+                            <KpiCard label="Hari ini" value={num(kpi.todayTransactions)}
                                 sub={<div>{compact(kpi.todayRevenue)}</div>}
                                 icon={IconCash} accent={C.warning} />
                         </div>
 
                         {/* Revenue + Profit trend chart */}
-                        <Card>
-                            <STitle icon={IconTrendingUp} sub="Revenue · Profit · COGS per hari">
-                                Tren Keuangan
-                            </STitle>
+                        <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex flex-col gap-[14px] items-start overflow-hidden px-[18px] py-[16px] rounded-[16px] w-full">
+                            {/* Card Head: Title left + Legend right */}
+                            <div className="flex gap-[10px] items-center w-full">
+                                <div className="flex flex-1 flex-col gap-[2px] items-start min-w-0 overflow-hidden">
+                                    <p className="font-semibold text-[16px] text-slate-900 dark:text-white leading-[1.4] whitespace-nowrap">Tren Keuangan</p>
+                                    <p className="font-medium text-[14px] text-slate-500 dark:text-slate-400 leading-[1.4] whitespace-nowrap">Revenue · Profit · COGS per hari</p>
+                                </div>
+                                <div className="flex gap-[14px] items-center flex-shrink-0">
+                                    {[
+                                        { label: 'Revenue', color: C.primary },
+                                        { label: 'Profit',  color: C.success },
+                                        { label: 'COGS',    color: '#4A3AFF' },
+                                    ].map(({ label, color }) => (
+                                        <div key={label} className="flex gap-[6px] items-center">
+                                            <span className="size-[7px] rounded-full flex-shrink-0" style={{ background: color }} />
+                                            <span className="font-medium text-[11px] text-slate-500 dark:text-slate-400 leading-[16px] whitespace-nowrap">{label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            {/* Chart */}
                             {revenueTrend.length > 0 ? (
-                                <ResponsiveContainer width="100%" height={220}>
-                                    <AreaChart data={revenueTrend}>
-                                        <defs>
-                                            {[['gRev', C.primary], ['gPro', C.success]].map(([id, c]) => (
-                                                <linearGradient key={id} id={id} x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor={c} stopOpacity={0.15} />
-                                                    <stop offset="95%" stopColor={c} stopOpacity={0} />
-                                                </linearGradient>
-                                            ))}
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" className="dark:stroke-slate-700" />
-                                        <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                                        <YAxis
-                                            tickFormatter={(v) => compact(v).replace('Rp', '')}
-                                            tick={{ fill: '#94a3b8', fontSize: 11 }}
+                                <ResponsiveContainer width="100%" height={196}>
+                                    <LineChart data={revenueTrend} margin={{ top: 10, right: 4, left: 0, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="0" stroke="#eef2f7" className="dark:stroke-slate-800" horizontal={true} vertical={false} />
+                                        <XAxis
+                                            dataKey="date"
+                                            tick={{ fill: '#94a3b8', fontSize: 9.5, fontWeight: 500 }}
                                             axisLine={false} tickLine={false}
                                         />
-                                        <Tooltip content={<ChartTip />} />
-                                        <Area type="monotone" dataKey="revenue" name="Revenue" stroke={C.primary} strokeWidth={2.5} fill="url(#gRev)" dot={false} />
-                                        <Area type="monotone" dataKey="profit"  name="Profit"  stroke={C.success} strokeWidth={2}   fill="url(#gPro)" dot={false} />
-                                        <Area type="monotone" dataKey="cogs"    name="COGS"    stroke={C.danger}  strokeWidth={1.5} fill="none"       dot={false} strokeDasharray="4 3" />
-                                    </AreaChart>
+                                        <YAxis
+                                            tickFormatter={(v) => compact(v).replace('Rp', '')}
+                                            tick={{ fill: '#94a3b8', fontSize: 9.5, fontWeight: 500 }}
+                                            axisLine={false} tickLine={false} width={48}
+                                        />
+                                        <Tooltip
+                                            content={({ active, payload, label }) => {
+                                                if (!active || !payload?.length) return null;
+                                                const colors = { Revenue: C.primary, Profit: C.success, COGS: '#4A3AFF' };
+                                                return (
+                                                    <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 rounded-[10px] px-[12px] py-[10px] flex flex-col gap-[8px] min-w-[150px]" style={{ boxShadow: '0px 6px 18px -4px rgba(15,23,41,0.14)' }}>
+                                                        <p className="font-semibold text-[14px] text-slate-900 dark:text-white leading-[1.4] whitespace-nowrap">{label}</p>
+                                                        <div className="flex flex-col gap-[8px]">
+                                                            {payload.map((p) => (
+                                                                <div key={p.name} className="flex gap-[10px] items-center w-full">
+                                                                    <span className="size-[8px] rounded-full flex-shrink-0" style={{ background: colors[p.name] ?? p.color }} />
+                                                                    <span className="flex-1 font-medium text-[12px] text-slate-500 dark:text-slate-400 min-w-0">{p.name}</span>
+                                                                    <span className="font-semibold text-[12px] whitespace-nowrap" style={{ color: colors[p.name] ?? p.color }}>{compact(p.value)}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }}
+                                        />
+                                        <Line type="monotone" dataKey="revenue" name="Revenue" stroke={C.primary}  strokeWidth={2.5} dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: 'white', fill: C.primary }} />
+                                        <Line type="monotone" dataKey="profit"  name="Profit"  stroke={C.success}  strokeWidth={2}   dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: 'white', fill: C.success }} />
+                                        <Line type="monotone" dataKey="cogs"    name="COGS"    stroke="#4A3AFF"    strokeWidth={2}   dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: 'white', fill: '#4A3AFF' }} />
+                                    </LineChart>
                                 </ResponsiveContainer>
                             ) : <EmptyState message="Belum ada data tren" icon="📈" />}
-                        </Card>
+                        </div>
 
                         {/* Intensity + Size + Payment */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                            {/* Intensity Pie */}
-                            <Card>
-                                <STitle icon={IconChartPie} sub="Distribusi konsentrasi">Sales by Intensity</STitle>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-[10px]">
+
+                            {/* ── Card / Sales by Intensity ── */}
+                            <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex flex-col gap-[14px] items-start overflow-hidden px-[18px] py-[16px] rounded-[16px] self-stretch">
+                                {/* Head */}
+                                <div className="flex gap-[10px] items-center w-full">
+                                    <div className="flex flex-1 flex-col gap-[2px] items-start min-w-0">
+                                        <p className="font-semibold text-[16px] text-slate-900 dark:text-white leading-[1.4]">Sales by Intensity</p>
+                                        <p className="font-medium text-[14px] text-slate-500 dark:text-slate-400 leading-[1.4]">Distribusi konsentrasi</p>
+                                    </div>
+                                </div>
                                 {salesByIntensity.length > 0 ? (
                                     <>
-                                        <ResponsiveContainer width="100%" height={130}>
-                                            <PieChart>
-                                                <Pie
-                                                    data={salesByIntensity}
-                                                    dataKey="pct" nameKey="name"
-                                                    cx="50%" cy="50%"
-                                                    innerRadius={36} outerRadius={55}
-                                                    paddingAngle={3}
-                                                >
-                                                    {salesByIntensity.map((_, i) => (
-                                                        <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="none" />
-                                                    ))}
-                                                </Pie>
-                                                <Tooltip content={<ChartTip />} />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                        <div className="space-y-2 mt-1">
-                                            {salesByIntensity.map((s, i) => (
-                                                <div key={i} className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
-                                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{s.name}</span>
+                                        {/* Donut centered */}
+                                        <div className="flex items-center justify-center py-[6px] w-full">
+                                            <ResponsiveContainer width={142} height={142}>
+                                                <PieChart>
+                                                    <defs>
+                                                        <linearGradient id="gEdp" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="0%" stopColor="#62b6e4" />
+                                                            <stop offset="100%" stopColor="#3982aa" />
+                                                        </linearGradient>
+                                                        <linearGradient id="gEdt" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="0%" stopColor="#ebc96e" />
+                                                            <stop offset="100%" stopColor="#c09628" />
+                                                        </linearGradient>
+                                                        <linearGradient id="gEdc" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="0%" stopColor="#77bbb0" />
+                                                            <stop offset="100%" stopColor="#5b8f87" />
+                                                        </linearGradient>
+                                                        <linearGradient id="gOther" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="0%" stopColor="#8f77bb" />
+                                                            <stop offset="100%" stopColor="#694aa3" />
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <Pie
+                                                        data={salesByIntensity}
+                                                        dataKey="pct" nameKey="name"
+                                                        cx="50%" cy="50%"
+                                                        innerRadius={42} outerRadius={66}
+                                                        paddingAngle={3} startAngle={90} endAngle={-270}
+                                                    >
+                                                        {salesByIntensity.map((entry, i) => (
+                                                            <Cell key={i} fill={getIntensityStyle(entry.name).fill} stroke="none" />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip
+                                                        content={({ active, payload }) => {
+                                                            if (!active || !payload?.length) return null;
+                                                            const p = payload[0];
+                                                            return (
+                                                                <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 rounded-[10px] px-[10px] py-[8px] text-[12px]" style={{ boxShadow: '0px 6px 18px -4px rgba(15,23,41,0.14)' }}>
+                                                                    <span className="font-medium text-slate-700 dark:text-slate-300">{p.name}: </span>
+                                                                    <span className="font-semibold" style={{ color: getIntensityStyle(p.name).solid }}>{p.value}%</span>
+                                                                </div>
+                                                            );
+                                                        }}
+                                                    />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                        {/* Legend */}
+                                        <div className="flex flex-col gap-[10px] w-full">
+                                            {salesByIntensity.map((s, i) => {
+                                                const style = getIntensityStyle(s.name);
+                                                return (
+                                                    <div key={i} className="flex gap-[10px] items-center w-full overflow-hidden">
+                                                        <span className="size-[9px] rounded-[3px] flex-shrink-0" style={{ background: style.bg }} />
+                                                        <span className="flex-1 font-medium text-[12px] text-slate-900 dark:text-slate-100 leading-[18px] min-w-0 truncate">{s.name}</span>
+                                                        <span className="font-normal text-[11.5px] text-slate-400 leading-[18px] flex-shrink-0 tabular-nums">{num(s.qty)}</span>
+                                                        <span className="font-semibold text-[12px] text-slate-900 dark:text-white leading-[18px] flex-shrink-0 tabular-nums">{s.pct}%</span>
                                                     </div>
-                                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                                        <span className="text-xs text-slate-400 tabular-nums">{num(s.qty)}</span>
-                                                        <span className="text-sm font-bold tabular-nums" style={{ color: COLORS[i % COLORS.length] }}>{s.pct}%</span>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     </>
                                 ) : <EmptyState message="Belum ada data intensity" />}
-                            </Card>
+                            </div>
 
-                            {/* Size Bar */}
-                            <Card>
-                                <STitle icon={IconPackage} sub="Per ukuran botol" accent={C.info}>Sales by Size</STitle>
-                                {salesBySize.length > 0 ? (
-                                    <>
-                                        <ResponsiveContainer width="100%" height={130}>
-                                            <BarChart data={salesBySize} barSize={28}>
-                                                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} className="dark:stroke-slate-700" />
-                                                <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                                                <YAxis hide />
-                                                <Tooltip content={<ChartTip />} />
-                                                <Bar dataKey="qty" name="Qty" radius={[5, 5, 0, 0]}>
-                                                    {salesBySize.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                                                </Bar>
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                        <div className="flex gap-2 mt-2 flex-wrap">
-                                            {salesBySize.map((s, i) => (
-                                                <div key={i} className="flex-1 min-w-[56px] rounded-xl bg-slate-50 dark:bg-slate-800 py-2 px-1 text-center border border-slate-100 dark:border-slate-700">
-                                                    <p className="text-base font-bold tabular-nums" style={{ color: COLORS[i % COLORS.length] }}>{num(s.qty)}</p>
-                                                    <p className="text-[10px] text-slate-400 truncate">{s.name}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </>
-                                ) : <EmptyState message="Belum ada data ukuran" />}
-                            </Card>
+                            {/* ── Card / Sales by Size ── */}
+                            <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex flex-col gap-[14px] items-start overflow-hidden px-[18px] py-[16px] rounded-[16px] self-stretch">
+                                {/* Head */}
+                                <div className="flex gap-[10px] items-center w-full">
+                                    <div className="flex flex-1 flex-col gap-[2px] items-start min-w-0">
+                                        <p className="font-semibold text-[16px] text-slate-900 dark:text-white leading-[1.4]">Sales by Size</p>
+                                        <p className="font-medium text-[14px] text-slate-500 dark:text-slate-400 leading-[1.4]">Per ukuran botol</p>
+                                    </div>
+                                </div>
+                                {salesBySize.length > 0 ? (() => {
+                                    const maxQty = Math.max(...salesBySize.map(s => s.qty), 1);
+                                    const BAR_MAX_H = 104;
+                                    return (
+                                        <>
+                                            {/* Custom gradient bars */}
+                                            <div className="flex items-end justify-between w-full overflow-hidden" style={{ height: 138 }}>
+                                                {salesBySize.map((s, i) => {
+                                                    const h = Math.max(Math.round((s.qty / maxQty) * BAR_MAX_H), 12);
+                                                    const style = getSizeStyle(s.name);
+                                                    return (
+                                                        <div key={i} className="flex flex-col gap-[8px] items-center justify-end overflow-hidden" style={{ height: 138, flex: 1 }}>
+                                                            <div
+                                                                className="rounded-[8px] flex-shrink-0 w-[46px] max-w-full transition-all duration-500"
+                                                                style={{
+                                                                    height: h,
+                                                                    background: style.gradient,
+                                                                    border: `1px solid ${style.border}`,
+                                                                }}
+                                                            />
+                                                            <p className="font-medium text-[10.5px] text-slate-400 leading-[14px] whitespace-nowrap">{s.name}</p>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            {/* Totals boxes */}
+                                            <div className="flex gap-[10px] items-center w-full whitespace-nowrap">
+                                                {salesBySize.map((s, i) => (
+                                                    <div key={i} className="bg-[#fafafa] dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 flex flex-1 flex-col gap-px items-center justify-center min-w-0 overflow-hidden py-[9px] rounded-[6px]">
+                                                        <p className="font-bold text-[17px] text-slate-900 dark:text-white leading-[22px]">{num(s.qty)}</p>
+                                                        <p className="font-medium text-[10px] text-slate-400 leading-[14px]">{s.name}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </>
+                                    );
+                                })() : <EmptyState message="Belum ada data ukuran" />}
+                            </div>
 
-                            {/* Payment Breakdown */}
-                            <Card>
-                                <STitle icon={IconCash} sub="Metode pembayaran" accent={C.warning}>Pembayaran</STitle>
+                            {/* ── Card / Pembayaran ── */}
+                            <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex flex-col gap-[14px] items-start overflow-hidden px-[18px] py-[16px] rounded-[16px] self-stretch">
+                                {/* Head */}
+                                <div className="flex gap-[10px] items-center w-full">
+                                    <div className="flex flex-1 flex-col gap-[2px] items-start min-w-0">
+                                        <p className="font-semibold text-[16px] text-slate-900 dark:text-white leading-[1.4]">Pembayaran</p>
+                                        <p className="font-medium text-[14px] text-slate-500 dark:text-slate-400 leading-[1.4]">Metode pembayaran</p>
+                                    </div>
+                                </div>
                                 {paymentBreakdown.length > 0 ? (
-                                    <div className="space-y-3.5">
-                                        {paymentBreakdown.map((p, i) => {
-                                            const share = paymentTotal > 0
-                                                ? Math.round((p.total_amount / paymentTotal) * 100)
-                                                : 0;
-                                            const color = COLORS[i % COLORS.length];
-                                            return (
-                                                <div key={i}>
-                                                    <div className="flex items-center justify-between mb-1.5">
-                                                        <div className="flex items-center gap-2 min-w-0">
-                                                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-                                                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
-                                                                {p.method_name}
-                                                            </span>
+                                    <div className="flex flex-1 flex-col items-start w-full gap-[14px]">
+                                        <div className="flex flex-col gap-[14px] items-start w-full">
+                                            {paymentBreakdown.map((p, i) => {
+                                                const share = paymentTotal > 0
+                                                    ? Math.round((p.total_amount / paymentTotal) * 100)
+                                                    : 0;
+                                                const style = getPaymentStyle(p.method_name);
+                                                return (
+                                                    <div key={i} className="flex flex-col gap-[8px] items-start w-full overflow-hidden">
+                                                        {/* Top row */}
+                                                        <div className="flex gap-[8px] items-center w-full overflow-hidden">
+                                                            <span className="size-[8px] rounded-full flex-shrink-0" style={{ background: style.color }} />
+                                                            <span className="flex-1 font-medium text-[12px] text-slate-900 dark:text-slate-100 leading-[1.4] min-w-0 truncate">{p.method_name}</span>
+                                                            <div className="flex gap-[8px] items-center flex-shrink-0">
+                                                                <span className="font-normal text-[12px] text-slate-400 leading-[1.2] whitespace-nowrap">{p.total_transactions}×</span>
+                                                                <span className="font-semibold text-[14px] leading-[1.2] whitespace-nowrap" style={{ color: style.color }}>{share}%</span>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                                                            <span className="text-xs text-slate-400 tabular-nums">{p.total_transactions}×</span>
-                                                            <span className="text-sm font-bold tabular-nums" style={{ color }}>{share}%</span>
+                                                        {/* Progress track */}
+                                                        <div className="bg-[#eef2f7] dark:bg-slate-700 h-[6px] w-full rounded-full overflow-hidden">
+                                                            <div
+                                                                className="h-[6px] rounded-full transition-all duration-500"
+                                                                style={{ width: `${share}%`, background: style.gradient }}
+                                                            />
+                                                        </div>
+                                                        {/* Bottom: amount right */}
+                                                        <div className="flex items-center w-full">
+                                                            <div className="flex-1" />
+                                                            <span className="font-medium text-[12px] text-slate-500 dark:text-slate-400 leading-[16px] whitespace-nowrap">{compact(p.total_amount)}</span>
                                                         </div>
                                                     </div>
-                                                    <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                                                        <div
-                                                            className="h-full rounded-full transition-all duration-500"
-                                                            style={{ width: `${share}%`, background: color }}
-                                                        />
-                                                    </div>
-                                                    <p className="text-xs text-slate-400 mt-1 text-right tabular-nums">{compact(p.total_amount)}</p>
-                                                </div>
-                                            );
-                                        })}
+                                                );
+                                            })}
+                                        </div>
+                                        {/* Summary note */}
+                                        {paymentBreakdown.length === 1 && (
+                                            <div className="bg-[#fafafa] dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 flex items-center justify-center overflow-hidden px-[14px] py-[12px] rounded-[10px] w-full">
+                                                <p className="font-normal text-[11px] text-slate-400 leading-[15px] text-center">
+                                                    Seluruh {paymentBreakdown[0].total_transactions} transaksi periode ini dibayar via {paymentBreakdown[0].method_name}
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : <EmptyState message="Belum ada data pembayaran" />}
-                            </Card>
+                            </div>
+
                         </div>
 
                         {/* Top Variants + Top Customers */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                            <Card>
-                                <STitle icon={IconStar} sub="By revenue">Top Varian Parfum</STitle>
+                            {/* Card / Top Varian Parfum */}
+                            <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex flex-col gap-[10px] items-start pb-[10px] pt-[16px] px-[18px] rounded-[16px] w-full">
+                                {/* Head */}
+                                <div className="flex gap-[10px] items-center w-full">
+                                    <div className="flex flex-1 flex-col gap-[2px] items-start min-w-0">
+                                        <p className="font-semibold text-[16px] text-slate-900 dark:text-white leading-[1.4]">Top Varian Parfum</p>
+                                        <p className="font-medium text-[14px] text-slate-500 dark:text-slate-400 leading-[1.4]">By revenue</p>
+                                    </div>
+                                </div>
                                 {topVariants.length > 0 ? (
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col w-full">
                                         {topVariants.map((v, i) => (
-                                            <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors">
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div
-                                                        className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold text-white"
-                                                        style={{ background: COLORS[i] }}
-                                                    >
-                                                        {i + 1}
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                                            <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{v.name}</p>
-                                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 flex-shrink-0 capitalize">
-                                                                {v.gender}
-                                                            </span>
-                                                        </div>
-                                                        <p className="text-xs text-slate-400 tabular-nums">
-                                                            {num(v.qty)} unit · margin {v.margin}%
-                                                        </p>
-                                                    </div>
+                                            <div key={i} className="border-b border-[#e8e8e8] dark:border-slate-850 flex gap-[12px] items-start py-[9px] w-full last:border-b-0 last:pb-0">
+                                                <div className="bg-[#fafafa] dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 flex items-center justify-center rounded-[8px] flex-shrink-0 size-[30px]">
+                                                    <p className="font-medium text-[14px] text-slate-900 dark:text-slate-100 leading-none">{i + 1}</p>
                                                 </div>
-                                                <p className="text-sm font-bold text-slate-900 dark:text-white ml-2 flex-shrink-0 tabular-nums">
+                                                <div className="flex flex-1 flex-col gap-[6px] items-start min-w-0">
+                                                    <div className="flex gap-[7px] items-center flex-wrap w-full">
+                                                        <p className="font-semibold text-[14px] text-slate-900 dark:text-white leading-tight truncate">{v.name}</p>
+                                                        <span className="bg-[#f7f9fc] dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 font-medium px-[8px] py-[2px] rounded-full text-[10px] text-slate-500 dark:text-slate-400 tracking-[0.2px] capitalize">
+                                                            {v.gender}
+                                                        </span>
+                                                    </div>
+                                                    <p className="font-medium text-[12px] text-slate-500 dark:text-slate-400 leading-[1.4] whitespace-nowrap">
+                                                        {num(v.qty)} unit · margin {v.margin}%
+                                                    </p>
+                                                </div>
+                                                <p className="font-semibold text-[12.5px] text-slate-900 dark:text-white text-right w-[84px] leading-[20px] flex-shrink-0 tabular-nums">
                                                     {compact(v.revenue)}
                                                 </p>
                                             </div>
                                         ))}
                                     </div>
                                 ) : <EmptyState message="Belum ada data penjualan" icon="🏅" />}
-                            </Card>
+                            </div>
 
-                            <Card>
-                                <STitle icon={IconUsers} sub="Total belanja" accent={C.success}>Top Pelanggan</STitle>
+                            {/* Card / Top Pelanggan */}
+                            <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex flex-col gap-[10px] items-start pb-[10px] pt-[16px] px-[18px] rounded-[16px] w-full">
+                                {/* Head */}
+                                <div className="flex gap-[10px] items-center w-full">
+                                    <div className="flex flex-1 flex-col gap-[2px] items-start min-w-0">
+                                        <p className="font-semibold text-[16px] text-slate-900 dark:text-white leading-[1.4]">Top Pelanggan</p>
+                                        <p className="font-medium text-[14px] text-slate-500 dark:text-slate-400 leading-[1.4]">Total belanja</p>
+                                    </div>
+                                </div>
                                 {topCustomers.length > 0 ? (
-                                    <div className="space-y-2">
-                                        {topCustomers.map((c, i) => (
-                                            <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors">
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div
-                                                        className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold text-white"
-                                                        style={{ background: COLORS[i] }}
-                                                    >
-                                                        {i + 1}
+                                    <div className="flex flex-col w-full gap-[10px]">
+                                        <div className="flex flex-col w-full">
+                                            {topCustomers.map((c, i) => (
+                                                <div key={i} className="border-b border-[#e8e8e8] dark:border-slate-850 flex gap-[12px] items-start py-[9px] w-full last:border-b-0 last:pb-0">
+                                                    <div className="bg-[#fafafa] dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 flex items-center justify-center rounded-[8px] flex-shrink-0 size-[30px]">
+                                                        <p className="font-medium text-[14px] text-slate-900 dark:text-slate-100 leading-none">{i + 1}</p>
                                                     </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{c.name}</p>
-                                                        <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                                                            <span className="text-xs text-slate-400 tabular-nums">{c.total_orders} transaksi</span>
+                                                    <div className="flex flex-1 flex-col gap-[4px] items-start min-w-0">
+                                                        <div className="flex items-center gap-[6px] flex-wrap w-full">
+                                                            <p className="font-semibold text-[14px] text-slate-900 dark:text-white leading-tight truncate">{c.name}</p>
                                                             {c.tier && (
-                                                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold capitalize ${
-                                                                    c.tier === 'platinum' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                                                                    : c.tier === 'gold'   ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                                                                    : c.tier === 'silver' ? 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
-                                                                    :                       'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                                                                <span className={`border border-solid font-medium px-[6px] py-[1px] rounded-full text-[9px] capitalize ${
+                                                                    c.tier === 'platinum' ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-650 dark:text-purple-400 border-purple-100 dark:border-purple-900/50'
+                                                                    : c.tier === 'gold'   ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-650 dark:text-amber-400 border-amber-100 dark:border-amber-900/50'
+                                                                    : c.tier === 'silver' ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                                                                    :                       'bg-orange-50 dark:bg-orange-900/30 text-orange-650 dark:text-orange-400 border-orange-100 dark:border-orange-900/50'
                                                                 }`}>
                                                                     {c.tier}
                                                                 </span>
                                                             )}
-                                                            <span className="text-[10px] text-slate-400 tabular-nums">⭐ {num(c.current_points)} pts</span>
                                                         </div>
+                                                        <p className="font-medium text-[12px] text-slate-500 dark:text-slate-400 leading-[1.4] whitespace-nowrap">
+                                                            {c.total_orders} transaksi · {num(c.current_points)} pts
+                                                        </p>
                                                     </div>
+                                                    <p className="font-semibold text-[12.5px] text-slate-900 dark:text-white text-right w-[84px] leading-[20px] flex-shrink-0 tabular-nums">
+                                                        {compact(c.total_spending)}
+                                                    </p>
                                                 </div>
-                                                <p className="text-sm font-bold text-slate-900 dark:text-white ml-2 flex-shrink-0 tabular-nums">
-                                                    {compact(c.total_spending)}
-                                                </p>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
+                                        {/* Summary Note Box */}
+                                        <div className="bg-[#fafafa] dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 flex items-center justify-center overflow-hidden px-[14px] py-[12px] rounded-[10px] w-full mt-2">
+                                            <p className="font-normal text-[11px] text-slate-400 leading-[15px] text-center">
+                                                {topCustomers.length} dari {counts.customers ?? 0} member aktif bertransaksi pada periode ini
+                                            </p>
+                                        </div>
                                     </div>
                                 ) : <EmptyState message="Belum ada data pelanggan" icon="👥" />}
-                            </Card>
+                            </div>
                         </div>
 
                         {/* Low stock alert snippet */}
@@ -717,15 +1120,28 @@ export default function Dashboard({
                         )}
 
                         {/* Recent Transactions */}
-                        <Card>
-                            <STitle icon={IconReceipt} sub="8 transaksi terbaru">Transaksi Terbaru</STitle>
+                        <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex flex-col gap-[14px] items-start px-[18px] py-[16px] rounded-[16px] w-full">
+                            {/* Head Row */}
+                            <div className="flex gap-[10px] items-center w-full">
+                                <div className="flex flex-1 flex-col gap-[2px] items-start min-w-0">
+                                    <p className="font-semibold text-[16px] text-slate-900 dark:text-white leading-[1.4]">Transaksi Terbaru</p>
+                                    <p className="font-medium text-[14px] text-slate-500 dark:text-slate-400 leading-[1.4]">8 transaksi terbaru</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('penjualan')}
+                                    className="bg-[#f7f9fc] hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-[#e8e8e8] dark:border-slate-700 text-[#4d5360] dark:text-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                                >
+                                    Riwayat lengkap
+                                </button>
+                            </div>
                             {recentTransactions.length > 0 ? (
-                                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                                <div className="overflow-x-auto w-full -mx-4 sm:mx-0">
                                     <table className="w-full text-sm min-w-[640px]">
                                         <thead>
-                                            <tr className="border-b border-slate-200 dark:border-slate-700">
+                                            <tr className="border-b border-[#e8e8e8] dark:border-slate-800">
                                                 {['Invoice', 'Tanggal', 'Pelanggan', 'Kasir', 'Total', 'Profit', 'Status'].map((h) => (
-                                                    <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                                                    <th key={h} className="text-left py-2 px-3 text-[10.5px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider whitespace-nowrap">
                                                         {h}
                                                     </th>
                                                 ))}
@@ -733,36 +1149,61 @@ export default function Dashboard({
                                         </thead>
                                         <tbody>
                                             {recentTransactions.map((tx, i) => (
-                                                <tr key={i} className="border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                                    <td className="py-2.5 px-3 font-mono text-xs font-bold text-primary-600 dark:text-primary-400 whitespace-nowrap">
+                                                <tr key={i} className="border-b border-[#f3f4f6] dark:border-slate-850 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                                                    {/* Invoice */}
+                                                    <td className="py-3 px-3 text-[13px] font-semibold text-slate-900 dark:text-white whitespace-nowrap">
                                                         {tx.invoice}
                                                     </td>
-                                                    <td className="py-2.5 px-3 text-xs text-slate-500 whitespace-nowrap">{tx.date}</td>
-                                                    <td className="py-2.5 px-3 font-medium text-slate-900 dark:text-white max-w-[120px] truncate">
+                                                    {/* Tanggal (Date & Time split) */}
+                                                    <td className="py-3 px-3 text-[13px] whitespace-nowrap">
+                                                        {(() => {
+                                                            const { date, time } = splitDateTime(tx.date);
+                                                            return (
+                                                                <div className="flex flex-col leading-tight">
+                                                                    <span className="font-semibold text-slate-900 dark:text-white">{date}</span>
+                                                                    <span className="text-[10px] text-slate-400 mt-0.5">{time}</span>
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                    </td>
+                                                    {/* Pelanggan */}
+                                                    <td className="py-3 px-3 text-[13px] font-semibold text-slate-900 dark:text-white max-w-[140px] truncate">
                                                         {tx.customer}
                                                     </td>
-                                                    <td className="py-2.5 px-3 text-slate-500 dark:text-slate-400 max-w-[100px] truncate">
+                                                    {/* Kasir */}
+                                                    <td className="py-3 px-3 text-[13px] text-slate-500 dark:text-slate-450 max-w-[120px] truncate">
                                                         {tx.cashier}
                                                     </td>
-                                                    <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-white whitespace-nowrap tabular-nums">
+                                                    {/* Total */}
+                                                    <td className="py-3 px-3 text-[13px] font-semibold text-slate-900 dark:text-white whitespace-nowrap tabular-nums">
                                                         {idr(tx.total)}
                                                     </td>
-                                                    <td className={`py-2.5 px-3 text-xs font-bold whitespace-nowrap tabular-nums ${
+                                                    {/* Profit */}
+                                                    <td className={`py-3 px-3 text-[13px] font-semibold whitespace-nowrap tabular-nums ${
                                                         tx.gross_profit > 0
                                                             ? 'text-emerald-600 dark:text-emerald-400'
-                                                            : 'text-red-600 dark:text-red-400'
+                                                            : 'text-red-650 dark:text-red-405'
                                                     }`}>
-                                                        {compact(tx.gross_profit)}
+                                                        {idr(tx.gross_profit)}
                                                     </td>
-                                                    <td className="py-2.5 px-3">
-                                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold whitespace-nowrap ${
-                                                            tx.status === 'completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                                            : tx.status === 'refunded'  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                                                            :                             'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                                        }`}>
-                                                            {tx.status === 'completed' ? 'Selesai'
-                                                                : tx.status === 'refunded' ? 'Refund' : 'Batal'}
-                                                        </span>
+                                                    {/* Status badge with indicator dot */}
+                                                    <td className="py-3 px-3 whitespace-nowrap">
+                                                        {tx.status === 'completed' ? (
+                                                            <span className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50 rounded-full px-2.5 py-0.5 text-[11px] font-semibold inline-flex items-center gap-1.5">
+                                                                <span className="size-1.5 rounded-full bg-emerald-500" />
+                                                                Selesai
+                                                            </span>
+                                                        ) : tx.status === 'refunded' ? (
+                                                            <span className="bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50 rounded-full px-2.5 py-0.5 text-[11px] font-semibold inline-flex items-center gap-1.5">
+                                                                <span className="size-1.5 rounded-full bg-amber-500" />
+                                                                Refund
+                                                            </span>
+                                                        ) : (
+                                                            <span className="bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900/50 rounded-full px-2.5 py-0.5 text-[11px] font-semibold inline-flex items-center gap-1.5">
+                                                                <span className="size-1.5 rounded-full bg-red-500" />
+                                                                Batal
+                                                            </span>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -770,7 +1211,7 @@ export default function Dashboard({
                                     </table>
                                 </div>
                             ) : <EmptyState message="Belum ada transaksi" icon="🧾" />}
-                        </Card>
+                        </div>
                     </div>
                 )}
 

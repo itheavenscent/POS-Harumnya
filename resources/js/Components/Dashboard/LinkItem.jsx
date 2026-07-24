@@ -33,71 +33,20 @@ export default function LinkItem({ href, icon, access, title, sidebarOpen, exact
                 href={href}
                 preserveScroll={true}
                 data-active={String(isActive)}
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    margin: "2px 8px",
-                    padding: "7px 10px",
-                    borderRadius: 11,
-                    textDecoration: "none",
-                    fontSize: 13.5,
-                    fontWeight: isActive ? 700 : 500,
-                    letterSpacing: isActive ? "-0.1px" : "0px",
-                    color: isActive ? "#0D6B77" : "#5A8A90",
-                    background: isActive ? "rgba(86,184,195,0.13)" : "transparent",
-                    borderLeft: `3px solid ${isActive ? "#56B8C3" : "transparent"}`,
-                    transition: "background 0.2s, color 0.2s, border-color 0.2s",
-                }}
-                onMouseEnter={e => {
-                    if (!isActive) {
-                        e.currentTarget.style.background = "rgba(86,184,195,0.07)";
-                        e.currentTarget.style.color = "#3A9DAA";
-                    }
-                }}
-                onMouseLeave={e => {
-                    if (!isActive) {
-                        e.currentTarget.style.background = "transparent";
-                        e.currentTarget.style.color = "#5A8A90";
-                    }
-                }}
+                className={`flex items-center gap-[10px] mx-3 my-[2px] px-[10px] py-[8px] rounded-[8px] no-underline text-[14px] transition-all duration-200 cursor-pointer ${
+                    isActive
+                        ? 'bg-white dark:bg-slate-800 border border-[#f7f7f7] dark:border-slate-750 font-semibold text-slate-900 dark:text-white shadow-[0px_1px_3px_rgba(15,23,42,0.08),inset_0px_2px_2px_rgba(221,221,221,0.15),0px_0px_0px_1px_rgba(132,132,132,0.15)] shadow-sm'
+                        : 'border border-transparent font-medium text-[#4d5360] dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-white'
+                }`}
                 {...props}
             >
-                <span style={{
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    width: 32, height: 32, borderRadius: 9, flexShrink: 0,
-                    background: isActive
-                        ? "linear-gradient(135deg, #56B8C3 0%, #3A9DAA 100%)"
-                        : "transparent",
-                    boxShadow: isActive ? "0 3px 10px rgba(86,184,195,0.35)" : "none",
-                    color: isActive ? "#FFFFFF" : "#82CDD6",
-                    transition: "background 0.2s, box-shadow 0.2s, color 0.2s",
-                }}>
-                    {icon}
-                </span>
+                <div className="flex items-center justify-center shrink-0 text-slate-450 dark:text-slate-400">
+                    {React.cloneElement(icon, { size: 18, strokeWidth: 1.7 })}
+                </div>
 
-                <span style={{
-                    flex: 1, minWidth: 0,
-                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                }}>
+                <span className="flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
                     {title}
                 </span>
-
-                {isActive && (
-                    <span style={{
-                        width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
-                        background: "#56B8C3",
-                        boxShadow: "0 0 6px rgba(86,184,195,0.8)",
-                        animation: "liDot 2.5s ease-in-out infinite",
-                    }} />
-                )}
-
-                <style>{`
-                    @keyframes liDot {
-                        0%, 100% { opacity: 1; transform: scale(1); }
-                        50%       { opacity: 0.4; transform: scale(0.6); }
-                    }
-                `}</style>
             </Link>
         );
     }
@@ -109,37 +58,14 @@ export default function LinkItem({ href, icon, access, title, sidebarOpen, exact
             title={title}
             preserveScroll={true}
             data-active={String(isActive)}
-            style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "3px 8px",
-                padding: "9px 0",
-                borderRadius: 11,
-                textDecoration: "none",
-                color: isActive ? "#FFFFFF" : "#82CDD6",
-                background: isActive
-                    ? "linear-gradient(135deg, #56B8C3 0%, #3A9DAA 100%)"
-                    : "transparent",
-                boxShadow: isActive ? "0 3px 12px rgba(86,184,195,0.4)" : "none",
-                borderLeft: `3px solid ${isActive ? "#56B8C3" : "transparent"}`,
-                transition: "background 0.2s, box-shadow 0.2s, color 0.2s",
-            }}
-            onMouseEnter={e => {
-                if (!isActive) {
-                    e.currentTarget.style.background = "rgba(86,184,195,0.1)";
-                    e.currentTarget.style.color = "#56B8C3";
-                }
-            }}
-            onMouseLeave={e => {
-                if (!isActive) {
-                    e.currentTarget.style.background = "transparent";
-                    e.currentTarget.style.color = "#82CDD6";
-                }
-            }}
+            className={`flex items-center justify-center mx-3 my-[3px] p-[9px] rounded-[8px] transition-all duration-200 ${
+                isActive
+                    ? 'bg-white dark:bg-slate-800 border border-[#f7f7f7] dark:border-slate-750 text-slate-900 dark:text-white shadow-[0px_1px_3px_rgba(15,23,42,0.08),inset_0px_2px_2px_rgba(221,221,221,0.15),0px_0px_0px_1px_rgba(132,132,132,0.15)]'
+                    : 'text-slate-450 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-white'
+            }`}
             {...props}
         >
-            {icon}
+            {React.cloneElement(icon, { size: 18, strokeWidth: 1.7 })}
         </Link>
     );
 }
