@@ -2142,9 +2142,9 @@ export default function Index({
                         <span className="ml-auto text-lg font-black text-primary-600">{fmt(payable)}</span>
                     </div>
 
-                    {/* Body — 2 kolom di layar lebar, rapat agar minim scroll */}
-                    <div className="flex-1 overflow-y-auto p-3">
-                        <div className="mx-auto max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    {/* Body — selalu 2 kolom (juga di tab kecil) agar tidak perlu scroll */}
+                    <div className="flex-1 overflow-y-auto p-2 sm:p-3">
+                        <div className="mx-auto max-w-4xl grid grid-cols-2 gap-2 sm:gap-3">
                             {/* ── Kolom kiri: Sales + Pelanggan ── */}
                             <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 space-y-2.5 h-fit">
                                 {/* Sales Person (wajib) */}
@@ -2210,17 +2210,6 @@ export default function Index({
                                         </div>
                                     )}
                                 </div>
-
-                                {/* Ringkasan biaya ringkas */}
-                                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
-                                    {subtotal > 0 && <div className="flex justify-between text-xs"><span className="text-slate-500">Parfum</span><span className="font-semibold text-slate-700 dark:text-slate-300">{fmt(subtotal)}</span></div>}
-                                    {pkgCartTotal > 0 && <div className="flex justify-between text-xs"><span className="text-slate-500">Kemasan</span><span className="font-semibold text-slate-700 dark:text-slate-300">{fmt(pkgCartTotal)}</span></div>}
-                                    {discountAmount > 0 && <div className="flex justify-between text-xs"><span className="text-slate-700">{selectedDiscount?.name || "Diskon"}</span><span className="text-slate-700 font-bold">-{fmt(discountAmount)}</span></div>}
-                                    <div className="flex justify-between items-center pt-1">
-                                        <span className="font-black text-slate-800 dark:text-white text-sm">Total</span>
-                                        <span className="text-lg font-black text-primary-600">{fmt(payable)}</span>
-                                    </div>
-                                </div>
                             </div>
 
                             {/* ── Kolom kanan: Metode & tunai ── */}
@@ -2269,6 +2258,11 @@ export default function Index({
 
                     {/* Footer sticky */}
                     <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-3 py-2.5">
+                        {discountAmount > 0 && (
+                            <div className="mx-auto max-w-4xl flex justify-end gap-3 text-[11px] text-slate-500 mb-1.5">
+                                <span>{selectedDiscount?.name || "Diskon"}: <span className="font-bold text-slate-700 dark:text-slate-300">-{fmt(discountAmount)}</span></span>
+                            </div>
+                        )}
                         <div className="mx-auto max-w-4xl flex items-center gap-2">
                             <button onClick={() => setShowPaymentModal(false)} className="px-4 py-2.5 rounded-lg border-2 border-slate-200 dark:border-slate-700 font-bold text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 transition-colors">Kembali</button>
                             <button onClick={handleSubmit} disabled={(isCash && cash < payable) || isSubmitting || !selectedPaymentId}
