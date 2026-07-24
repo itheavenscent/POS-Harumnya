@@ -20,20 +20,27 @@ class IngredientController extends Controller
     {
         $ingredients = Ingredient::query()
             ->with('category:id,name,ingredient_type')
+            ->withSum('warehouseStocks as warehouse_qty', 'quantity')
+            ->withSum('storeStocks as store_qty', 'quantity')
             ->when($request->search,      fn($q) => $q->search($request->search))
             ->when($request->category_id, fn($q) => $q->where('ingredient_category_id', $request->category_id))
             ->orderBy('sort_order')
             ->orderBy('name')
             ->paginate(15)
             ->withQueryString()
-            ->through(fn($item) => [
+            ->through(function ($item) {
+                $totalQty = (int) ($item->warehouse_qty ?? 0) + (int) ($item->store_qty ?? 0);
+
+                return [
                 'id'            => $item->id,
                 'code'          => $item->code,
                 'name'          => $item->name,
                 'unit'          => $item->unit,
                 'description'   => $item->description,
                 'image_url'     => $item->image_url,
-                'average_cost'  => $item->average_cost,
+                'total_qty'     => $totalQty,
+                // Stok habis → HPP ikut 0
+                'average_cost'  => $totalQty > 0 ? $item->average_cost : 0,
                 'selling_price' => $item->selling_price,
                 'is_active'     => $item->is_active,
                 'sort_order'    => $item->sort_order,
@@ -42,7 +49,8 @@ class IngredientController extends Controller
                     'name'            => $item->category->name,
                     'ingredient_type' => $item->category->ingredient_type,
                 ] : null,
-            ]);
+                ];
+            });
 
         $categories = IngredientCategory::orderBy('sort_order')
             ->orderBy('name')

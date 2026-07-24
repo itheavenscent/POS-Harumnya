@@ -49,6 +49,16 @@ class Ingredient extends Model
         return $this->hasMany(\App\Models\ProductRecipe::class);
     }
 
+    public function warehouseStocks()
+    {
+        return $this->hasMany(\App\Models\WarehouseIngredientStock::class, 'ingredient_id');
+    }
+
+    public function storeStocks()
+    {
+        return $this->hasMany(\App\Models\StoreIngredientStock::class, 'ingredient_id');
+    }
+
     // ─── Accessors ────────────────────────────────────────────────────────
 
     public function getImageUrlAttribute(): ?string

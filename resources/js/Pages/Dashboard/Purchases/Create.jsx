@@ -126,6 +126,7 @@ const PAYMENT_LABELS = {
 
 export default function Create({ suppliers, warehouses, stores, ingredients, packagingMaterials }) {
     const { data, setData, post, processing, errors } = useForm({
+        purchase_number: "",
         supplier_id: "",
         destination_type: "warehouse",
         destination_id: "",
@@ -252,6 +253,14 @@ export default function Create({ suppliers, warehouses, stores, ingredients, pac
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-sm">
                         <h3 className="font-bold text-slate-700 dark:text-slate-200 text-sm uppercase tracking-wide border-b pb-2">Informasi PO</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                            {/* Nomor PO (opsional, boleh diisi accounting) */}
+                            <div className="md:col-span-2">
+                                <Input label="Nomor PO / Invoice" value={data.purchase_number}
+                                    onChange={(e) => setData("purchase_number", e.target.value)} errors={errors.purchase_number}
+                                    placeholder="Kosongkan untuk generate otomatis" />
+                                <p className="text-[11px] text-slate-400 mt-1">Isi manual bila ingin memakai nomor sendiri. Bila kosong, sistem membuat otomatis.</p>
+                            </div>
+
                             {/* Supplier */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-600 mb-1.5">Supplier *</label>

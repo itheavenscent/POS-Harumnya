@@ -139,14 +139,13 @@ class WarehouseStockController extends Controller
             'item_type'    => 'required|in:ingredient,packaging',
             'warehouse_id' => 'required|exists:warehouses,id',
             'item_id'      => 'required|uuid',
-            'quantity'     => 'required|numeric|min:0',
             'min_stock'    => 'nullable|integer|min:0',
             'max_stock'    => 'nullable|integer|min:0|gte:min_stock',
-            'average_cost' => 'nullable|numeric|min:0',
         ]);
 
-        $qty    = (int) $validated['quantity'];
-        $cost   = (float) ($validated['average_cost'] ?? 0);
+        // Stok awal selalu 0 — penambahan stok hanya lewat Purchase Order atau Penyesuaian Stok.
+        $qty    = 0;
+        $cost   = 0.0;
         $now    = now();
         $userId = auth()->id();
 

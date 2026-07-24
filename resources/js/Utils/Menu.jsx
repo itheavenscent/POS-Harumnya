@@ -91,13 +91,6 @@ export default function Menu() {
                     icon: <IconCash size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["products-edit"]),
                 },
-                {
-                    title: "Supplier",
-                    href: route("suppliers.index"),
-                    active: url.startsWith("/dashboard/suppliers"),
-                    icon: <IconBuildingSkyscraper size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["suppliers-access"]),
-                },
             ],
         },
 
@@ -171,18 +164,14 @@ export default function Menu() {
             title: "Manajemen Stok",
             details: [
                 {
-                    title: "Stok Gudang",
-                    href: route("warehouse-stocks.index"),
-                    active: url.startsWith("/dashboard/warehouse-stocks"),
+                    title: "Stok Global",
+                    href: route("stock-global.index"),
+                    active:
+                        url.startsWith("/dashboard/stock-global") ||
+                        url.startsWith("/dashboard/warehouse-stocks") ||
+                        url.startsWith("/dashboard/store-stocks"),
                     icon: <IconPackages size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["stock-warehouse-access"]),
-                },
-                {
-                    title: "Stok Toko",
-                    href: route("store-stocks.index"),
-                    active: url.startsWith("/dashboard/store-stocks"),
-                    icon: <IconBoxPadding size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["stock-store-access"]),
+                    permissions: hasAnyPermission(["stock-warehouse-access", "stock-store-access"]),
                 },
                 {
                     title: "Produksi / Repack",
@@ -219,6 +208,13 @@ export default function Menu() {
         {
             title: "Pembelian",
             details: [
+                {
+                    title: "Supplier",
+                    href: route("suppliers.index"),
+                    active: url.startsWith("/dashboard/suppliers"),
+                    icon: <IconBuildingSkyscraper size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["suppliers-access"]),
+                },
                 {
                     title: "Purchase Order",
                     href: route("purchases.index"),
@@ -320,7 +316,7 @@ export default function Menu() {
                     href: route("laporan.mutasi"),
                     active: url.startsWith("/dashboard/laporan/mutasi"),
                     icon: <IconHistory size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["reports-access"]),
+                    permissions: hasAnyPermission(["reports-stock"]),
                 },
             ],
         },
@@ -398,10 +394,12 @@ export default function Menu() {
                     "Transaksi",
                     "Riwayat Transaksi",
                     "Histori Shift",
-                    "Stok Toko",
+                    "Stok Global",
                     "Kemasan",
                     "Produk & Harga",
-                    "Pelanggan" // Usually cashier needs this for POS
+                    "Pelanggan", // Usually cashier needs this for POS
+                    "Laporan Penjualan",
+                    "Sales", // Ranking Produktivitas
                 ];
                 return allowedTitles.includes(item.title);
             })

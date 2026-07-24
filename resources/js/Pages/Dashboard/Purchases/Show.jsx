@@ -65,10 +65,20 @@ export default function Show({ purchase, movements = [] }) {
             initQty[i.id] = i.received_quantity ?? i.quantity;
         });
         setReceivedQuantities(initQty);
+        // Default tanggal terima tidak boleh sebelum tanggal PO
+        const today = new Date().toISOString().split("T")[0];
+        const po = (purchase.purchase_date ?? "").split("T")[0];
+        setArrivalDate(po && today < po ? po : today);
         setShowReceiveModal(true);
     };
 
+    const poDate = (purchase.purchase_date ?? "").split("T")[0];
+
     const handleReceive = () => {
+        if (arrivalDate && poDate && arrivalDate < poDate) {
+            toast.error(`Tanggal terima tidak boleh sebelum tanggal PO (${fmtDate(poDate)}).`);
+            return;
+        }
         const payloadItems = Object.keys(receivedQuantities).map(id => ({
             id,
             received_quantity: parseInt(receivedQuantities[id]) || 0
@@ -147,8 +157,10 @@ export default function Show({ purchase, movements = [] }) {
                         </div>
                         <div className="mb-4 shrink-0">
                             <label className="block text-xs font-bold text-slate-600 mb-1">Tanggal Tiba Aktual</label>
-                            <input type="date" value={arrivalDate} onChange={(e) => setArrivalDate(e.target.value)}
+                            <input type="date" value={arrivalDate} min={poDate || undefined}
+                                onChange={(e) => setArrivalDate(e.target.value)}
                                 className="w-full md:w-48 rounded-xl border-slate-200 text-sm focus:ring-violet-500" />
+                            <p className="text-[11px] text-slate-400 mt-1">Tidak boleh sebelum tanggal PO ({fmtDate(poDate)}).</p>
                         </div>
                         <div className="flex gap-3 justify-end shrink-0">
                             <button onClick={() => setShowReceiveModal(false)} className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm">Batal</button>

@@ -6,6 +6,7 @@ use Inertia\Inertia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 use App\Http\Controllers\Controller;
 use App\Models\Purchase;
 use App\Models\StockMovement;
@@ -118,7 +119,9 @@ class PurchaseController extends Controller
 
         DB::transaction(function () use ($v) {
             $purchase = Purchase::create([
-                'purchase_number'        => Purchase::generateNumber(),
+                'purchase_number'        => !empty($v['purchase_number'])
+                    ? $v['purchase_number']
+                    : Purchase::generateNumber(),
                 'supplier_id'            => $v['supplier_id'],
                 'destination_type'       => $v['destination_type'],
                 'destination_id'         => $v['destination_id'],
@@ -243,7 +246,7 @@ class PurchaseController extends Controller
             return back()->withErrors(['edit' => 'Purchase yang sudah diproses tidak dapat diedit.']);
         }
 
-        $v = $this->validateUpdate($request);
+        $v = $this->validateUpdate($request, $id);
 
         // destination tidak boleh diubah setelah dibuat
         $v['destination_type'] = $purchase->destination_type;
@@ -251,6 +254,9 @@ class PurchaseController extends Controller
 
         DB::transaction(function () use ($purchase, $v) {
             $purchase->update([
+                'purchase_number'        => !empty($v['purchase_number'])
+                    ? $v['purchase_number']
+                    : $purchase->purchase_number,
                 'supplier_id'            => $v['supplier_id'],
                 'purchase_date'          => $v['purchase_date'],
                 'expected_delivery_date' => $v['expected_delivery_date'] ?? null,
@@ -343,11 +349,15 @@ class PurchaseController extends Controller
             return back()->withErrors(['status' => 'Purchase Order tidak dapat di-receive.']);
         }
 
+        $poDate = \Carbon\Carbon::parse($purchase->purchase_date)->format('Y-m-d');
+
         $request->validate([
-            'actual_delivery_date' => 'nullable|date',
+            'actual_delivery_date' => ['nullable', 'date', 'after_or_equal:' . $poDate],
             'items'                => 'required|array',
             'items.*.id'           => 'required|uuid',
             'items.*.received_quantity' => 'required|integer',
+        ], [
+            'actual_delivery_date.after_or_equal' => "Tanggal terima tidak boleh sebelum tanggal PO ({$poDate}).",
         ]);
 
         DB::transaction(function () use ($purchase, $request) {
@@ -384,7 +394,11 @@ class PurchaseController extends Controller
         DB::transaction(function () use ($purchase) {
             $userId = auth()->id();
             $now    = now();
-            
+
+            // Mutasi bahan baku dihitung berdasarkan tanggal terima (actual_delivery_date),
+            // bukan tanggal PO. Fallback ke purchase_date bila belum ada.
+            $movementDate = $purchase->actual_delivery_date ?? $purchase->purchase_date;
+
             $poolToDistribute = (float) $purchase->shipping_cost + (float) $purchase->adjustment;
             $totalSubtotal = (float) $purchase->subtotal;
             $totalReceivedQty = $purchase->items->sum('received_quantity');
@@ -481,8 +495,8 @@ class PurchaseController extends Controller
                     'reference_type'   => Purchase::class,                  // FQCN — wajib ada
                     'reference_id'     => $purchase->id,
                     'reference_number' => $purchase->purchase_number,
-                    // Metadata
-                    'movement_date'    => $purchase->purchase_date,
+                    // Metadata — pakai tanggal terima agar mutasi berbasis tgl terima bahan
+                    'movement_date'    => $movementDate,
                     'created_by'       => $userId,
                     'notes'            => "PO {$purchase->purchase_number} dari {$purchase->supplier->name}",
                 ]);
@@ -595,12 +609,15 @@ class PurchaseController extends Controller
         return $request->validate(array_merge($this->baseRules(), [
             'destination_type' => 'required|in:warehouse,store',
             'destination_id'   => 'required|uuid',
+            'purchase_number'  => 'nullable|string|max:100|unique:purchases,purchase_number',
         ]));
     }
 
-    private function validateUpdate(Request $request): array
+    private function validateUpdate(Request $request, string $id): array
     {
-        return $request->validate($this->baseRules());
+        return $request->validate(array_merge($this->baseRules(), [
+            'purchase_number' => ['nullable', 'string', 'max:100', Rule::unique('purchases', 'purchase_number')->ignore($id)],
+        ]));
     }
 
     /**

@@ -1515,7 +1515,7 @@ export default function Index({
     const handleUpdatePkgQty = (pkgId, delta) =>
         setCartPackagings(prev => prev.map(p => p.pkg.id === pkgId ? { ...p, qty: Math.max(0, p.qty + delta) } : p).filter(p => p.qty > 0));
 
-    const handleCheckout = () => { if (!carts.length) { toast.error("Keranjang kosong"); return; } setShowPaymentModal(true); };
+    const handleCheckout = () => { if (!carts.length && !cartPackagings.length) { toast.error("Keranjang kosong"); return; } setShowPaymentModal(true); };
 
     const handleSubmit = () => {
         if (!selectedCustomer) { toast.error("Pelanggan wajib dipilih!"); return; }
@@ -2185,10 +2185,10 @@ export default function Index({
                                 </div>
                             </div>
 
-                            <button onClick={handleCheckout} disabled={!carts.length}
-                                className={`w-full h-12 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all ${carts.length ? "bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-600/25" : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"}`}>
+                            <button onClick={handleCheckout} disabled={!totalCartCount}
+                                className={`w-full h-12 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all ${totalCartCount ? "bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-600/25" : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"}`}>
                                 <IconReceipt size={16} />
-                                {carts.length ? `Bayar ${fmt(payable)}` : "Keranjang Kosong"}
+                                {totalCartCount ? `Bayar ${fmt(payable)}` : "Keranjang Kosong"}
                             </button>
                         </div>
                     </div>

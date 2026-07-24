@@ -459,6 +459,10 @@ export default function Index({ materials, categories, filters }) {
                                                     <span className="text-sm text-slate-500 dark:text-slate-400 font-mono">
                                                         Rp {fmt(Math.round(item.average_cost))}
                                                     </span>
+                                                ) : item.total_qty === 0 ? (
+                                                    <span className="text-sm text-slate-400 dark:text-slate-600 font-mono">
+                                                        Rp 0 <span className="text-[10px]">stok habis</span>
+                                                    </span>
                                                 ) : (
                                                     <span className="text-xs text-slate-300 dark:text-slate-600 italic">Belum ada PO</span>
                                                 )}

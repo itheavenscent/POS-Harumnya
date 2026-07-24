@@ -386,7 +386,6 @@ export default function Index({ ingredients, categories, filters }) {
                                     <tr className="bg-slate-50 dark:bg-slate-800/50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                         <th className="px-5 py-3.5">Bahan Baku</th>
                                         <th className="px-5 py-3.5">Kategori</th>
-                                        <th className="px-5 py-3.5">Tipe Scaling</th>
                                         <th className="px-5 py-3.5">Satuan</th>
                                         <th className="px-5 py-3.5 text-right">
                                             <span className="flex items-center justify-end gap-1">
@@ -405,7 +404,7 @@ export default function Index({ ingredients, categories, filters }) {
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                     {ingredients.data.length === 0 ? (
                                         <tr>
-                                            <td colSpan={8} className="px-5 py-16 text-center">
+                                            <td colSpan={7} className="px-5 py-16 text-center">
                                                 <IconFlask size={40} className="mx-auto text-slate-200 dark:text-slate-700 mb-3" />
                                                 <p className="text-slate-400 text-sm font-medium">Belum ada bahan baku</p>
                                                 <Link
@@ -444,14 +443,6 @@ export default function Index({ ingredients, categories, filters }) {
                                                 </span>
                                             </td>
 
-                                            {/* Tipe Scaling */}
-                                            <td className="px-5 py-3.5">
-                                                {item.category?.ingredient_type
-                                                    ? <TypeBadge type={item.category.ingredient_type} />
-                                                    : <span className="text-slate-300 text-xs">—</span>
-                                                }
-                                            </td>
-
                                             {/* Satuan */}
                                             <td className="px-5 py-3.5 text-xs text-slate-500 uppercase font-mono font-medium">
                                                 {item.unit}
@@ -465,6 +456,13 @@ export default function Index({ ingredients, categories, filters }) {
                                                             Rp {fmt(Math.round(item.average_cost))}
                                                         </span>
                                                         <span className="text-[10px] text-slate-400 ml-1">/{item.unit}</span>
+                                                    </div>
+                                                ) : item.total_qty === 0 ? (
+                                                    <div>
+                                                        <span className="text-sm font-mono font-semibold text-slate-400 dark:text-slate-600">
+                                                            Rp 0
+                                                        </span>
+                                                        <span className="text-[10px] text-slate-400 ml-1">stok habis</span>
                                                     </div>
                                                 ) : (
                                                     <span className="text-xs text-slate-300 dark:text-slate-600 italic">Belum ada PO</span>

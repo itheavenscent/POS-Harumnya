@@ -34,6 +34,8 @@ class StockAdjustmentController extends Controller
             ->when($request->status,        fn ($q, $s) => $q->where('status', $s))
             ->when($request->type,          fn ($q, $t) => $q->where('type', $t))
             ->when($request->location_type, fn ($q, $t) => $q->where('location_type', $t))
+            ->when($request->date_from,     fn ($q, $d) => $q->whereDate('adjustment_date', '>=', $d))
+            ->when($request->date_to,       fn ($q, $d) => $q->whereDate('adjustment_date', '<=', $d))
             ->latest('adjustment_date')
             ->latest('created_at')
             ->paginate(15)
@@ -48,7 +50,7 @@ class StockAdjustmentController extends Controller
 
         return Inertia::render('Dashboard/StockAdjustments/Index', [
             'adjustments' => $adjustments,
-            'filters'     => $request->only(['search', 'status', 'type', 'location_type']),
+            'filters'     => $request->only(['search', 'status', 'type', 'location_type', 'date_from', 'date_to']),
             'summary'     => [
                 'total'     => StockAdjustment::count(),
                 'pending'   => StockAdjustment::where('status', 'pending')->count(),

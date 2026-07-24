@@ -296,6 +296,12 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     // Manajemen Stok
     // ─────────────────────────────────────────────────────────────────────────
 
+    // ── Stok Global (gabungan gudang + toko dengan filter) ─────────────────────
+
+    Route::get('stock-global', [\App\Http\Controllers\Apps\StockGlobalController::class, 'index'])
+        ->name('stock-global.index')
+        ->middleware('permission:stock-warehouse-access|stock-store-access');
+
     // ── Warehouse Stocks ──────────────────────────────────────────────────────
 
     Route::prefix('warehouse-stocks')->name('warehouse-stocks.')->group(function () {
@@ -614,10 +620,10 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
             ->name('keuangan.export');
 
         Route::get('mutasi', [LaporanMutasiController::class, 'index'])
-            ->middleware('permission:reports-access')
+            ->middleware('permission:reports-stock')
             ->name('mutasi');
         Route::get('mutasi/export', [LaporanMutasiController::class, 'exportExcel'])
-            ->middleware('permission:reports-access')
+            ->middleware('permission:reports-stock')
             ->name('mutasi.export');
     });
 

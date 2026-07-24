@@ -44,10 +44,11 @@ export default function Index({
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
+    // Truncate cents → IDR utuh (hindari pembulatan naik cents jadi +Rp1)
     const fmt = (n) =>
         new Intl.NumberFormat("id-ID", {
             style: "currency", currency: "IDR", minimumFractionDigits: 0,
-        }).format(n || 0);
+        }).format(Math.trunc(n || 0));
 
     const fmtNum = (n) => parseInt(n ?? 0, 10).toLocaleString("id-ID");
 

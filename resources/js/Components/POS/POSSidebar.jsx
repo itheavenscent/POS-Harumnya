@@ -14,6 +14,8 @@ import {
     IconChevronRight,
     IconBox,
     IconTransfer,
+    IconChartArrowsVertical,
+    IconUserBolt,
 } from "@tabler/icons-react";
 
 export default function POSSidebar({ onCashAction, onOpenShift, onCloseShift, activeCashDrawer, isOpen, onToggle }) {
@@ -56,6 +58,18 @@ export default function POSSidebar({ onCashAction, onOpenShift, onCloseShift, ac
             icon: <IconHistory size={20} />,
             href: route("cash-drawers.index"),
             active: component === "Dashboard/Shifts/Index",
+        },
+        {
+            title: "Laporan Penjualan",
+            icon: <IconChartArrowsVertical size={20} />,
+            href: route("laporan.penjualan"),
+            active: component.startsWith("Dashboard/Laporan/Penjualan"),
+        },
+        {
+            title: "Ranking Sales",
+            icon: <IconUserBolt size={20} />,
+            href: route("sales-people.productivity"),
+            active: component.startsWith("Dashboard/SalesPeople/Productivity"),
         },
     ];
 

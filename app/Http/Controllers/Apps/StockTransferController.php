@@ -55,6 +55,8 @@ class StockTransferController extends Controller
             )
             ->when($request->status,    fn ($q, $s) => $q->where('status', $s))
             ->when($request->from_type, fn ($q, $t) => $q->where('from_location_type', $t))
+            ->when($request->date_from, fn ($q, $d) => $q->whereDate('transfer_date', '>=', $d))
+            ->when($request->date_to,   fn ($q, $d) => $q->whereDate('transfer_date', '<=', $d))
             ->latest('transfer_date')
             ->latest('created_at')
             ->paginate(15)
@@ -67,7 +69,7 @@ class StockTransferController extends Controller
 
         return Inertia::render('Dashboard/StockTransfers/Index', [
             'transfers' => $transfers,
-            'filters'   => $request->only(['search', 'status', 'from_type']),
+            'filters'   => $request->only(['search', 'status', 'from_type', 'date_from', 'date_to']),
             'summary'   => [
                 'total'      => StockTransfer::count(),
                 'pending'    => StockTransfer::where('status', 'pending')->count(),

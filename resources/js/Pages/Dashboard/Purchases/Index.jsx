@@ -24,6 +24,8 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString("id-ID", { day: "2-dig
 export default function Index({ purchases, filters = {}, summary = {} }) {
     const [search, setSearch] = useState(filters.search || "");
     const [status, setStatus] = useState(filters.status || "");
+    const [dateFrom, setDateFrom] = useState(filters.date_from || "");
+    const [dateTo, setDateTo] = useState(filters.date_to || "");
 
     React.useEffect(() => {
         const t = setTimeout(() => { if (search !== filters.search) apply({ search }); }, 500);
@@ -31,9 +33,14 @@ export default function Index({ purchases, filters = {}, summary = {} }) {
     }, [search]);
 
     const apply = (overrides = {}) => {
-        const f = { search, status, ...overrides };
+        const f = { search, status, date_from: dateFrom, date_to: dateTo, ...overrides };
         Object.keys(f).forEach((k) => { if (!f[k]) delete f[k]; });
         router.get(route("purchases.index"), f, { preserveState: true, replace: true });
+    };
+
+    const resetDates = () => {
+        setDateFrom(""); setDateTo("");
+        apply({ date_from: "", date_to: "" });
     };
 
     return (
@@ -83,6 +90,19 @@ export default function Index({ purchases, filters = {}, summary = {} }) {
                         <option key={v} value={v}>{label}</option>
                     ))}
                 </select>
+                <div className="flex items-center gap-2">
+                    <input type="date" value={dateFrom}
+                        onChange={(e) => { setDateFrom(e.target.value); apply({ date_from: e.target.value }); }}
+                        className="rounded-xl border-slate-200 dark:bg-slate-900 text-sm" title="Tgl PO dari" />
+                    <span className="text-slate-400 text-sm">s/d</span>
+                    <input type="date" value={dateTo} min={dateFrom || undefined}
+                        onChange={(e) => { setDateTo(e.target.value); apply({ date_to: e.target.value }); }}
+                        className="rounded-xl border-slate-200 dark:bg-slate-900 text-sm" title="Tgl PO sampai" />
+                    {(dateFrom || dateTo) && (
+                        <button onClick={resetDates}
+                            className="text-xs text-slate-500 hover:text-slate-700 underline whitespace-nowrap">Reset</button>
+                    )}
+                </div>
             </div>
 
             {purchases?.data?.length > 0 ? (

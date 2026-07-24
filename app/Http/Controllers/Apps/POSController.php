@@ -484,16 +484,7 @@ class POSController extends Controller
             ->where('status', 'open')
             ->first();
 
-        if ($carts->isEmpty()) {
-            return back()->withErrors(['message' => 'Keranjang kosong']);
-        }
-
-        $paymentMethod = PaymentMethod::findOrFail($request->payment_method_id);
-        $customer = $request->customer_id ? Customer::find($request->customer_id) : null;
-        $salesPerson = $request->sales_person_id ? SalesPerson::find($request->sales_person_id) : null;
-        $discountType = $request->discount_type_id ? DiscountType::find($request->discount_type_id) : null;
-
-        // Standalone packagings dari tab Kemasan
+        // Standalone packagings dari tab Kemasan (mis. beli botol saja, tanpa parfum)
         $standalonePkgs = [];
         if ($request->filled('standalone_packagings')) {
             foreach ($request->standalone_packagings as $sp) {
@@ -503,6 +494,16 @@ class POSController extends Controller
                 }
             }
         }
+
+        // Boleh checkout bila ada cart parfum ATAU kemasan standalone (botol saja).
+        if ($carts->isEmpty() && empty($standalonePkgs)) {
+            return back()->withErrors(['message' => 'Keranjang kosong']);
+        }
+
+        $paymentMethod = PaymentMethod::findOrFail($request->payment_method_id);
+        $customer = $request->customer_id ? Customer::find($request->customer_id) : null;
+        $salesPerson = $request->sales_person_id ? SalesPerson::find($request->sales_person_id) : null;
+        $discountType = $request->discount_type_id ? DiscountType::find($request->discount_type_id) : null;
 
         DB::transaction(function () use ($carts, $standalonePkgs, $request, $user, $storeId, $paymentMethod, $customer, $salesPerson, $discountType, $activeDrawer) {
             [$subtotalPerfume, $subtotalPackaging, $cogsPerfume, $cogsPackaging]

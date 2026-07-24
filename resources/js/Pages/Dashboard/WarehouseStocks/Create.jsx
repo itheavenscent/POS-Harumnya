@@ -208,10 +208,8 @@ export default function Create({ warehouses, ingredients, packagingMaterials }) 
         item_type:    "ingredient",
         warehouse_id: "",
         item_id:      "",
-        quantity:     "",
         min_stock:    "",
         max_stock:    "",
-        average_cost: "",
     });
 
     const [selectedItem,     setSelectedItem]     = useState(null);
@@ -257,7 +255,7 @@ export default function Create({ warehouses, ingredients, packagingMaterials }) 
 
     // Reset item fields on type switch
     useEffect(() => {
-        setData((d) => ({ ...d, item_id: "", quantity: "", min_stock: "", max_stock: "", average_cost: "" }));
+        setData((d) => ({ ...d, item_id: "", min_stock: "", max_stock: "" }));
         setSelectedItem(null);
         setSelectedCategory("");
     }, [data.item_type]);
@@ -267,27 +265,12 @@ export default function Create({ warehouses, ingredients, packagingMaterials }) 
         return isIngredient ? selectedItem.unit : (selectedItem.size?.name || "pcs");
     };
 
-    const totalValue = () =>
-        (parseFloat(data.quantity) || 0) * (parseFloat(data.average_cost) || 0);
-
-    const stockAlert = () => {
-        const qty = parseFloat(data.quantity) || 0;
-        const min = parseFloat(data.min_stock) || 0;
-        const max = parseFloat(data.max_stock) || 0;
-        if (qty === 0)        return { type: "error",   message: "Stok kosong!" };
-        if (min && qty < min) return { type: "warning", message: "Stok di bawah minimum!" };
-        if (max && qty > max) return { type: "info",    message: "Stok melebihi maksimum!" };
-        return null;
-    };
-
     const submit = (e) => {
         e.preventDefault();
         post(route("warehouse-stocks.store"), {
-            onSuccess: () => toast.success("Stok gudang berhasil ditambahkan"),
+            onSuccess: () => toast.success("Stok gudang berhasil didaftarkan"),
         });
     };
-
-    const alert = stockAlert();
 
     return (
         <>
@@ -450,30 +433,13 @@ export default function Create({ warehouses, ingredients, packagingMaterials }) 
                                 )}
                             </div>
 
-                            {/* Quantity & Cost */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Input
-                                    label="Jumlah Stok Awal *"
-                                    type="number"
-                                    step="1"
-                                    min="0"
-                                    value={data.quantity}
-                                    onChange={(e) => setData("quantity", e.target.value)}
-                                    errors={errors.quantity}
-                                    placeholder="0"
-                                    suffix={getItemUnit()}
-                                />
-                                <Input
-                                    label="Harga Rata-rata per Unit"
-                                    type="number"
-                                    step="0.0001"
-                                    min="0"
-                                    value={data.average_cost}
-                                    onChange={(e) => setData("average_cost", e.target.value)}
-                                    errors={errors.average_cost}
-                                    placeholder="0.00"
-                                    prefix="Rp"
-                                />
+                            {/* Info: stok awal tidak bisa diisi */}
+                            <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 flex items-start gap-2">
+                                <IconInfoCircle size={16} className="text-amber-500 mt-0.5 shrink-0" />
+                                <p className="text-xs text-amber-700 dark:text-amber-300">
+                                    Stok awal tidak dapat diisi manual. Item didaftarkan dengan qty <strong>0</strong>.
+                                    Penambahan stok hanya melalui <strong>Purchase Order</strong> atau <strong>Penyesuaian Stok</strong>.
+                                </p>
                             </div>
 
                             {/* Stock limits */}
@@ -505,56 +471,17 @@ export default function Create({ warehouses, ingredients, packagingMaterials }) 
 
                         {/* Right: Summary panel */}
                         <div className="space-y-4">
-                            {data.quantity && data.average_cost && (
-                                <div className="p-5 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl border border-primary-200 dark:border-primary-800">
-                                    <p className="text-xs text-primary-700 dark:text-primary-300 mb-1 font-medium">
-                                        Total Nilai Inventaris
-                                    </p>
-                                    <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                                        {new Intl.NumberFormat("id-ID", {
-                                            style: "currency", currency: "IDR", minimumFractionDigits: 0,
-                                        }).format(totalValue())}
-                                    </p>
-                                    <p className="text-xs text-primary-500 mt-1">
-                                        {parseInt(data.quantity, 10).toLocaleString("id-ID")} {getItemUnit()}
-                                        &nbsp;×&nbsp;
-                                        {new Intl.NumberFormat("id-ID", {
-                                            style: "currency", currency: "IDR", minimumFractionDigits: 0,
-                                        }).format(data.average_cost)}
-                                    </p>
-                                </div>
-                            )}
-
-                            {alert && (
-                                <div className={`p-4 rounded-xl border flex items-center gap-2 ${
-                                    alert.type === "error"   ? "bg-red-50 border-red-200" :
-                                    alert.type === "warning" ? "bg-yellow-50 border-yellow-200" :
-                                                               "bg-blue-50 border-blue-200"
-                                }`}>
-                                    <IconAlertCircle size={17} className={
-                                        alert.type === "error"   ? "text-red-500"    :
-                                        alert.type === "warning" ? "text-yellow-500" : "text-blue-500"
-                                    } />
-                                    <p className={`text-sm font-bold ${
-                                        alert.type === "error"   ? "text-red-700"    :
-                                        alert.type === "warning" ? "text-yellow-700" : "text-blue-700"
-                                    }`}>
-                                        {alert.message}
-                                    </p>
-                                </div>
-                            )}
-
                             <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
                                 <div className="flex items-start gap-2">
                                     <IconInfoCircle size={16} className="text-slate-500 mt-0.5 shrink-0" />
                                     <div className="text-xs text-slate-600 dark:text-slate-400 space-y-1">
                                         <p className="font-bold">Catatan:</p>
                                         <ul className="list-disc list-inside space-y-0.5">
-                                            <li>Stok awal hanya diinput sekali</li>
-                                            <li>Perubahan qty via Stock Movement</li>
+                                            <li>Item didaftarkan dengan qty 0</li>
+                                            <li>Tambah stok via Purchase Order</li>
+                                            <li>Atau via Penyesuaian Stok</li>
                                             <li>Min stock → alert Low Stock</li>
                                             <li>Max stock → alert Overstock</li>
-                                            <li>Harga rata-rata untuk valuasi aset</li>
                                         </ul>
                                     </div>
                                 </div>

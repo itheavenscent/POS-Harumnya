@@ -30,6 +30,7 @@ export default function Mutasi({ mutations = [], stores = [], warehouses = [], f
     // State for local filters
     const [lf, setLf] = useState({
         location: filters.location ?? "",
+        item_type: filters.item_type ?? "",
         date_from: filters.date_from ?? "",
         date_to: filters.date_to ?? "",
     });
@@ -47,6 +48,7 @@ export default function Mutasi({ mutations = [], stores = [], warehouses = [], f
             route("laporan.mutasi"),
             {
                 location: lf.location || undefined,
+                item_type: lf.item_type || undefined,
                 date_from: lf.date_from || undefined,
                 date_to: lf.date_to || undefined,
             },
@@ -61,6 +63,7 @@ export default function Mutasi({ mutations = [], stores = [], warehouses = [], f
         
         setLf({
             location: "",
+            item_type: "",
             date_from: startOfMonth,
             date_to: today,
         });
@@ -69,6 +72,7 @@ export default function Mutasi({ mutations = [], stores = [], warehouses = [], f
             route("laporan.mutasi"),
             {
                 location: undefined,
+                item_type: undefined,
                 date_from: startOfMonth,
                 date_to: today,
             },
@@ -130,7 +134,7 @@ export default function Mutasi({ mutations = [], stores = [], warehouses = [], f
                         <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">Filter Pencarian</h3>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                         <div>
                             <label className="text-xs font-bold block mb-2 text-slate-700 dark:text-slate-300">Toko / Gudang</label>
                             <select
@@ -151,7 +155,20 @@ export default function Mutasi({ mutations = [], stores = [], warehouses = [], f
                                 </optgroup>
                             </select>
                         </div>
-                        
+
+                        <div>
+                            <label className="text-xs font-bold block mb-2 text-slate-700 dark:text-slate-300">Jenis Item</label>
+                            <select
+                                value={lf.item_type}
+                                onChange={e => setF("item_type", e.target.value)}
+                                className="w-full rounded-xl border-slate-200 dark:border-slate-800 dark:bg-slate-950 text-sm focus:ring-primary-500 focus:border-primary-500"
+                            >
+                                <option value="">Semua Jenis</option>
+                                <option value="ingredient">Bahan Baku</option>
+                                <option value="packaging">Kemasan</option>
+                            </select>
+                        </div>
+
                         <div>
                             <label className="text-xs font-bold block mb-2 text-slate-700 dark:text-slate-300">Tanggal Mulai</label>
                             <input

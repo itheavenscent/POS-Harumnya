@@ -13,10 +13,8 @@ export default function Create({ stores, ingredients, packagingMaterials }) {
         item_type:    "ingredient",
         store_id:     "",
         item_id:      "",
-        quantity:     "",
         min_stock:    "",
         max_stock:    "",   // kedua tipe punya max_stock di migration
-        average_cost: "",
     });
 
     const [selectedItem,     setSelectedItem]     = useState(null);
@@ -45,7 +43,7 @@ export default function Create({ stores, ingredients, packagingMaterials }) {
     useEffect(() => {
         setData((d) => ({
             ...d,
-            item_id: "", quantity: "", min_stock: "", max_stock: "", average_cost: "",
+            item_id: "", min_stock: "", max_stock: "",
         }));
         setSelectedItem(null);
         setSelectedCategory("");
@@ -56,13 +54,10 @@ export default function Create({ stores, ingredients, packagingMaterials }) {
         return isIngredient ? selectedItem.unit : (selectedItem.size?.name || "pcs");
     };
 
-    const totalValue = () =>
-        (parseInt(data.quantity, 10) || 0) * (parseFloat(data.average_cost) || 0);
-
     const submit = (e) => {
         e.preventDefault();
         post(route("store-stocks.store"), {
-            onSuccess: () => toast.success("Stok toko berhasil ditambahkan"),
+            onSuccess: () => toast.success("Stok toko berhasil didaftarkan"),
         });
     };
 
@@ -157,18 +152,14 @@ export default function Create({ stores, ingredients, packagingMaterials }) {
                                 )}
                             </div>
 
-                            {/* Quantity — bigInteger, step=1 */}
-                            <Input
-                                label="Jumlah Stok Awal *"
-                                type="number"
-                                step="1"
-                                min="0"
-                                value={data.quantity}
-                                onChange={(e) => setData("quantity", e.target.value)}
-                                errors={errors.quantity}
-                                placeholder="0"
-                                suffix={getItemUnit()}
-                            />
+                            {/* Info: stok awal tidak bisa diisi */}
+                            <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 flex items-start gap-2">
+                                <IconInfoCircle size={16} className="text-amber-500 mt-0.5 shrink-0" />
+                                <p className="text-xs text-amber-700 dark:text-amber-300">
+                                    Stok awal tidak dapat diisi manual. Item didaftarkan dengan qty <strong>0</strong>.
+                                    Penambahan stok hanya melalui <strong>Transfer Stok</strong>, <strong>Purchase Order</strong>, atau <strong>Penyesuaian Stok</strong>.
+                                </p>
+                            </div>
                         </div>
 
                         {/* Category filter tabs */}
@@ -240,7 +231,7 @@ export default function Create({ stores, ingredients, packagingMaterials }) {
                         </div>
 
                         {/* Stock limits — kedua tipe punya min + max di migration */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Input
                                 label="Stok Minimum (Alert Low)"
                                 type="number"
@@ -263,43 +254,8 @@ export default function Create({ stores, ingredients, packagingMaterials }) {
                                 placeholder="0"
                                 suffix={getItemUnit()}
                             />
-                            <Input
-                                label="Harga Rata-rata per Unit"
-                                type="number"
-                                step="0.0001"
-                                min="0"
-                                value={data.average_cost}
-                                onChange={(e) => setData("average_cost", e.target.value)}
-                                errors={errors.average_cost}
-                                placeholder="0.00"
-                                prefix="Rp"
-                            />
                         </div>
 
-                        {/* Total value preview */}
-                        {data.quantity && data.average_cost && (
-                            <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-primary-200">
-                                <p className="text-xs text-primary-700 dark:text-primary-300 mb-1">
-                                    Total Nilai Inventaris
-                                </p>
-                                <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                                    {new Intl.NumberFormat("id-ID", {
-                                        style: "currency",
-                                        currency: "IDR",
-                                        minimumFractionDigits: 0,
-                                    }).format(totalValue())}
-                                </p>
-                                <p className="text-xs text-primary-500 mt-1">
-                                    {parseInt(data.quantity, 10).toLocaleString("id-ID")} {getItemUnit()}
-                                    &nbsp;×&nbsp;
-                                    {new Intl.NumberFormat("id-ID", {
-                                        style: "currency",
-                                        currency: "IDR",
-                                        minimumFractionDigits: 0,
-                                    }).format(data.average_cost)}
-                                </p>
-                            </div>
-                        )}
                     </div>
 
                     {/* Info box */}

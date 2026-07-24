@@ -17,13 +17,17 @@ class PackagingController extends Controller
     {
         $materials = PackagingMaterial::query()
             ->with(['category:id,name', 'size:id,name'])
+            ->withSum('warehouseStocks as warehouse_qty', 'quantity')
+            ->withSum('storeStocks as store_qty', 'quantity')
             ->when($request->search,      fn($q) => $q->search($request->search))
             ->when($request->category_id, fn($q) => $q->where('packaging_category_id', $request->category_id))
-            ->orderBy('sort_order')
             ->orderBy('name')
             ->paginate(10)
             ->withQueryString()
-            ->through(fn($item) => [
+            ->through(function ($item) {
+                $totalQty = (int) ($item->warehouse_qty ?? 0) + (int) ($item->store_qty ?? 0);
+
+                return [
                 'id'                    => $item->id,
                 'code'                  => $item->code,
                 'name'                  => $item->name,
@@ -35,7 +39,9 @@ class PackagingController extends Controller
                 'is_free'               => $item->is_free,
                 'free_condition_note'   => $item->free_condition_note,
                 'effective_selling_price' => $item->effective_selling_price,
-                'average_cost'          => $item->average_cost,
+                'total_qty'             => $totalQty,
+                // Stok habis → HPP ikut 0
+                'average_cost'          => $totalQty > 0 ? $item->average_cost : 0,
                 'is_available_as_addon' => $item->is_available_as_addon,
                 'is_active'             => $item->is_active,
                 'sort_order'            => $item->sort_order,
@@ -45,7 +51,8 @@ class PackagingController extends Controller
                 'size' => $item->size
                     ? ['id' => $item->size->id, 'name' => $item->size->name]
                     : null,
-            ]);
+                ];
+            });
 
         $categories = PackagingCategory::orderBy('sort_order')->orderBy('name')->get();
 
