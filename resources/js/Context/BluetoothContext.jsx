@@ -35,16 +35,25 @@ async function findWritableChar(server) {
         }
     } catch (_) { }
 
-    // 2. Targeted: coba daftar UUID printer thermal yang umum dulu (cepat,
-    //    tanpa enumerasi seluruh service perangkat).
-    for (const uuid of BT_SERVICES) {
-        try {
-            const svc = await server.getPrimaryService(uuid);
-            const chars = await svc.getCharacteristics();
-            const char = chars.find(c => c.properties.writeWithoutResponse || c.properties.write);
-            if (char) { cacheChar(svc, char); return char; }
-        } catch (_) { }
-    }
+    // 2. Parallel: coba semua UUID printer thermal secara paralel (JAUH lebih cepat
+    //    dari sequential for-loop, karena service yang tidak ada langsung reject
+    //    tanpa menunggu timeout satu per satu).
+    try {
+        const results = await Promise.allSettled(
+            BT_SERVICES.map(async (uuid) => {
+                const svc = await server.getPrimaryService(uuid);
+                const chars = await svc.getCharacteristics();
+                const char = chars.find(c => c.properties.writeWithoutResponse || c.properties.write);
+                if (!char) throw new Error("no writable char");
+                return { svc, char };
+            })
+        );
+        const fulfilled = results.find(r => r.status === "fulfilled");
+        if (fulfilled) {
+            cacheChar(fulfilled.value.svc, fulfilled.value.char);
+            return fulfilled.value.char;
+        }
+    } catch (_) { }
 
     // 3. Fallback: enumerasi semua service (untuk printer non-standar).
     try {
@@ -80,9 +89,9 @@ export function BluetoothProvider({ children }) {
     const connectGatt = useCallback(async (dev) => {
         if (dev.gatt.connected && charRef.current) return true;
         const server = await dev.gatt.connect();
-        // Settle singkat setelah GATT connect (cukup untuk printer murah),
-        // dipangkas dari 500ms agar konek terasa cepat.
-        await new Promise(r => setTimeout(r, 150));
+        // Settle singkat setelah GATT connect — dipangkas menjadi 80ms
+        // (cukup untuk printer BLE murah, sisanya ditangani retry).
+        await new Promise(r => setTimeout(r, 80));
         const char = await findWritableChar(server);
         if (!char) {
             let hint = "";
@@ -147,7 +156,27 @@ export function BluetoothProvider({ children }) {
         }
     }, [supported, handleDisconnect]);
 
-    const connect = useCallback(async () => {
+    // ── requestDevice helper ─────────────────────────────────────────────────
+    // Strategi:
+    //   • scanAll=false (default): pakai filters agar HANYA printer yang muncul
+    //     → dialog jauh lebih cepat, tidak scan HP/earphone/TV sekitar
+    //   • scanAll=true: fallback klasik acceptAllDevices jika printer tidak
+    //     ketemu via filter (printer murah kadang tidak advertise service UUID)
+    const requestPrinterDevice = useCallback(async (scanAll = false) => {
+        if (scanAll) {
+            return navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: BT_SERVICES,
+            });
+        }
+        // Filtered mode: hanya tampilkan device yang advertise service printer
+        return navigator.bluetooth.requestDevice({
+            filters: BT_SERVICES.map(uuid => ({ services: [uuid] })),
+            optionalServices: BT_SERVICES,
+        });
+    }, []);
+
+    const connect = useCallback(async (scanAll = false) => {
         if (!supported) {
             setError("Butuh Chrome di Android/Desktop + HTTPS untuk Web Bluetooth.");
             setStatus("error");
@@ -156,10 +185,7 @@ export function BluetoothProvider({ children }) {
         setStatus("connecting");
         setError(null);
         try {
-            const dev = await navigator.bluetooth.requestDevice({
-                acceptAllDevices: true,
-                optionalServices: BT_SERVICES,
-            });
+            const dev = await requestPrinterDevice(scanAll);
             dev.addEventListener("gattserverdisconnected", () => handleDisconnect(dev));
             await connectGattRef.current(dev);
             deviceRef.current = dev;
@@ -174,7 +200,10 @@ export function BluetoothProvider({ children }) {
             if (err.name === "NotFoundError") setStatus("idle");
             else { setError(err.message); setStatus("error"); }
         }
-    }, [supported, handleDisconnect]);
+    }, [supported, handleDisconnect, requestPrinterDevice]);
+
+    // connectAll: shortcut untuk scan semua device (fallback)
+    const connectAll = useCallback(() => connect(true), [connect]);
 
     const reconnect = useCallback(async () => {
         if (!deviceRef.current) { connect(); return; }
@@ -263,7 +292,7 @@ export function BluetoothProvider({ children }) {
 
     const value = {
         supported, device, devName, status, error,
-        connect, reconnect, disconnect, printBuffer, scanUuids, foundUuids,
+        connect, connectAll, reconnect, disconnect, printBuffer, scanUuids, foundUuids,
     };
 
     return (

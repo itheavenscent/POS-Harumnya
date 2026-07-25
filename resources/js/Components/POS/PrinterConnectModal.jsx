@@ -134,15 +134,27 @@ export default function PrinterConnectModal({ isOpen, onClose }) {
                     {/* Actions */}
                     <div className="space-y-2.5">
                         {!isConnected ? (
-                            <button
-                                onClick={handleConnect}
-                                disabled={!bt?.supported || isBusy}
-                                className="w-full h-12 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-black text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-cyan-900/20"
-                            >
-                                {isBusy
-                                    ? <><IconLoader2 size={18} className="animate-spin" /> Menghubungkan...</>
-                                    : <><IconPlugConnected size={18} /> Hubungkan Printer</>}
-                            </button>
+                            <>
+                                <button
+                                    onClick={handleConnect}
+                                    disabled={!bt?.supported || isBusy}
+                                    className="w-full h-12 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-black text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-cyan-900/20"
+                                >
+                                    {isBusy
+                                        ? <><IconLoader2 size={18} className="animate-spin" /> Menghubungkan...</>
+                                        : <><IconPlugConnected size={18} /> Hubungkan Printer</>}
+                                </button>
+                                <button
+                                    onClick={() => bt?.connectAll?.()}
+                                    disabled={!bt?.supported || isBusy}
+                                    className="w-full h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-semibold text-xs flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                                >
+                                    <IconBluetooth size={16} /> Scan Semua Perangkat
+                                </button>
+                                <p className="text-[10px] text-slate-400 text-center">
+                                    Gunakan "Scan Semua" jika printer tidak muncul di daftar
+                                </p>
+                            </>
                         ) : (
                             <>
                                 <button
@@ -169,7 +181,8 @@ export default function PrinterConnectModal({ isOpen, onClose }) {
                         <p className="font-bold text-slate-500 dark:text-slate-400 mb-1">Cara menghubungkan:</p>
                         <ol className="space-y-0.5 list-decimal list-inside">
                             <li>Nyalakan printer thermal Bluetooth</li>
-                            <li>Klik "Hubungkan Printer", pilih perangkat dari daftar</li>
+                            <li>Klik "Hubungkan Printer" — hanya printer yang muncul</li>
+                            <li>Jika printer tidak muncul, klik "Scan Semua Perangkat"</li>
                             <li>Setelah terhubung, klik "Test Print" untuk cek</li>
                         </ol>
                     </div>
