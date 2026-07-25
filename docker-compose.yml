@@ -61,6 +61,11 @@ services:
       - ./storage:/var/www/storage # persist upload & log
       - ./bootstrap/cache:/var/www/bootstrap/cache # persist cache
       - public_data:/var/www/public-shared # asset publik (Vite build) untuk nginx
+      # Mount folder untuk development lokal agar perubahan code langsung terbaca tanpa build ulang
+      - ./app:/var/www/app
+      - ./routes:/var/www/routes
+      - ./resources:/var/www/resources
+      - ./config:/var/www/config
     networks:
       - proxy-net
     depends_on:
