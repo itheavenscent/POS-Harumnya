@@ -56,6 +56,7 @@ export default function Show({ purchase, movements = [] }) {
     const [cancelReason,      setCancelReason]      = useState("");
     const [arrivalDate,       setArrivalDate]       = useState(new Date().toISOString().split("T")[0]);
     const [receivedQuantities, setReceivedQuantities] = useState({});
+    const [extraCosts,        setExtraCosts]        = useState({ tax: 0, shipping_cost: 0, adjustment: 0 });
 
     const st   = STATUS_CFG[purchase.status] ?? STATUS_CFG.draft;
     const step = st.step;
@@ -66,6 +67,11 @@ export default function Show({ purchase, movements = [] }) {
             initQty[i.id] = i.received_quantity ?? i.quantity;
         });
         setReceivedQuantities(initQty);
+        setExtraCosts({
+            tax:           parseInt(purchase.tax || 0),
+            shipping_cost: parseInt(purchase.shipping_cost || 0),
+            adjustment:    parseInt(purchase.adjustment || 0),
+        });
         // Default tanggal terima tidak boleh sebelum tanggal PO
         const today = new Date().toISOString().split("T")[0];
         const po = (purchase.purchase_date ?? "").split("T")[0];
@@ -111,7 +117,13 @@ export default function Show({ purchase, movements = [] }) {
             id,
             received_quantity: parseInt(receivedQuantities[id]) || 0
         }));
-        doAction(route("purchases.receive", purchase.id), { actual_delivery_date: arrivalDate, items: payloadItems }, "Barang diterima!");
+        doAction(route("purchases.receive", purchase.id), {
+            actual_delivery_date: arrivalDate,
+            items: payloadItems,
+            tax:           parseInt(extraCosts.tax) || 0,
+            shipping_cost: parseInt(extraCosts.shipping_cost) || 0,
+            adjustment:    parseInt(extraCosts.adjustment) || 0,
+        }, "Barang diterima!");
     };
 
     const doAction = (url, body, msg) =>
@@ -247,6 +259,39 @@ export default function Show({ purchase, movements = [] }) {
                                 className="w-full md:w-48 rounded-xl border-slate-200 text-sm focus:ring-violet-500" />
                             <p className="text-[11px] text-slate-400 mt-1">Tidak boleh sebelum tanggal PO ({fmtDate(poDate)}).</p>
                         </div>
+
+                        {/* Biaya tambahan — bisa disesuaikan saat terima barang */}
+                        <div className="mb-4 shrink-0 border border-slate-200 rounded-xl p-4 bg-slate-50/60 dark:bg-slate-800/30">
+                            <p className="text-xs font-bold text-slate-600 mb-3 uppercase tracking-wide">Biaya Tambahan</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                {[
+                                    { key: "shipping_cost", label: "Ongkos Kirim" },
+                                    { key: "tax",           label: "PPN / Pajak" },
+                                    { key: "adjustment",    label: "Biaya Lain-lain" },
+                                ].map(({ key, label }) => (
+                                    <div key={key}>
+                                        <label className="block text-[11px] font-bold text-slate-500 mb-1">{label}</label>
+                                        <input type="number" step="1" min={key === "adjustment" ? undefined : "0"}
+                                            value={extraCosts[key]}
+                                            onChange={(e) => setExtraCosts(prev => ({ ...prev, [key]: e.target.value }))}
+                                            className="w-full text-right p-2 text-sm border-slate-200 rounded-lg focus:ring-violet-500" />
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex justify-between mt-3 pt-3 border-t border-slate-200 text-sm">
+                                <span className="text-slate-500 font-bold">Estimasi Total</span>
+                                <span className="font-black text-violet-700">
+                                    {fmtRp(
+                                        (parseInt(purchase.subtotal || 0))
+                                        + (parseInt(extraCosts.tax) || 0)
+                                        - (parseInt(purchase.discount || 0))
+                                        + (parseInt(extraCosts.shipping_cost) || 0)
+                                        + (parseInt(extraCosts.adjustment) || 0)
+                                    )}
+                                </span>
+                            </div>
+                        </div>
+
                         <div className="flex gap-3 justify-end shrink-0">
                             <button onClick={() => setShowReceiveModal(false)} className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm">Batal</button>
                             <button onClick={handleReceive}

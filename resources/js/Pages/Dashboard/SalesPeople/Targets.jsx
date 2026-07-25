@@ -138,6 +138,7 @@ export default function Targets({ salesPerson, targets }) {
                                             <tr>
                                                 <th className="text-left p-4 text-xs font-bold text-slate-600 dark:text-slate-400">Periode</th>
                                                 <th className="text-right p-4 text-xs font-bold text-slate-600 dark:text-slate-400">Target Nominal</th>
+                                                <th className="text-right p-4 text-xs font-bold text-slate-600 dark:text-slate-400">Penghasilan</th>
                                                 <th className="text-right p-4 text-xs font-bold text-slate-600 dark:text-slate-400">Target Qty</th>
                                             </tr>
                                         </thead>
@@ -152,6 +153,21 @@ export default function Targets({ salesPerson, targets }) {
                                                     <td className="p-4 text-right">
                                                         <div className="font-bold text-primary-600 dark:text-primary-400">
                                                             {t.target_amount ? `Rp ${new Intl.NumberFormat('id-ID').format(t.target_amount)}` : '-'}
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4 text-right">
+                                                        <div className="font-bold text-emerald-600 dark:text-emerald-400">
+                                                            Rp {new Intl.NumberFormat('id-ID').format(t.realized_revenue || 0)}
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-400 font-medium">
+                                                            {t.realized_transactions || 0} transaksi
+                                                            {t.target_amount > 0 && (
+                                                                <span className={`ml-1 font-bold ${
+                                                                    (t.realized_revenue || 0) >= t.target_amount ? "text-emerald-500" : "text-amber-500"
+                                                                }`}>
+                                                                    · {Math.round(((t.realized_revenue || 0) / t.target_amount) * 100)}%
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </td>
                                                     <td className="p-4 text-right">

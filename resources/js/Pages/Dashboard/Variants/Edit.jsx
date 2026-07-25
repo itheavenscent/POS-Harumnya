@@ -37,8 +37,8 @@ export default function Edit({ variant }) {
 
         if (!file) return;
 
-        if (file.size > 4 * 1024 * 1024) {
-            setImageError("Ukuran file maksimal 4MB");
+        if (file.size > 2 * 1024 * 1024) {
+            setImageError("Ukuran file maksimal 2MB");
             if (fileInput.current) fileInput.current.value = "";
             return;
         }
@@ -160,7 +160,7 @@ export default function Edit({ variant }) {
                                             >
                                                 <IconPhotoPlus size={32} className="text-white mb-2" strokeWidth={1.5} />
                                                 <p className="text-white text-sm font-semibold">Ganti Foto</p>
-                                                <p className="text-white/80 text-xs mt-1">Max 4MB</p>
+                                                <p className="text-white/80 text-xs mt-1">Max 2MB</p>
                                             </div>
                                             {/* New image badge */}
                                             {hasNewImage && (
@@ -198,7 +198,7 @@ export default function Edit({ variant }) {
                                                 Upload Foto Baru
                                             </p>
                                             <p className="text-xs text-slate-500 dark:text-slate-400">
-                                                JPG, PNG, WEBP (Max 4MB)
+                                                JPG, PNG, WEBP (Max 2MB)
                                             </p>
                                         </div>
                                     )}

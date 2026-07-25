@@ -34,8 +34,8 @@ export default function Create() {
 
         if (!file) return;
 
-        if (file.size > 4 * 1024 * 1024) {
-            setImageError("Ukuran file maksimal 4MB");
+        if (file.size > 2 * 1024 * 1024) {
+            setImageError("Ukuran file maksimal 2MB");
             if (fileInput.current) fileInput.current.value = "";
             return;
         }
@@ -196,7 +196,7 @@ export default function Create() {
                                                 Klik untuk Upload Foto
                                             </p>
                                             <p className="text-xs text-slate-500 dark:text-slate-400">
-                                                JPG, PNG, WEBP (Max 4MB)
+                                                JPG, PNG, WEBP (Max 2MB)
                                             </p>
                                         </div>
                                     )}

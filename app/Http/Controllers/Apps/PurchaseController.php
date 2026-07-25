@@ -356,6 +356,10 @@ class PurchaseController extends Controller
             'items'                => 'required|array',
             'items.*.id'           => 'required|uuid',
             'items.*.received_quantity' => 'required|integer',
+            // Biaya tambahan boleh disesuaikan saat terima barang (ongkir/ppn/lain-lain)
+            'tax'                  => 'nullable|numeric|min:0',
+            'shipping_cost'        => 'nullable|numeric|min:0',
+            'adjustment'           => 'nullable|numeric',
         ], [
             'actual_delivery_date.after_or_equal' => "Tanggal terima tidak boleh sebelum tanggal PO ({$poDate}).",
         ]);
@@ -367,12 +371,40 @@ class PurchaseController extends Controller
                 ]);
             }
 
-            $purchase->update([
+            // Biaya tambahan — pakai nilai baru bila dikirim, jika tidak pertahankan lama.
+            $tax          = $request->filled('tax')           ? (string) $request->tax           : (string) $purchase->tax;
+            $shippingCost = $request->filled('shipping_cost') ? (string) $request->shipping_cost : (string) $purchase->shipping_cost;
+            $adjustment   = $request->filled('adjustment')    ? (string) $request->adjustment    : (string) $purchase->adjustment;
+
+            // Total = subtotal + pajak − diskon + ongkir + adjustment (subtotal item tidak berubah)
+            $total = $this->bcAdd(
+                $this->bcAdd(
+                    $this->bcSub(
+                        $this->bcAdd((string) $purchase->subtotal, $tax, 2),
+                        (string) $purchase->discount,
+                        2
+                    ),
+                    $shippingCost,
+                    2
+                ),
+                $adjustment,
+                2
+            );
+
+            $updates = [
                 'status'               => 'received',
                 'received_by'          => auth()->id(),
                 'received_at'          => now(),
                 'actual_delivery_date' => $request->actual_delivery_date ?? today(),
-            ]);
+                'tax'                  => $tax,
+                'shipping_cost'        => $shippingCost,
+                'adjustment'           => $adjustment,
+            ];
+
+            $colType = Schema::getColumnType('purchases', 'total');
+            $updates['total'] = str_contains($colType, 'int') ? (int) round((float) $total) : $total;
+
+            $purchase->update($updates);
         });
 
         return back()->with('success', 'Barang diterima. Silakan selesaikan PO untuk memperbarui stok.');

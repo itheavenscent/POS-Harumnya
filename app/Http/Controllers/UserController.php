@@ -206,6 +206,9 @@ class UserController extends Controller
                 $name = $permission->name;
                 if (str_contains($name, 'dashboard')) return 'Dashboard';
                 if (str_contains($name, 'transactions')) return 'Transaksi / POS';
+                // Cek sebelum 'products'/'sizes' agar tidak salah kelompok
+                if (str_contains($name, 'intensity-size-prices')) return 'Harga Intensitas';
+                if (str_contains($name, 'cash-drawers')) return 'Shift Kasir';
                 if (str_contains($name, 'products')) return 'Produk & Katalog';
                 if (str_contains($name, 'variants')) return 'Varian';
                 if (str_contains($name, 'intensities')) return 'Intensitas';

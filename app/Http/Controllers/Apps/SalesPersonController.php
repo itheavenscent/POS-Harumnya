@@ -131,6 +131,33 @@ class SalesPersonController extends Controller
             ->orderBy('month', 'desc')
             ->get();
 
+        // Penghasilan realisasi per bulan untuk sales ini (transaksi selesai).
+        $driver    = DB::getDriverName();
+        $yearExpr  = $driver === 'pgsql' ? "EXTRACT(YEAR FROM sold_at)::int"  : "YEAR(sold_at)";
+        $monthExpr = $driver === 'pgsql' ? "EXTRACT(MONTH FROM sold_at)::int" : "MONTH(sold_at)";
+
+        $realized = DB::table('sales')
+            ->where('sales_person_id', $salesPerson->id)
+            ->where('status', 'completed')
+            ->whereNull('deleted_at')
+            ->selectRaw("
+                {$yearExpr}                  AS year,
+                {$monthExpr}                 AS month,
+                COUNT(*)                     AS transactions,
+                COALESCE(SUM(total), 0)      AS revenue
+            ")
+            ->groupByRaw("{$yearExpr}, {$monthExpr}")
+            ->get()
+            ->keyBy(fn ($r) => (int) $r->year . '-' . (int) $r->month);
+
+        // Sematkan penghasilan + jumlah transaksi ke tiap baris target.
+        $targets->each(function ($t) use ($realized) {
+            $key = (int) $t->year . '-' . (int) $t->month;
+            $row = $realized->get($key);
+            $t->realized_revenue     = $row ? (float) $row->revenue      : 0;
+            $t->realized_transactions = $row ? (int)  $row->transactions : 0;
+        });
+
         return Inertia::render('Dashboard/SalesPeople/Targets', [
             'salesPerson' => $salesPerson->load('store:id,name'),
             'targets'     => $targets

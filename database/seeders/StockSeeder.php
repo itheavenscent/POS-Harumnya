@@ -301,6 +301,40 @@ class StockSeeder extends Seeder
             }
         }
 
+        // ── 4. SINKRON HPP MASTER = WAC STOK GLOBAL ─────────────────────────
+        // Master ingredients/packaging_materials.average_cost harus SAMA dengan
+        // rata-rata tertimbang (WAC) seluruh stok (warehouse + store) — invariant
+        // yang sama dengan runtime PurchaseController::syncMasterAverageCost().
+        // Tanpa ini, "bahan baku tercatat" ≠ "stok global tercatat".
+        $this->command->line('Sinkron HPP master = WAC stok global...');
+
+        $syncMaster = function (string $masterTable, string $fk, array $stockTables) {
+            $rows = DB::table($masterTable)->select('id')->get();
+            foreach ($rows as $row) {
+                $totalQty = 0;
+                $totalValue = 0.0;
+                foreach ($stockTables as $stockTable) {
+                    $stocks = DB::table($stockTable)->where($fk, $row->id)
+                        ->select('quantity', 'average_cost')->get();
+                    foreach ($stocks as $s) {
+                        $qty = (int) $s->quantity;
+                        if ($qty > 0) {
+                            $totalQty   += $qty;
+                            $totalValue += $qty * (float) $s->average_cost;
+                        }
+                    }
+                }
+                if ($totalQty > 0) {
+                    DB::table($masterTable)->where('id', $row->id)->update([
+                        'average_cost' => round($totalValue / $totalQty, 4),
+                    ]);
+                }
+            }
+        };
+
+        $syncMaster('ingredients', 'ingredient_id', ['warehouse_ingredient_stocks', 'store_ingredient_stocks']);
+        $syncMaster('packaging_materials', 'packaging_material_id', ['warehouse_packaging_stocks', 'store_packaging_stocks']);
+
         // ── Summary ─────────────────────────────────────────────────────────
         $this->command->info("✓ StockSeeder selesai — {$ingCount} ingredient + {$pkgCount} packaging (warehouse).");
 

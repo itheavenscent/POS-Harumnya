@@ -288,6 +288,184 @@ class POSFeatureController extends Controller
             ->with('success', 'Transfer diterima. Stok berhasil masuk ke toko Anda!');
     }
 
+    /**
+     * Laporan Penjualan khusus toko kasir (scoped ke default_store_id).
+     * Berbeda dari laporan admin (laporan.penjualan) yang lintas toko.
+     */
+    public function salesReport(Request $request): Response
+    {
+        $user    = Auth::user();
+        $storeId = $user->default_store_id;
+
+        $dateFrom = $request->input('date_from', now()->startOfMonth()->toDateString());
+        $dateTo   = $request->input('date_to', now()->toDateString());
+        $from = \Illuminate\Support\Carbon::parse($dateFrom)->startOfDay();
+        $to   = \Illuminate\Support\Carbon::parse($dateTo)->endOfDay();
+
+        // Batas rentang 90 hari agar konsisten dgn laporan admin
+        if ($from->diffInDays($to) > 90) {
+            $from = $to->copy()->subDays(90)->startOfDay();
+        }
+
+        $summary = DB::table('sales')
+            ->where('store_id', $storeId)
+            ->where('status', 'completed')
+            ->whereBetween('sold_at', [$from, $to])
+            ->selectRaw('
+                COUNT(*)                            AS total_transactions,
+                COALESCE(SUM(total), 0)             AS total_revenue,
+                COALESCE(SUM(discount_amount), 0)   AS total_discount,
+                COALESCE(AVG(total), 0)             AS avg_order,
+                COUNT(DISTINCT customer_id)         AS unique_customers
+            ')
+            ->first();
+
+        $itemsSold = DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->where('sales.store_id', $storeId)
+            ->where('sales.status', 'completed')
+            ->whereBetween('sales.sold_at', [$from, $to])
+            ->sum('sale_items.qty');
+
+        // Tren harian (support MySQL & PostgreSQL)
+        $driver    = DB::getDriverName();
+        $dayExpr   = $driver === 'pgsql' ? "TO_CHAR(sold_at, 'YYYY-MM-DD')" : "DATE(sold_at)";
+        $labelExpr = $driver === 'pgsql' ? "TO_CHAR(sold_at, 'DD Mon')"     : "DATE_FORMAT(sold_at, '%d %b')";
+
+        $trend = DB::table('sales')
+            ->where('store_id', $storeId)
+            ->where('status', 'completed')
+            ->whereBetween('sold_at', [$from, $to])
+            ->selectRaw("
+                {$dayExpr}                  AS day,
+                {$labelExpr}                AS label,
+                COUNT(*)                    AS transactions,
+                COALESCE(SUM(total), 0)     AS revenue
+            ")
+            ->groupByRaw("{$dayExpr}, {$labelExpr}")
+            ->orderByRaw($dayExpr)
+            ->get()
+            ->map(fn ($r) => [
+                'label'        => $r->label,
+                'transactions' => (int)   $r->transactions,
+                'revenue'      => (float) $r->revenue,
+            ]);
+
+        $topVariants = DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->where('sales.store_id', $storeId)
+            ->where('sales.status', 'completed')
+            ->whereBetween('sales.sold_at', [$from, $to])
+            ->whereNotNull('sale_items.variant_id_snapshot')
+            ->selectRaw("
+                COALESCE(sale_items.variant_name, 'Tanpa Nama')  AS name,
+                SUM(sale_items.qty)                              AS qty,
+                COALESCE(SUM(sale_items.subtotal), 0)            AS revenue
+            ")
+            ->groupBy('sale_items.variant_name')
+            ->orderByDesc('qty')
+            ->limit(10)
+            ->get()
+            ->map(fn ($r) => [
+                'name'    => $r->name,
+                'qty'     => (int)   $r->qty,
+                'revenue' => (float) $r->revenue,
+            ]);
+
+        $activeCashDrawer = CashDrawer::where('store_id', $storeId)
+            ->where('cashier_id', $user->id)
+            ->where('status', 'open')
+            ->latest()
+            ->first();
+
+        return Inertia::render('Dashboard/POS/SalesReport', [
+            'storeName' => Store::find($storeId)?->name ?? 'Toko Anda',
+            'filters'   => ['date_from' => $from->toDateString(), 'date_to' => $to->toDateString()],
+            'summary'   => [
+                'totalTransactions' => (int)   $summary->total_transactions,
+                'totalRevenue'      => (float) round($summary->total_revenue, 2),
+                'totalDiscount'     => (float) round($summary->total_discount, 2),
+                'avgOrder'          => (float) round($summary->avg_order, 2),
+                'uniqueCustomers'   => (int)   $summary->unique_customers,
+                'totalItemsSold'    => (int)   $itemsSold,
+            ],
+            'trend'       => $trend,
+            'topVariants' => $topVariants,
+            'activeCashDrawer' => $activeCashDrawer,
+        ]);
+    }
+
+    /**
+     * Ranking Sales khusus toko kasir (scoped ke default_store_id).
+     */
+    public function salesRanking(Request $request): Response
+    {
+        $user    = Auth::user();
+        $storeId = $user->default_store_id;
+
+        $dateFrom = $request->input('date_from', now()->startOfMonth()->toDateString());
+        $dateTo   = $request->input('date_to', now()->toDateString());
+        $from = \Illuminate\Support\Carbon::parse($dateFrom)->startOfDay();
+        $to   = \Illuminate\Support\Carbon::parse($dateTo)->endOfDay();
+
+        if ($from->diffInDays($to) > 90) {
+            $from = $to->copy()->subDays(90)->startOfDay();
+        }
+
+        $ranking = DB::table('sales')
+            ->join('sales_people', 'sales.sales_person_id', '=', 'sales_people.id')
+            ->where('sales.store_id', $storeId)
+            ->where('sales.status', 'completed')
+            ->whereNull('sales.deleted_at')
+            ->whereNull('sales_people.deleted_at')
+            ->whereBetween('sales.sold_at', [$from, $to])
+            ->selectRaw('
+                sales_people.id,
+                sales_people.name,
+                sales_people.code,
+                COUNT(sales.id)                 AS transactions_count,
+                COALESCE(SUM(sales.total), 0)   AS total_revenue,
+                COALESCE(AVG(sales.total), 0)   AS average_sales
+            ')
+            ->groupBy('sales_people.id', 'sales_people.name', 'sales_people.code')
+            ->orderByDesc('total_revenue')
+            ->get();
+
+        // Item terjual per sales person (query terpisah agar SQL sederhana)
+        $itemsMap = DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->where('sales.store_id', $storeId)
+            ->where('sales.status', 'completed')
+            ->whereNotNull('sales.sales_person_id')
+            ->whereBetween('sales.sold_at', [$from, $to])
+            ->selectRaw('sales.sales_person_id, SUM(sale_items.qty) AS qty')
+            ->groupBy('sales.sales_person_id')
+            ->pluck('qty', 'sales.sales_person_id');
+
+        $ranking = $ranking->map(fn ($r) => [
+            'id'                 => $r->id,
+            'name'               => $r->name,
+            'code'               => $r->code,
+            'transactions_count' => (int)   $r->transactions_count,
+            'total_revenue'      => (float) $r->total_revenue,
+            'average_sales'      => (float) $r->average_sales,
+            'total_items_sold'   => (int)   ($itemsMap[$r->id] ?? 0),
+        ]);
+
+        $activeCashDrawer = CashDrawer::where('store_id', $storeId)
+            ->where('cashier_id', $user->id)
+            ->where('status', 'open')
+            ->latest()
+            ->first();
+
+        return Inertia::render('Dashboard/POS/SalesRanking', [
+            'storeName' => Store::find($storeId)?->name ?? 'Toko Anda',
+            'filters'   => ['date_from' => $from->toDateString(), 'date_to' => $to->toDateString()],
+            'ranking'   => $ranking,
+            'activeCashDrawer' => $activeCashDrawer,
+        ]);
+    }
+
     private function findStock(string $locType, string $locId, string $itemType, string $itemId)
     {
         return match ([$locType, $itemType]) {

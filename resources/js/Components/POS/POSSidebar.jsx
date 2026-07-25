@@ -62,14 +62,14 @@ export default function POSSidebar({ onCashAction, onOpenShift, onCloseShift, ac
         {
             title: "Laporan Penjualan",
             icon: <IconChartArrowsVertical size={20} />,
-            href: route("laporan.penjualan"),
-            active: component.startsWith("Dashboard/Laporan/Penjualan"),
+            href: route("pos.sales-report"),
+            active: component === "Dashboard/POS/SalesReport",
         },
         {
             title: "Ranking Sales",
             icon: <IconUserBolt size={20} />,
-            href: route("sales-people.productivity"),
-            active: component.startsWith("Dashboard/SalesPeople/Productivity"),
+            href: route("pos.sales-ranking"),
+            active: component === "Dashboard/POS/SalesRanking",
         },
     ];
 

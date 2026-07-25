@@ -33,7 +33,7 @@ class StoreVariantRequest extends FormRequest
             'name'        => 'required|string|max:255',
             'gender'      => ['required', Rule::in(['male', 'female', 'unisex'])],
             'description' => 'nullable|string',
-            'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'is_active'   => 'boolean',
         ];
     }
@@ -71,7 +71,7 @@ class StoreVariantRequest extends FormRequest
             'gender.in'       => 'Gender yang dipilih tidak valid',
             'image.image'     => 'File harus berupa gambar',
             'image.mimes'     => 'Format gambar harus JPG, JPEG, PNG, atau WEBP',
-            'image.max'       => 'Ukuran gambar maksimal 4MB',
+            'image.max'       => 'Ukuran gambar maksimal 2MB',
         ];
     }
 

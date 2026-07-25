@@ -671,6 +671,9 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::get('fulfillment', [POSFeatureController::class, 'fulfillmentIndex'])->name('fulfillment.index')->middleware('permission:transactions-access');
         Route::get('fulfillment/{id}', [POSFeatureController::class, 'fulfillmentShow'])->name('fulfillment.show')->middleware('permission:transactions-access');
         Route::post('fulfillment/{id}/receive', [POSFeatureController::class, 'fulfillmentReceive'])->name('fulfillment.receive')->middleware('permission:transactions-access');
+        // Laporan & ranking khusus POS (scoped ke toko kasir) — beda dari halaman admin
+        Route::get('sales-report', [POSFeatureController::class, 'salesReport'])->name('sales-report')->middleware('permission:transactions-access');
+        Route::get('sales-ranking', [POSFeatureController::class, 'salesRanking'])->name('sales-ranking')->middleware('permission:transactions-access');
     });
 
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
