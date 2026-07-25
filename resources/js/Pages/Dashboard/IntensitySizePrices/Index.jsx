@@ -9,6 +9,7 @@ import {
 } from "@tabler/icons-react";
 import Search from "@/Components/Dashboard/Search";
 import Pagination from "@/Components/Dashboard/Pagination";
+import PageHeader from "@/Components/Dashboard/PageHeader";
 import toast from "react-hot-toast";
 
 // =============================================================================
@@ -20,12 +21,12 @@ const formatRupiah = (number) =>
 
 function StatusBadge({ isActive }) {
     return isActive ? (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-success-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 shadow-sm">
-            <IconCircleCheck size={14} strokeWidth={2.5} /> Aktif
+        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-[#e6fcf5] text-[#09a374] dark:bg-emerald-950/30 dark:text-[#34d399] border border-[#c3fae8] dark:border-emerald-800/20">
+            Aktif
         </span>
     ) : (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 shadow-sm">
-            <IconCircleX size={14} strokeWidth={2.5} /> Tidak Aktif
+        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-[#f1f3f5] text-[#868e96] dark:bg-slate-800/40 dark:text-[#a6a7ab] border border-[#e9ecef] dark:border-slate-700/30">
+            Tidak Aktif
         </span>
     );
 }
@@ -265,64 +266,56 @@ export default function Index({ intensitySizePrices, filters, intensities, sizes
             <Head title="Harga Intensitas & Ukuran" />
 
             {/* ── Header ── */}
-            <div className="mb-6">
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/30">
-                                <IconCurrencyDollar size={24} className="text-white" strokeWidth={2} />
-                            </div>
-                            Harga Intensitas & Ukuran
-                        </h1>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 flex items-center gap-2">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold">
-                                {intensitySizePrices.total ?? intensitySizePrices.data?.length ?? 0} Total Harga
-                            </span>
-                            {selectedIds.length > 0 && (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-primary-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
-                                    {selectedIds.length} Dipilih
+            <PageHeader
+                title="Harga Intensitas & Ukuran"
+                description={
+                    <span className="flex items-center gap-1.5 mt-1">
+                        <span>{intensitySizePrices.total ?? intensitySizePrices.data?.length ?? 0} Total Harga</span>
+                        {selectedIds.length > 0 && (
+                            <>
+                                <span className="text-slate-355 dark:text-slate-655">•</span>
+                                <span className="text-[#02a9b1] dark:text-[#04cbd4] font-semibold">
+                                    {selectedIds.length} dipilih
                                 </span>
-                            )}
-                        </p>
-                    </div>
-                    <Button
-                        type="link"
-                        icon={<IconCirclePlus size={20} strokeWidth={2} />}
-                        className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white shadow-lg shadow-primary-500/40 font-semibold"
-                        label="Tambah Harga"
-                        href={route("intensity-size-prices.create")}
-                    />
-                </div>
-            </div>
+                            </>
+                        )}
+                    </span>
+                }
+            />
 
             {/* ── Toolbar ── */}
             <div className="mb-6 space-y-4">
                 <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
-                    <div className="w-full sm:w-96">
+                    <div className="w-full sm:w-[360px]">
                         <Search url={route("intensity-size-prices.index")} placeholder="Cari intensitas, ukuran, atau catatan..." />
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         <button
                             onClick={handleRefresh}
-                            className="p-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                            title="Refresh"
+                            className="w-11 h-11 rounded-[9px] border border-[#e8e8e8] dark:border-slate-700 bg-white dark:bg-slate-900 text-[#0f172a] dark:text-white hover:bg-slate-50 dark:hover:bg-slate-750 flex items-center justify-center transition-colors cursor-pointer"
+                            title="Refresh Data"
                         >
-                            <IconRefresh size={20} strokeWidth={2} />
+                            <IconRefresh size={16} />
                         </button>
                         <button
                             onClick={() => setShowFilterModal(true)}
-                            className={`p-2.5 rounded-xl transition-colors relative ${
+                            className={`w-11 h-11 rounded-[9px] border flex items-center justify-center transition-colors cursor-pointer relative ${
                                 hasActiveFilters
-                                    ? "bg-primary-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                    ? "bg-primary-100 dark:bg-slate-800 border-[#02a9b1] text-[#02a9b1]"
+                                    : "bg-white dark:bg-slate-900 border-[#e8e8e8] dark:border-slate-700 text-[#0f172a] dark:text-white hover:bg-slate-50 dark:hover:bg-slate-750"
                             }`}
                             title="Filter"
                         >
-                            <IconFilter size={20} strokeWidth={2} />
+                            <IconFilter size={16} />
                             {hasActiveFilters && (
-                                <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary-600 rounded-full border-2 border-white dark:border-slate-900" />
+                                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#02a9b1] rounded-full border-2 border-white dark:border-slate-900" />
                             )}
                         </button>
+                        <Button
+                            type="add"
+                            href={route("intensity-size-prices.create")}
+                            label="Tambah Harga"
+                        />
                     </div>
                 </div>
 
@@ -376,31 +369,30 @@ export default function Index({ intensitySizePrices, filters, intensities, sizes
                     </div>
                 )}
             </div>
-
             {/* ── Table ── */}
             {intensitySizePrices.data.length > 0 ? (
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
                                     <th className="px-4 py-4 text-left w-10">
                                         <input
                                             type="checkbox"
                                             checked={allSelected}
                                             onChange={e => handleSelectAll(e.target.checked)}
-                                            className="w-4 h-4 rounded border-2 border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
+                                            className="w-4 h-4 rounded-[5px] border-2 border-slate-300 text-[#09a374] focus:ring-2 focus:ring-[#09a374] cursor-pointer focus:ring-offset-0"
                                         />
                                     </th>
                                     {[
-                                        { label: "No",         cls: "text-left"   },
-                                        { label: "Intensitas", cls: "text-left"   },
-                                        { label: "Ukuran",     cls: "text-left"   },
-                                        { label: "Harga",      cls: "text-right"  },
-                                        { label: "Catatan",    cls: "text-left"   },
-                                        { label: "Status",     cls: "text-center" },
-                                        { label: "Dibuat",     cls: "text-left"   },
-                                        { label: "Aksi",       cls: "text-right"  },
+                                        { label: "NO",         cls: "text-left w-12" },
+                                        { label: "INTENSITAS", cls: "text-left"      },
+                                        { label: "UKURAN",     cls: "text-left"      },
+                                        { label: "HARGA",      cls: "text-left"      },
+                                        { label: "CATATAN",    cls: "text-left"      },
+                                        { label: "STATUS",     cls: "text-center"    },
+                                        { label: "DIBUAT",     cls: "text-left"      },
+                                        { label: "AKSI",       cls: "text-right"     },
                                     ].map(h => (
                                         <th key={h.label} className={`px-4 py-4 ${h.cls} text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider`}>
                                             {h.label}
@@ -416,7 +408,7 @@ export default function Index({ intensitySizePrices, filters, intensities, sizes
                                                 type="checkbox"
                                                 checked={selectedIds.includes(item.id)}
                                                 onChange={e => handleSelect(item.id, e.target.checked)}
-                                                className="w-4 h-4 rounded border-2 border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
+                                                className="w-4 h-4 rounded-[5px] border-2 border-slate-300 text-[#09a374] focus:ring-2 focus:ring-[#09a374] cursor-pointer focus:ring-offset-0"
                                             />
                                         </td>
                                         <td className="px-4 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -424,38 +416,30 @@ export default function Index({ intensitySizePrices, filters, intensities, sizes
                                         </td>
                                         <td className="px-4 py-4">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
-                                                    <IconDropletFilled size={15} className="text-slate-700 dark:text-slate-300" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{item.intensity?.name ?? "—"}</p>
-                                                    {item.intensity?.code && (
-                                                        <code className="text-xs text-slate-500 dark:text-slate-400 font-mono">{item.intensity.code}</code>
-                                                    )}
-                                                </div>
+                                                <p className="text-sm font-semibold text-[#0f172a] dark:text-white">
+                                                    {item.intensity?.name ?? "—"}
+                                                </p>
+                                                {item.intensity?.code && (
+                                                    <span className="text-[11px] font-medium text-slate-400 uppercase">
+                                                        {item.intensity.code}
+                                                    </span>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-4 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <IconScale size={14} className="text-slate-400 flex-shrink-0" />
-                                                <div>
-                                                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{item.size?.name ?? "—"}</p>
-                                                    {item.size?.volume_ml && (
-                                                        <p className="text-xs text-slate-500 dark:text-slate-400">{item.size.volume_ml} ml</p>
-                                                    )}
-                                                </div>
-                                            </div>
+                                            <span className="text-sm font-semibold text-[#0f172a] dark:text-white">
+                                                {item.size?.name ?? "—"}
+                                            </span>
                                         </td>
-                                        <td className="px-4 py-4 text-right">
-                                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                                        <td className="px-4 py-4">
+                                            <span className="text-sm font-semibold text-[#0f172a] dark:text-white whitespace-nowrap">
                                                 {item.price_formatted ?? formatRupiah(item.price)}
                                             </span>
                                         </td>
                                         <td className="px-4 py-4 max-w-[200px]">
-                                            {item.notes
-                                                ? <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">{item.notes}</p>
-                                                : <span className="text-xs text-slate-400 italic">—</span>
-                                            }
+                                            <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                                                {item.notes || "—"}
+                                            </span>
                                         </td>
                                         <td className="px-4 py-4 text-center">
                                             <div className="flex justify-center">
@@ -463,23 +447,23 @@ export default function Index({ intensitySizePrices, filters, intensities, sizes
                                             </div>
                                         </td>
                                         <td className="px-4 py-4">
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">{item.created_at}</p>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">{item.created_at}</p>
                                         </td>
                                         <td className="px-4 py-4">
-                                            <div className="flex justify-end gap-2">
+                                            <div className="flex justify-end gap-3.5">
                                                 <Link
                                                     href={route("intensity-size-prices.edit", item.id)}
-                                                    className="p-2 rounded-lg bg-warning-100 border border-slate-300 text-slate-700 hover:bg-warning-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-warning-900/70 transition-all"
+                                                    className="text-slate-400 hover:text-slate-800 dark:text-slate-500 dark:hover:text-white transition-colors cursor-pointer"
                                                     title="Edit"
                                                 >
-                                                    <IconPencilCog size={16} strokeWidth={2} />
+                                                    <IconPencilCog size={18} strokeWidth={1.8} />
                                                 </Link>
                                                 <button
                                                     onClick={() => confirmDelete(item)}
-                                                    className="p-2 rounded-lg bg-danger-100 border border-slate-300 text-slate-700 hover:bg-danger-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-danger-900/70 transition-all"
+                                                    className="text-red-500 hover:text-red-700 transition-colors cursor-pointer"
                                                     title="Hapus"
                                                 >
-                                                    <IconTrash size={16} strokeWidth={2} />
+                                                    <IconTrash size={18} strokeWidth={1.8} />
                                                 </button>
                                             </div>
                                         </td>

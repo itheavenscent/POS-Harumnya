@@ -9,6 +9,7 @@ import {
 } from "@tabler/icons-react";
 import Search from "@/Components/Dashboard/Search";
 import Pagination from "@/Components/Dashboard/Pagination";
+import PageHeader from "@/Components/Dashboard/PageHeader";
 import Button from "@/Components/Dashboard/Button";
 import toast from "react-hot-toast";
 
@@ -139,12 +140,12 @@ function SupplierCard({ supplier, onDelete }) {
 
 function StatusBadge({ isActive }) {
     return isActive ? (
-        <span className="flex items-center gap-1 text-xs font-semibold text-slate-700 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
-            <IconCircleCheck size={14} /> Aktif
+        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-[#e6fcf5] text-[#09a374] dark:bg-emerald-950/30 dark:text-[#34d399] border border-[#c3fae8] dark:border-emerald-800/20">
+            Aktif
         </span>
     ) : (
-        <span className="flex items-center gap-1 text-xs font-semibold text-slate-400 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-full">
-            <IconCircleX size={14} /> Nonaktif
+        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-[#f1f3f5] text-[#868e96] dark:bg-slate-800/40 dark:text-[#a6a7ab] border border-[#e9ecef] dark:border-slate-700/30">
+            Nonaktif
         </span>
     );
 }
@@ -168,18 +169,18 @@ function FilterPanel({ filters, paymentTerms, onFilterChange, onClearFilters }) 
         <div className="relative">
             <button
                 onClick={() => setOpen(!open)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all ${
+                className={`w-11 h-11 rounded-[9px] border flex items-center justify-center transition-colors cursor-pointer relative ${
                     open || hasFilters
-                        ? "bg-teal-600 text-white shadow-lg shadow-teal-500/30"
-                        : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                        ? "bg-primary-100 dark:bg-slate-800 border-[#02a9b1] text-[#02a9b1]"
+                        : "bg-white dark:bg-slate-900 border-[#e8e8e8] dark:border-slate-700 text-[#0f172a] dark:text-white hover:bg-slate-50 dark:hover:bg-slate-750"
                 }`}
                 aria-expanded={open}
                 aria-haspopup="true"
+                title="Filter"
             >
-                <IconFilter size={18} />
-                Filter
+                <IconFilter size={16} />
                 {activeCount > 0 && (
-                    <span className="bg-white/20 px-1.5 rounded-full text-xs">{activeCount}</span>
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#02a9b1] rounded-full border-2 border-white dark:border-slate-900" />
                 )}
             </button>
 
@@ -312,43 +313,36 @@ export default function Index({ suppliers, filters, paymentTerms = [] }) {
             <Head title="Data Supplier" />
 
             {/* ── Header ── */}
-            <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold dark:text-white flex items-center gap-2">
-                        <div className="p-2 bg-teal-600 rounded-lg text-white shadow-lg shadow-teal-500/30">
-                            <IconTruckDelivery size={20} />
-                        </div>
-                        Data Supplier
-                    </h1>
-                    <p className="text-sm font-medium text-slate-500 mt-1 ml-11">
-                        {suppliers.total} Supplier Terdaftar
+            <PageHeader
+                title="Data Supplier"
+                description={
+                    <span className="flex items-center gap-1.5 mt-1">
+                        <span>{suppliers.total} Supplier Terdaftar</span>
                         {activeFiltersCount > 0 && (
-                            <span className="ml-2 text-slate-700">• {activeFiltersCount} filter aktif</span>
+                            <>
+                                <span className="text-slate-355 dark:text-slate-655">•</span>
+                                <span className="text-[#02a9b1] dark:text-[#04cbd4] font-semibold">
+                                    {activeFiltersCount} filter aktif
+                                </span>
+                            </>
                         )}
-                    </p>
-                </div>
-                <Button
-                    type="link"
-                    href={route("suppliers.create")}
-                    icon={<IconCirclePlus size={18} />}
-                    className="bg-teal-600 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-teal-500/30 hover:bg-teal-700"
-                    label="Tambah Supplier"
-                />
-            </div>
+                    </span>
+                }
+            />
 
             {/* ── Toolbar ── */}
             <div className="mb-6 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-                <div className="w-full sm:w-80">
+                <div className="w-full sm:w-[360px]">
                     <Search url={route("suppliers.index")} placeholder="Cari nama, kode, email, telepon..." />
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                     <button
                         onClick={handleRefresh}
-                        className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                        className="w-11 h-11 rounded-[9px] border border-[#e8e8e8] dark:border-slate-700 bg-white dark:bg-slate-900 text-[#0f172a] dark:text-white hover:bg-slate-50 dark:hover:bg-slate-750 flex items-center justify-center transition-colors cursor-pointer"
                         title="Refresh data"
                         aria-label="Refresh data"
                     >
-                        <IconRefresh size={18} />
+                        <IconRefresh size={16} />
                     </button>
 
                     <FilterPanel
@@ -359,18 +353,18 @@ export default function Index({ suppliers, filters, paymentTerms = [] }) {
                     />
 
                     {/* View toggle */}
-                    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl" role="group" aria-label="Tampilan">
+                    <div className="flex bg-[#f7f9fc] dark:bg-slate-850 border border-[#e8e8e8] dark:border-slate-700 rounded-[9px] p-[3px] h-11" role="group" aria-label="Tampilan">
                         {[
-                            { mode: "grid", icon: <IconLayoutGrid size={18} />, label: "Grid view" },
-                            { mode: "list", icon: <IconList size={18} />,       label: "List view" },
+                            { mode: "grid", icon: <IconLayoutGrid size={15} />, label: "Grid view" },
+                            { mode: "list", icon: <IconList size={15} />,       label: "List view" },
                         ].map(({ mode, icon, label }) => (
                             <button
                                 key={mode}
                                 onClick={() => setViewMode(mode)}
-                                className={`p-1.5 rounded-lg transition-all ${
+                                className={`size-[36px] rounded-[7px] flex items-center justify-center transition-all border-0 cursor-pointer ${
                                     viewMode === mode
-                                        ? "bg-white dark:bg-slate-900 shadow text-slate-700"
-                                        : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                                        ? "bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-[0px_1px_2px_rgba(15,23,41,0.06)] border border-[#e8e8e8] dark:border-slate-700"
+                                        : "bg-transparent text-slate-450 hover:text-slate-700 dark:hover:text-slate-350"
                                 }`}
                                 title={label}
                                 aria-label={label}
@@ -380,6 +374,12 @@ export default function Index({ suppliers, filters, paymentTerms = [] }) {
                             </button>
                         ))}
                     </div>
+
+                    <Button
+                        type="add"
+                        href={route("suppliers.create")}
+                        label="Tambah Supplier"
+                    />
                 </div>
             </div>
 
@@ -469,23 +469,24 @@ function FilterChip({ label, onRemove }) {
 
 function SupplierTable({ data, onDelete }) {
     const headers = [
-        { label: "Supplier / Kode", cls: "" },
-        { label: "Kontak",          cls: "" },
-        { label: "Termin / Limit",  cls: "" },
-        { label: "Status",          cls: "text-center" },
-        { label: "Aksi",            cls: "text-right" },
+        { label: "NO",              cls: "text-left w-12" },
+        { label: "SUPPLIER / KODE", cls: "text-left" },
+        { label: "KONTAK",          cls: "text-left" },
+        { label: "TERMIN / LIMIT",  cls: "text-left" },
+        { label: "STATUS",          cls: "text-center" },
+        { label: "AKSI",            cls: "text-right" },
     ];
 
     return (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
                 <table className="w-full text-left">
-                    <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                    <thead className="bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-200 dark:border-slate-855">
                         <tr>
                             {headers.map((h) => (
                                 <th
                                     key={h.label}
-                                    className={`px-6 py-4 text-xs font-bold uppercase text-slate-500 tracking-wider ${h.cls}`}
+                                    className={`px-6 py-4 text-xs font-bold uppercase text-slate-700 dark:text-slate-300 tracking-wider ${h.cls}`}
                                 >
                                     {h.label}
                                 </th>
@@ -493,60 +494,61 @@ function SupplierTable({ data, onDelete }) {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                        {data.map((item) => (
+                        {data.map((item, i) => (
                             <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                <td className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                    {i + 1}
+                                </td>
                                 <td className="px-6 py-4">
-                                    <span className="text-sm font-bold dark:text-slate-200 block">{item.name}</span>
-                                    <code className="text-[10px] font-mono text-slate-700 dark:text-slate-300 uppercase mt-0.5">
+                                    <span className="text-sm font-bold text-[#0f172a] dark:text-white block">{item.name}</span>
+                                    <code className="text-xs font-semibold text-slate-400 uppercase mt-0.5 block">
                                         {item.code}
                                     </code>
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="text-sm space-y-1">
-                                        <p className="font-semibold dark:text-slate-300 flex items-center gap-1.5">
-                                            <IconUser size={14} className="text-slate-400" />
+                                        <p className="font-semibold text-[#0f172a] dark:text-white flex items-center gap-1.5">
+                                            <IconUser size={16} className="text-slate-400" />
                                             {item.contact_person || "—"}
                                         </p>
                                         {item.email && (
-                                            <p className="text-xs text-slate-500 flex items-center gap-1.5">
-                                                <IconMailFilled size={12} className="text-slate-400" />
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                                <IconMailFilled size={14} className="text-slate-400" />
                                                 {item.email}
                                             </p>
                                         )}
                                         {item.phone && (
-                                            <p className="text-xs text-slate-500 flex items-center gap-1.5">
-                                                <IconPhoneFilled size={12} className="text-slate-400" />
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                                <IconPhoneFilled size={14} className="text-slate-400" />
                                                 {item.phone}
                                             </p>
                                         )}
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <p className="text-sm font-semibold dark:text-slate-300">{item.payment_term_label}</p>
+                                    <p className="text-sm font-bold text-[#0f172a] dark:text-white">{item.payment_term_label}</p>
                                     {item.credit_limit > 0 && (
-                                        <p className="text-xs text-slate-500 mt-1">Limit: {item.formatted_credit_limit}</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Limit: {item.formatted_credit_limit}</p>
                                     )}
                                 </td>
                                 <td className="px-6 py-4 text-center">
                                     <StatusBadge isActive={item.is_active} />
                                 </td>
-                                <td className="px-6 py-4 text-right">
-                                    <div className="flex justify-end gap-2">
+                                <td className="px-6 py-4">
+                                    <div className="flex justify-end gap-3.5">
                                         <Link
                                             href={route("suppliers.edit", item.id)}
-                                            className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700
-                                                dark:text-slate-700 hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-colors"
+                                            className="text-slate-400 hover:text-slate-800 dark:text-slate-500 dark:hover:text-white transition-colors cursor-pointer"
                                             title={`Edit ${item.name}`}
                                         >
-                                            <IconPencil size={16} />
+                                            <IconPencil size={18} strokeWidth={1.8} />
                                         </Link>
                                         <button
                                             onClick={() => onDelete(item)}
-                                            className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700
-                                                dark:text-slate-300 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+                                            className="text-red-500 hover:text-red-700 transition-colors cursor-pointer"
                                             title={`Hapus ${item.name}`}
                                         >
-                                            <IconTrash size={16} />
+                                            <IconTrash size={18} strokeWidth={1.8} />
                                         </button>
                                     </div>
                                 </td>

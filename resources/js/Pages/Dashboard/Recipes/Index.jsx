@@ -9,6 +9,8 @@ import {
     IconChevronRight, IconUsers, IconAdjustments,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
+import PageHeader from "@/Components/Dashboard/PageHeader";
+import Button from "@/Components/Dashboard/Button";
 
 // ─── Badge ────────────────────────────────────────────────────────────────────
 const Badge = ({ color = "slate", children, size = "md" }) => {
@@ -40,15 +42,21 @@ const TypeDot = ({ type }) => {
 };
 
 const GenderIcon = ({ gender }) => {
-    const map = { male: "♂", female: "♀", unisex: "⚥" };
+    const map = { male: "Pria", female: "Wanita", unisex: "Unisex" };
+    const iconMap = {
+        male: <span className="text-blue-500 font-bold">♂</span>,
+        female: <span className="text-pink-500 font-bold">♀</span>,
+        unisex: <span className="text-purple-500 font-bold">⚥</span>
+    };
     const cls = {
-        male: "text-slate-700 bg-slate-100 border-blue-100",
-        female: "text-slate-700 bg-slate-100 border-pink-100",
-        unisex: "text-slate-700 bg-slate-100 border-purple-100",
+        male: "text-slate-700 bg-white border-slate-200 dark:text-slate-350 dark:bg-slate-900 dark:border-slate-800",
+        female: "text-slate-700 bg-white border-slate-200 dark:text-slate-350 dark:bg-slate-900 dark:border-slate-800",
+        unisex: "text-slate-700 bg-white border-slate-200 dark:text-slate-350 dark:bg-slate-900 dark:border-slate-800",
     };
     if (!gender) return null;
     return (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold border ${cls[gender] ?? "text-slate-400 bg-slate-50 border-slate-100"}`}>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border ${cls[gender] ?? "text-slate-400 bg-slate-50 border-slate-100"}`}>
+            {iconMap[gender]}
             {map[gender] ?? gender}
         </span>
     );
@@ -297,113 +305,119 @@ function VariantCard({ variantGroup, onDelete }) {
     const [expanded, setExpanded] = useState(false);
     const { variant, intensities, intensity_count, total_ingredients, is_any_generated, is_all_generated } = variantGroup;
 
-    const accentColor =
-        is_all_generated ? "from-emerald-400 to-emerald-500" :
-            is_any_generated ? "from-teal-400 to-teal-500" :
-                "from-amber-300 to-orange-400";
+    const statusBadge = is_all_generated ? (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#e6fcf5] text-[#09a374] dark:bg-emerald-955/20 dark:text-[#34d399] border border-[#c3fae8] dark:border-emerald-800/30">
+            Semua Generated
+        </span>
+    ) : is_any_generated ? (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#fff9db] text-[#e67e22] dark:bg-amber-955/20 dark:text-[#fbbf24] border border-[#ffe066] dark:border-amber-800/30">
+            Sebagian Generated
+        </span>
+    ) : (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#fff5f5] text-[#e74c3c] dark:bg-red-955/20 dark:text-[#f87171] border border-[#ffc9c9] dark:border-red-800/30">
+            Belum Generated
+        </span>
+    );
 
-    const statusBadge =
-        is_all_generated ? (
-            <Badge color="green"><IconCircleCheck size={9} /> Semua Generated</Badge>
-        ) : is_any_generated ? (
-            <Badge color="teal"><IconSparkles size={9} /> Sebagian Generated</Badge>
-        ) : (
-            <Badge color="amber"><IconAlertTriangle size={9} /> Belum Generated</Badge>
-        );
+    const generatedCount = intensities.filter(i => i.is_generated).length;
+    const generatedColor = generatedCount === intensity_count
+        ? "text-[#09a374] dark:text-[#34d399]"
+        : generatedCount > 0
+            ? "text-[#e67e22] dark:text-[#fbbf24]"
+            : "text-slate-700 dark:text-slate-300";
 
     return (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 hover:shadow-md shadow-sm transition-all duration-200 overflow-hidden">
-            {/* Top accent */}
-            <div className={`h-1 w-full bg-gradient-to-r ${accentColor}`} />
-
-            {/* Card header */}
-            <div className="p-5">
+        <div className="bg-white dark:bg-slate-900 rounded-[14px] border border-slate-200 dark:border-slate-800 p-5 hover:shadow-md transition-all duration-200 flex flex-col justify-between">
+            <div>
+                {/* Header */}
                 <div className="flex items-start justify-between gap-3 mb-4">
                     <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">
-                                {variant.name}
-                            </h3>
-                            <span className="text-xs font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                                {variant.code}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <GenderIcon gender={variant.gender} />
-                            {statusBadge}
-                        </div>
+                        <h3 className="text-[17px] font-bold text-[#0f172a] dark:text-white leading-tight truncate">
+                            {variant.name}
+                        </h3>
+                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mt-0.5">
+                            {variant.code}
+                        </span>
                     </div>
-                    <div className="p-2.5 bg-slate-100 dark:bg-teal-950/30 rounded-xl flex-shrink-0">
-                        <IconFlask size={20} className="text-slate-700 dark:text-slate-300" />
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <GenderIcon gender={variant.gender} />
+                        {statusBadge}
                     </div>
                 </div>
 
-                {/* Stats row */}
-                <div className="grid grid-cols-3 gap-2 mb-4">
-                    {[
-                        { label: "Intensitas", value: intensity_count, icon: <IconAdjustments size={12} className="text-slate-700" />, color: "text-slate-700" },
-                        { label: "Total Bahan", value: total_ingredients, icon: <IconDroplet size={12} className="text-slate-700" />, color: "text-slate-700" },
-                        { label: "Generated", value: `${intensities.filter(i => i.is_generated).length}/${intensity_count}`, icon: <IconPackage size={12} className="text-slate-700" />, color: "text-slate-700" },
-                    ].map(({ label, value, icon, color }) => (
-                        <div key={label} className="bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2 text-center">
-                            <div className="flex items-center justify-center gap-1 mb-0.5">{icon}</div>
-                            <div className={`font-bold tabular-nums text-sm ${color}`}>{value}</div>
-                            <div className="text-[10px] text-slate-400">{label}</div>
+                {/* Stats Panel */}
+                <div className="grid grid-cols-3 bg-[#f8fafc] dark:bg-slate-850 rounded-[12px] border border-slate-100 dark:border-slate-800 overflow-hidden divide-x divide-slate-100 dark:divide-slate-800 py-3 mb-4">
+                    <div className="text-center">
+                        <div className="text-lg sm:text-xl font-bold text-[#0f172a] dark:text-white leading-tight tabular-nums">
+                            {intensity_count}
                         </div>
-                    ))}
+                        <div className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5">
+                            Intensitas
+                        </div>
+                    </div>
+                    <div className="text-center">
+                        <div className="text-lg sm:text-xl font-bold text-[#0f172a] dark:text-white leading-tight tabular-nums">
+                            {total_ingredients}
+                        </div>
+                        <div className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5">
+                            Total Bahan
+                        </div>
+                    </div>
+                    <div className="text-center">
+                        <div className={`text-lg sm:text-xl font-bold leading-tight tabular-nums ${generatedColor}`}>
+                            {generatedCount}/{intensity_count}
+                        </div>
+                        <div className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5">
+                            Generated
+                        </div>
+                    </div>
                 </div>
 
-                {/* Intensity pills (collapsed) */}
+                {/* Intensity pills tags */}
                 {!expanded && (
                     <div className="flex flex-wrap gap-1.5 mb-4">
                         {intensities.map((it, i) => (
                             <span
                                 key={i}
-                                className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold border ${it.is_generated
-                                    ? "bg-slate-100 text-slate-700 border-slate-300"
-                                    : "bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
-                                    }`}
+                                className="inline-flex items-center px-2.5 py-0.5 rounded-[5px] text-[11px] font-bold bg-[#f8fafc] dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
                             >
-                                {it.is_generated && <IconCircleCheck size={9} />}
                                 {it.intensity.code}
                             </span>
                         ))}
                     </div>
                 )}
-
-                {/* Expand / collapse */}
-                <button
-                    onClick={() => setExpanded(!expanded)}
-                    className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${expanded
-                        ? "bg-teal-600 text-white hover:bg-teal-700 shadow-lg shadow-teal-500/20"
-                        : "bg-slate-100 dark:bg-teal-950/20 text-slate-700 dark:text-slate-300 hover:bg-teal-100 dark:hover:bg-teal-950/40 border border-slate-300 dark:border-slate-700"
-                        }`}
-                >
-                    {expanded
-                        ? <><IconChevronUp size={14} /> Sembunyikan Detail</>
-                        : <><IconChevronDown size={14} /> Lihat {intensity_count} Intensitas &amp; Resep</>
-                    }
-                </button>
             </div>
 
-            {/* Expanded detail */}
-            {expanded && (
-                <div className="border-t border-slate-100 dark:border-slate-800 px-5 pb-5">
-                    <div className="pt-4 space-y-3">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+            <div>
+                {/* Separator line & Toggle */}
+                <div className="border-t border-slate-100 dark:border-slate-800/60 my-4" />
+                <button
+                    onClick={() => setExpanded(!expanded)}
+                    className="w-full flex items-center justify-between py-1 text-[13px] font-bold text-[#02a9b1] hover:text-[#028d94] transition-colors cursor-pointer"
+                >
+                    <span>Lihat {intensity_count} Intensitas & Resep</span>
+                    {expanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
+                </button>
+
+                {/* Expanded detail */}
+                {expanded && (
+                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/60 space-y-4">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                             <IconAdjustments size={11} /> Detail per Intensitas
                         </p>
-                        {intensities.map((intensity) => (
-                            <IntensityDetailRow
-                                key={`${intensity.variant_id}-${intensity.intensity_id}`}
-                                intensity={intensity}
-                                variantId={variant.id}
-                                onDelete={onDelete}
-                            />
-                        ))}
+                        <div className="space-y-3.5">
+                            {intensities.map((intensity) => (
+                                <IntensityDetailRow
+                                    key={`${intensity.variant_id}-${intensity.intensity_id}`}
+                                    intensity={intensity}
+                                    variantId={variant.id}
+                                    onDelete={onDelete}
+                                />
+                            ))}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }
@@ -419,23 +433,39 @@ function StatsBar({ variantGroups }) {
     }, [variantGroups]);
 
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            {[
-                { label: "Total Variant", value: stats.totalVariants, icon: IconFlask, color: "text-slate-700", bg: "bg-slate-100" },
-                { label: "Total Formula", value: stats.totalFormulas, icon: IconAdjustments, color: "text-slate-700", bg: "bg-slate-100" },
-                { label: "Sudah Generated", value: stats.totalGenerated, icon: IconSparkles, color: "text-slate-700", bg: "bg-slate-100" },
-                { label: "Total Bahan", value: stats.totalIngredients, icon: IconDroplet, color: "text-slate-600", bg: "bg-slate-100" },
-            ].map(({ label, value, icon: Icon, color, bg }) => (
-                <div key={label} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}>
-                        <Icon size={18} className={color} />
-                    </div>
-                    <div>
-                        <div className={`text-xl font-bold tabular-nums ${color}`}>{value}</div>
-                        <div className="text-[11px] text-slate-500">{label}</div>
-                    </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-5 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-slate-800 shadow-sm mb-6">
+            <div className="text-center px-4 py-2 md:py-0">
+                <div className="text-2xl sm:text-[26px] font-bold text-[#0f172a] dark:text-white leading-none mb-1.5 tabular-nums">
+                    {stats.totalVariants}
                 </div>
-            ))}
+                <div className="text-xs font-semibold text-slate-450 dark:text-slate-500">
+                    Total Variant
+                </div>
+            </div>
+            <div className="text-center px-4 py-2 md:py-0">
+                <div className="text-2xl sm:text-[26px] font-bold text-[#0f172a] dark:text-white leading-none mb-1.5 tabular-nums">
+                    {stats.totalFormulas}
+                </div>
+                <div className="text-xs font-semibold text-slate-450 dark:text-slate-500">
+                    Total Formula
+                </div>
+            </div>
+            <div className="text-center px-4 py-2 md:py-0">
+                <div className="text-2xl sm:text-[26px] font-bold text-[#09a374] dark:text-[#34d399] leading-none mb-1.5 tabular-nums">
+                    {stats.totalGenerated}/{stats.totalFormulas}
+                </div>
+                <div className="text-xs font-semibold text-slate-450 dark:text-slate-500">
+                    Sudah Generated
+                </div>
+            </div>
+            <div className="text-center px-4 py-2 md:py-0">
+                <div className="text-2xl sm:text-[26px] font-bold text-[#0f172a] dark:text-white leading-none mb-1.5 tabular-nums">
+                    {stats.totalIngredients}
+                </div>
+                <div className="text-xs font-semibold text-slate-450 dark:text-slate-500">
+                    Total Bahan
+                </div>
+            </div>
         </div>
     );
 }
@@ -482,82 +512,79 @@ export default function Index({ variantRecipes }) {
             <Head title="Formula Variant" />
 
             {/* ── Page Header ── */}
-            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <div className="p-2 bg-teal-600 rounded-lg text-white shadow-lg shadow-teal-500/30">
-                            <IconFlask size={20} />
-                        </div>
-                        Formula Variant
-                    </h1>
-                    <p className="text-slate-500 text-sm mt-1 ml-11">
-                        Base recipe 30ml — tersusun per variant &amp; intensitas
-                    </p>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-                    <a
-                        href={route("recipes.import.template")}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-semibold hover:bg-slate-50 transition shadow-sm"
-                    >
-                        <IconDownload size={15} /> Template
-                    </a>
-                    <Link
-                        href={route("recipes.import.index")}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-semibold hover:bg-slate-50 transition shadow-sm"
-                    >
-                        <IconFileImport size={15} /> Import
-                    </Link>
-                    <Link
-                        href={route("recipes.create")}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-teal-500/30 hover:bg-teal-700 transition"
-                    >
-                        <IconPlus size={15} /> Buat Formula
-                    </Link>
-                </div>
-            </div>
+            <PageHeader
+                title="Formula Variant"
+                description="Base recipe 30ml — tersusun per variant & intensitas"
+            />
 
             {/* ── Stats ── */}
             {variantRecipes.length > 0 && <StatsBar variantGroups={variantRecipes} />}
 
             {/* ── Search & Filter ── */}
             {variantRecipes.length > 0 && (
-                <div className="flex flex-col sm:flex-row gap-2 mb-4">
-                    <div className="relative flex-1">
-                        <IconSearch size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <div className="flex flex-col xl:flex-row gap-3 mb-6 items-stretch xl:items-center justify-between">
+                    <div className="relative w-full xl:w-[320px] h-11">
+                        <IconSearch size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
                             type="text"
                             placeholder="Cari variant, kode, intensitas…"
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-300 focus:border-slate-300 transition"
+                            className="w-full h-full pl-10 pr-9 text-sm bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-700 rounded-[9px] text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/25 transition-all"
                         />
                         {search && (
                             <button
                                 onClick={() => setSearch("")}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-450 hover:text-slate-700"
                             >
-                                <IconX size={14} />
+                                <IconX size={15} />
                             </button>
                         )}
                     </div>
-                    <div className="flex gap-1.5 flex-wrap">
-                        {[
-                            { key: "all", label: "Semua" },
-                            { key: "all_generated", label: "✓ Semua Generated" },
-                            { key: "generated", label: "~ Sebagian" },
-                            { key: "pending", label: "⚠ Belum" },
-                        ].map(({ key, label }) => (
-                            <button
-                                key={key}
-                                onClick={() => setFilter(key)}
-                                className={`px-3 py-2 rounded-xl text-xs font-semibold border transition ${filterStatus === key
-                                    ? "bg-teal-600 text-white border-teal-600 shadow-lg shadow-teal-500/20"
-                                    : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50"
+
+                    <div className="flex flex-wrap items-center gap-3">
+                        {/* Segmented control */}
+                        <div className="flex bg-[#f7f9fc] dark:bg-slate-850 border border-[#e8e8e8] dark:border-slate-700 rounded-[9px] p-[3px] h-11" role="group">
+                            {[
+                                { key: "all", label: "Semua" },
+                                { key: "all_generated", label: "Semua Generated", dot: "bg-[#09a374]" },
+                                { key: "generated", label: "Sebagian", dot: "bg-[#e67e22]" },
+                                { key: "pending", label: "Belum", dot: "bg-[#e74c3c]" },
+                            ].map(({ key, label, dot }) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setFilter(key)}
+                                    className={`h-[36px] rounded-[7px] px-4 flex items-center gap-2 text-xs font-semibold border-0 transition-all cursor-pointer ${
+                                        filterStatus === key
+                                            ? "bg-white dark:bg-slate-900 text-[#0f172a] dark:text-white shadow-[0px_1px_2px_rgba(15,23,41,0.06)] border border-[#e8e8e8] dark:border-slate-700"
+                                            : "bg-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-350"
                                     }`}
-                            >
-                                {label}
-                            </button>
-                        ))}
+                                >
+                                    {dot && <span className={`w-2 h-2 rounded-full ${dot}`} />}
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+
+                        <a
+                            href={route("recipes.import.template")}
+                            className="h-11 px-4 bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-[9px] text-xs font-bold hover:bg-slate-50 flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                        >
+                            <IconDownload size={15} /> Template
+                        </a>
+
+                        <Link
+                            href={route("recipes.import.index")}
+                            className="h-11 px-4 bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-[9px] text-xs font-bold hover:bg-slate-50 flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                        >
+                            <IconFileImport size={15} /> Import
+                        </Link>
+
+                        <Button
+                            type="add"
+                            href={route("recipes.create")}
+                            label="Tambah Formula"
+                        />
                     </div>
                 </div>
             )}

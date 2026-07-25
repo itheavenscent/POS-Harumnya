@@ -21,6 +21,7 @@ import {
 import Search from "@/Components/Dashboard/Search";
 import Pagination from "@/Components/Dashboard/Pagination";
 import toast from "react-hot-toast";
+import PageHeader from "@/Components/Dashboard/PageHeader";
 
 // =============================================================================
 // Atoms
@@ -28,13 +29,14 @@ import toast from "react-hot-toast";
 
 function GenderBadge({ gender }) {
     const configs = {
-        male:   { bg: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",       label: "👨 Pria"    },
-        female: { bg: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",       label: "👩 Wanita"  },
-        unisex: { bg: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300", label: "🔄 Unisex" },
+        male: { icon: "♂", label: "Pria" },
+        female: { icon: "♀", label: "Wanita" },
+        unisex: { icon: "⚥", label: "Unisex" },
     };
     const config = configs[gender] || configs.unisex;
     return (
-        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border border-slate-300 dark:border-slate-700 ${config.bg}`}>
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[5px] text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350">
+            <span className="text-slate-500 font-bold">{config.icon}</span>
             {config.label}
         </span>
     );
@@ -42,12 +44,12 @@ function GenderBadge({ gender }) {
 
 function StatusBadge({ isActive }) {
     return isActive ? (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 shadow-sm">
-            <IconCircleCheck size={14} strokeWidth={2.5} /> Aktif
+        <span className="inline-flex items-center px-2 py-0.5 rounded-[5px] text-[11px] font-bold bg-[#e6fcf5] text-[#09a374] dark:bg-emerald-955/20 dark:text-[#34d399] border border-[#c3fae8] dark:border-emerald-800/30">
+            Aktif
         </span>
     ) : (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 shadow-sm">
-            <IconCircleX size={14} strokeWidth={2.5} /> Tidak Aktif
+        <span className="inline-flex items-center px-2 py-0.5 rounded-[5px] text-[11px] font-bold bg-[#fff5f5] text-[#e74c3c] dark:bg-red-955/20 dark:text-[#f87171] border border-[#ffc9c9] dark:border-red-800/30">
+            Tidak Aktif
         </span>
     );
 }
@@ -104,82 +106,102 @@ function DeleteModal({ show, item, onConfirm, onClose, loading }) {
 
 function VariantCard({ variant, isSelected, onSelect, onDelete }) {
     return (
-        <div className="group relative bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-xl hover:border-slate-300 dark:hover:border-primary-700 transition-all duration-300">
-            {/* Checkbox */}
-            <div className="absolute top-3 left-3 z-10">
-                <label className="flex items-center cursor-pointer">
-                    <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => onSelect(variant.id, e.target.checked)}
-                        className="w-5 h-5 rounded-md border-2 border-white shadow-lg text-slate-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all"
-                    />
-                </label>
-            </div>
-
-            {/* Image */}
-            <div className="relative aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 overflow-hidden">
-                {variant.image ? (
-                    <img
-                        src={variant.image}
-                        alt={variant.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        loading="lazy"
-                        onError={(e) => {
-                            e.target.src =
-                                'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="%23f1f5f9"/><text x="50%" y="50%" text-anchor="middle" fill="%2394a3b8" font-size="20">No Image</text></svg>';
-                        }}
-                    />
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                        <IconBoxSeam size={56} className="text-slate-300 dark:text-slate-600" strokeWidth={1} />
+        <div className="group relative bg-white dark:bg-slate-900 rounded-[14px] border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
+            <div>
+                {/* Image Container */}
+                <div className="relative aspect-[4/3] bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 overflow-hidden">
+                    {/* Checkbox (top-left) */}
+                    <div className="absolute top-3 left-3 z-20">
+                        <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => onSelect(variant.id, e.target.checked)}
+                            className="w-5 h-5 rounded-[5px] bg-white text-[#09a374] border border-slate-200 dark:border-slate-800 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer shadow-md transition-all"
+                        />
                     </div>
-                )}
 
-                {/* Status Badge */}
-                <div className="absolute top-3 right-3">
-                    <StatusBadge isActive={variant.is_active} />
+                    {/* Status Badge (top-right) */}
+                    <div className="absolute top-3 right-3 z-20">
+                        {variant.is_active ? (
+                            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm px-2.5 py-1 rounded-[6px] border border-slate-100 dark:border-slate-800 flex items-center gap-1.5 shadow-sm text-[11px] font-bold text-[#09a374]">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#09a374]" />
+                                Aktif
+                            </div>
+                        ) : (
+                            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm px-2.5 py-1 rounded-[6px] border border-slate-100 dark:border-slate-800 flex items-center gap-1.5 shadow-sm text-[11px] font-bold text-slate-450 dark:text-slate-500">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                Nonaktif
+                            </div>
+                        )}
+                    </div>
+
+                    {variant.image ? (
+                        <img
+                            src={variant.image}
+                            alt={variant.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            loading="lazy"
+                            onError={(e) => {
+                                e.target.src =
+                                    'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="%23f1f5f9"/><text x="50%" y="50%" text-anchor="middle" fill="%2394a3b8" font-size="20">No Image</text></svg>';
+                            }}
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                            <IconBoxSeam size={48} className="text-slate-300 dark:text-slate-600" strokeWidth={1} />
+                        </div>
+                    )}
+
+                    {/* Action Overlay */}
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-2 z-10">
+                        <Link
+                            href={route("variants.edit", variant.id)}
+                            className="p-2.5 rounded-[8px] bg-white text-slate-750 hover:bg-slate-100 hover:text-black shadow-md transition-all transform hover:scale-105"
+                            title="Edit Varian"
+                        >
+                            <IconPencilCog size={18} strokeWidth={2} />
+                        </Link>
+                        <button
+                            onClick={() => onDelete(variant)}
+                            className="p-2.5 rounded-[8px] bg-white text-slate-755 hover:bg-slate-100 hover:text-red-650 shadow-md transition-all transform hover:scale-105 cursor-pointer"
+                            title="Hapus Varian"
+                        >
+                            <IconTrash size={18} strokeWidth={2} />
+                        </button>
+                    </div>
                 </div>
 
-                {/* Action Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end justify-center pb-4 gap-2">
-                    <Link
-                        href={route("variants.edit", variant.id)}
-                        className="p-3 rounded-xl bg-white text-slate-700 hover:bg-slate-100 shadow-lg transition-all transform hover:scale-110"
-                        title="Edit Varian"
-                    >
-                        <IconPencilCog size={20} strokeWidth={2} />
-                    </Link>
-                    <button
-                        onClick={() => onDelete(variant)}
-                        className="p-3 rounded-xl bg-white text-slate-700 hover:bg-slate-100 shadow-lg transition-all transform hover:scale-110"
-                        title="Hapus Varian"
-                    >
-                        <IconTrash size={20} strokeWidth={2} />
-                    </button>
+                {/* Details / Info */}
+                <div className="p-4">
+                    <div className="flex items-start justify-between gap-2 mb-2.5">
+                        <h3 className="text-base font-bold text-[#0f172a] dark:text-white leading-tight truncate flex-1">
+                            {variant.name}
+                        </h3>
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2 py-0.5 rounded-[5px] flex-shrink-0">
+                            {variant.code}
+                        </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                        <GenderBadge gender={variant.gender} />
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-[5px] text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350">
+                            Heaven Scent
+                        </span>
+                    </div>
+
+                    {variant.description && (
+                        <p className="text-[13px] text-slate-500 dark:text-slate-450 line-clamp-2 leading-relaxed mb-1">
+                            {variant.description}
+                        </p>
+                    )}
                 </div>
             </div>
 
-            {/* Info */}
-            <div className="p-4">
-                <div className="flex items-start justify-between gap-2 mb-3">
-                    <h3 className="text-base font-bold text-slate-800 dark:text-slate-200 line-clamp-1 flex-1">
-                        {variant.name}
-                    </h3>
-                    <GenderBadge gender={variant.gender} />
-                </div>
-                <code className="text-xs text-slate-500 dark:text-slate-400 font-mono font-semibold block mb-2 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
-                    {variant.code}
-                </code>
-                {variant.description && (
-                    <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                        {variant.description}
-                    </p>
-                )}
-                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Ditambahkan: <span className="font-semibold">{variant.created_at}</span>
-                    </p>
+            <div className="p-4 pt-0">
+                <div className="border-t border-slate-100 dark:border-slate-800/60 pt-3 flex items-center justify-between text-xs text-slate-450 dark:text-slate-550">
+                    <div>
+                        Ditambahkan: <span className="font-bold text-slate-750 dark:text-slate-350">{variant.created_at}</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -411,115 +433,97 @@ export default function Index({ variants, filters }) {
             <Head title="Varian Produk" />
 
             {/* ── Page Header ── */}
-            <div className="mb-6">
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/30">
-                                <IconBoxSeam size={24} className="text-white" strokeWidth={2} />
-                            </div>
-                            Varian Produk
-                        </h1>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 flex items-center gap-2">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold">
-                                {variants.total || variants.data?.length || 0} Total Varian
-                            </span>
-                            {selectedIds.length > 0 && (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-primary-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
-                                    {selectedIds.length} Dipilih
-                                </span>
-                            )}
-                        </p>
+            <PageHeader
+                title="Varian Produk"
+                description={`${variants.total || variants.data?.length || 0} Total Varian`}
+            />
+
+            {/* ── Toolbar ── */}
+            <div className="mb-6 flex flex-col xl:flex-row gap-3 items-stretch xl:items-center justify-between">
+                <div className="w-full xl:w-[360px]">
+                    <Search
+                        url={route("variants.index")}
+                        placeholder="Cari nama varian, kode, atau deskripsi..."
+                        value={filters?.search || ""}
+                    />
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                    {/* Refresh */}
+                    <button
+                        onClick={handleRefresh}
+                        className="h-11 w-11 rounded-[9px] border border-[#e8e8e8] dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center justify-center transition-all shadow-sm cursor-pointer"
+                        title="Refresh Data"
+                    >
+                        <IconRefresh size={18} strokeWidth={2} />
+                    </button>
+
+                    {/* Filter */}
+                    <button
+                        onClick={() => setShowFilterModal(true)}
+                        className={`h-11 w-11 rounded-[9px] border flex items-center justify-center transition-all shadow-sm cursor-pointer relative ${
+                            hasActiveFilters
+                                ? "bg-primary-50 dark:bg-slate-800 text-primary-600 dark:text-primary-400 border-primary-200 dark:border-primary-800"
+                                : "bg-white dark:bg-slate-900 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-[#e8e8e8] dark:border-slate-700"
+                        }`}
+                        title="Filter"
+                    >
+                        <IconFilter size={18} strokeWidth={2} />
+                        {hasActiveFilters && (
+                            <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-primary-600 rounded-full border-2 border-white dark:border-slate-900" />
+                        )}
+                    </button>
+
+                    {/* View Toggle */}
+                    <div className="flex items-center gap-[2px] bg-[#f7f9fc] dark:bg-slate-850 border border-[#e8e8e8] dark:border-slate-700 rounded-[9px] p-[3px] h-11">
+                        {[
+                            ["grid", <IconLayoutGrid size={16} strokeWidth={2} />],
+                            ["list", <IconList size={16} strokeWidth={2} />],
+                        ].map(([mode, icon]) => (
+                            <button
+                                key={mode}
+                                onClick={() => setViewMode(mode)}
+                                className={`w-[34px] h-[34px] rounded-[7px] flex items-center justify-center transition-all cursor-pointer ${
+                                    viewMode === mode
+                                        ? "bg-white dark:bg-slate-900 text-[#0f172a] dark:text-white shadow-[0px_1px_2px_rgba(15,23,41,0.06)] border border-[#e8e8e8] dark:border-slate-700"
+                                        : "bg-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-350"
+                                }`}
+                                title={`${mode === "grid" ? "Grid" : "List"} View`}
+                            >
+                                {icon}
+                            </button>
+                        ))}
                     </div>
+
                     <Button
-                        type="link"
-                        icon={<IconCirclePlus size={20} strokeWidth={2} />}
-                        className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white shadow-lg shadow-primary-500/40 font-semibold"
-                        label="Tambah Varian"
+                        type="add"
                         href={route("variants.create")}
+                        label="Tambah Varian"
                     />
                 </div>
             </div>
 
-            {/* ── Toolbar ── */}
             <div className="mb-6 space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
-                    <div className="w-full sm:w-96">
-                        <Search
-                            url={route("variants.index")}
-                            placeholder="Cari nama varian, kode, atau deskripsi..."
-                        />
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {/* Refresh */}
-                        <button
-                            onClick={handleRefresh}
-                            className="p-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                            title="Refresh Data"
-                        >
-                            <IconRefresh size={20} strokeWidth={2} />
-                        </button>
-
-                        {/* Filter */}
-                        <button
-                            onClick={() => setShowFilterModal(true)}
-                            className={`p-2.5 rounded-xl transition-colors relative ${
-                                hasActiveFilters
-                                    ? "bg-primary-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                            }`}
-                            title="Filter"
-                        >
-                            <IconFilter size={20} strokeWidth={2} />
-                            {hasActiveFilters && (
-                                <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary-600 rounded-full border-2 border-white dark:border-slate-900" />
-                            )}
-                        </button>
-
-                        {/* View Toggle */}
-                        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-                            {[
-                                ["grid", <IconLayoutGrid size={18} strokeWidth={2} />],
-                                ["list", <IconList size={18} strokeWidth={2} />],
-                            ].map(([mode, icon]) => (
-                                <button
-                                    key={mode}
-                                    onClick={() => setViewMode(mode)}
-                                    className={`p-2 rounded-lg transition-all ${
-                                        viewMode === mode
-                                            ? "bg-white dark:bg-slate-900 text-slate-700 shadow-sm"
-                                            : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-                                    }`}
-                                    title={`${mode === "grid" ? "Grid" : "List"} View`}
-                                >
-                                    {icon}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
                 {/* Bulk Actions Bar */}
                 {selectedIds.length > 0 && (
-                    <div className="flex items-center justify-between p-4 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl">
+                    <div className="flex items-center justify-between p-4 bg-[#f8fafc] dark:bg-slate-850 border border-[#e8e8e8] dark:border-slate-700 rounded-[9px] shadow-sm">
                         <div className="flex items-center gap-3">
-                            <IconCheck size={20} className="text-slate-700 dark:text-slate-300" />
-                            <span className="text-sm font-semibold text-primary-900 dark:text-primary-100">
+                            <IconCheck size={20} className="text-[#09a374]" />
+                            <span className="text-sm font-bold text-[#0f172a] dark:text-white">
                                 {selectedIds.length} varian dipilih
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => setSelectedIds([])}
-                                className="px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-all"
+                                className="px-4 h-9 flex items-center justify-center rounded-[6px] border border-[#e8e8e8] dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 text-xs transition-all cursor-pointer"
                             >
                                 Batal
                             </button>
                             <button
                                 onClick={() => setShowBulkDeleteModal(true)}
-                                className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-all flex items-center gap-2"
+                                className="px-4 h-9 flex items-center justify-center gap-1.5 rounded-[6px] bg-[#e74c3c] hover:bg-[#c0392b] text-white font-bold text-xs transition-all cursor-pointer"
                             >
-                                <IconTrash size={16} strokeWidth={2} />
+                                <IconTrash size={15} strokeWidth={2} />
                                 Hapus {selectedIds.length} Item
                             </button>
                         </div>
@@ -573,14 +577,14 @@ export default function Index({ variants, filters }) {
                     <>
                         {/* Select All */}
                         <div className="mb-4">
-                            <label className="inline-flex items-center gap-2 cursor-pointer px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                            <label className="inline-flex items-center gap-2.5 cursor-pointer select-none">
                                 <input
                                     type="checkbox"
                                     checked={allSelected}
                                     onChange={(e) => handleSelectAll(e.target.checked)}
-                                    className="w-4 h-4 rounded border-2 border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
+                                    className="w-5 h-5 rounded-[5px] border border-slate-200 dark:border-slate-800 text-[#09a374] focus:ring-0 focus:ring-offset-0 focus:outline-none transition-all cursor-pointer"
                                 />
-                                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                <span className="text-[13px] font-bold text-[#0f172a] dark:text-white">
                                     Pilih Semua ({variants.data.length})
                                 </span>
                             </label>
@@ -611,7 +615,7 @@ export default function Index({ variants, filters }) {
                                                 type="checkbox"
                                                 checked={allSelected}
                                                 onChange={(e) => handleSelectAll(e.target.checked)}
-                                                className="w-4 h-4 rounded border-2 border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
+                                                className="w-5 h-5 rounded-[5px] border border-slate-200 dark:border-slate-800 text-[#09a374] focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer transition-all"
                                             />
                                         </th>
                                         {[
@@ -643,7 +647,7 @@ export default function Index({ variants, filters }) {
                                                     type="checkbox"
                                                     checked={selectedIds.includes(variant.id)}
                                                     onChange={(e) => handleSelect(variant.id, e.target.checked)}
-                                                    className="w-4 h-4 rounded border-2 border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
+                                                    className="w-5 h-5 rounded-[5px] border border-slate-200 dark:border-slate-800 text-[#09a374] focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer transition-all"
                                                 />
                                             </td>
                                             <td className="px-4 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -702,17 +706,17 @@ export default function Index({ variants, filters }) {
                                                 <div className="flex justify-end gap-2">
                                                     <Link
                                                         href={route("variants.edit", variant.id)}
-                                                        className="p-2 rounded-lg bg-warning-100 border border-slate-300 text-slate-700 hover:bg-warning-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-warning-900/70 transition-all"
+                                                        className="p-1 text-slate-400 hover:text-[#02a9b1] dark:hover:text-[#02a9b1] transition-all"
                                                         title="Edit"
                                                     >
-                                                        <IconPencilCog size={16} strokeWidth={2} />
+                                                        <IconPencilCog size={18} strokeWidth={2} />
                                                     </Link>
                                                     <button
                                                         onClick={() => confirmDelete(variant)}
-                                                        className="p-2 rounded-lg bg-danger-100 border border-slate-300 text-slate-700 hover:bg-danger-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-danger-900/70 transition-all"
+                                                        className="p-1 text-slate-400 hover:text-[#e74c3c] dark:hover:text-[#e74c3c] transition-all cursor-pointer"
                                                         title="Hapus"
                                                     >
-                                                        <IconTrash size={16} strokeWidth={2} />
+                                                        <IconTrash size={18} strokeWidth={2} />
                                                     </button>
                                                 </div>
                                             </td>

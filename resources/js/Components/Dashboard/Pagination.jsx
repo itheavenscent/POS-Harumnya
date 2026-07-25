@@ -1,34 +1,31 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
-import { IconChevronRight, IconChevronLeft } from '@tabler/icons-react';
 
 export default function Pagination({ links }) {
     if (!links || links.length <= 3) return null;
 
     const baseButtonStyle = `
         inline-flex items-center justify-center
-        min-w-[36px] h-9 px-3
-        text-sm font-medium
-        border border-gray-300
-        rounded-lg
+        min-w-[36px] h-9 px-3.5
+        text-xs font-semibold
+        rounded-[8px]
         transition-all duration-200
-        dark:border-gray-700
+        select-none cursor-pointer
     `;
 
     const navigationButtonStyle = `
         ${baseButtonStyle}
-        bg-white text-gray-700
-        hover:bg-gray-50 hover:border-gray-400
+        bg-white dark:bg-slate-900 text-[#0f172a] dark:text-white
+        border border-[#e8e8e8] dark:border-slate-700
+        hover:bg-slate-50 dark:hover:bg-slate-750
         disabled:opacity-50 disabled:cursor-not-allowed
-        dark:bg-gray-900 dark:text-gray-300
-        dark:hover:bg-gray-800 dark:hover:border-gray-600
     `;
 
     const pageButtonStyle = (isActive) => `
         ${baseButtonStyle}
         ${isActive
-            ? 'bg-blue-600 text-white border-blue-600 shadow-sm hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700'
-            : 'bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800'
+            ? 'bg-gradient-to-b from-[#54b8c3] to-[#39a1ac] text-white border-0 shadow-[0px_4px_6px_-1px_rgba(57,161,172,0.15)] font-bold'
+            : 'bg-white dark:bg-slate-900 text-[#0f172a] dark:text-white border border-[#e8e8e8] dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750'
         }
     `;
 
@@ -47,8 +44,7 @@ export default function Pagination({ links }) {
                                     className={navigationButtonStyle}
                                     aria-label="Previous page"
                                 >
-                                    <IconChevronLeft size={18} strokeWidth={2} />
-                                    <span className="ml-1 hidden sm:inline">Previous</span>
+                                    <span className="flex items-center gap-1">&lt; Back</span>
                                 </Link>
                             </li>
                         );
@@ -63,8 +59,7 @@ export default function Pagination({ links }) {
                                     className={navigationButtonStyle}
                                     aria-label="Next page"
                                 >
-                                    <span className="mr-1 hidden sm:inline">Next</span>
-                                    <IconChevronRight size={18} strokeWidth={2} />
+                                    <span className="flex items-center gap-1">Next &gt;</span>
                                 </Link>
                             </li>
                         );

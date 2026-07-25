@@ -5,11 +5,12 @@ import {
     IconCirclePlus, IconDatabaseOff, IconPencilCog, IconTrash,
     IconLayoutGrid, IconList, IconBolt, IconCircleCheck, IconCircleX,
     IconFilter, IconRefresh, IconX, IconCheck, IconAlertTriangle,
-    IconDropletFilled, IconFlask, IconBottle, IconRuler,
+    IconDropletFilled, IconFlask, IconBottle, IconRuler, IconChevronDown,
 } from "@tabler/icons-react";
 import Search from "@/Components/Dashboard/Search";
 import Pagination from "@/Components/Dashboard/Pagination";
 import Button from "@/Components/Dashboard/Button";
+import PageHeader from "@/Components/Dashboard/PageHeader";
 import toast from "react-hot-toast";
 
 // =============================================================================
@@ -51,41 +52,43 @@ function ConcentrationBadge({ level }) {
 function SizeQuantityMiniTable({ sizeQuantities }) {
     if (!sizeQuantities || sizeQuantities.length === 0) {
         return (
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">
-                <IconAlertTriangle size={14} className="text-slate-700 flex-shrink-0" />
-                <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
+                <IconAlertTriangle size={14} className="text-slate-400 flex-shrink-0" />
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                     Belum ada konfigurasi volume
                 </span>
             </div>
         );
     }
     return (
-        <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
+        <div className="w-full mt-2">
             <table className="w-full text-xs">
                 <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                        <th className="px-2 py-1.5 text-left font-bold text-slate-500 dark:text-slate-400">Ukuran</th>
-                        <th className="px-2 py-1.5 text-center font-bold text-slate-700">
-                            <span className="flex items-center justify-center gap-1"><IconFlask size={11} /> Bibit</span>
+                    <tr className="border-b border-[#f1f5f9] dark:border-slate-800">
+                        <th className="pb-2 text-left font-medium text-[11px] text-[#5e7e9a] dark:text-slate-400">Ukuran</th>
+                        <th className="pb-2 text-right font-medium text-[11px] text-[#5e7e9a] dark:text-slate-400">
+                            <span className="inline-flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#02a9b1]" /> Bibit
+                            </span>
                         </th>
-                        <th className="px-2 py-1.5 text-center font-bold text-slate-700">
-                            <span className="flex items-center justify-center gap-1"><IconBottle size={11} /> Alkohol</span>
+                        <th className="pb-2 text-right font-medium text-[11px] text-[#5e7e9a] dark:text-slate-400">
+                            <span className="inline-flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#015e96]" /> Alkohol
+                            </span>
                         </th>
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                <tbody className="divide-y divide-[#f1f5f9] dark:divide-slate-800">
                     {sizeQuantities.map((q, i) => (
-                        <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                            <td className="px-2 py-1.5">
-                                <span className="font-bold text-slate-700 dark:text-slate-300">{q.volume_ml}ml</span>
+                        <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                            <td className="py-2.5 font-bold text-[12px] text-[#0f172a] dark:text-white">
+                                {q.volume_ml}ml
                             </td>
-                            <td className="px-2 py-1.5 text-center">
-                                <span className="font-bold text-slate-700 dark:text-slate-300">{q.oil_quantity}</span>
-                                <span className="text-slate-400 ml-0.5">ml</span>
+                            <td className="py-2.5 text-right font-semibold text-[12px] text-[#02a9b1] dark:text-[#04cbd4]">
+                                {q.oil_quantity} ml
                             </td>
-                            <td className="px-2 py-1.5 text-center">
-                                <span className="font-bold text-slate-700 dark:text-slate-300">{q.alcohol_quantity}</span>
-                                <span className="text-slate-400 ml-0.5">ml</span>
+                            <td className="py-2.5 text-right font-semibold text-[12px] text-[#015e96] dark:text-[#047bbd]">
+                                {q.alcohol_quantity} ml
                             </td>
                         </tr>
                     ))}
@@ -149,118 +152,147 @@ function IntensityCard({ intensity, isSelected, onSelect, onDelete }) {
     const [showQty, setShowQty] = useState(false);
     const hasQty = intensity.size_quantities && intensity.size_quantities.length > 0;
 
+    const configs = {
+        extreme:  { label: "Extrait",   ratio: "2:1" },
+        strong:   { label: "EDP",       ratio: "1:1" },
+        moderate: { label: "EDT",       ratio: "1:2" },
+        light:    { label: "Body Mist", ratio: "1:4" },
+    };
+
+    const oil = parseInt(intensity.oil_ratio) || 1;
+    const alc = parseInt(intensity.alcohol_ratio) || 1;
+    const maxVal = Math.max(oil, alc);
+    const oilHeight = `${(oil / maxVal) * 100}%`;
+    const alcHeight = `${(alc / maxVal) * 100}%`;
+
     return (
-        <div className="group relative bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-xl hover:border-slate-300 dark:hover:border-primary-700 transition-all duration-300">
-            {/* Checkbox */}
-            <div className="absolute top-3 left-3 z-10">
-                <label className="flex items-center cursor-pointer">
+        <div className="bg-white dark:bg-slate-900 border border-[#e2e8f0] dark:border-slate-800 rounded-[16px] p-5 shadow-sm hover:shadow-md transition-all duration-300 relative flex flex-col justify-between">
+            {/* Header info */}
+            <div className="flex items-start gap-3">
+                <div className="pt-0.5">
                     <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={(e) => onSelect(intensity.id, e.target.checked)}
-                        className="w-5 h-5 rounded-md border-2 border-white shadow-lg text-slate-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all"
+                        className="w-[18px] h-[18px] rounded-sm  border-[#CBD5E1] dark:border-slate-700 text-[#02a9b1] focus:ring-[#02a9b1] cursor-pointer"
                     />
-                </label>
+                </div>
+                <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-[15px] text-[#0f172a] dark:text-white leading-[20px] truncate">
+                        {intensity.name}
+                    </h3>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="font-medium text-[12px] text-[#94a3b8] dark:text-slate-400">
+                            {intensity.code}
+                        </span>
+                        {intensity.is_active ? (
+                            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#10b981]">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" /> Aktif
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#64748b]">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#64748b]" /> Tidak Aktif
+                            </span>
+                        )}
+                    </div>
+                </div>
             </div>
 
-            {/* Card Header */}
-            <div className="p-5 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-800">
-                <div className="flex items-start justify-between mb-4">
-                    <StatusBadge isActive={intensity.is_active} />
-                </div>
-                <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-primary-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 group-hover:scale-110 transition-transform">
-                        <IconDropletFilled size={24} strokeWidth={1.5} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <h3 className="text-base font-bold text-slate-800 dark:text-slate-200 truncate">{intensity.name}</h3>
-                        <code className="text-xs text-slate-500 dark:text-slate-400 font-mono font-semibold">{intensity.code}</code>
-                    </div>
-                </div>
-            </div>
-
-            {/* Card Body */}
-            <div className="p-5">
-                {/* Ratio visual */}
-                <div className="mb-4">
-                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">Komposisi Ratio</p>
-                    <div className="h-2.5 w-full rounded-full overflow-hidden flex mb-2">
-                        <div
-                            className="h-full bg-primary-500"
-                            style={{ width: `${(parseInt(intensity.oil_ratio) / (parseInt(intensity.oil_ratio) + parseInt(intensity.alcohol_ratio))) * 100}%` }}
-                        />
-                        <div className="h-full bg-blue-400 flex-1" />
-                    </div>
-                    <div className="space-y-1.5">
-                        <div className="flex items-center justify-between p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                            <div className="flex items-center gap-2">
-                                <IconFlask size={13} className="text-slate-700 dark:text-slate-300" />
-                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Bibit</span>
+            {/* Ratio block */}
+            <div className="bg-[#f8fafc] dark:bg-slate-800/40 border border-[#f1f5f9] dark:border-slate-800/80 rounded-[12px] p-4 flex flex-col gap-2.5 mt-4">
+                <span className="font-bold text-[10px] text-[#5e7e9a] dark:text-slate-450 tracking-[0.5px] uppercase">
+                    KOMPOSISI RATIO
+                </span>
+                <div className="flex items-center justify-center gap-3 sm:gap-4 w-full">
+                    {/* Bibit Card */}
+                    <div className="flex flex-col items-center flex-1 max-w-[84px]">
+                        <div className="bg-white dark:bg-slate-800 border border-[#e2e8f0] dark:border-slate-700 rounded-[8px] overflow-hidden flex flex-col justify-end w-full h-[68px] relative">
+                            <div
+                                className="w-full bg-gradient-to-t from-[#02a9b1] to-[#04cbd4] rounded-t-[6px] flex items-center justify-center transition-all duration-300"
+                                style={{ height: oilHeight }}
+                            >
+                                {parseInt(oilHeight) >= 30 && (
+                                    <span className="font-bold text-[14px] text-white select-none">
+                                        {oil}
+                                    </span>
+                                )}
                             </div>
-                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{intensity.oil_ratio}</span>
-                        </div>
-                        <div className="flex items-center justify-between p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                            <div className="flex items-center gap-2">
-                                <IconBottle size={13} className="text-slate-700 dark:text-slate-300" />
-                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Alkohol</span>
-                            </div>
-                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{intensity.alcohol_ratio}</span>
-                        </div>
-                    </div>
-                    <div className="mt-2 text-center">
-                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 font-mono">
-                            {intensity.ratio_display}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Concentration Level */}
-                <div className="mb-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Level</span>
-                    <ConcentrationBadge level={intensity.concentration_level} />
-                </div>
-
-                {/* Volume per size — collapsible */}
-                <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
-                    <button
-                        type="button"
-                        onClick={() => setShowQty(!showQty)}
-                        className="w-full flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors mb-2"
-                    >
-                        <span className="flex items-center gap-1.5">
-                            <IconRuler size={13} /> Volume per Ukuran
-                        </span>
-                        <span className="flex items-center gap-1">
-                            {hasQty ? (
-                                <span className="px-1.5 py-0.5 rounded bg-green-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-bold">
-                                    {intensity.size_quantities.length} ukuran
-                                </span>
-                            ) : (
-                                <span className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-bold">
-                                    Belum diisi
-                                </span>
+                            {parseInt(oilHeight) < 30 && (
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <span className="font-bold text-[14px] text-[#02a9b1] dark:text-[#04cbd4] select-none">
+                                        {oil}
+                                    </span>
+                                </div>
                             )}
-                            <span className="text-slate-400">{showQty ? "▲" : "▼"}</span>
+                        </div>
+                        <span className="font-semibold text-[11px] text-[#5e7e9a] dark:text-slate-400 mt-1.5 text-center">
+                            Bibit
                         </span>
-                    </button>
-                    {showQty && <SizeQuantityMiniTable sizeQuantities={intensity.size_quantities} />}
-                </div>
+                    </div>
 
-                {/* Actions */}
-                <div className="flex gap-2 mt-4">
-                    <Link
-                        href={route("intensities.edit", intensity.id)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-warning-100 text-slate-700 hover:bg-warning-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-warning-900/70 transition-all font-semibold text-sm"
-                    >
-                        <IconPencilCog size={16} strokeWidth={2} /> Edit
-                    </Link>
-                    <button
-                        onClick={() => onDelete(intensity)}
-                        className="px-3 py-2 rounded-lg bg-danger-100 text-slate-700 hover:bg-danger-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-danger-900/70 transition-all"
-                    >
-                        <IconTrash size={16} strokeWidth={2} />
-                    </button>
+                    {/* Separator */}
+                    <span className="font-bold text-[18px] text-[#94a3b8] dark:text-slate-500 self-center pb-5">:</span>
+
+                    {/* Alkohol Card */}
+                    <div className="flex flex-col items-center flex-1 max-w-[84px]">
+                        <div className="bg-white dark:bg-slate-800 border border-[#e2e8f0] dark:border-slate-700 rounded-[8px] overflow-hidden flex flex-col justify-end w-full h-[68px] relative">
+                            <div
+                                className="w-full bg-gradient-to-t from-[#015e96] to-[#047bbd] rounded-t-[6px] flex items-center justify-center transition-all duration-300"
+                                style={{ height: alcHeight }}
+                            >
+                                {parseInt(alcHeight) >= 30 && (
+                                    <span className="font-bold text-[14px] text-white select-none">
+                                        {alc}
+                                    </span>
+                                )}
+                            </div>
+                            {parseInt(alcHeight) < 30 && (
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <span className="font-bold text-[14px] text-[#015e96] dark:text-[#047bbd] select-none">
+                                        {alc}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                        <span className="font-semibold text-[11px] text-[#5e7e9a] dark:text-slate-400 mt-1.5 text-center">
+                            Alkohol
+                        </span>
+                    </div>
                 </div>
+            </div>
+
+            {/* Collapsible Quantity Per Size */}
+            <div className="pt-3.5 mt-4 border-t border-[#f1f5f9] dark:border-slate-800/80">
+                <button
+                    type="button"
+                    onClick={() => setShowQty(!showQty)}
+                    className="w-full flex items-center justify-between text-[12px] font-semibold text-[#5e7e9a] dark:text-slate-400 hover:text-[#0f172a] dark:hover:text-white transition-colors mb-2 cursor-pointer border-none bg-transparent"
+                >
+                    <span>
+                        {configs[intensity.concentration_level]?.label || 'Lainnya'} ({intensity.oil_ratio}:{intensity.alcohol_ratio})
+                    </span>
+                    <span className="flex items-center gap-1 text-[#0f172a] dark:text-white font-semibold">
+                        {intensity.size_quantities?.length || 0} ukuran
+                        {showQty ? <IconChevronDown size={14} className="rotate-180 transition-transform duration-250" /> : <IconChevronDown size={14} className="transition-transform duration-250" />}
+                    </span>
+                </button>
+                {showQty && <SizeQuantityMiniTable sizeQuantities={intensity.size_quantities} />}
+            </div>
+
+            {/* Edit / Delete actions */}
+            <div className="flex gap-2 mt-4">
+                <Link
+                    href={route("intensities.edit", intensity.id)}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[8px] bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 border border-[#e2e8f0] dark:border-slate-750 text-[#0f172a] dark:text-white transition-all font-semibold text-[13px]"
+                >
+                    <IconPencilCog size={15} /> Edit
+                </Link>
+                <button
+                    onClick={() => onDelete(intensity)}
+                    className="px-3.5 py-2.5 rounded-[8px] border border-[#e2e8f0] dark:border-slate-750 hover:bg-red-50 dark:hover:bg-red-950/20 text-[#ef4444] transition-all cursor-pointer bg-transparent"
+                >
+                    <IconTrash size={15} />
+                </button>
             </div>
         </div>
     );
@@ -419,74 +451,71 @@ export default function Index({ intensities, filters }) {
             <Head title="Level Intensitas" />
 
             {/* ── Header ── */}
-            <div className="mb-6">
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/30">
-                                <IconBolt size={24} className="text-white" strokeWidth={2} />
-                            </div>
-                            Level Intensitas
-                        </h1>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 flex items-center gap-2">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold">
-                                {intensities.total ?? intensities.data?.length ?? 0} Total Level
-                            </span>
-                            {selectedIds.length > 0 && (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-primary-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
-                                    {selectedIds.length} Dipilih
+            <PageHeader
+                title="Level Intensitas"
+                description={
+                    <span className="flex items-center gap-1.5 mt-1">
+                        <span>{intensities.total ?? intensities.data?.length ?? 0} Total Level</span>
+                        {selectedIds.length > 0 && (
+                            <>
+                                <span className="text-slate-350 dark:text-slate-650">•</span>
+                                <span className="text-[#02a9b1] dark:text-[#04cbd4] font-semibold">
+                                    {selectedIds.length} dipilih
                                 </span>
-                            )}
-                        </p>
-                    </div>
-                    <Button
-                        type="link"
-                        icon={<IconCirclePlus size={20} strokeWidth={2} />}
-                        className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white shadow-lg shadow-primary-500/40 font-semibold"
-                        label="Tambah Level"
-                        href={route("intensities.create")}
-                    />
-                </div>
-            </div>
+                            </>
+                        )}
+                    </span>
+                }
+            />
 
             {/* ── Toolbar ── */}
             <div className="mb-6 space-y-4">
                 <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
-                    <div className="w-full sm:w-96">
+                    <div className="w-full sm:w-[360px]">
                         <Search url={route("intensities.index")} placeholder="Cari nama atau kode..." />
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         <button
                             onClick={() => router.reload({ only: ["intensities"] })}
-                            className="p-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            className="w-11 h-11 rounded-[9px] border border-[#e8e8e8] dark:border-slate-700 bg-white dark:bg-slate-900 text-[#0f172a] dark:text-white hover:bg-slate-50 dark:hover:bg-slate-750 flex items-center justify-center transition-colors cursor-pointer"
                             title="Refresh"
                         >
-                            <IconRefresh size={20} strokeWidth={2} />
+                            <IconRefresh size={16} />
                         </button>
                         <button
                             onClick={() => setShowFilterModal(true)}
-                            className={`p-2.5 rounded-xl transition-colors relative ${
+                            className={`w-11 h-11 rounded-[9px] border flex items-center justify-center transition-colors cursor-pointer relative ${
                                 hasActiveFilters
-                                    ? "bg-primary-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                    ? "bg-primary-100 dark:bg-slate-800 border-[#02a9b1] text-[#02a9b1]"
+                                    : "bg-white dark:bg-slate-900 border-[#e8e8e8] dark:border-slate-700 text-[#0f172a] dark:text-white hover:bg-slate-50 dark:hover:bg-slate-750"
                             }`}
+                            title="Filter"
                         >
-                            <IconFilter size={20} strokeWidth={2} />
+                            <IconFilter size={16} />
                             {hasActiveFilters && (
-                                <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary-600 rounded-full border-2 border-white dark:border-slate-900" />
+                                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#02a9b1] rounded-full border-2 border-white dark:border-slate-900" />
                             )}
                         </button>
-                        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-                            {[["grid", <IconLayoutGrid size={18} strokeWidth={2} />], ["list", <IconList size={18} strokeWidth={2} />]].map(([mode, icon]) => (
+                        <div className="flex items-center gap-[2px] bg-[#f7f9fc] dark:bg-slate-850 border border-[#e8e8e8] dark:border-slate-700 rounded-[9px] p-[3px] h-11">
+                            {[["grid", <IconLayoutGrid size={15} />], ["list", <IconList size={15} />]].map(([mode, icon]) => (
                                 <button
                                     key={mode}
                                     onClick={() => setViewMode(mode)}
-                                    className={`p-2 rounded-lg transition-all ${viewMode === mode ? "bg-white dark:bg-slate-900 text-slate-700 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
+                                    className={`size-[36px] rounded-[7px] flex items-center justify-center transition-all border-0 cursor-pointer ${
+                                        viewMode === mode
+                                            ? "bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-[0px_1px_2px_rgba(15,23,41,0.06)] border border-[#e8e8e8] dark:border-slate-700"
+                                            : "bg-transparent text-slate-450 hover:text-slate-700 dark:hover:text-slate-350"
+                                    }`}
                                 >
                                     {icon}
                                 </button>
                             ))}
                         </div>
+                        <Button
+                            type="add"
+                            href={route("intensities.create")}
+                            label="Tambah Level"
+                        />
                     </div>
                 </div>
 
@@ -530,12 +559,12 @@ export default function Index({ intensities, filters }) {
                 viewMode === "grid" ? (
                     <>
                         <div className="mb-4">
-                            <label className="inline-flex items-center gap-2 cursor-pointer px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                            <label className="inline-flex items-center gap-2 cursor-pointer px-4 py-2.5 font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                                 <input
                                     type="checkbox"
                                     checked={allSelected}
                                     onChange={(e) => handleSelectAll(e.target.checked)}
-                                    className="w-4 h-4 rounded border-2 border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
+                                    className="w-4 h-4 rounded-sm  border-[1.40px] border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
                                 />
                                 <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                                     Pilih Semua ({intensities.data.length})

@@ -9,6 +9,7 @@ import {
 } from "@tabler/icons-react";
 import Search from "@/Components/Dashboard/Search";
 import Pagination from "@/Components/Dashboard/Pagination";
+import PageHeader from "@/Components/Dashboard/PageHeader";
 import toast from "react-hot-toast";
 
 // =============================================================================
@@ -27,14 +28,18 @@ function StatusBadge({ isActive }) {
     );
 }
 
-function SizeCategoryBadge({ volumeMl }) {
+function SizeCategoryLabel({ volumeMl }) {
+    let label = "Small";
     if (volumeMl >= 100) {
-        return <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">Large</span>;
+        label = "Large";
+    } else if (volumeMl >= 50) {
+        label = "Medium";
     }
-    if (volumeMl >= 50) {
-        return <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-orange-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">Medium</span>;
-    }
-    return <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">Small</span>;
+    return (
+        <p className="font-medium text-[12px] text-[#0f172a] dark:text-white whitespace-nowrap">
+            {label}
+        </p>
+    );
 }
 
 // =============================================================================
@@ -245,64 +250,56 @@ export default function Index({ sizes, filters }) {
             <Head title="Ukuran Produk" />
 
             {/* ── Header ── */}
-            <div className="mb-6">
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/30">
-                                <IconScale size={24} className="text-white" strokeWidth={2} />
-                            </div>
-                            Ukuran Produk
-                        </h1>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 flex items-center gap-2">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold">
-                                {sizes.total ?? sizes.data?.length ?? 0} Total Ukuran
-                            </span>
-                            {selectedIds.length > 0 && (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-primary-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
-                                    {selectedIds.length} Dipilih
+            <PageHeader
+                title="Ukuran Produk"
+                description={
+                    <span className="flex items-center gap-1.5 mt-1">
+                        <span>{sizes.total ?? sizes.data?.length ?? 0} Total Ukuran</span>
+                        {selectedIds.length > 0 && (
+                            <>
+                                <span className="text-slate-355 dark:text-slate-655">•</span>
+                                <span className="text-[#02a9b1] dark:text-[#04cbd4] font-semibold">
+                                    {selectedIds.length} dipilih
                                 </span>
-                            )}
-                        </p>
-                    </div>
-                    <Button
-                        type="link"
-                        icon={<IconCirclePlus size={20} strokeWidth={2} />}
-                        className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white shadow-lg shadow-primary-500/40 font-semibold"
-                        label="Tambah Ukuran"
-                        href={route("sizes.create")}
-                    />
-                </div>
-            </div>
+                            </>
+                        )}
+                    </span>
+                }
+            />
 
             {/* ── Toolbar ── */}
             <div className="mb-6 space-y-4">
                 <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
-                    <div className="w-full sm:w-96">
+                    <div className="w-full sm:w-[360px]">
                         <Search url={route("sizes.index")} placeholder="Cari nama atau volume (ml)..." />
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         <button
                             onClick={handleRefresh}
-                            className="p-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            className="w-11 h-11 rounded-[9px] border border-[#e8e8e8] dark:border-slate-700 bg-white dark:bg-slate-900 text-[#0f172a] dark:text-white hover:bg-slate-50 dark:hover:bg-slate-750 flex items-center justify-center transition-colors cursor-pointer"
                             title="Refresh Data"
                         >
-                            <IconRefresh size={20} strokeWidth={2} />
+                            <IconRefresh size={16} />
                         </button>
                         <button
                             onClick={() => setShowFilterModal(true)}
-                            className={`p-2.5 rounded-xl transition-colors relative ${
+                            className={`w-11 h-11 rounded-[9px] border flex items-center justify-center transition-colors cursor-pointer relative ${
                                 hasActiveFilters
-                                    ? "bg-primary-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                    ? "bg-primary-100 dark:bg-slate-800 border-[#02a9b1] text-[#02a9b1]"
+                                    : "bg-white dark:bg-slate-900 border-[#e8e8e8] dark:border-slate-700 text-[#0f172a] dark:text-white hover:bg-slate-50 dark:hover:bg-slate-750"
                             }`}
                             title="Filter"
                         >
-                            <IconFilter size={20} strokeWidth={2} />
+                            <IconFilter size={16} />
                             {hasActiveFilters && (
-                                <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary-600 rounded-full border-2 border-white dark:border-slate-900" />
+                                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#02a9b1] rounded-full border-2 border-white dark:border-slate-900" />
                             )}
                         </button>
+                        <Button
+                            type="add"
+                            href={route("sizes.create")}
+                            label="Tambah Ukuran"
+                        />
                     </div>
                 </div>
 
@@ -343,7 +340,7 @@ export default function Index({ sizes, filters }) {
 
             {/* ── Table ── */}
             {sizes.data.length > 0 ? (
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
@@ -353,7 +350,7 @@ export default function Index({ sizes, filters }) {
                                             type="checkbox"
                                             checked={allSelected}
                                             onChange={(e) => handleSelectAll(e.target.checked)}
-                                            className="w-4 h-4 rounded border-2 border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
+                                            className="w-4 h-4 rounded-[5px] border-2 border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
                                         />
                                     </th>
                                     {[
@@ -380,7 +377,7 @@ export default function Index({ sizes, filters }) {
                                                 type="checkbox"
                                                 checked={selectedIds.includes(size.id)}
                                                 onChange={(e) => handleSelect(size.id, e.target.checked)}
-                                                className="w-4 h-4 rounded border-2 border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
+                                                className="w-4 h-4 rounded-[5px] border-2 border-slate-300 text-slate-700 focus:ring-2 focus:ring-primary-500"
                                             />
                                         </td>
                                         <td className="px-4 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -400,10 +397,10 @@ export default function Index({ sizes, filters }) {
                                             </span>
                                         </td>
                                         <td className="px-4 py-4 text-center">
-                                            <SizeCategoryBadge volumeMl={size.volume_ml} />
+                                            <SizeCategoryLabel volumeMl={size.volume_ml} />
                                         </td>
                                         <td className="px-4 py-4 text-center">
-                                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-mono font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                            <span className="font-semibold text-[14px] text-[#0f172a] dark:text-white">
                                                 #{size.sort_order}
                                             </span>
                                         </td>

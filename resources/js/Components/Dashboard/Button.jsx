@@ -127,6 +127,34 @@ export default function Button({
                     </span>
                 </button>
             )}
+            {type === "add" && (
+                href ? (
+                    <Link
+                        href={href}
+                        className={`group border-2 border-[rgba(255,255,255,0.12)] border-solid flex gap-[7px] h-11 items-center px-4 relative rounded-[8px] cursor-pointer transition-all select-none overflow-hidden ${className || ""}`}
+                        {...props}
+                    >
+                        <div aria-hidden className="absolute bg-gradient-to-b from-[#54b8c3] to-[#39a1ac] group-hover:from-[#49adb7] group-hover:to-[#31929d] inset-0 pointer-events-none" />
+                        {icon && <span className="relative z-10 text-white flex items-center justify-center">{icon}</span>}
+                        <span className="font-semibold text-[12px] text-white whitespace-nowrap leading-none relative z-10">
+                            {label}
+                        </span>
+                        <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_0px_0px_0px_1px_rgba(16,24,40,0.24),inset_0px_6px_6px_0px_rgba(255,255,255,0.1),inset_0px_-6px_6px_0px_rgba(0,0,0,0.1)] z-20" />
+                    </Link>
+                ) : (
+                    <button
+                        className={`group border-2 border-[rgba(255,255,255,0.12)] border-solid flex gap-[7px] h-11 items-center px-4 relative rounded-[8px] cursor-pointer transition-all select-none overflow-hidden ${className || ""}`}
+                        {...props}
+                    >
+                        <div aria-hidden className="absolute bg-gradient-to-b from-[#54b8c3] to-[#39a1ac] group-hover:from-[#49adb7] group-hover:to-[#31929d] inset-0 pointer-events-none" />
+                        {icon && <span className="relative z-10 text-white flex items-center justify-center">{icon}</span>}
+                        <span className="font-semibold text-[12px] text-white whitespace-nowrap leading-none relative z-10">
+                            {label}
+                        </span>
+                        <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_0px_0px_0px_1px_rgba(16,24,40,0.24),inset_0px_6px_6px_0px_rgba(255,255,255,0.1),inset_0px_-6px_6px_0px_rgba(0,0,0,0.1)] z-20" />
+                    </button>
+                )
+            )}
         </>
     );
 }
