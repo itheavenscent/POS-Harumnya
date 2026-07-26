@@ -522,8 +522,8 @@ export default function Index({ variantRecipes }) {
 
             {/* ── Search & Filter ── */}
             {variantRecipes.length > 0 && (
-                <div className="flex flex-col xl:flex-row gap-3 mb-6 items-stretch xl:items-center justify-between">
-                    <div className="relative w-full xl:w-[320px] h-11">
+                <div className="flex flex-col xl:flex-row gap-3.5 mb-6 items-stretch xl:items-center justify-between">
+                    <div className="relative w-full xl:w-[320px] h-11 flex-shrink-0">
                         <IconSearch size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
                             type="text"
@@ -542,9 +542,9 @@ export default function Index({ variantRecipes }) {
                         )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-3 w-full xl:w-auto overflow-x-auto flex-nowrap scrollbar-none py-1">
                         {/* Segmented control */}
-                        <div className="flex bg-[#f7f9fc] dark:bg-slate-850 border border-[#e8e8e8] dark:border-slate-700 rounded-[9px] p-[3px] h-11" role="group">
+                        <div className="flex bg-[#f7f9fc] dark:bg-slate-850 border border-[#e8e8e8] dark:border-slate-700 rounded-[9px] p-[3px] h-11 overflow-x-auto flex-nowrap flex-shrink-0 scrollbar-none" role="group">
                             {[
                                 { key: "all", label: "Semua" },
                                 { key: "all_generated", label: "Semua Generated", dot: "bg-[#09a374]" },
@@ -554,13 +554,13 @@ export default function Index({ variantRecipes }) {
                                 <button
                                     key={key}
                                     onClick={() => setFilter(key)}
-                                    className={`h-[36px] rounded-[7px] px-4 flex items-center gap-2 text-xs font-semibold border-0 transition-all cursor-pointer ${
+                                    className={`h-[36px] rounded-[7px] px-3.5 flex items-center gap-2 text-xs font-semibold border-0 transition-all cursor-pointer flex-shrink-0 ${
                                         filterStatus === key
                                             ? "bg-white dark:bg-slate-900 text-[#0f172a] dark:text-white shadow-[0px_1px_2px_rgba(15,23,41,0.06)] border border-[#e8e8e8] dark:border-slate-700"
                                             : "bg-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-350"
                                     }`}
                                 >
-                                    {dot && <span className={`w-2 h-2 rounded-full ${dot}`} />}
+                                    {dot && <span className={`w-2 h-2 rounded-full ${dot} flex-shrink-0`} />}
                                     {label}
                                 </button>
                             ))}
@@ -568,14 +568,14 @@ export default function Index({ variantRecipes }) {
 
                         <a
                             href={route("recipes.import.template")}
-                            className="h-11 px-4 bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-[9px] text-xs font-bold hover:bg-slate-50 flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                            className="h-11 px-4 bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-[9px] text-xs font-bold hover:bg-slate-50 flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer flex-shrink-0"
                         >
                             <IconDownload size={15} /> Template
                         </a>
 
                         <Link
                             href={route("recipes.import.index")}
-                            className="h-11 px-4 bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-[9px] text-xs font-bold hover:bg-slate-50 flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                            className="h-11 px-4 bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-[9px] text-xs font-bold hover:bg-slate-50 flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer flex-shrink-0"
                         >
                             <IconFileImport size={15} /> Import
                         </Link>
@@ -584,6 +584,7 @@ export default function Index({ variantRecipes }) {
                             type="add"
                             href={route("recipes.create")}
                             label="Tambah Formula"
+                            className="flex-shrink-0"
                         />
                     </div>
                 </div>

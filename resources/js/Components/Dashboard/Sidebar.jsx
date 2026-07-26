@@ -67,10 +67,9 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
                 border-r
                 border-[#e8e8e8]    dark:border-slate-800
                 transition-colors duration-300
-            ">
-                <style>{`
-                    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
-                    .sb-wrap { font-family: 'Plus Jakarta Sans', sans-serif; }
+            ">                <style>{`
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;850&display=swap');
+                    .sb-wrap { font-family: 'Inter', sans-serif; }
 
                     /* Scrollbar */
                     .sb-scroll::-webkit-scrollbar { width: 3px; }
@@ -86,26 +85,28 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
 
                     /* ── Active link expanded ── */
                     a[data-active="true"].sb-link-exp {
-                        color: #1A6B77 !important;
-                        background: #E4F6F8 !important;
-                        border-left-color: #56B8C3 !important;
-                        font-weight: 700 !important;
+                        color: #0f172a !important;
+                        background: #ffffff !important;
+                        border: 1px solid #f2f2f2 !important;
+                        font-weight: 600 !important;
+                        box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.05), inset 0px 2px 2px rgba(221, 221, 221, 0.29), 0px 0px 0px 1px rgba(132, 132, 132, 0.2) !important;
                     }
                     .dark a[data-active="true"].sb-link-exp {
-                        color: #f1f5f9 !important;
-                        background: rgba(86,184,195,0.12) !important;
-                        border-left-color: #56B8C3 !important;
-                        font-weight: 700 !important;
+                        color: #ffffff !important;
+                        background: #1e293b !important;
+                        border: 1px solid #334155 !important;
+                        font-weight: 600 !important;
+                        box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.05), inset 0px 2px 2px rgba(0, 0, 0, 0.2), 0px 0px 0px 1px rgba(255, 255, 255, 0.05) !important;
                     }
                     a[data-active="true"].sb-link-exp .sb-icon {
-                        background: linear-gradient(135deg, #56B8C3 0%, #3A9DAA 100%) !important;
-                        box-shadow: 0 3px 10px rgba(86,184,195,0.4) !important;
-                        color: #fff !important;
+                        background: transparent !important;
+                        box-shadow: none !important;
+                        color: #0f172a !important;
                     }
                     .dark a[data-active="true"].sb-link-exp .sb-icon {
-                        background: linear-gradient(135deg, #56B8C3 0%, #3A9DAA 100%) !important;
-                        box-shadow: 0 3px 10px rgba(86,184,195,0.3) !important;
-                        color: #fff !important;
+                        background: transparent !important;
+                        box-shadow: none !important;
+                        color: #ffffff !important;
                     }
 
                     /* ── Inactive link expanded ── */
@@ -126,14 +127,26 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
 
                     /* ── Active link collapsed ── */
                     a[data-active="true"].sb-link-col {
-                        background: linear-gradient(135deg, #56B8C3 0%, #3A9DAA 100%) !important;
-                        color: #fff !important;
-                        box-shadow: 0 3px 12px rgba(86,184,195,0.45) !important;
+                        color: #0f172a !important;
+                        background: #ffffff !important;
+                        border: 1px solid #f2f2f2 !important;
+                        box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.05), inset 0px 2px 2px rgba(221, 221, 221, 0.29), 0px 0px 0px 1px rgba(132, 132, 132, 0.2) !important;
                     }
                     .dark a[data-active="true"].sb-link-col {
-                        background: linear-gradient(135deg, #56B8C3 0%, #3A9DAA 100%) !important;
-                        color: #fff !important;
-                        box-shadow: 0 3px 12px rgba(86,184,195,0.3) !important;
+                        color: #ffffff !important;
+                        background: #1e293b !important;
+                        border: 1px solid #334155 !important;
+                        box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.05), inset 0px 2px 2px rgba(0, 0, 0, 0.2), 0px 0px 0px 1px rgba(255, 255, 255, 0.05) !important;
+                    }
+                    a[data-active="true"].sb-link-col .sb-icon {
+                        background: transparent !important;
+                        box-shadow: none !important;
+                        color: #0f172a !important;
+                    }
+                    .dark a[data-active="true"].sb-link-col .sb-icon {
+                        background: transparent !important;
+                        box-shadow: none !important;
+                        color: #ffffff !important;
                     }
 
                     /* ── Inactive link collapsed ── */
@@ -157,24 +170,17 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
                         flex-shrink-0 flex transition-colors duration-300
                         ${expanded ? 'flex-row items-center justify-between px-3.5 h-16' : 'flex-col gap-2.5 py-4 px-1 items-center justify-center'}
                     `}>
-                        <a href="/" className="flex items-center gap-3 no-underline min-w-0">
-                            <div className="w-[38px] h-[38px] rounded-[11px] overflow-hidden flex-shrink-0
-                                border-2 border-[rgba(86,184,195,0.3)] dark:border-slate-700"
-                                style={{ boxShadow: "0 4px 14px rgba(86,184,195,0.2)" }}>
-                                <img src="/Logo.png" alt="Harumnya"
-                                    className="w-full h-full object-cover block" />
-                            </div>
-                            {expanded && (
-                                <div className="min-w-0">
-                                    <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 21, fontWeight: 700, letterSpacing: -0.3, lineHeight: 1 }}
-                                        className="text-[#0D2B30] dark:text-slate-100 transition-colors duration-300">
-                                        Harumnya
-                                    </div>
-                                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}
-                                        className="text-[#56B8C3] dark:text-[#56B8C3] mt-[3px]">
-                                        Parfum · POS
-                                    </div>
-                                </div>
+                        <a href="/" className="flex items-center no-underline min-w-0">
+                            {expanded ? (
+                                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 550, letterSpacing: "-0.198px" }}
+                                    className="text-[#0f172a] dark:text-white m-0 select-none">
+                                    Harumnya
+                                </p>
+                            ) : (
+                                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 550, letterSpacing: "-0.198px" }}
+                                    className="text-[#0f172a] dark:text-white m-0 select-none">
+                                    H
+                                </p>
                             )}
                         </a>
 
