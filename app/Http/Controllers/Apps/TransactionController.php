@@ -1674,6 +1674,7 @@ class TransactionController extends Controller
                 'size_ml'             => $reward->size?->volume_ml,
                 'intensity_id'        => $reward->intensity_id,
                 'size_id'             => $reward->size_id,
+                'packaging_material_id' => $reward->packaging_material_id,
             ];
 
             if ($item['reward_type'] === 'reward_item' && $reward->rewardItem) {
@@ -1691,6 +1692,7 @@ class TransactionController extends Controller
                     'points_amount' => $p->points_amount,
                     'intensity_id'  => $p->intensity_id,
                     'size_id'       => $p->size_id,
+                    'packaging_material_id' => $p->packaging_material_id,
                     'reward_item_name' => $p->reward_type === 'reward_item' && $p->rewardItem ? $p->rewardItem->name : null,
                 ])->values()->all();
             }
@@ -1720,6 +1722,7 @@ class TransactionController extends Controller
             'reward_item_id'   => 'nullable|uuid|exists:reward_items,id',
             'points_amount'    => 'nullable|integer|min:1',
             'reward_label'     => 'nullable|string|max:200',
+            'packaging_material_id' => 'nullable|uuid|exists:packaging_materials,id',
         ]);
 
         $user    = Auth::user();
@@ -1755,8 +1758,24 @@ class TransactionController extends Controller
                 ->value('price') ?? 0;
         }
 
-        DB::transaction(function () use ($request, $user, $storeId, $discount, $price) {
-            Cart::create([
+        // Botol yang otomatis ikut ke keranjang saat hadiah parfum:
+        //   1. Pakai packaging_material_id eksplisit dari reward/pool, atau
+        //   2. Fallback: botol default (kategori "Botol") yang cocok dgn ukuran hadiah.
+        $freeBottleId = null;
+        if ($request->variant_id && $request->size_id) {
+            $freeBottleId = $request->packaging_material_id;
+
+            if (!$freeBottleId) {
+                $freeBottleId = PackagingMaterial::where('size_id', $request->size_id)
+                    ->where('is_active', true)
+                    ->whereHas('category', fn ($q) => $q->where('name', 'Botol'))
+                    ->orderBy('sort_order')
+                    ->value('id');
+            }
+        }
+
+        DB::transaction(function () use ($request, $user, $storeId, $discount, $price, $freeBottleId) {
+            $cart = Cart::create([
                 'cashier_id'       => $user->id,
                 'store_id'         => $storeId,
                 'variant_id'       => $request->variant_id,
@@ -1771,6 +1790,16 @@ class TransactionController extends Controller
                 'is_free'          => true,
                 'notes'            => 'Reward: ' . ($request->reward_label ?? $discount->name),
             ]);
+
+            // Botol hadiah — gratis, menempel pada baris reward parfum
+            if ($freeBottleId) {
+                CartPackaging::create([
+                    'cart_id'               => $cart->id,
+                    'packaging_material_id' => $freeBottleId,
+                    'qty'                   => 1,
+                    'unit_price'            => 0,
+                ]);
+            }
         });
 
         return back();

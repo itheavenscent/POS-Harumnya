@@ -19,6 +19,7 @@ class DiscountRewardPool extends Model
         'variant_id',
         'intensity_id',
         'size_id',
+        'packaging_material_id',
         'reward_item_id',
         'points_amount',
         'label',
@@ -71,5 +72,10 @@ class DiscountRewardPool extends Model
     public function rewardItem(): BelongsTo
     {
         return $this->belongsTo(RewardItem::class, 'reward_item_id');
+    }
+
+    public function packagingMaterial(): BelongsTo
+    {
+        return $this->belongsTo(PackagingMaterial::class, 'packaging_material_id');
     }
 }

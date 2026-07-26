@@ -1354,6 +1354,7 @@ export default function Index({
             variant_id: variant.id,
             intensity_id: reward?.intensity_id ?? null,
             size_id: reward?.size_id ?? null,
+            packaging_material_id: reward?.packaging_material_id ?? null,
             reward_label: label,
         }, {
             preserveScroll: true,
@@ -1945,6 +1946,44 @@ export default function Index({
                             )}
                         </div>
 
+                        {/* Pelanggan (dipindah dari halaman pembayaran ke atas keranjang) */}
+                        <div className="flex-shrink-0 px-3 py-2 border-b border-slate-100 dark:border-slate-800 relative" ref={customerRef}>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><IconUser size={10} /> Pelanggan</label>
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1 relative">
+                                    <IconSearch size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300" />
+                                    <input
+                                        type="text" placeholder="Cari / pilih pelanggan (No. Telepon)..."
+                                        value={selectedCustomer ? (selectedCustomer.phone || selectedCustomer.name) : customerSearch}
+                                        onClick={() => { if (selectedCustomer) { setSelectedCustomer(null); setCustomerSearch(""); } setShowCustomerDropdown(true); }}
+                                        onChange={e => { setCustomerSearch(e.target.value); setShowCustomerDropdown(true); if (selectedCustomer) setSelectedCustomer(null); }}
+                                        className="w-full h-9 pl-8 pr-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white"
+                                    />
+                                </div>
+                                <button onClick={() => setShowAddCustomer(true)} className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-primary-950/30 text-slate-700 flex items-center justify-center hover:bg-primary-100 flex-shrink-0" title="Tambah Pelanggan Baru">
+                                    <IconUserPlus size={15} />
+                                </button>
+                            </div>
+                            {selectedCustomer && (
+                                <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                                    <p className="text-[11px] text-slate-700 dark:text-slate-300 flex items-center gap-1"><IconCheck size={11} /> {selectedCustomer.phone || selectedCustomer.name}</p>
+                                    {Number(selectedCustomer.points ?? 0) > 0 && <span className="text-[10px] text-slate-500 font-bold">{Number(selectedCustomer.points).toLocaleString("id-ID")} poin</span>}
+                                    {Number(selectedCustomer.points ?? 0) >= loyalty_reward_threshold && <span className="ml-auto text-[10px] font-black text-amber-600">🏆 Reward tersedia</span>}
+                                </div>
+                            )}
+                            {showCustomerDropdown && !selectedCustomer && (
+                                <div className="absolute top-full left-3 right-3 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-30 overflow-hidden max-h-44 overflow-y-auto">
+                                    <button onClick={() => { setSelectedCustomer({ id: null, name: "Pelanggan Umum" }); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2 text-xs text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800">👤 Pelanggan Umum (Walk-in)</button>
+                                    {filteredCustomers.map(c => (
+                                        <button key={c.id} onClick={() => { setSelectedCustomer(c); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                                            <p className="font-semibold text-xs text-slate-800 dark:text-white">{c.phone || "Tanpa No. HP"}</p>
+                                            <p className="text-[10px] text-slate-400">{c.name}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
                         {/* Cart items */}
                         <div className="flex-1 overflow-y-auto min-h-0 p-3 space-y-2">
                             {carts.length === 0 && cartPackagings.length === 0 ? (
@@ -2145,7 +2184,7 @@ export default function Index({
                     {/* Body — selalu 2 kolom (juga di tab kecil) agar tidak perlu scroll */}
                     <div className="flex-1 overflow-y-auto p-2 sm:p-3">
                         <div className="mx-auto max-w-4xl grid grid-cols-3 gap-2 sm:gap-3">
-                            {/* ── Kolom kanan (kecil): Sales + Pelanggan ── */}
+                            {/* ── Kolom kanan (kecil): Sales (Pelanggan dipindah ke atas keranjang) ── */}
                             <div className="col-span-1 order-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 space-y-2.5 h-fit">
                                 {/* Sales Person (wajib) */}
                                 <div className="relative">
@@ -2169,44 +2208,6 @@ export default function Index({
                                                 </button>
                                             ))}
                                             {salesPeople.length === 0 && <p className="p-3 text-center text-xs text-slate-400">Belum ada sales</p>}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Pelanggan */}
-                                <div className="relative" ref={customerRef}>
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><IconUser size={10} /> Pelanggan</label>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex-1 relative">
-                                            <IconSearch size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300" />
-                                            <input
-                                                type="text" placeholder="Cari Nomor Telepon..."
-                                                value={selectedCustomer ? (selectedCustomer.phone || selectedCustomer.name) : customerSearch}
-                                                onClick={() => { if (selectedCustomer) { setSelectedCustomer(null); setCustomerSearch(""); } setShowCustomerDropdown(true); }}
-                                                onChange={e => { setCustomerSearch(e.target.value); setShowCustomerDropdown(true); if (selectedCustomer) setSelectedCustomer(null); }}
-                                                className="w-full h-9 pl-8 pr-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white"
-                                            />
-                                        </div>
-                                        <button onClick={() => setShowAddCustomer(true)} className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-primary-950/30 text-slate-700 flex items-center justify-center hover:bg-primary-100 flex-shrink-0" title="Tambah Pelanggan Baru">
-                                            <IconUserPlus size={15} />
-                                        </button>
-                                    </div>
-                                    {selectedCustomer && (
-                                        <div className="mt-1.5 flex items-center gap-2 flex-wrap">
-                                            <p className="text-[11px] text-slate-700 dark:text-slate-300 flex items-center gap-1"><IconCheck size={11} /> {selectedCustomer.phone || selectedCustomer.name}</p>
-                                            {Number(selectedCustomer.points ?? 0) > 0 && <span className="text-[10px] text-slate-500 font-bold">{Number(selectedCustomer.points).toLocaleString("id-ID")} poin</span>}
-                                            {Number(selectedCustomer.points ?? 0) >= loyalty_reward_threshold && <span className="ml-auto text-[10px] font-black text-amber-600">🏆 Reward tersedia</span>}
-                                        </div>
-                                    )}
-                                    {showCustomerDropdown && !selectedCustomer && (
-                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-30 overflow-hidden max-h-44 overflow-y-auto">
-                                            <button onClick={() => { setSelectedCustomer({ id: null, name: "Pelanggan Umum" }); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2 text-xs text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800">👤 Pelanggan Umum (Walk-in)</button>
-                                            {filteredCustomers.map(c => (
-                                                <button key={c.id} onClick={() => { setSelectedCustomer(c); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0">
-                                                    <p className="font-semibold text-xs text-slate-800 dark:text-white">{c.phone || "Tanpa No. HP"}</p>
-                                                    <p className="text-[10px] text-slate-400">{c.name}</p>
-                                                </button>
-                                            ))}
                                         </div>
                                     )}
                                 </div>

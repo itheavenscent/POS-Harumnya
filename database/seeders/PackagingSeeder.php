@@ -53,20 +53,24 @@ class PackagingSeeder extends Seeder
 
         [$botolCat, $plastikCat] = array_column($categories, 'id');
 
+        // Map volume_ml → size_id agar botol tertaut ke ukuran (dipakai
+        // untuk resolve botol otomatis saat reward parfum diklaim).
+        $sizeIdByMl = DB::table('sizes')->pluck('id', 'volume_ml');
+
         // ── MATERIALS (sesuai Excel) ──────────────────────────────────────────
         // Format menyertakan is_free untuk produk gratis.
         $materials = [
             // Botol 10 mL
-            ['cat' => $botolCat, 'code' => 'ROLL', 'name' => 'Botol Roll 10 ml',    'purchase' => 2000.00,  'selling' => 3000.00,  'addon' => true,  'sort' => 1],
+            ['cat' => $botolCat, 'code' => 'ROLL', 'name' => 'Botol Roll 10 ml',    'purchase' => 2000.00,  'selling' => 3000.00,  'addon' => true,  'sort' => 1,  'ml' => 10],
             // Botol 30 mL (Rp 7.500)
-            ['cat' => $botolCat, 'code' => 'LD',   'name' => 'Botol Lady 30 ml',    'purchase' => 5600.00,  'selling' => 7500.00,  'addon' => true,  'sort' => 2],
-            ['cat' => $botolCat, 'code' => 'PRI',  'name' => 'Botol Prisma 30 ml',  'purchase' => 5600.00,  'selling' => 7500.00,  'addon' => true,  'sort' => 3],
-            ['cat' => $botolCat, 'code' => 'GD',   'name' => 'Botol Drop 30 ml',    'purchase' => 5600.00,  'selling' => 7500.00,  'addon' => true,  'sort' => 4],
+            ['cat' => $botolCat, 'code' => 'LD',   'name' => 'Botol Lady 30 ml',    'purchase' => 5600.00,  'selling' => 7500.00,  'addon' => true,  'sort' => 2,  'ml' => 30],
+            ['cat' => $botolCat, 'code' => 'PRI',  'name' => 'Botol Prisma 30 ml',  'purchase' => 5600.00,  'selling' => 7500.00,  'addon' => true,  'sort' => 3,  'ml' => 30],
+            ['cat' => $botolCat, 'code' => 'GD',   'name' => 'Botol Drop 30 ml',    'purchase' => 5600.00,  'selling' => 7500.00,  'addon' => true,  'sort' => 4,  'ml' => 30],
             // Botol 50 mL (Rp 10.000)
-            ['cat' => $botolCat, 'code' => 'OR',   'name' => 'Botol Orion 50 ml',   'purchase' => 7500.00,  'selling' => 10000.00, 'addon' => true,  'sort' => 5],
-            ['cat' => $botolCat, 'code' => 'HEX',  'name' => 'Botol Hexagon 50 ml', 'purchase' => 7500.00,  'selling' => 10000.00, 'addon' => true,  'sort' => 6],
+            ['cat' => $botolCat, 'code' => 'OR',   'name' => 'Botol Orion 50 ml',   'purchase' => 7500.00,  'selling' => 10000.00, 'addon' => true,  'sort' => 5,  'ml' => 50],
+            ['cat' => $botolCat, 'code' => 'HEX',  'name' => 'Botol Hexagon 50 ml', 'purchase' => 7500.00,  'selling' => 10000.00, 'addon' => true,  'sort' => 6,  'ml' => 50],
             // Botol 100 mL (Rp 15.000)
-            ['cat' => $botolCat, 'code' => 'PER',  'name' => 'Botol Persegi 100 ml','purchase' => 11000.00, 'selling' => 15000.00, 'addon' => true,  'sort' => 7],
+            ['cat' => $botolCat, 'code' => 'PER',  'name' => 'Botol Persegi 100 ml','purchase' => 11000.00, 'selling' => 15000.00, 'addon' => true,  'sort' => 7,  'ml' => 100],
 
             // Produk Free — Plastic bag (kresek), gratis
             ['cat' => $plastikCat, 'code' => 'KRS', 'name' => 'Plastik Bag Kresek', 'purchase' => 500.00, 'selling' => 0.00, 'addon' => true, 'sort' => 1, 'free' => true],
@@ -79,7 +83,7 @@ class PackagingSeeder extends Seeder
                 'unit'                  => 'pcs',
                 'code'                  => $item['code'],
                 'name'                  => $item['name'],
-                'size_id'               => null,
+                'size_id'               => isset($item['ml']) ? ($sizeIdByMl[$item['ml']] ?? null) : null,
                 'image'                 => null,
                 'description'           => $item['name'],
                 'is_available_as_addon' => $item['addon'],

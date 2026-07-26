@@ -53,6 +53,13 @@ class DiscountSeeder extends Seeder
         $edt  = $intEDT->id;
         $pure = $intPURE->id;
 
+        // Botol default per ukuran (dari PackagingSeeder) — ikut otomatis
+        // ke keranjang saat reward parfum diklaim.
+        $botolRoll    = DB::table('packaging_materials')->where('code', 'ROLL')->value('id'); // 10 ml spray
+        $botolPrisma  = DB::table('packaging_materials')->where('code', 'PRI')->value('id');  // 30 ml
+        $botolOrion   = DB::table('packaging_materials')->where('code', 'OR')->value('id');   // 50 ml
+        $botolPersegi = DB::table('packaging_materials')->where('code', 'PER')->value('id');  // 100 ml
+
         // Ensure 10 mL size exists
         if (!$size10) {
             $s10Id = Str::uuid()->toString();
@@ -103,12 +110,13 @@ class DiscountSeeder extends Seeder
                 'priority'              => 10,
                 'is_combinable'         => false,
                 'is_active'             => true,
-                'description'           => 'Setiap pembelian parfum sesuai ketentuan gratis 1 kali spinwheel dengan hadiah (P30 EDT pilih varian + Botol, P10 EDT pilih varian + Botol Spray).',
+                'description'           => 'Setiap pembelian parfum sesuai ketentuan gratis 1 kali spinwheel dengan hadiah (P30 EDT pilih varian + Botol, P10 EDT pilih varian + Botol Spray, atau Poin Member +1).',
                 'terms_conditions'      => json_encode([
                     'Syarat: Beli 3 parfum + botol 30 mL, ATAU Beli 2 parfum + botol 50 mL, ATAU Beli 1 parfum + botol 100 mL',
                     'Berlaku untuk semua kategori produk',
                     'Gratis 1 kali spinwheel per transaksi yang memenuhi ketentuan',
-                    'Hadiah: P30 EDT pilih varian + Botol, atau P10 EDT pilih varian + Botol Spray',
+                    'Hadiah: P30 EDT pilih varian + Botol, P10 EDT pilih varian + Botol Spray, atau Poin Member +1',
+                    'Botol hadiah otomatis ikut ke keranjang secara gratis',
                 ]),
                 'created_at'            => $now,
                 'updated_at'            => $now,
@@ -172,25 +180,40 @@ class DiscountSeeder extends Seeder
                 'updated_at'          => $now,
             ]);
 
-            // Pool items: Parfum 10 mL all variant, Parfum 30 mL all variant, 1 Poin Member
+            // Pool items (hadiah spin) — sesuai sheet PROMO:
+            //   1. P30 EDT pilih varian + Botol
+            //   2. P10 EDT pilih varian + Botol Spray
+            //   3. Poin Member +1
             $spinItems = [
                 [
-                    'label'         => 'Parfum P10 EDT (Pilih Varian) + Botol Spray',
-                    'reward_type'   => 'variant',
-                    'points_amount' => null,
-                    'intensity_id'  => $edt,
-                    'size_id'       => $s10,
-                    'probability'   => 50,
-                    'sort_order'    => 1
+                    'label'                 => 'Parfum P30 EDT (Pilih Varian) + Botol',
+                    'reward_type'           => 'variant',
+                    'points_amount'         => null,
+                    'intensity_id'          => $edt,
+                    'size_id'               => $s30,
+                    'packaging_material_id' => $botolPrisma,
+                    'probability'           => 40,
+                    'sort_order'            => 1
                 ],
                 [
-                    'label'         => 'Parfum P30 EDT (Pilih Varian) + Botol',
-                    'reward_type'   => 'variant',
-                    'points_amount' => null,
-                    'intensity_id'  => $edt,
-                    'size_id'       => $s30,
-                    'probability'   => 50,
-                    'sort_order'    => 2
+                    'label'                 => 'Parfum P10 EDT (Pilih Varian) + Botol Spray',
+                    'reward_type'           => 'variant',
+                    'points_amount'         => null,
+                    'intensity_id'          => $edt,
+                    'size_id'               => $s10,
+                    'packaging_material_id' => $botolRoll,
+                    'probability'           => 40,
+                    'sort_order'            => 2
+                ],
+                [
+                    'label'                 => 'Poin Member +1',
+                    'reward_type'           => 'points',
+                    'points_amount'         => 1,
+                    'intensity_id'          => null,
+                    'size_id'               => null,
+                    'packaging_material_id' => null,
+                    'probability'           => 20,
+                    'sort_order'            => 3
                 ],
             ];
             foreach ($spinItems as $item) {
@@ -203,6 +226,7 @@ class DiscountSeeder extends Seeder
                     'variant_id'         => null,
                     'intensity_id'       => $item['intensity_id'],
                     'size_id'            => $item['size_id'],
+                    'packaging_material_id' => $item['packaging_material_id'],
                     'label'              => $item['label'],
                     'image_url'          => null,
                     'fixed_price'        => 0.00,
@@ -277,13 +301,14 @@ class DiscountSeeder extends Seeder
                 'updated_at'       => $now,
             ]);
 
-            // Reward: 1x P30 EDT (customer pilih varian)
+            // Reward: 1x P30 EDT (customer pilih varian) + Botol Prisma otomatis
             DB::table('discount_rewards')->insert([
                 'id'                  => Str::uuid(),
                 'discount_type_id'    => $dtPoin,
                 'variant_id'          => null,
                 'intensity_id'        => $edt,
                 'size_id'             => $s30,
+                'packaging_material_id' => $botolPrisma,
                 'reward_quantity'     => 1,
                 'customer_can_choose' => true,  // customer pilih varian
                 'is_pool'             => false,
@@ -368,13 +393,14 @@ class DiscountSeeder extends Seeder
                 'updated_at'        => $now,
             ]);
 
-            // Reward: 1x P10 EDT (customer pilih varian)
+            // Reward: 1x P10 EDT (customer pilih varian) + Botol Roll otomatis
             DB::table('discount_rewards')->insert([
                 'id'                  => Str::uuid(),
                 'discount_type_id'    => $dtB1G1,
                 'variant_id'          => null,
                 'intensity_id'        => $edt,
                 'size_id'             => $s10,
+                'packaging_material_id' => $botolRoll,
                 'reward_quantity'     => 1,
                 'customer_can_choose' => true,
                 'is_pool'             => false,
