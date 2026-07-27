@@ -530,7 +530,7 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
                                                     </p>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-sm font-black text-slate-800 dark:text-white">{fmt(item.subtotal)}</p>
+                                                    <p className="text-sm font-black text-slate-800 dark:text-white">{fmt(Number(item.unit_price) * Number(item.qty))}</p>
                                                     <p className="text-[10px] text-slate-400 font-bold">{item.qty}x {fmt(item.unit_price)}</p>
                                                 </div>
                                             </div>

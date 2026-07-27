@@ -18,6 +18,7 @@ use App\Models\IntensitySizePrice;
 use App\Models\PackagingMaterial;
 use App\Models\PaymentMethod;
 use App\Models\Product;
+use App\Models\RewardItem;
 use App\Models\Sale;
 use App\Models\SaleDiscount;
 use App\Models\SaleItem;
@@ -509,8 +510,19 @@ class POSController extends Controller
             [$subtotalPerfume, $subtotalPackaging, $cogsPerfume, $cogsPackaging]
                 = $this->calcSubtotals($carts, $standalonePkgs);
 
+            // Parfum gratis (reward) dihitung sebagai diskon, bukan hilang begitu saja.
+            // Subtotal naik sebesar harga normal, lalu didiskon penuh → total tetap sama.
+            $freeValue = 0;
+            foreach ($carts as $cart) {
+                if ($cart->is_free) {
+                    $freeValue += $this->freeItemValue($cart) * $cart->qty;
+                }
+            }
+            $subtotalPerfume += $freeValue;
+
             $subtotal = $subtotalPerfume + $subtotalPackaging;
-            $discountAmount = min((float) ($request->discount_amount ?? 0), $subtotal);
+            $manualDiscount = min((float) ($request->discount_amount ?? 0), max(0, $subtotal - $freeValue));
+            $discountAmount = $manualDiscount + $freeValue;
             $total = max(0, $subtotal - $discountAmount);
 
             $isCash = $paymentMethod->can_give_change || $paymentMethod->type === 'cash';
@@ -554,8 +566,10 @@ class POSController extends Controller
             // ── Sale items dari cart ───────────────────────────────────────────
             foreach ($carts as $cart) {
                 $isFree = $cart->is_free;
-                $unitPrice = $isFree ? 0 : $cart->unit_price;
-                $itemSub = $unitPrice * $cart->qty;
+                $unitPrice = $isFree ? $this->freeItemValue($cart) : $cart->unit_price;
+                $lineDiscount = $isFree ? $unitPrice * $cart->qty : 0;
+                $gross = $unitPrice * $cart->qty;
+                $itemSub = $gross - $lineDiscount;      // net; 0 untuk item gratis
                 $itemCogs = ($cart->product?->production_cost ?? 0) * $cart->qty;
                 $itemProfit = $itemSub - $itemCogs;
 
@@ -570,7 +584,7 @@ class POSController extends Controller
                     'qty' => $cart->qty,
                     'unit_price' => $unitPrice,
                     'is_free' => $isFree,
-                    'item_discount' => 0,
+                    'item_discount' => $lineDiscount,
                     'subtotal' => $itemSub,
                     'cogs_per_unit' => $cart->product?->production_cost ?? 0,
                     'cogs_total' => $itemCogs,
@@ -612,14 +626,14 @@ class POSController extends Controller
             }
 
             // ── Sale discount ──────────────────────────────────────────────────
-            if ($discountAmount > 0) {
+            if ($manualDiscount > 0) {
                 SaleDiscount::create([
                     'sale_id' => $sale->id,
                     'discount_type_id' => $discountType?->id,
                     'discount_name' => $discountType?->name ?? 'Diskon Manual',
                     'discount_category' => $discountType?->type ?? 'manual',
                     'discount_value' => $discountType?->value ?? 0,
-                    'applied_amount' => (int) $discountAmount,
+                    'applied_amount' => (int) $manualDiscount,
                     'sort_order' => 1,
                 ]);
 
@@ -629,12 +643,25 @@ class POSController extends Controller
                         'order_id' => $sale->id,
                         'store_id' => $storeId,
                         'customer_id' => $customer?->id,
-                        'discount_amount' => (int) $discountAmount,
+                        'discount_amount' => (int) $manualDiscount,
                         'original_amount' => (int) $subtotal,
                         'final_amount' => (int) $total,
                         'used_at' => now(),
                     ]);
                 }
+            }
+
+            // Nilai parfum gratis dicatat sebagai baris diskon terpisah (kategori reward).
+            if ($freeValue > 0) {
+                SaleDiscount::create([
+                    'sale_id' => $sale->id,
+                    'discount_type_id' => null,
+                    'discount_name' => 'Reward Gratis',
+                    'discount_category' => 'reward',
+                    'discount_value' => 0,
+                    'applied_amount' => (int) $freeValue,
+                    'sort_order' => 2,
+                ]);
             }
 
             // ── Sale payment ───────────────────────────────────────────────────
@@ -913,6 +940,30 @@ class POSController extends Controller
     /**
      * Hitung subtotals: [perfume, packaging, cogsPerfume, cogsPackaging]
      */
+    /**
+     * Harga normal (nilai) sebuah item reward gratis — dipakai untuk mencatatnya
+     * sebagai diskon. Parfum reward → harga intensity+size; reward item → selling_value.
+     */
+    private function freeItemValue($cart): float
+    {
+        if ($cart->intensity_id && $cart->size_id) {
+            $price = IntensitySizePrice::where('intensity_id', $cart->intensity_id)
+                ->where('size_id', $cart->size_id)
+                ->where('is_active', true)
+                ->value('price');
+            if ($price) {
+                return (float) $price;
+            }
+        }
+
+        if ($cart->reward_item_id) {
+            $ri = RewardItem::find($cart->reward_item_id);
+            return (float) ($ri?->selling_value ?? 0);
+        }
+
+        return 0;
+    }
+
     private function calcSubtotals(Collection $carts, array $standalonePkgs): array
     {
         $sp = $sc = $cp = $cc = 0;

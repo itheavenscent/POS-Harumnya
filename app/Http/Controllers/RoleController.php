@@ -25,16 +25,36 @@ class RoleController extends Controller
             ->paginate(7)
             ->withQueryString();
 
-        // get all permission data
-        $permissions = Permission::query()
-            ->select('id', 'name')
-            ->orderBy('name')
-            ->get();
-
         // render view
         return Inertia::render('Dashboard/Roles/Index', [
             'roles' => $roles,
-            'permissions' => $permissions
+        ]);
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        return Inertia::render('Dashboard/Roles/Create', [
+            'permissions' => $this->getAvailablePermissions(),
+        ]);
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Role $role)
+    {
+        $role->load('permissions:id,name');
+
+        return Inertia::render('Dashboard/Roles/Edit', [
+            'role' => [
+                'id'   => $role->id,
+                'name' => $role->name,
+            ],
+            'selectedPermission' => $role->permissions->pluck('name'),
+            'permissions'        => $this->getAvailablePermissions(),
         ]);
     }
 
@@ -49,8 +69,7 @@ class RoleController extends Controller
         // give permissions to role
         $role->givePermissionTo($request->selectedPermission);
 
-        // render view
-        return back();
+        return to_route('roles.index');
     }
 
     /**
@@ -64,8 +83,7 @@ class RoleController extends Controller
         // sync role permissions
         $role->syncPermissions($request->selectedPermission);
 
-        // render view
-        return back();
+        return to_route('roles.index');
     }
 
     /**
@@ -78,5 +96,48 @@ class RoleController extends Controller
 
         // render view
         return back();
+    }
+
+    /**
+     * Get grouped permissions for UI (mirror UserController grouping).
+     */
+    private function getAvailablePermissions()
+    {
+        return Permission::all()
+            ->groupBy(function ($permission) {
+                $name = $permission->name;
+                if (str_contains($name, 'dashboard')) return 'Dashboard';
+                if (str_contains($name, 'transactions')) return 'Transaksi / POS';
+                if (str_contains($name, 'intensity-size-prices')) return 'Harga Intensitas';
+                if (str_contains($name, 'cash-drawers')) return 'Shift Kasir';
+                if (str_contains($name, 'products')) return 'Produk & Katalog';
+                if (str_contains($name, 'variants')) return 'Varian';
+                if (str_contains($name, 'intensities')) return 'Intensitas';
+                if (str_contains($name, 'sizes')) return 'Ukuran';
+                if (str_contains($name, 'categories')) return 'Kategori';
+                if (str_contains($name, 'recipes')) return 'Resep';
+                if (str_contains($name, 'ingredients')) return 'Bahan Baku';
+                if (str_contains($name, 'packaging')) return 'Kemasan';
+                if (str_contains($name, 'suppliers')) return 'Supplier';
+                if (str_contains($name, 'warehouses')) return 'Gudang';
+                if (str_contains($name, 'stores')) return 'Toko';
+                if (str_contains($name, 'store-categories')) return 'Kategori Toko';
+                if (str_contains($name, 'purchases')) return 'Pembelian';
+                if (str_contains($name, 'stock')) return 'Stok Management';
+                if (str_contains($name, 'customers')) return 'Pelanggan';
+                if (str_contains($name, 'sales-people')) return 'Sales People';
+                if (str_contains($name, 'discounts')) return 'Promo & Diskon';
+                if (str_contains($name, 'payment-methods')) return 'Metode Pembayaran';
+                if (str_contains($name, 'payment-settings')) return 'Pengaturan Pembayaran';
+                if (str_contains($name, 'reports') || str_contains($name, 'profits')) return 'Laporan';
+                if (str_contains($name, 'users')) return 'User Management';
+                if (str_contains($name, 'roles')) return 'Role Management';
+                if (str_contains($name, 'permissions')) return 'Permission Management';
+                if (str_contains($name, 'settings')) return 'Pengaturan Umum';
+                return 'Lainnya';
+            })
+            ->map(function ($group) {
+                return $group->map(fn($p) => ['id' => $p->id, 'name' => $p->name]);
+            });
     }
 }

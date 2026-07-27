@@ -1195,8 +1195,44 @@ class TransactionController extends Controller
             [$subtotalPerfume, $subtotalPackaging, $cogsPerfume, $cogsPackaging, $cogsAlcohol]
                 = $this->calcSubtotals($carts, $standalonePkgs);
 
+            // Nilai item gratis (reward) dicatat sebagai diskon: subtotal naik sebesar
+            // harga normal lalu didiskon penuh, sehingga total tetap sama namun nilai
+            // gratis tampil di "Diskon" (berlaku untuk member maupun walk-in).
+            // Penukaran poin (POIN-MEMBER) dikecualikan — ditampilkan terpisah sebagai
+            // "Redeem Poin" agar tidak terhitung ganda.
+            $pointsRedeemed = 0;
+            $pointsRedemptionValue = 0;
+            $rewardItemValues = [];
+            $freeValue = 0;
+            $poinCartIds = [];
+
+            foreach ($carts as $cart) {
+                if (!$cart->is_free) {
+                    continue;
+                }
+
+                $dt = $cart->discount_type_id ? DiscountType::find($cart->discount_type_id) : null;
+                $val = $this->freeItemValue($cart) * $cart->qty;
+                $isPoin = $customer && $dt && $dt->code === 'POIN-MEMBER';
+
+                if ($isPoin) {
+                    $poinCartIds[$cart->id] = true;
+                    $threshold = (int) \App\Models\AppSetting::getValue('loyalty_reward_threshold', 30);
+                    $pointsRedeemed += ($threshold * $cart->qty);
+                    $pointsRedemptionValue += $val;
+                } else {
+                    $freeValue += $val;
+                }
+
+                if ($dt) {
+                    $rewardItemValues[$dt->id] = ($rewardItemValues[$dt->id] ?? 0) + $val;
+                }
+            }
+
+            $subtotalPerfume += $freeValue;
             $subtotal = $subtotalPerfume + $subtotalPackaging;
-            $discountAmount = min((float) ($request->discount_amount ?? 0), $subtotal);
+            $manualDiscount = min((float) ($request->discount_amount ?? 0), max(0, $subtotal - $freeValue));
+            $discountAmount = $manualDiscount + $freeValue;
             $total = max(0, $subtotal - $discountAmount);
 
             $isCash = $paymentMethod->can_give_change || $paymentMethod->type === 'cash';
@@ -1207,43 +1243,6 @@ class TransactionController extends Controller
             $cogsTotal = $cogsPerfume + $cogsPackaging + $cogsAlcohol;
             $grossProfit = $total - $cogsTotal;
             $marginPct = $total > 0 ? round($grossProfit / $total * 100, 2) : 0;
-
-            // Calculate points redeemed and reward item values
-            $pointsRedeemed = 0;
-            $pointsRedemptionValue = 0;
-            $rewardItemValues = [];
-
-            if ($customer) {
-                foreach ($carts as $cart) {
-                    if ($cart->discount_type_id && $cart->is_free) {
-                        $dt = DiscountType::find($cart->discount_type_id);
-                        if ($dt) {
-                            if ($dt->code === 'POIN-MEMBER') {
-                                $threshold = (int) \App\Models\AppSetting::getValue('loyalty_reward_threshold', 30);
-                                $pointsRedeemed += ($threshold * $cart->qty);
-                            }
-
-                            $basePrice = $cart->product?->selling_price ?? 0;
-                            if ($basePrice == 0 && $cart->intensity_id && $cart->size_id) {
-                                $priceRow = IntensitySizePrice::where('intensity_id', $cart->intensity_id)
-                                    ->where('size_id', $cart->size_id)->first();
-                                $basePrice = $priceRow ? $priceRow->selling_price : 0;
-                            }
-
-                            $val = $basePrice * $cart->qty;
-
-                            if ($dt->code === 'POIN-MEMBER') {
-                                $pointsRedemptionValue += $val;
-                            }
-
-                            if (!isset($rewardItemValues[$dt->id])) {
-                                $rewardItemValues[$dt->id] = 0;
-                            }
-                            $rewardItemValues[$dt->id] += $val;
-                        }
-                    }
-                }
-            }
 
             $sale = Sale::create([
                 'sale_number' => $this->generateSaleNumber($storeId),
@@ -1287,7 +1286,13 @@ class TransactionController extends Controller
 
                 /** @var \App\Models\Cart $cart */
                 $isCustom = (bool) ($cart->is_custom_order ?? false);
-                $itemSub = $cart->unit_price * $cart->qty;
+                $isFree = (bool) $cart->is_free;
+                // Reward gratis (non-poin): catat harga normal + diskon penuh → subtotal net 0.
+                // Item penukaran poin tetap unit_price 0 (nilainya di baris "Redeem Poin").
+                $isFreeDiscount = $isFree && empty($poinCartIds[$cart->id]);
+                $unitPrice = $isFreeDiscount ? $this->freeItemValue($cart) : $cart->unit_price;
+                $lineDiscount = $isFreeDiscount ? $unitPrice * $cart->qty : 0;
+                $itemSub = ($unitPrice * $cart->qty) - $lineDiscount;
 
                 // HPP oil / reward
                 if ($cart->reward_item_id && $cart->rewardItem) {
@@ -1325,8 +1330,9 @@ class TransactionController extends Controller
                     'intensity_id_snapshot' => $cart->intensity_id,
                     'size_id_snapshot' => $cart->size_id,
                     'qty' => $cart->qty,
-                    'unit_price' => $cart->unit_price,
-                    'item_discount' => 0,
+                    'unit_price' => $unitPrice,
+                    'is_free' => $isFree,
+                    'item_discount' => $lineDiscount,
                     'subtotal' => $itemSub,
                     'cogs_per_unit' => $cogsPerUnit,
                     'cogs_total' => $itemCogs,
@@ -1390,15 +1396,15 @@ class TransactionController extends Controller
                 ]);
             }
 
-            // Sale Discount
-            if ($discountAmount > 0) {
+            // Sale Discount (diskon manual saja; nilai reward gratis dicatat di loop bawah)
+            if ($manualDiscount > 0) {
                 SaleDiscount::create([
                     'sale_id' => $sale->id,
                     'discount_type_id' => $discountType?->id,
                     'discount_name' => $discountType?->name ?? 'Diskon Manual',
                     'discount_category' => $discountType?->type ?? 'manual',
                     'discount_value' => $discountType?->value ?? 0,
-                    'applied_amount' => (int) $discountAmount,
+                    'applied_amount' => (int) $manualDiscount,
                     'sort_order' => 1,
                 ]);
 
@@ -1408,7 +1414,7 @@ class TransactionController extends Controller
                         'order_id' => $sale->id,
                         'store_id' => $storeId,
                         'customer_id' => $customer?->id,
-                        'discount_amount' => (int) $discountAmount,
+                        'discount_amount' => (int) $manualDiscount,
                         'original_amount' => (int) $subtotal,
                         'final_amount' => (int) $total,
                         'used_at' => now(),
@@ -1556,17 +1562,20 @@ class TransactionController extends Controller
         $customer = $request->customer_id ? Customer::find($request->customer_id) : null;
         $customerPoints = (int) ($customer?->points ?? 0);
 
-        // Exclude already claimed/applied rewards in active cart
-        $appliedDiscountIds = Cart::where('cashier_id', $user->id)
+        // Berapa kali tiap promo sudah diklaim di keranjang (baris reward gratis).
+        // Dipakai agar promo bisa berlaku kelipatan: selama kelipatan cart masih
+        // melebihi jumlah klaim, promo tetap muncul.
+        $claimedCounts = Cart::where('cashier_id', $user->id)
             ->where('store_id', $storeId)
             ->whereNull('hold_id')
             ->whereNotNull('discount_type_id')
-            ->pluck('discount_type_id')
+            ->selectRaw('discount_type_id, COUNT(*) as cnt')
+            ->groupBy('discount_type_id')
+            ->pluck('cnt', 'discount_type_id')
             ->toArray();
 
         // Load all active discounts with their requirements & rewards
         $discounts = DiscountType::where('is_active', true)
-            ->whereNotIn('id', $appliedDiscountIds)
             ->where(fn($q) => $q->whereNull('start_date')->orWhereDate('start_date', '<=', today()))
             ->where(fn($q) => $q->whereNull('end_date')->orWhereDate('end_date', '>=', today()))
             ->where(fn($q) => $q->whereDoesntHave('stores')
@@ -1575,9 +1584,13 @@ class TransactionController extends Controller
             ->orderByDesc('priority')
             ->get();
 
-        // Build cart quantity map: size_id -> total qty
+        // Build cart quantity map: size_id -> total qty.
+        // Hanya item berbayar (bukan reward gratis) yang dihitung sebagai syarat.
         $cartSizeQty = [];
         foreach ($carts as $cart) {
+            if ($cart->is_free) {
+                continue;
+            }
             if ($cart->size_id) {
                 $cartSizeQty[$cart->size_id] = ($cartSizeQty[$cart->size_id] ?? 0) + (int)$cart->qty;
             }
@@ -1587,56 +1600,62 @@ class TransactionController extends Controller
 
         foreach ($discounts as $discount) {
             /** @var \App\Models\DiscountType $discount */
-            // --- POIN MEMBER: check customer points ---
+            $claimed = (int) ($claimedCounts[$discount->id] ?? 0);
+
+            // --- POIN MEMBER: check customer points (berlaku kelipatan) ---
             if ($discount->code === 'POIN-MEMBER') {
-                $threshold = \App\Models\AppSetting::getValue('loyalty_reward_threshold', 30);
-                if ($customer && $customerPoints >= (int)$threshold) {
-                    $rewardData = $this->buildRewardData($discount);
-                    $eligible[] = [
-                        'id'          => $discount->id,
-                        'code'        => $discount->code,
-                        'name'        => $discount->name,
-                        'type'        => $discount->type,
-                        'description' => $discount->description,
-                        'trigger'     => 'loyalty_points',
-                        'points_needed' => (int)$threshold,
-                        'customer_points' => $customerPoints,
-                        'rewards'     => $rewardData,
-                    ];
+                $threshold = (int) \App\Models\AppSetting::getValue('loyalty_reward_threshold', 30);
+                if ($customer && $threshold > 0) {
+                    $multiplier = intdiv($customerPoints, $threshold);
+                    $remaining  = $multiplier - $claimed;
+                    if ($remaining > 0) {
+                        $rewardData = $this->buildRewardData($discount);
+                        $eligible[] = [
+                            'id'          => $discount->id,
+                            'code'        => $discount->code,
+                            'name'        => $discount->name,
+                            'type'        => $discount->type,
+                            'description' => $discount->description,
+                            'trigger'     => 'loyalty_points',
+                            'points_needed' => (int)$threshold,
+                            'customer_points' => $customerPoints,
+                            'remaining'   => $remaining,
+                            'rewards'     => $rewardData,
+                        ];
+                    }
                 }
                 continue;
             }
 
-            // --- SPIN WHEEL: check cart requirements (OR between groups) ---
+            // --- CART REQUIREMENTS (Spin Wheel, Buy X Get Y) — OR antar group ---
             if ($discount->requirements->isEmpty()) {
                 continue;
             }
 
-            // Group requirements by group_key; each group is an AND condition;
-            // discount is eligible if ANY group is satisfied (OR logic)
+            // Setiap group = kondisi AND. Promo memenuhi jika ADA group terpenuhi.
+            // Kelipatan = berapa kali cart memenuhi group (paling banyak antar group).
             $groups = $discount->requirements->groupBy('group_key');
-            $anyGroupMet = false;
-            $metGroup    = null;
+            $bestMultiplier = 0;
+            $metGroup       = null;
 
             foreach ($groups as $groupKey => $reqs) {
-                $groupMet = true;
+                $groupMult = null;
                 foreach ($reqs as $req) {
-                    if ($req->size_id) {
+                    if ($req->size_id && $req->required_quantity > 0) {
                         $cartQty = $cartSizeQty[$req->size_id] ?? 0;
-                        if ($cartQty < $req->required_quantity) {
-                            $groupMet = false;
-                            break;
-                        }
+                        $reqMult = intdiv($cartQty, (int) $req->required_quantity);
+                        $groupMult = $groupMult === null ? $reqMult : min($groupMult, $reqMult);
                     }
                 }
-                if ($groupMet) {
-                    $anyGroupMet = true;
-                    $metGroup    = $groupKey;
-                    break;
+                $groupMult = $groupMult ?? 0;
+                if ($groupMult > $bestMultiplier) {
+                    $bestMultiplier = $groupMult;
+                    $metGroup       = $groupKey;
                 }
             }
 
-            if ($anyGroupMet) {
+            $remaining = $bestMultiplier - $claimed;
+            if ($remaining > 0) {
                 $rewardData = $this->buildRewardData($discount);
                 $eligible[] = [
                     'id'          => $discount->id,
@@ -1646,6 +1665,7 @@ class TransactionController extends Controller
                     'description' => $discount->description,
                     'trigger'     => 'cart_quantity',
                     'met_group'   => $metGroup,
+                    'remaining'   => $remaining,
                     'rewards'     => $rewardData,
                 ];
             }
@@ -1737,15 +1757,34 @@ class TransactionController extends Controller
 
         abort_unless((bool)$activeCashDrawer, 422, 'Silakan buka shift terlebih dahulu.');
 
-        $alreadyClaimed = Cart::where('cashier_id', $user->id)
+        $discount = DiscountType::with('requirements')->findOrFail($request->discount_type_id);
+
+        $activeCarts = Cart::where('cashier_id', $user->id)
             ->where('store_id', $storeId)
             ->whereNull('hold_id')
-            ->where('discount_type_id', $request->discount_type_id)
-            ->exists();
+            ->get();
 
-        abort_if($alreadyClaimed, 422, 'Promo/Reward ini sudah diklaim di keranjang.');
+        $claimedCount = $activeCarts->where('discount_type_id', $discount->id)->count();
 
-        $discount = DiscountType::findOrFail($request->discount_type_id);
+        if ($discount->requirements->isEmpty()) {
+            // Promo tanpa syarat cart (mis. POIN-MEMBER): 1 klaim per request.
+            abort_if($claimedCount >= 1, 422, 'Promo/Reward ini sudah diklaim di keranjang.');
+        } else {
+            // Kelipatan: klaim diizinkan selama belum melebihi kelipatan pembelian.
+            $cartSizeQty = [];
+            foreach ($activeCarts as $c) {
+                if ($c->is_free || !$c->size_id) {
+                    continue;
+                }
+                $cartSizeQty[$c->size_id] = ($cartSizeQty[$c->size_id] ?? 0) + (int) $c->qty;
+            }
+            $multiplier = $this->promoCartMultiplier($discount, $cartSizeQty);
+            abort_if(
+                $claimedCount >= $multiplier,
+                422,
+                'Promo/Reward ini sudah mencapai batas klaim untuk jumlah pembelian saat ini.'
+            );
+        }
 
         // Determine price (reward = 100% discount => price 0)
         $price = 0;
@@ -2025,6 +2064,50 @@ class TransactionController extends Controller
      * Hitung subtotals — mengembalikan 5 nilai.
      * Return: [subtotalPerfume, subtotalPackaging, cogsPerfume, cogsPackaging, cogsAlcohol]
      */
+    /**
+     * Harga normal (nilai) sebuah item reward gratis — dipakai untuk mencatatnya
+     * sebagai diskon. Prioritas: harga jual produk → harga intensity+size → reward item.
+     */
+    private function freeItemValue($cart): float
+    {
+        $base = (float) ($cart->product?->selling_price ?? 0);
+
+        if ($base <= 0 && $cart->intensity_id && $cart->size_id) {
+            $base = (float) (IntensitySizePrice::where('intensity_id', $cart->intensity_id)
+                ->where('size_id', $cart->size_id)
+                ->where('is_active', true)
+                ->value('price') ?? 0);
+        }
+
+        if ($base <= 0 && $cart->reward_item_id) {
+            $base = (float) ($cart->rewardItem?->selling_value ?? 0);
+        }
+
+        return $base;
+    }
+
+    /**
+     * Berapa kali cart memenuhi syarat sebuah promo (kelipatan).
+     * Group = kondisi AND; ambil kelipatan terbesar antar group (OR).
+     * `$cartSizeQty` = peta size_id => total qty item berbayar.
+     */
+    private function promoCartMultiplier(DiscountType $discount, array $cartSizeQty): int
+    {
+        $best = 0;
+        foreach ($discount->requirements->groupBy('group_key') as $reqs) {
+            $mult = null;
+            foreach ($reqs as $req) {
+                if ($req->size_id && $req->required_quantity > 0) {
+                    $q = $cartSizeQty[$req->size_id] ?? 0;
+                    $m = intdiv($q, (int) $req->required_quantity);
+                    $mult = $mult === null ? $m : min($mult, $m);
+                }
+            }
+            $best = max($best, $mult ?? 0);
+        }
+        return $best;
+    }
+
     private function calcSubtotals(Collection $carts, array $standalonePkgs): array
     {
         $sp = $sc = $cp = $cc = $ca = 0;

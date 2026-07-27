@@ -1196,10 +1196,11 @@ export default function Index({
     // (Obsolete frontend auto-promo calculation removed in favor of backend-driven engine)
 
 
-    // Game/Spin-wheel promo diturunkan dari eligiblePromos (AJAX live) agar tidak
-    // bergantung pada prop autoPromo yang statis dari initial page load.
-    const gamePromo = useMemo(
-        () => (eligiblePromos || []).find(p => Array.isArray(p.rewards) && p.rewards.length > 0) || null,
+    // Semua promo hadiah yang eligible (Spin Wheel, Buy X Get Y, dll) diturunkan dari
+    // eligiblePromos (AJAX live). Ditampilkan sebagai tombol klaim per promo agar
+    // beberapa promo bisa muncul bersamaan dan berlaku kelipatan.
+    const rewardPromos = useMemo(
+        () => (eligiblePromos || []).filter(p => Array.isArray(p.rewards) && p.rewards.length > 0),
         [eligiblePromos]
     );
 
@@ -2133,19 +2134,12 @@ export default function Index({
                                 {selectedDiscount ? <button onClick={e => { e.stopPropagation(); setSelectedDiscount(null); }} className="p-0.5 text-slate-400 hover:text-slate-700 flex-shrink-0"><IconX size={13} /></button> : <IconChevronRight size={13} className="text-slate-300 flex-shrink-0" />}
                             </button>
 
-                            {gamePromo && !carts.some(c => c.is_game_reward || c.points_amount !== null) && (
-                                <button onClick={() => {
-                                    if (gamePromo?.rewards && gamePromo.rewards.length > 0) {
-                                        setActiveGamePromo(gamePromo);
-                                        setShowGameModal(true);
-                                    } else {
-                                        setShowPromoModal(true);
-                                    }
-                                }}
+                            {rewardPromos.map(promo => (
+                                <button key={promo.id} onClick={() => handleOpenRewardPicker(promo)}
                                     className="w-full flex items-center justify-center gap-2.5 px-3 py-2 rounded-xl border-2 border-amber-400 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-all font-bold text-xs shadow-sm cursor-pointer mt-2">
-                                    🎡 Klaim Hadiah / Spin Wheel ({gamePromo.name})
+                                    <span>🎁 {promo.name}{promo.remaining > 1 ? ` (bisa ${promo.remaining}x)` : ""}</span>
                                 </button>
-                            )}
+                            ))}
 
                             <div className="space-y-1">
                                 {subtotal > 0 && <div className="flex justify-between text-xs"><span className="text-slate-500">Parfum</span><span className="font-semibold text-slate-700 dark:text-slate-300">{fmt(subtotal)}</span></div>}

@@ -112,7 +112,7 @@ function buildReceipt(sale, saleItems, payments, change) {
         ep.bold(true);
         for (let i = 0; i < name.length; i += W) ep.text(name.slice(i, i + W)).lf();
         ep.bold(false);
-        ep.row2(`${qty}x @${isFree ? "GRATIS" : fmtN(item.unit_price)}`, isFree ? "0" : fmtN(item.subtotal), W).lf();
+        ep.row2(`${qty}x @${isFree ? "GRATIS" : fmtN(item.unit_price)}`, fmtN(item.unit_price * qty), W).lf();
 
         const pkgs = item.packagings ?? item.sale_item_packagings ?? [];
         pkgs.forEach(p => {
@@ -320,7 +320,7 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
                                 isFree ? (
                                     <span style={{ color: "#059669", fontWeight: "bold" }}>GRATIS</span>
                                 ) : (
-                                    fmtN(item.subtotal)
+                                    fmtN(item.unit_price * qty)
                                 )
                             }
                             mono
@@ -527,7 +527,7 @@ function InvoiceView({ sale, saleItems, payments, totalPaid, change, statusInfo 
                                     {isFree ? (
                                         <span className="text-emerald-600 font-bold">GRATIS</span>
                                     ) : (
-                                        fmt(item.subtotal)
+                                        fmt(item.unit_price * qty)
                                     )}
                                 </p>
                             </div>

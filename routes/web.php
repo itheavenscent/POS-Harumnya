@@ -80,10 +80,12 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         ->name('permissions.index');
 
     Route::resource('roles', RoleController::class)
-        ->except(['create', 'edit', 'show'])
+        ->except(['show'])
         ->middleware([
             'index' => 'permission:roles-access',
+            'create' => 'permission:roles-create',
             'store' => 'permission:roles-create',
+            'edit' => 'permission:roles-update',
             'update' => 'permission:roles-update',
             'destroy' => 'permission:roles-delete',
         ]);
