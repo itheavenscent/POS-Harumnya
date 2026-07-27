@@ -1596,11 +1596,24 @@ class TransactionController extends Controller
             }
         }
 
+        // Promo hadiah (Spin Wheel / Buy X Get Y) saling eksklusif: begitu salah satu
+        // diklaim, jenis promo hadiah lain tidak lagi ditampilkan.
+        $rewardTypeById = $discounts->pluck('type', 'id');
+        $claimedRewardPromoIds = collect($claimedCounts)->keys()
+            ->filter(fn($id) => in_array($rewardTypeById[$id] ?? null, ['game_reward', 'buy_x_get_y'], true))
+            ->values();
+
         $eligible = [];
 
         foreach ($discounts as $discount) {
             /** @var \App\Models\DiscountType $discount */
             $claimed = (int) ($claimedCounts[$discount->id] ?? 0);
+
+            // Eksklusivitas antar promo hadiah.
+            if (in_array($discount->type, ['game_reward', 'buy_x_get_y'], true)
+                && $claimedRewardPromoIds->contains(fn($id) => $id !== $discount->id)) {
+                continue;
+            }
 
             // --- POIN MEMBER: check customer points (berlaku kelipatan) ---
             if ($discount->code === 'POIN-MEMBER') {
@@ -1765,6 +1778,20 @@ class TransactionController extends Controller
             ->get();
 
         $claimedCount = $activeCarts->where('discount_type_id', $discount->id)->count();
+
+        // Promo hadiah saling eksklusif: tidak boleh klaim jika promo hadiah lain
+        // (Spin Wheel / Buy X Get Y) sudah dipilih di keranjang.
+        if (in_array($discount->type, ['game_reward', 'buy_x_get_y'], true)) {
+            $otherRewardClaimed = DiscountType::whereIn(
+                'id',
+                $activeCarts->pluck('discount_type_id')->filter()->unique()->all()
+            )
+                ->where('id', '!=', $discount->id)
+                ->whereIn('type', ['game_reward', 'buy_x_get_y'])
+                ->exists();
+
+            abort_if($otherRewardClaimed, 422, 'Sudah memilih promo hadiah lain. Hapus dulu jika ingin menggantinya.');
+        }
 
         if ($discount->requirements->isEmpty()) {
             // Promo tanpa syarat cart (mis. POIN-MEMBER): 1 klaim per request.

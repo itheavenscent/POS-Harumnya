@@ -1196,13 +1196,8 @@ export default function Index({
     // (Obsolete frontend auto-promo calculation removed in favor of backend-driven engine)
 
 
-    // Semua promo hadiah yang eligible (Spin Wheel, Buy X Get Y, dll) diturunkan dari
-    // eligiblePromos (AJAX live). Ditampilkan sebagai tombol klaim per promo agar
-    // beberapa promo bisa muncul bersamaan dan berlaku kelipatan.
-    const rewardPromos = useMemo(
-        () => (eligiblePromos || []).filter(p => Array.isArray(p.rewards) && p.rewards.length > 0),
-        [eligiblePromos]
-    );
+    // Promo hadiah eligible diklaim lewat modal "Tambah Diskon / Voucher"
+    // (baris PROMO TERSEDIA) dan popup otomatis — tanpa tombol khusus.
 
     // ── Effect: check eligible discounts when cart or customer changes ──────────
     const cartFingerprint = useMemo(() => carts.map(c => `${c.id}:${c.qty}`).join(','), [carts]);
@@ -2134,12 +2129,6 @@ export default function Index({
                                 {selectedDiscount ? <button onClick={e => { e.stopPropagation(); setSelectedDiscount(null); }} className="p-0.5 text-slate-400 hover:text-slate-700 flex-shrink-0"><IconX size={13} /></button> : <IconChevronRight size={13} className="text-slate-300 flex-shrink-0" />}
                             </button>
 
-                            {rewardPromos.map(promo => (
-                                <button key={promo.id} onClick={() => handleOpenRewardPicker(promo)}
-                                    className="w-full flex items-center justify-center gap-2.5 px-3 py-2 rounded-xl border-2 border-amber-400 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-all font-bold text-xs shadow-sm cursor-pointer mt-2">
-                                    <span>🎁 {promo.name}{promo.remaining > 1 ? ` (bisa ${promo.remaining}x)` : ""}</span>
-                                </button>
-                            ))}
 
                             <div className="space-y-1">
                                 {subtotal > 0 && <div className="flex justify-between text-xs"><span className="text-slate-500">Parfum</span><span className="font-semibold text-slate-700 dark:text-slate-300">{fmt(subtotal)}</span></div>}
