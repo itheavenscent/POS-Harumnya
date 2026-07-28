@@ -279,6 +279,14 @@ class RolePermissionSeeder extends Seeder
                 ['transactions-cancel'],
             ),
 
+            // Audit (read-only: laporan + transaksi + shift)
+            'audit' => $merge(
+                ['dashboard-access'],
+                $reportsSales, $reportsFinance, $reportsStock,
+                $transaksiView, $shiftView,
+                $locationAll,
+            ),
+
             // Finance
             'finance' => $merge(
                 ['dashboard-access'],

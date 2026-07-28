@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Ingredient;
 use App\Models\RepackBatch;
+use App\Models\StoreIngredientStock;
 use App\Models\WarehouseIngredientStock;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -31,7 +33,16 @@ class RepackService
             
             // 3. Add output (compound) ingredient to stock
             $this->addOutputStock($batch);
-            
+
+            // 3b. Sinkronkan HPP master untuk semua bahan yang tersentuh (input + output)
+            //     agar menu Bahan Baku konsisten dengan Stok Global.
+            $affected = $batch->items->pluck('ingredient_id')
+                ->push($batch->output_ingredient_id)
+                ->unique();
+            foreach ($affected as $ingredientId) {
+                $this->syncMasterAverageCost($ingredientId);
+            }
+
             // 4. Update batch status
             $batch->update(['status' => 'completed']);
             
@@ -139,6 +150,34 @@ class RepackService
         ]);
     }
     
+    /**
+     * Recompute WAC global (semua lokasi) → simpan ke master Ingredient.
+     * Menjaga HPP di menu Bahan Baku konsisten dengan average_cost Stok Global.
+     */
+    protected function syncMasterAverageCost(string $ingredientId): void
+    {
+        $master = Ingredient::find($ingredientId);
+        if (! $master) return;
+
+        $rows = WarehouseIngredientStock::where('ingredient_id', $ingredientId)
+            ->get(['quantity', 'average_cost'])
+            ->concat(StoreIngredientStock::where('ingredient_id', $ingredientId)->get(['quantity', 'average_cost']));
+
+        $totalQty   = 0;
+        $totalValue = 0.0;
+        foreach ($rows as $r) {
+            $qty = (int) $r->quantity;
+            if ($qty > 0) {
+                $totalQty   += $qty;
+                $totalValue += $qty * (float) $r->average_cost;
+            }
+        }
+
+        if ($totalQty > 0) {
+            $master->update(['average_cost' => round($totalValue / $totalQty, 4)]);
+        }
+    }
+
     /**
      * Add output (compound) ingredient to warehouse stock
      */
@@ -277,6 +316,14 @@ class RepackService
                     'quantity_restored' => $item->quantity_used
                 ]);
             }
+        }
+
+        // Sinkronkan HPP master setelah pembalikan stok.
+        $affected = $batch->items->pluck('ingredient_id')
+            ->push($batch->output_ingredient_id)
+            ->unique();
+        foreach ($affected as $ingredientId) {
+            $this->syncMasterAverageCost($ingredientId);
         }
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Ingredient;
+use App\Models\PackagingMaterial;
 use App\Models\StockMovement;
 use App\Models\WarehouseIngredientStock;
 use App\Models\WarehousePackagingStock;
@@ -52,11 +54,15 @@ class StockMovementService
 
             $stockAfter = max(0, $newStock); // Prevent negative stock
 
+            // Bulatkan WAC ke 4 desimal agar konsisten dengan pipeline pembelian
+            // (PurchaseController) — mencegah selisih pembulatan antar sumber HPP.
+            $avgCostAfter = round($avgCostAfter, 4);
+
             // Update stock record
             $stockRecord->update([
                 'quantity' => $stockAfter,
                 'average_cost' => $avgCostAfter,
-                'total_value' => $stockAfter * $avgCostAfter,
+                'total_value' => round($stockAfter * $avgCostAfter, 2),
             ]);
 
             // Update last movement info
@@ -73,6 +79,11 @@ class StockMovementService
                     'last_out_qty' => abs($quantity),
                 ]);
             }
+
+            // Sinkronkan WAC global ke master (Ingredient/PackagingMaterial) agar HPP
+            // di menu Bahan Baku selalu konsisten dengan Stok Global — bukan hanya saat
+            // pembelian. Transfer/repack/produksi/penyesuaian juga ikut memperbarui.
+            $this->syncMasterAverageCost($data['item_type'], $data['item_id']);
 
             // Get stockable type and ID
             $stockableType = $this->getStockableType($data['location_type'], $data['item_type']);
@@ -121,6 +132,44 @@ class StockMovementService
                 'total_value' => 0,
             ]
         );
+    }
+
+    /**
+     * Recompute Weighted Average Cost global (semua lokasi) lalu simpan ke tabel
+     * master (Ingredient / PackagingMaterial). Menjaga HPP di menu Bahan Baku
+     * konsisten dengan average_cost per-lokasi di Stok Global.
+     */
+    private function syncMasterAverageCost(string $itemType, string $itemId): void
+    {
+        if ($itemType === 'App\\Models\\Ingredient') {
+            $rows = WarehouseIngredientStock::where('ingredient_id', $itemId)
+                ->get(['quantity', 'average_cost'])
+                ->concat(StoreIngredientStock::where('ingredient_id', $itemId)->get(['quantity', 'average_cost']));
+            $master = Ingredient::find($itemId);
+        } elseif ($itemType === 'App\\Models\\PackagingMaterial') {
+            $rows = WarehousePackagingStock::where('packaging_material_id', $itemId)
+                ->get(['quantity', 'average_cost'])
+                ->concat(StorePackagingStock::where('packaging_material_id', $itemId)->get(['quantity', 'average_cost']));
+            $master = PackagingMaterial::find($itemId);
+        } else {
+            return;
+        }
+
+        if (! $master) return;
+
+        $totalQty   = 0;
+        $totalValue = 0.0;
+        foreach ($rows as $r) {
+            $qty = (int) $r->quantity;
+            if ($qty > 0) {
+                $totalQty   += $qty;
+                $totalValue += $qty * (float) $r->average_cost;
+            }
+        }
+
+        if ($totalQty > 0) {
+            $master->update(['average_cost' => round($totalValue / $totalQty, 4)]);
+        }
     }
 
     /**

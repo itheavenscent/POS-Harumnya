@@ -24,6 +24,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'otp_code',
+        'otp_expires_at',
     ];
 
     protected function casts(): array
@@ -31,6 +33,7 @@ class User extends Authenticatable
         return [
             'email_verified_at'    => 'datetime',
             'password'             => 'hashed',
+            'otp_expires_at'       => 'datetime',
             // Jika store/warehouse pakai UUID cast ke string
             // Jika pakai bigIncrements (integer) - hapus dua baris ini
             'default_store_id'     => 'string',

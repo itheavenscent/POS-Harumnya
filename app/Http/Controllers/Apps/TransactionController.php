@@ -1580,21 +1580,15 @@ class TransactionController extends Controller
             ->where(fn($q) => $q->whereNull('end_date')->orWhereDate('end_date', '>=', today()))
             ->where(fn($q) => $q->whereDoesntHave('stores')
                 ->orWhereHas('stores', fn($sq) => $sq->where('store_id', $storeId)))
-            ->with(['requirements', 'rewards.pools', 'rewards.pools.rewardItem', 'rewards.intensity', 'rewards.size', 'rewards.rewardItem'])
+            ->with(['requirements.packagingMaterial:id,name,code', 'rewards.pools', 'rewards.pools.rewardItem', 'rewards.intensity', 'rewards.size', 'rewards.rewardItem', 'rewards.packagingMaterial:id,name,code'])
             ->orderByDesc('priority')
             ->get();
 
-        // Build cart quantity map: size_id -> total qty.
-        // Hanya item berbayar (bukan reward gratis) yang dihitung sebagai syarat.
-        $cartSizeQty = [];
-        foreach ($carts as $cart) {
-            if ($cart->is_free) {
-                continue;
-            }
-            if ($cart->size_id) {
-                $cartSizeQty[$cart->size_id] = ($cartSizeQty[$cart->size_id] ?? 0) + (int)$cart->qty;
-            }
-        }
+        // Peta kuantitas keranjang untuk pencocokan syarat promo — hanya item berbayar
+        // (bukan reward gratis). Parfum dicocokkan per baris (variant/intensity/size),
+        // botol dihitung dari CartPackaging (packaging_material_id → qty).
+        $paidCarts = $carts->reject(fn ($c) => $c->is_free)->values();
+        $cartPkgQty = $this->cartPackagingQty($carts);
 
         // Promo hadiah (Spin Wheel / Buy X Get Y) saling eksklusif: begitu salah satu
         // diklaim, jenis promo hadiah lain tidak lagi ditampilkan.
@@ -1652,15 +1646,7 @@ class TransactionController extends Controller
             $metGroup       = null;
 
             foreach ($groups as $groupKey => $reqs) {
-                $groupMult = null;
-                foreach ($reqs as $req) {
-                    if ($req->size_id && $req->required_quantity > 0) {
-                        $cartQty = $cartSizeQty[$req->size_id] ?? 0;
-                        $reqMult = intdiv($cartQty, (int) $req->required_quantity);
-                        $groupMult = $groupMult === null ? $reqMult : min($groupMult, $reqMult);
-                    }
-                }
-                $groupMult = $groupMult ?? 0;
+                $groupMult = $this->groupMultiplier($reqs, $paidCarts, $cartPkgQty);
                 if ($groupMult > $bestMultiplier) {
                     $bestMultiplier = $groupMult;
                     $metGroup       = $groupKey;
@@ -1756,6 +1742,7 @@ class TransactionController extends Controller
             'points_amount'    => 'nullable|integer|min:1',
             'reward_label'     => 'nullable|string|max:200',
             'packaging_material_id' => 'nullable|uuid|exists:packaging_materials,id',
+            'qty'              => 'nullable|integer|min:1|max:99',
         ]);
 
         $user    = Auth::user();
@@ -1772,7 +1759,8 @@ class TransactionController extends Controller
 
         $discount = DiscountType::with('requirements')->findOrFail($request->discount_type_id);
 
-        $activeCarts = Cart::where('cashier_id', $user->id)
+        $activeCarts = Cart::with('packagings')
+            ->where('cashier_id', $user->id)
             ->where('store_id', $storeId)
             ->whereNull('hold_id')
             ->get();
@@ -1796,22 +1784,24 @@ class TransactionController extends Controller
         if ($discount->requirements->isEmpty()) {
             // Promo tanpa syarat cart (mis. POIN-MEMBER): 1 klaim per request.
             abort_if($claimedCount >= 1, 422, 'Promo/Reward ini sudah diklaim di keranjang.');
+            $remaining = 1 - $claimedCount;
         } else {
             // Kelipatan: klaim diizinkan selama belum melebihi kelipatan pembelian.
-            $cartSizeQty = [];
-            foreach ($activeCarts as $c) {
-                if ($c->is_free || !$c->size_id) {
-                    continue;
-                }
-                $cartSizeQty[$c->size_id] = ($cartSizeQty[$c->size_id] ?? 0) + (int) $c->qty;
-            }
-            $multiplier = $this->promoCartMultiplier($discount, $cartSizeQty);
+            // Syarat parfum & botol dihitung sama seperti di endpoint eligibility.
+            $paidCarts  = $activeCarts->reject(fn ($c) => $c->is_free)->values();
+            $cartPkgQty = $this->cartPackagingQty($activeCarts);
+            $multiplier = $this->promoCartMultiplier($discount, $paidCarts, $cartPkgQty);
             abort_if(
                 $claimedCount >= $multiplier,
                 422,
                 'Promo/Reward ini sudah mencapai batas klaim untuk jumlah pembelian saat ini.'
             );
+            $remaining = $multiplier - $claimedCount;
         }
+
+        // Jumlah reward yang ditambahkan: default 1, atau sekaligus semua sisa kelipatan
+        // (Buy 1 Get 1 → beli 3 P50 langsung dapat 3 P10). Dibatasi oleh sisa klaim.
+        $addCount = max(1, min((int) ($request->qty ?? 1), max(1, $remaining)));
 
         // Determine price (reward = 100% discount => price 0)
         $price = 0;
@@ -1840,31 +1830,33 @@ class TransactionController extends Controller
             }
         }
 
-        DB::transaction(function () use ($request, $user, $storeId, $discount, $price, $freeBottleId) {
-            $cart = Cart::create([
-                'cashier_id'       => $user->id,
-                'store_id'         => $storeId,
-                'variant_id'       => $request->variant_id,
-                'intensity_id'     => $request->intensity_id,
-                'size_id'          => $request->size_id,
-                'product_id'       => null,
-                'reward_item_id'   => $request->reward_item_id,
-                'points_amount'    => $request->points_amount,
-                'discount_type_id' => $discount->id,
-                'unit_price'       => $price,  // gratis
-                'qty'              => 1,
-                'is_free'          => true,
-                'notes'            => 'Reward: ' . ($request->reward_label ?? $discount->name),
-            ]);
-
-            // Botol hadiah — gratis, menempel pada baris reward parfum
-            if ($freeBottleId) {
-                CartPackaging::create([
-                    'cart_id'               => $cart->id,
-                    'packaging_material_id' => $freeBottleId,
-                    'qty'                   => 1,
-                    'unit_price'            => 0,
+        DB::transaction(function () use ($request, $user, $storeId, $discount, $price, $freeBottleId, $addCount) {
+            for ($i = 0; $i < $addCount; $i++) {
+                $cart = Cart::create([
+                    'cashier_id'       => $user->id,
+                    'store_id'         => $storeId,
+                    'variant_id'       => $request->variant_id,
+                    'intensity_id'     => $request->intensity_id,
+                    'size_id'          => $request->size_id,
+                    'product_id'       => null,
+                    'reward_item_id'   => $request->reward_item_id,
+                    'points_amount'    => $request->points_amount,
+                    'discount_type_id' => $discount->id,
+                    'unit_price'       => $price,  // gratis
+                    'qty'              => 1,
+                    'is_free'          => true,
+                    'notes'            => 'Reward: ' . ($request->reward_label ?? $discount->name),
                 ]);
+
+                // Botol hadiah — gratis, menempel pada baris reward parfum
+                if ($freeBottleId) {
+                    CartPackaging::create([
+                        'cart_id'               => $cart->id,
+                        'packaging_material_id' => $freeBottleId,
+                        'qty'                   => 1,
+                        'unit_price'            => 0,
+                    ]);
+                }
             }
         });
 
@@ -2116,23 +2108,85 @@ class TransactionController extends Controller
     /**
      * Berapa kali cart memenuhi syarat sebuah promo (kelipatan).
      * Group = kondisi AND; ambil kelipatan terbesar antar group (OR).
-     * `$cartSizeQty` = peta size_id => total qty item berbayar.
+     * Kelipatan tertinggi promo terpenuhi oleh keranjang (OR antar group,
+     * AND dalam group). Mendukung syarat parfum & botol.
      */
-    private function promoCartMultiplier(DiscountType $discount, array $cartSizeQty): int
+    private function promoCartMultiplier(DiscountType $discount, Collection $paidCarts, array $cartPkgQty): int
     {
         $best = 0;
         foreach ($discount->requirements->groupBy('group_key') as $reqs) {
-            $mult = null;
-            foreach ($reqs as $req) {
-                if ($req->size_id && $req->required_quantity > 0) {
-                    $q = $cartSizeQty[$req->size_id] ?? 0;
-                    $m = intdiv($q, (int) $req->required_quantity);
-                    $mult = $mult === null ? $m : min($mult, $m);
-                }
-            }
-            $best = max($best, $mult ?? 0);
+            $best = max($best, $this->groupMultiplier($reqs, $paidCarts, $cartPkgQty));
         }
         return $best;
+    }
+
+    /**
+     * Kelipatan satu group syarat (AND) — min dari tiap baris syarat.
+     */
+    private function groupMultiplier(Collection $reqs, Collection $paidCarts, array $cartPkgQty): int
+    {
+        $mult = null;
+        foreach ($reqs as $req) {
+            $m = $this->requirementMultiplier($req, $paidCarts, $cartPkgQty);
+            if ($m === null) {
+                continue; // baris syarat kosong → diabaikan
+            }
+            $mult = $mult === null ? $m : min($mult, $m);
+        }
+        return $mult ?? 0;
+    }
+
+    /**
+     * Kelipatan satu baris syarat.
+     *   - Baris botol  (packaging_material_id) → hitung qty botol di CartPackaging.
+     *   - Baris parfum (variant/intensity/size sebagai filter; null = bebas) →
+     *     jumlah qty item berbayar yang cocok.
+     * Return null jika baris tidak punya kriteria (diabaikan).
+     */
+    private function requirementMultiplier($req, Collection $paidCarts, array $cartPkgQty): ?int
+    {
+        $need = (int) $req->required_quantity;
+        if ($need <= 0) {
+            return null;
+        }
+
+        // Syarat botol / kemasan
+        if ($req->packaging_material_id) {
+            $qty = $cartPkgQty[$req->packaging_material_id] ?? 0;
+            return intdiv($qty, $need);
+        }
+
+        // Syarat parfum
+        if ($req->variant_id || $req->intensity_id || $req->size_id) {
+            $qty = 0;
+            foreach ($paidCarts as $c) {
+                if ($req->variant_id   && $c->variant_id   !== $req->variant_id)   continue;
+                if ($req->intensity_id && $c->intensity_id !== $req->intensity_id) continue;
+                if ($req->size_id      && $c->size_id      !== $req->size_id)      continue;
+                $qty += (int) $c->qty;
+            }
+            return intdiv($qty, $need);
+        }
+
+        return null;
+    }
+
+    /**
+     * Peta packaging_material_id => total qty botol di keranjang (item berbayar).
+     */
+    private function cartPackagingQty(Collection $carts): array
+    {
+        $map = [];
+        foreach ($carts as $cart) {
+            if ($cart->is_free) {
+                continue;
+            }
+            foreach ($cart->packagings ?? [] as $pkg) {
+                $id = $pkg->packaging_material_id;
+                $map[$id] = ($map[$id] ?? 0) + (int) $pkg->qty;
+            }
+        }
+        return $map;
     }
 
     private function calcSubtotals(Collection $carts, array $standalonePkgs): array

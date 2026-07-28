@@ -518,6 +518,9 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
 }
 
 // ─── Intensity Modal (pilih intensitas setelah varian dipilih) ────────────────
+// Set true untuk menampilkan kembali opsi "Komposisi Bebas" (custom order)
+const SHOW_KOMPOSISI_BEBAS = false;
+
 function IntensityModal({ show, onClose, variant, intensities, loading, onSelect, onSelectCustom }) {
     return (
         <Modal show={show} onClose={onClose} maxW="max-w-md">
@@ -544,6 +547,7 @@ function IntensityModal({ show, onClose, variant, intensities, loading, onSelect
                 ) : (
                     <div className="grid grid-cols-1 gap-2.5">
                         {/* Opsi Custom Order (Komposisi Bebas) */}
+                        {SHOW_KOMPOSISI_BEBAS && (
                         <div className="mb-1 border-b border-slate-100 dark:border-slate-800 pb-3">
                             <button onClick={() => { onSelectCustom(variant); onClose(); }}
                                 className="group w-full relative p-3 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100/50 dark:bg-amber-950/20 hover:border-slate-300 hover:bg-slate-100 text-left transition-all duration-200">
@@ -559,6 +563,7 @@ function IntensityModal({ show, onClose, variant, intensities, loading, onSelect
                                 </div>
                             </button>
                         </div>
+                        )}
 
                         {intensities.map((intensity, i) => {
                             const c = INTENSITY_COLORS[i % INTENSITY_COLORS.length];
@@ -597,15 +602,22 @@ function IntensityModal({ show, onClose, variant, intensities, loading, onSelect
 }
 
 // ─── Size Modal ───────────────────────────────────────────────────────────────
-function SizeModal({ show, onClose, variant, intensity, sizes, loading, onSelect }) {
+function SizeModal({ show, onClose, onBack, variant, intensity, sizes, loading, onSelect }) {
     return (
         <Modal show={show} onClose={onClose} maxW="max-w-sm">
             <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
-                <div>
-                    <p className="text-xs text-slate-400 mb-0.5">Pilih Ukuran</p>
-                    <h3 className="font-bold text-slate-800 dark:text-white text-sm leading-snug">
-                        <span className="text-slate-700 dark:text-slate-300">{intensity?.code}</span> · {variant?.name}
-                    </h3>
+                <div className="flex items-center gap-2.5">
+                    {onBack && (
+                        <button onClick={onBack} aria-label="Kembali ke pilih intensitas" className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-700 flex items-center justify-center transition-colors flex-shrink-0">
+                            <IconArrowLeft size={16} />
+                        </button>
+                    )}
+                    <div>
+                        <p className="text-xs text-slate-400 mb-0.5">Pilih Ukuran</p>
+                        <h3 className="font-bold text-slate-800 dark:text-white text-sm leading-snug">
+                            <span className="text-slate-700 dark:text-slate-300">{intensity?.code}</span> · {variant?.name}
+                        </h3>
+                    </div>
                 </div>
                 <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-100 hover:text-slate-700 flex items-center justify-center transition-colors">
                     <IconX size={16} />
@@ -1345,6 +1357,9 @@ export default function Index({
         if (!variant || !promo) return;
         const reward = chosenPoolRewardItem || promo?.rewards_details?.[0] || promo?.rewards?.[0];
         const label = `${promo.name} - ${variant.name}`;
+        // Buy 1 Get 1 berlaku kelipatan: langsung tambahkan semua sisa hadiah sekaligus
+        // (beli 3 P50 → 3 P10 + botol). Spin wheel tetap 1 per klaim.
+        const qty = promo.type === 'buy_x_get_y' ? Math.max(1, promo.remaining ?? 1) : 1;
         router.post(route('transactions.add-reward-to-cart'), {
             discount_type_id: promo.id,
             variant_id: variant.id,
@@ -1352,10 +1367,13 @@ export default function Index({
             size_id: reward?.size_id ?? null,
             packaging_material_id: reward?.packaging_material_id ?? null,
             reward_label: label,
+            qty,
         }, {
             preserveScroll: true,
             onSuccess: () => {
-                toast.success(`✅ Item reward "${variant.name}" ditambahkan ke keranjang (GRATIS)!`);
+                toast.success(qty > 1
+                    ? `✅ ${qty} item reward "${variant.name}" ditambahkan (GRATIS)!`
+                    : `✅ Item reward "${variant.name}" ditambahkan ke keranjang (GRATIS)!`);
                 setChosenPoolRewardItem(null);
             },
             onError: (err) => toast.error(Object.values(err)[0] ?? 'Gagal menambahkan reward'),
@@ -1596,7 +1614,7 @@ export default function Index({
 
             {/* Modals — alur baru: Varian → Intensitas → Ukuran → Kemasan */}
             <IntensityModal show={showIntensityModal} onClose={() => setShowIntensityModal(false)} variant={selectedVariant} intensities={availableIntensities} loading={loadingIntensities} onSelect={selectIntensity} onSelectCustom={openCustomModalWithVariant} />
-            <SizeModal show={showSizeModal} onClose={() => setShowSizeModal(false)} variant={selectedVariant} intensity={selectedIntensity} sizes={availableSizes} loading={loadingSizes} onSelect={selectSize} />
+            <SizeModal show={showSizeModal} onClose={() => setShowSizeModal(false)} onBack={() => { setShowSizeModal(false); setTimeout(() => setShowIntensityModal(true), 80); }} variant={selectedVariant} intensity={selectedIntensity} sizes={availableSizes} loading={loadingSizes} onSelect={selectSize} />
             <CustomOrderModal
                 show={showCustomModal}
                 onClose={() => { setShowCustomModal(false); setCustomTabVariant(null); }}
@@ -1818,6 +1836,7 @@ export default function Index({
                                             })}
 
                                             {/* Card Custom Order */}
+                                            {SHOW_KOMPOSISI_BEBAS && (
                                             <button onClick={openCustomModal}
                                                 className="group relative p-4 rounded-2xl border-2 border-dashed text-left transition-all border-slate-300 dark:border-slate-700 bg-slate-100/50 dark:bg-amber-950/20 hover:border-slate-300 dark:hover:border-amber-600 hover:shadow-md">
                                                 <div className="flex items-start gap-2 mb-3">
@@ -1833,6 +1852,7 @@ export default function Index({
                                                     <span className="text-[11px] text-slate-700 font-semibold">+ Buat →</span>
                                                 </div>
                                             </button>
+                                            )}
                                         </div>
                                     );
                                 })()}
@@ -1910,7 +1930,7 @@ export default function Index({
                     </div>
 
                     {/* ── RIGHT: Cart ───────────────────────────────────────── */}
-                    <div className={`w-full md:w-[340px] lg:w-[400px] xl:w-[460px] flex-shrink-0 flex flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 ${mobileView === "cart" ? "flex" : "hidden md:flex"}`}>
+                    <div className={`w-full md:w-[340px] lg:w-[400px] xl:w-[460px] flex-shrink-0 flex flex-col overflow-hidden min-h-0 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 ${mobileView === "cart" ? "flex" : "hidden md:flex"}`}>
                         {/* Sales Person & Pelanggan dipindah ke halaman Pembayaran */}
 
                         {/* Held carts */}
@@ -1993,11 +2013,8 @@ export default function Index({
                                     {carts.map(item => {
                                         const isPointReward = item.points_amount !== null && item.points_amount !== undefined;
                                         return (
-                                            <div key={item.id} className={`rounded-xl p-3 transition-opacity ${removingId === item.id ? "opacity-40" : ""} ${isPointReward ? "bg-slate-100 dark:bg-emerald-950/20 border border-emerald-100 dark:border-slate-700/50 animate-pulse" : item.is_custom_order ? "bg-slate-100 dark:bg-amber-950/20 border border-amber-100 dark:border-slate-700/50" : "bg-slate-50 dark:bg-slate-800/60"}`}>
-                                                <div className="flex items-start gap-2.5">
-                                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm ${isPointReward ? "bg-emerald-500" : item.is_custom_order ? "bg-amber-500" : "bg-gradient-to-br from-primary-500 to-primary-700"}`}>
-                                                        {isPointReward ? <IconStar size={15} className="text-white" /> : item.is_custom_order ? <IconAdjustments size={15} className="text-white" /> : <IconBottle size={15} className="text-white" />}
-                                                    </div>
+                                            <div key={item.id} className={`py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0 transition-opacity ${removingId === item.id ? "opacity-40" : ""} ${isPointReward ? "animate-pulse" : ""}`}>
+                                                <div className="flex items-start gap-2">
                                                     <div className="flex-1 min-w-0">
                                                         {isPointReward ? (
                                                             <>
@@ -2078,8 +2095,7 @@ export default function Index({
                                         <>
                                             {carts.length > 0 && <div className="flex items-center gap-2 py-0.5"><div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" /><span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1"><IconPackage size={9} /> Kemasan</span><div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" /></div>}
                                             {cartPackagings.map(({ pkg, qty }, i) => (
-                                                <div key={pkg.id} className="bg-slate-100 dark:bg-orange-950/20 border border-orange-100 dark:border-slate-700/50 rounded-xl p-3 flex items-center gap-2.5">
-                                                    <div className={`w-9 h-9 rounded-xl ${PKG_BG[i % PKG_BG.length]} flex items-center justify-center flex-shrink-0 shadow-sm`}><IconBox size={15} className="text-white" /></div>
+                                                <div key={pkg.id} className="py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0 flex items-center gap-2">
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-1.5 flex-wrap">
                                                             <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{pkg.name}</p>
@@ -2107,33 +2123,31 @@ export default function Index({
                                             <IconChevronRight size={13} className="text-orange-300 flex-shrink-0" />
                                         </button>
                                     )}
+
+                                    {/* Diskon / Voucher — ikut area scroll */}
+                                    <button onClick={() => setShowDiscountModal(true)}
+                                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border-2 transition-all relative ${selectedDiscount ? "border-slate-300 bg-slate-100 dark:bg-emerald-950/30" : "border-dashed border-slate-200 dark:border-slate-700 hover:border-slate-300 hover:bg-slate-100/50"}`}>
+                                        {eligiblePromos.length > 0 && !selectedDiscount && (
+                                            <span className="absolute -top-2 -right-2 w-5 h-5 bg-amber-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg shadow-amber-500/40 animate-bounce">
+                                                {eligiblePromos.length}
+                                            </span>
+                                        )}
+                                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${selectedDiscount ? "bg-emerald-100 dark:bg-slate-800" : "bg-slate-100 dark:bg-slate-800"}`}><IconTag size={13} className={selectedDiscount ? "text-slate-700" : "text-slate-400"} /></div>
+                                        <div className="flex-1 text-left min-w-0">
+                                            <p className={`text-xs font-bold truncate ${selectedDiscount ? "text-slate-700 dark:text-slate-300" : "text-slate-500"}`}>{selectedDiscount ? selectedDiscount.name : "Tambah Diskon / Voucher"}</p>
+                                            {selectedDiscount && <p className="text-[10px] text-slate-700 font-semibold">-{fmt(selectedDiscount.amount)}</p>}
+                                            {eligiblePromos.length > 0 && !selectedDiscount && <p className="text-[9px] text-slate-700 font-black animate-pulse">PROMO TERSEDIA!</p>}
+                                        </div>
+                                        {selectedDiscount ? <button onClick={e => { e.stopPropagation(); setSelectedDiscount(null); }} className="p-0.5 text-slate-400 hover:text-slate-700 flex-shrink-0"><IconX size={13} /></button> : <IconChevronRight size={13} className="text-slate-300 flex-shrink-0" />}
+                                    </button>
                                 </>
                             )}
                         </div>
 
                         {/* Summary + checkout */}
                         <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 space-y-2.5">
-                            <button onClick={() => setShowDiscountModal(true)}
-                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border-2 transition-all relative ${selectedDiscount ? "border-slate-300 bg-slate-100 dark:bg-emerald-950/30" : "border-dashed border-slate-200 dark:border-slate-700 hover:border-slate-300 hover:bg-slate-100/50"}`}>
-                                {eligiblePromos.length > 0 && !selectedDiscount && (
-                                    <span className="absolute -top-2 -right-2 w-5 h-5 bg-amber-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg shadow-amber-500/40 animate-bounce">
-                                        {eligiblePromos.length}
-                                    </span>
-                                )}
-                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${selectedDiscount ? "bg-emerald-100 dark:bg-slate-800" : "bg-slate-100 dark:bg-slate-800"}`}><IconTag size={13} className={selectedDiscount ? "text-slate-700" : "text-slate-400"} /></div>
-                                <div className="flex-1 text-left min-w-0">
-                                    <p className={`text-xs font-bold truncate ${selectedDiscount ? "text-slate-700 dark:text-slate-300" : "text-slate-500"}`}>{selectedDiscount ? selectedDiscount.name : "Tambah Diskon / Voucher"}</p>
-                                    {selectedDiscount && <p className="text-[10px] text-slate-700 font-semibold">-{fmt(selectedDiscount.amount)}</p>}
-                                    {eligiblePromos.length > 0 && !selectedDiscount && <p className="text-[9px] text-slate-700 font-black animate-pulse">PROMO TERSEDIA!</p>}
-                                </div>
-                                {selectedDiscount ? <button onClick={e => { e.stopPropagation(); setSelectedDiscount(null); }} className="p-0.5 text-slate-400 hover:text-slate-700 flex-shrink-0"><IconX size={13} /></button> : <IconChevronRight size={13} className="text-slate-300 flex-shrink-0" />}
-                            </button>
-
-
                             <div className="space-y-1">
-                                {subtotal > 0 && <div className="flex justify-between text-xs"><span className="text-slate-500">Parfum</span><span className="font-semibold text-slate-700 dark:text-slate-300">{fmt(subtotal)}</span></div>}
-                                {pkgCartTotal > 0 && <div className="flex justify-between text-xs"><span className="text-slate-500">Kemasan</span><span className="font-semibold text-slate-700 dark:text-slate-300">{fmt(pkgCartTotal)}</span></div>}
-                                {discountAmount > 0 && <div className="flex justify-between text-xs"><span className="text-slate-700 dark:text-slate-300">Diskon</span><span className="text-slate-700 font-bold">-{fmt(discountAmount)}</span></div>}
+                                {discountAmount > 0 &&<div className="flex justify-between text-xs"><span className="text-slate-700 dark:text-slate-300">Diskon</span><span className="text-slate-700 font-bold">-{fmt(discountAmount)}</span></div>}
                                 <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800">
                                     <span className="font-black text-slate-800 dark:text-white text-sm">Total</span>
                                     <span className="text-2xl font-black text-slate-700 dark:text-slate-300">{fmt(payable)}</span>
@@ -2141,7 +2155,7 @@ export default function Index({
                             </div>
 
                             <button onClick={handleCheckout} disabled={!totalCartCount}
-                                className={`w-full h-12 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all ${totalCartCount ? "bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-600/25" : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"}`}>
+                                className={`w-full h-12 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all ${totalCartCount ? "bg-success-600 hover:bg-success-700 text-white shadow-lg shadow-success-600/25" : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"}`}>
                                 <IconReceipt size={16} />
                                 {totalCartCount ? `Bayar ${fmt(payable)}` : "Keranjang Kosong"}
                             </button>
@@ -2250,7 +2264,7 @@ export default function Index({
                         <div className="mx-auto max-w-4xl flex items-center gap-2">
                             <button onClick={() => setShowPaymentModal(false)} className="px-4 py-2.5 rounded-lg border-2 border-slate-200 dark:border-slate-700 font-bold text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 transition-colors">Kembali</button>
                             <button onClick={handleSubmit} disabled={(isCash && cash < payable) || isSubmitting || !selectedPaymentId}
-                                className={`flex-1 py-2.5 rounded-lg font-black text-sm flex items-center justify-center gap-2 transition-all ${(!isCash || cash >= payable) && !isSubmitting && selectedPaymentId ? "bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-600/25" : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"}`}>
+                                className={`flex-1 py-2.5 rounded-lg font-black text-sm flex items-center justify-center gap-2 transition-all ${(!isCash || cash >= payable) && !isSubmitting && selectedPaymentId ? "bg-success-600 hover:bg-success-700 text-white shadow-lg shadow-success-600/25" : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"}`}>
                                 {isSubmitting ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Memproses...</> : <><IconReceipt size={15} /> Selesaikan · {fmt(payable)}</>}
                             </button>
                         </div>

@@ -17,6 +17,7 @@ class DiscountApplicability extends Model
         'variant_id',
         'intensity_id',
         'size_id',
+        'packaging_material_id',
     ];
 
     // Semua FK nullable — null = berlaku untuk semua
@@ -46,5 +47,10 @@ class DiscountApplicability extends Model
     public function size(): BelongsTo
     {
         return $this->belongsTo(Size::class, 'size_id');
+    }
+
+    public function packagingMaterial(): BelongsTo
+    {
+        return $this->belongsTo(PackagingMaterial::class, 'packaging_material_id');
     }
 }

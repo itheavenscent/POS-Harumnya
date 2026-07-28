@@ -52,19 +52,21 @@ const toId = (v) => {
 
 const normaliseApplicabilities = (items = []) =>
     items.map((item) => ({
-        variant_id:   toId(item.variant_id),
-        intensity_id: toId(item.intensity_id),
-        size_id:      toId(item.size_id),
+        variant_id:            toId(item.variant_id),
+        intensity_id:          toId(item.intensity_id),
+        size_id:               toId(item.size_id),
+        packaging_material_id: toId(item.packaging_material_id),
     }));
 
 const normaliseRequirements = (items = []) =>
     items.map((item) => ({
-        variant_id:        toId(item.variant_id),
-        intensity_id:      toId(item.intensity_id),
-        size_id:           toId(item.size_id),
-        required_quantity: item.required_quantity ?? 1,
-        matching_mode:     item.matching_mode ?? "all",
-        group_key:         item.group_key ?? null,
+        variant_id:            toId(item.variant_id),
+        intensity_id:          toId(item.intensity_id),
+        size_id:               toId(item.size_id),
+        packaging_material_id: toId(item.packaging_material_id),
+        required_quantity:     item.required_quantity ?? 1,
+        matching_mode:         item.matching_mode ?? "all",
+        group_key:             item.group_key ?? null,
     }));
 
 const normaliseRewards = (items = []) =>
@@ -73,6 +75,7 @@ const normaliseRewards = (items = []) =>
         variant_id:          toId(item.variant_id),
         intensity_id:        toId(item.intensity_id),
         size_id:             toId(item.size_id),
+        packaging_material_id: toId(item.packaging_material_id),
         reward_item_id:      toId(item.reward_item_id) ?? null,
         points_amount:       item.points_amount       ?? null,
         reward_quantity:     item.reward_quantity     ?? 1,
@@ -88,6 +91,7 @@ const normaliseRewards = (items = []) =>
             variant_id:     toId(p.variant_id),
             intensity_id:   toId(p.intensity_id),
             size_id:        toId(p.size_id),
+            packaging_material_id: toId(p.packaging_material_id),
             reward_item_id: toId(p.reward_item_id) ?? null,
             points_amount:  p.points_amount  ?? null,
             label:          p.label,
@@ -292,7 +296,7 @@ function DeleteModal({ show, onConfirm, onClose, loading, name }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function Edit({ discount, stores, variants, intensities, sizes, rewardItems = [] }) {
+export default function Edit({ discount, stores, variants, intensities, sizes, rewardItems = [], packagings = [] }) {
     const [showDelete, setShowDelete] = React.useState(false);
     const [deleting, setDeleting]     = React.useState(false);
 
@@ -536,9 +540,9 @@ export default function Edit({ discount, stores, variants, intensities, sizes, r
                                 </CardBody>
                             </Card>
 
-                            <ApplicabilitiesSection items={data.applicabilities} onChange={(v) => setData("applicabilities", v)} variants={variants} intensities={intensities} sizes={sizes} />
-                            <RequirementsSection items={data.requirements} onChange={(v) => setData("requirements", v)} variants={variants} intensities={intensities} sizes={sizes} />
-                            <RewardsSection items={data.rewards} onChange={(v) => setData("rewards", v)} variants={variants} intensities={intensities} sizes={sizes} rewardItems={rewardItems} />
+                            <ApplicabilitiesSection items={data.applicabilities} onChange={(v) => setData("applicabilities", v)} variants={variants} intensities={intensities} sizes={sizes} packagings={packagings} />
+                            <RequirementsSection items={data.requirements} onChange={(v) => setData("requirements", v)} variants={variants} intensities={intensities} sizes={sizes} packagings={packagings} />
+                            <RewardsSection items={data.rewards} onChange={(v) => setData("rewards", v)} variants={variants} intensities={intensities} sizes={sizes} rewardItems={rewardItems} packagings={packagings} />
                         </div>
 
                         {/* ── Sidebar ── */}

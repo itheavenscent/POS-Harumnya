@@ -172,10 +172,19 @@ class DashboardController extends Controller
                 COALESCE(SUM(cogs_total), 0)        AS total_cogs,
                 COALESCE(AVG(total), 0)             AS avg_order,
                 COUNT(*)                            AS total_transactions,
-                COALESCE(SUM(discount_amount), 0)   AS total_discount,
                 COALESCE(SUM(points_earned), 0)     AS total_points_earned
             ')
             ->first();
+
+        // Total diskon diambil dari sale_discounts (sumber sama dgn "Analisis Diskon"),
+        // bukan sales.discount_amount — kolom itu 0 untuk transaksi reward lama
+        // (sebelum commit "update diskon multiple") sehingga card ikut 0.
+        $totalDiscount = DB::table('sale_discounts')
+            ->join('sales', 'sale_discounts.sale_id', '=', 'sales.id')
+            ->when($storeId, fn ($q) => $q->where('sales.store_id', $storeId))
+            ->where('sales.status', 'completed')
+            ->whereBetween('sales.sold_at', [$startDate, $endDate])
+            ->sum('sale_discounts.applied_amount');
 
         $kpiPrev = DB::table('sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
@@ -209,7 +218,7 @@ class DashboardController extends Controller
             'totalCogs'         => (float) round($kpiCurrent->total_cogs ?? 0, 2),
             'avgOrder'          => (float) round($kpiCurrent->avg_order ?? 0, 2),
             'totalTransactions' => (int)   ($kpiCurrent->total_transactions ?? 0),
-            'totalDiscount'     => (float) round($kpiCurrent->total_discount ?? 0, 2),
+            'totalDiscount'     => (float) round($totalDiscount ?? 0, 2),
             'totalPointsEarned' => (float) round($kpiCurrent->total_points_earned ?? 0, 2),
             'marginPct'         => ($kpiCurrent->total_revenue ?? 0) > 0
                 ? (float) round(($kpiCurrent->total_profit / $kpiCurrent->total_revenue) * 100, 2)

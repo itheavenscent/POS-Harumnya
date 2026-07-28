@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 import {
     IconArrowLeft, IconPrinter, IconReceipt, IconFileInvoice,
     IconShoppingBag, IconCheck, IconBluetooth, IconBluetoothOff,
@@ -658,6 +658,7 @@ export default function Print({ sale, fromTransaction }) {
             const buf = buildReceipt(sale, saleItems, payments, change);
             await bt.printBuffer(buf);
             setPrintMsg({ ok: true, text: "Berhasil dikirim ke printer!" });
+            if (fromTransaction) setTimeout(backToPOS, 1200);
         } catch (err) {
             setPrintMsg({ ok: false, text: err.message });
         } finally {
@@ -676,6 +677,24 @@ export default function Print({ sale, fromTransaction }) {
     const btOnClick = bt.status === "connected" ? bt.disconnect
         : bt.status === "idle" && bt.devName ? bt.reconnect
             : bt.connect;
+
+    // Setelah cetak dari alur POS (fromTransaction), redirect balik ke POS
+    // supaya kasir tidak sengaja cetak 2x.
+    const backToPOS = useCallback(() => {
+        router.visit(route("transactions.index"));
+    }, []);
+
+    // Cetak via browser + redirect balik ke POS setelah dialog print selesai.
+    const handleBrowserPrint = () => {
+        if (fromTransaction) {
+            const after = () => {
+                window.removeEventListener("afterprint", after);
+                backToPOS();
+            };
+            window.addEventListener("afterprint", after);
+        }
+        window.print();
+    };
 
     return (
         <>
@@ -723,7 +742,7 @@ export default function Print({ sale, fromTransaction }) {
                                         </button>
                                     ))}
                                 </div>
-                                <button onClick={() => window.print()} title="Cetak via browser"
+                                <button onClick={handleBrowserPrint} title="Cetak via browser"
                                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700">
                                     <IconPrinter size={15} />
                                 </button>

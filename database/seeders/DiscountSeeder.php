@@ -140,24 +140,33 @@ class DiscountSeeder extends Seeder
                 ]);
             }
 
-            // Requirements — pakai group_key berbeda per syarat (OR antar group)
+            // Requirements — 3 alternatif (group_key BEDA = OR). Tiap group berisi
+            // 2 baris (group_key SAMA = AND): parfum + botol ukuran sama.
+            // "hanya jika dengan botol" → botol wajib ada (bisnis refill).
+            //   a. 3 parfum 30 mL + 3 botol 30 mL (Prisma)
+            //   b. 2 parfum 50 mL + 2 botol 50 mL (Orion)
+            //   c. 1 parfum 100 mL + 1 botol 100 mL (Persegi)
             $requirements = [
-                ['size_id' => $s30,  'qty' => 3, 'group' => 'P30-3PCS'],
-                ['size_id' => $s50,  'qty' => 2, 'group' => 'P50-2PCS'],
-                ['size_id' => $s100, 'qty' => 1, 'group' => 'P100-1PCS'],
+                ['size_id' => $s30,  'packaging_material_id' => null,          'qty' => 3, 'group' => 'P30-3PCS'],
+                ['size_id' => null,  'packaging_material_id' => $botolPrisma,  'qty' => 3, 'group' => 'P30-3PCS'],
+                ['size_id' => $s50,  'packaging_material_id' => null,          'qty' => 2, 'group' => 'P50-2PCS'],
+                ['size_id' => null,  'packaging_material_id' => $botolOrion,   'qty' => 2, 'group' => 'P50-2PCS'],
+                ['size_id' => $s100, 'packaging_material_id' => null,          'qty' => 1, 'group' => 'P100-1PCS'],
+                ['size_id' => null,  'packaging_material_id' => $botolPersegi, 'qty' => 1, 'group' => 'P100-1PCS'],
             ];
             foreach ($requirements as $req) {
                 DB::table('discount_requirements')->insert([
-                    'id'                => Str::uuid(),
-                    'discount_type_id'  => $dtSpin,
-                    'variant_id'        => null,
-                    'intensity_id'      => null,
-                    'size_id'           => $req['size_id'],
-                    'required_quantity' => $req['qty'],
-                    'matching_mode'     => 'all',
-                    'group_key'         => $req['group'],
-                    'created_at'        => $now,
-                    'updated_at'        => $now,
+                    'id'                    => Str::uuid(),
+                    'discount_type_id'      => $dtSpin,
+                    'variant_id'            => null,
+                    'intensity_id'          => null,
+                    'size_id'               => $req['size_id'],
+                    'packaging_material_id' => $req['packaging_material_id'],
+                    'required_quantity'     => $req['qty'],
+                    'matching_mode'         => 'all',
+                    'group_key'             => $req['group'],
+                    'created_at'            => $now,
+                    'updated_at'            => $now,
                 ]);
             }
 

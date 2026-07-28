@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\Auth\OtpService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,8 @@ use Inertia\Response;
 
 class AuthenticatedSessionController extends Controller
 {
+    public function __construct(private OtpService $otp) {}
+
     /**
      * Display the login view.
      */
@@ -29,15 +32,21 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
+        // Validasi kredensial (Auth::attempt di dalam authenticate()).
         $request->authenticate();
 
-        $request->session()->regenerate();
+        $user = Auth::user();
 
-        if (Auth::user()->hasRole('cashier')) {
-            return redirect()->intended(route('transactions.index', absolute: false));
-        }
+        // Belum login penuh — mulai tantangan OTP via email.
+        Auth::guard('web')->logout();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $request->session()->put('otp:user_id', $user->id);
+        $request->session()->put('otp:remember', $request->boolean('remember'));
+
+        $this->otp->send($user);
+
+        return redirect()->route('otp.notice')
+            ->with('status', 'Kode OTP sudah dikirim ke email Anda.');
     }
 
     /**

@@ -541,10 +541,14 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::get('/history', [TransactionController::class, 'history'])->name('history')->middleware('permission:transactions-access');
         Route::get('/history/export', [TransactionController::class, 'exportHistory'])->name('history.export')->middleware('permission:transactions-access');
         Route::post('/{id}/cancel-sale', [TransactionController::class, 'cancelSale'])->name('cancel-sale')->middleware('permission:transactions-cancel');
+        // NOTE: print permission (transactions-print) hanya dipakai untuk gate tombol
+        // cetak di Riwayat Transaksi (via canPrint). Halaman print sendiri cukup
+        // butuh transactions-access supaya redirect setelah pembayaran POS jalan
+        // untuk semua kasir tanpa perlu permission print.
         Route::get('/print/{saleNumber}', [TransactionController::class, 'print'])
             ->where('saleNumber', '.*')
             ->name('print')
-            ->middleware('permission:transactions-print');
+            ->middleware('permission:transactions-access');
 
         // 2. API
         Route::get('/get-variants-pos', [TransactionController::class, 'getVariantsForPOS'])->name('get-variants-pos')->middleware('permission:transactions-access');

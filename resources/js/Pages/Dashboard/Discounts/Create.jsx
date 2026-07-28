@@ -206,7 +206,7 @@ function ErrorBanner({ errors }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function Create({ stores, variants, intensities, sizes, rewardItems = [] }) {
+export default function Create({ stores, variants, intensities, sizes, rewardItems = [], packagings = [] }) {
     const { data, setData, post, processing, errors } = useForm({
         code:                   "",
         name:                   "",
@@ -451,9 +451,9 @@ export default function Create({ stores, variants, intensities, sizes, rewardIte
                                 </CardBody>
                             </Card>
 
-                            <ApplicabilitiesSection items={data.applicabilities} onChange={(v) => setData("applicabilities", v)} variants={variants} intensities={intensities} sizes={sizes} />
-                            <RequirementsSection items={data.requirements} onChange={(v) => setData("requirements", v)} variants={variants} intensities={intensities} sizes={sizes} />
-                            <RewardsSection items={data.rewards} onChange={(v) => setData("rewards", v)} variants={variants} intensities={intensities} sizes={sizes} rewardItems={rewardItems} />
+                            <ApplicabilitiesSection items={data.applicabilities} onChange={(v) => setData("applicabilities", v)} variants={variants} intensities={intensities} sizes={sizes} packagings={packagings} />
+                            <RequirementsSection items={data.requirements} onChange={(v) => setData("requirements", v)} variants={variants} intensities={intensities} sizes={sizes} packagings={packagings} />
+                            <RewardsSection items={data.rewards} onChange={(v) => setData("rewards", v)} variants={variants} intensities={intensities} sizes={sizes} rewardItems={rewardItems} packagings={packagings} />
                         </div>
 
                         {/* ── Sidebar ── */}

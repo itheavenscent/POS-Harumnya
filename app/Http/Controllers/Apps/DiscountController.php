@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Apps;
 
 use App\Http\Controllers\Controller;
 use App\Models\DiscountType;
+use App\Models\PackagingMaterial;
 use App\Models\RewardItem;
 use App\Models\Store;
 use App\Models\Variant;
@@ -102,12 +103,15 @@ class DiscountController extends Controller
             'applicabilities.variant:id,name',
             'applicabilities.intensity:id,name,code',
             'applicabilities.size:id,name,volume_ml',
+            'applicabilities.packagingMaterial:id,name,code',
             'requirements.variant:id,name',
             'requirements.intensity:id,name,code',
             'requirements.size:id,name,volume_ml',
+            'requirements.packagingMaterial:id,name,code',
             'rewards.variant:id,name',
             'rewards.intensity:id,name,code',
             'rewards.size:id,name,volume_ml',
+            'rewards.packagingMaterial:id,name,code',
             'rewards.pools',
         ]);
 
@@ -248,12 +252,14 @@ class DiscountController extends Controller
             'applicabilities.*.variant_id'   => ['nullable', 'uuid', 'exists:variants,id'],
             'applicabilities.*.intensity_id' => ['nullable', 'uuid', 'exists:intensities,id'],
             'applicabilities.*.size_id'      => ['nullable', 'uuid', 'exists:sizes,id'],
+            'applicabilities.*.packaging_material_id' => ['nullable', 'uuid', 'exists:packaging_materials,id'],
 
             // ── Requirements ──────────────────────────────────────────────────
             'requirements'                       => ['nullable', 'array'],
             'requirements.*.variant_id'          => ['nullable', 'uuid', 'exists:variants,id'],
             'requirements.*.intensity_id'        => ['nullable', 'uuid', 'exists:intensities,id'],
             'requirements.*.size_id'             => ['nullable', 'uuid', 'exists:sizes,id'],
+            'requirements.*.packaging_material_id' => ['nullable', 'uuid', 'exists:packaging_materials,id'],
             'requirements.*.required_quantity'   => ['required_with:requirements.*', 'integer', 'min:1'],
             'requirements.*.matching_mode'       => ['nullable', 'in:all,any'],
             'requirements.*.group_key'           => ['nullable', 'string', 'max:50'],
@@ -264,6 +270,7 @@ class DiscountController extends Controller
             'rewards.*.variant_id'               => ['nullable', 'uuid', 'exists:variants,id'],
             'rewards.*.intensity_id'             => ['nullable', 'uuid', 'exists:intensities,id'],
             'rewards.*.size_id'                  => ['nullable', 'uuid', 'exists:sizes,id'],
+            'rewards.*.packaging_material_id'    => ['nullable', 'uuid', 'exists:packaging_materials,id'],
             'rewards.*.reward_item_id'           => ['nullable', 'uuid', 'exists:reward_items,id'],
             'rewards.*.points_amount'            => ['nullable', 'integer', 'min:1'],
             'rewards.*.reward_quantity'          => ['required_with:rewards.*', 'integer', 'min:1'],
@@ -282,6 +289,7 @@ class DiscountController extends Controller
             'rewards.*.pools.*.variant_id'       => ['nullable', 'uuid', 'exists:variants,id'],
             'rewards.*.pools.*.intensity_id'     => ['nullable', 'uuid', 'exists:intensities,id'],
             'rewards.*.pools.*.size_id'          => ['nullable', 'uuid', 'exists:sizes,id'],
+            'rewards.*.pools.*.packaging_material_id' => ['nullable', 'uuid', 'exists:packaging_materials,id'],
             'rewards.*.pools.*.reward_item_id'   => ['nullable', 'uuid', 'exists:reward_items,id'],
             'rewards.*.pools.*.points_amount'    => ['nullable', 'integer', 'min:1'],
             'rewards.*.pools.*.image_url'        => ['nullable', 'string', 'max:500'],
@@ -324,6 +332,19 @@ class DiscountController extends Controller
                                 ->where('is_active', true)
                                 ->orderBy('sort_order')
                                 ->get(),
+            'packagings'  => PackagingMaterial::select('id', 'name', 'code', 'size_id', 'packaging_category_id')
+                                ->where('is_active', true)
+                                ->with('category:id,name')
+                                ->orderBy('sort_order')
+                                ->orderBy('name')
+                                ->get()
+                                ->map(fn ($p) => [
+                                    'id'       => $p->id,
+                                    'name'     => $p->name,
+                                    'code'     => $p->code,
+                                    'size_id'  => $p->size_id,
+                                    'category' => $p->category?->name,
+                                ]),
             'rewardItems' => RewardItem::select('id', 'code', 'name', 'category', 'cost_price', 'selling_value', 'stock_qty')
                                 ->where('is_active', true)
                                 ->orderBy('sort_order')
@@ -367,9 +388,10 @@ class DiscountController extends Controller
     {
         foreach ($items as $item) {
             $discount->applicabilities()->create([
-                'variant_id'   => $item['variant_id']   ?? null,
-                'intensity_id' => $item['intensity_id'] ?? null,
-                'size_id'      => $item['size_id']      ?? null,
+                'variant_id'            => $item['variant_id']            ?? null,
+                'intensity_id'          => $item['intensity_id']          ?? null,
+                'size_id'               => $item['size_id']               ?? null,
+                'packaging_material_id' => $item['packaging_material_id'] ?? null,
             ]);
         }
     }
@@ -381,12 +403,13 @@ class DiscountController extends Controller
     {
         foreach ($items as $item) {
             $discount->requirements()->create([
-                'variant_id'        => $item['variant_id']        ?? null,
-                'intensity_id'      => $item['intensity_id']      ?? null,
-                'size_id'           => $item['size_id']           ?? null,
-                'required_quantity' => $item['required_quantity'] ?? 1,
-                'matching_mode'     => $item['matching_mode']     ?? 'all',
-                'group_key'         => $item['group_key']         ?? null,
+                'variant_id'            => $item['variant_id']            ?? null,
+                'intensity_id'          => $item['intensity_id']          ?? null,
+                'size_id'               => $item['size_id']               ?? null,
+                'packaging_material_id' => $item['packaging_material_id'] ?? null,
+                'required_quantity'     => $item['required_quantity']     ?? 1,
+                'matching_mode'         => $item['matching_mode']         ?? 'all',
+                'group_key'             => $item['group_key']             ?? null,
             ]);
         }
     }
@@ -403,6 +426,7 @@ class DiscountController extends Controller
                 'variant_id'          => $rewardData['variant_id']          ?? null,
                 'intensity_id'        => $rewardData['intensity_id']        ?? null,
                 'size_id'             => $rewardData['size_id']             ?? null,
+                'packaging_material_id' => $rewardData['packaging_material_id'] ?? null,
                 'reward_item_id'      => $rewardData['reward_item_id']      ?? null,
                 'points_amount'       => $rewardData['points_amount']       ?? null,
                 'reward_quantity'     => $rewardData['reward_quantity']     ?? 1,
@@ -424,6 +448,7 @@ class DiscountController extends Controller
                         'variant_id'    => $poolItem['variant_id']    ?? null,
                         'intensity_id'  => $poolItem['intensity_id']  ?? null,
                         'size_id'       => $poolItem['size_id']       ?? null,
+                        'packaging_material_id' => $poolItem['packaging_material_id'] ?? null,
                         'reward_item_id'=> $poolItem['reward_item_id']?? null,
                         'points_amount' => $poolItem['points_amount'] ?? null,
                         'label'         => $poolItem['label'],

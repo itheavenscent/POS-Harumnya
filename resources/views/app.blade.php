@@ -11,6 +11,7 @@
 
     <!-- PWA -->
     <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <meta name="app-version" content="{{ file_exists(public_path('build/manifest.json')) ? substr(md5_file(public_path('build/manifest.json')), 0, 12) : 'dev' }}">
     <meta name="theme-color" content="#0f172a">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">

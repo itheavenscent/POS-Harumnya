@@ -31,7 +31,7 @@ export default function Pagination({ links }) {
 
     return (
         <nav className="mt-6 lg:mt-8" aria-label="Pagination Navigation">
-            <ul className="flex items-center justify-end gap-1.5">
+            <ul className="flex flex-wrap items-center justify-end gap-1.5">
                 {links.map((link, index) => {
                     if (!link.url) return null;
 

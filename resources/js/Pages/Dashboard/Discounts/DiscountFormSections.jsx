@@ -349,9 +349,10 @@ function RemoveBtn({ onClick }) {
 
 // ─── DimensionFilters ─────────────────────────────────────────────────────────
 
-function DimensionFilters({ item, index, onUpdate, variants, intensities, sizes }) {
+function DimensionFilters({ item, index, onUpdate, variants, intensities, sizes, packagings = null }) {
+    const cols = packagings ? "sm:grid-cols-4" : "sm:grid-cols-3";
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className={`grid grid-cols-1 ${cols} gap-3`}>
             <SearchableSelect
                 label="Variant"
                 value={item.variant_id}
@@ -371,6 +372,14 @@ function DimensionFilters({ item, index, onUpdate, variants, intensities, sizes 
                 onChange={(v) => onUpdate(index, "size_id", v)}
                 options={sizes}
             />
+            {packagings && (
+                <Select
+                    label="Botol / Kemasan"
+                    value={item.packaging_material_id}
+                    onChange={(v) => onUpdate(index, "packaging_material_id", v)}
+                    options={packagings}
+                />
+            )}
         </div>
     );
 }
@@ -456,7 +465,7 @@ function RewardItemSelect({ value, onChange, rewardItems = [] }) {
     );
 }
 
-function PoolItems({ pools, onChange, rewardItems }) {
+function PoolItems({ pools, onChange, rewardItems, packagings = [] }) {
     const def = {
         reward_type:   "variant",
         label: "",
@@ -464,6 +473,7 @@ function PoolItems({ pools, onChange, rewardItems }) {
         variant_id:   null,
         intensity_id: null,
         size_id:      null,
+        packaging_material_id: null,
         reward_item_id: null,
         points_amount:  null,
         fixed_price:  0,
@@ -548,6 +558,16 @@ function PoolItems({ pools, onChange, rewardItems }) {
                             rewardItems={rewardItems}
                         />
                     )}
+
+                    {/* Botol gratis untuk reward varian pool */}
+                    {(pool.reward_type ?? "variant") === "variant" && (
+                        <Select
+                            label="Botol Gratis (ikut hadiah)"
+                            value={pool.packaging_material_id}
+                            onChange={(v) => update(i, "packaging_material_id", v)}
+                            options={packagings}
+                        />
+                    )}
                 </div>
             ))}
         </div>
@@ -556,8 +576,8 @@ function PoolItems({ pools, onChange, rewardItems }) {
 
 // ─── ApplicabilitiesSection ───────────────────────────────────────────────────
 
-export function ApplicabilitiesSection({ items, onChange, variants, intensities, sizes }) {
-    const def    = { variant_id: null, intensity_id: null, size_id: null };
+export function ApplicabilitiesSection({ items, onChange, variants, intensities, sizes, packagings = [] }) {
+    const def    = { variant_id: null, intensity_id: null, size_id: null, packaging_material_id: null };
     const add    = () => onChange([...items, { ...def }]);
     const remove = (i) => onChange(items.filter((_, idx) => idx !== i));
     const update = (i, key, val) =>
@@ -586,6 +606,7 @@ export function ApplicabilitiesSection({ items, onChange, variants, intensities,
                                         variants={variants}
                                         intensities={intensities}
                                         sizes={sizes}
+                                        packagings={packagings}
                                     />
                                 </div>
                                 <RemoveBtn onClick={() => remove(i)} />
@@ -600,14 +621,15 @@ export function ApplicabilitiesSection({ items, onChange, variants, intensities,
 
 // ─── RequirementsSection ──────────────────────────────────────────────────────
 
-export function RequirementsSection({ items, onChange, variants, intensities, sizes }) {
+export function RequirementsSection({ items, onChange, variants, intensities, sizes, packagings = [] }) {
     const def = {
-        variant_id:        null,
-        intensity_id:      null,
-        size_id:           null,
-        required_quantity: 1,
-        matching_mode:     "all",
-        group_key:         null,
+        variant_id:            null,
+        intensity_id:          null,
+        size_id:               null,
+        packaging_material_id: null,
+        required_quantity:     1,
+        matching_mode:         "all",
+        group_key:             null,
     };
     const add    = () => onChange([...items, { ...def }]);
     const remove = (i) => onChange(items.filter((_, idx) => idx !== i));
@@ -618,7 +640,7 @@ export function RequirementsSection({ items, onChange, variants, intensities, si
         <SectionCard
             title="Syarat Pembelian Produk"
             icon={<IconListCheck size={15} className="text-slate-400" />}
-            description="Produk yang harus ada di cart. Group Key sama = kondisi OR."
+            description="Syarat di cart (parfum &/atau botol). Group Key SAMA = wajib semua (AND); Group Key BEDA = alternatif (OR)."
             onAdd={add}
             addLabel="Tambah Syarat"
         >
@@ -635,6 +657,7 @@ export function RequirementsSection({ items, onChange, variants, intensities, si
                                 variants={variants}
                                 intensities={intensities}
                                 sizes={sizes}
+                                packagings={packagings}
                             />
                             <div className="grid grid-cols-3 gap-3 items-end">
                                 <NumberInput
@@ -670,11 +693,11 @@ export function RequirementsSection({ items, onChange, variants, intensities, si
                             {item.group_key && (
                                 <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500">
                                     <IconAlertCircle size={11} />
-                                    Group{" "}
+                                    Baris dengan Group{" "}
                                     <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded font-mono">
                                         {item.group_key}
                                     </code>{" "}
-                                    dievaluasi secara OR
+                                    di-AND-kan; group berbeda = alternatif (OR)
                                 </div>
                             )}
                         </Row>
@@ -687,12 +710,13 @@ export function RequirementsSection({ items, onChange, variants, intensities, si
 
 // ─── RewardsSection ───────────────────────────────────────────────────────────
 
-export function RewardsSection({ items, onChange, variants, intensities, sizes, rewardItems = [] }) {
+export function RewardsSection({ items, onChange, variants, intensities, sizes, rewardItems = [], packagings = [] }) {
     const def = {
         reward_type:          "variant",
         variant_id:           null,
         intensity_id:         null,
         size_id:              null,
+        packaging_material_id: null,
         reward_item_id:       null,
         points_amount:        null,
         reward_quantity:      1,
@@ -731,14 +755,22 @@ export function RewardsSection({ items, onChange, variants, intensities, sizes, 
 
                             {/* === VARIANT REWARD === */}
                             {(item.reward_type ?? "variant") === "variant" && (
-                                <DimensionFilters
-                                    item={item}
-                                    index={i}
-                                    onUpdate={update}
-                                    variants={variants}
-                                    intensities={intensities}
-                                    sizes={sizes}
-                                />
+                                <>
+                                    <DimensionFilters
+                                        item={item}
+                                        index={i}
+                                        onUpdate={update}
+                                        variants={variants}
+                                        intensities={intensities}
+                                        sizes={sizes}
+                                    />
+                                    <Select
+                                        label="Botol Gratis (ikut hadiah)"
+                                        value={item.packaging_material_id}
+                                        onChange={(v) => update(i, "packaging_material_id", v)}
+                                        options={packagings}
+                                    />
+                                </>
                             )}
 
                             {/* === POINTS REWARD === */}
@@ -838,6 +870,7 @@ export function RewardsSection({ items, onChange, variants, intensities, sizes, 
                                     pools={item.pools ?? []}
                                     onChange={(pools) => update(i, "pools", pools)}
                                     rewardItems={rewardItems}
+                                    packagings={packagings}
                                 />
                             )}
                         </Row>

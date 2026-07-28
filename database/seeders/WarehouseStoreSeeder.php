@@ -94,6 +94,14 @@ class WarehouseStoreSeeder extends Seeder
                 'manager_name' => 'Fitri Handayani',
                 'email'        => 'toko.jombang3@harumnya.com',
             ],
+            [
+                'code'         => 'STR-KRIAN',
+                'name'         => 'Toko Krian',
+                'address'      => 'Jl. Raya Krian No. 1, Sidoarjo',
+                'phone'        => '031-8977000',
+                'manager_name' => 'Kasir Krian',
+                'email'        => 'toko.krian@harumnya.com',
+            ],
         ];
 
         foreach ($stores as $store) {
@@ -118,6 +126,7 @@ class WarehouseStoreSeeder extends Seeder
                 ['STR-JOMBANG1', 'Toko Jombang 1',     'Store'],
                 ['STR-JOMBANG2', 'Toko Jombang 2',     'Store'],
                 ['STR-JOMBANG3', 'Toko Jombang 3',     'Store'],
+                ['STR-KRIAN',    'Toko Krian',         'Store'],
             ]
         );
     }

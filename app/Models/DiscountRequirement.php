@@ -17,6 +17,7 @@ class DiscountRequirement extends Model
         'variant_id',
         'intensity_id',
         'size_id',
+        'packaging_material_id',
         'required_quantity',
         'matching_mode',
         'group_key',
@@ -50,5 +51,10 @@ class DiscountRequirement extends Model
     public function size(): BelongsTo
     {
         return $this->belongsTo(Size::class, 'size_id');
+    }
+
+    public function packagingMaterial(): BelongsTo
+    {
+        return $this->belongsTo(PackagingMaterial::class, 'packaging_material_id');
     }
 }

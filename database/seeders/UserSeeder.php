@@ -10,10 +10,17 @@ use Spatie\Permission\Models\Role;
 
 /**
  * User accounts yang dibuat:
- *   admin@harumnya.com       → super-admin  (WH-PUSAT)
- *   kasir.jatim@harumnya.com → cashier      (STR-JATIM / WH-JATIM)
- *   kasir.jateng@harumnya.com → cashier     (STR-JATENG / WH-JATENG)
- *   kasir.jabar@harumnya.com → cashier      (STR-JABAR / WH-JABAR)
+ *   admin@harumnya.com                → super-admin  (WH-PUSAT)
+ *   compliancesupplychain@gmail.com   → ocsc
+ *   adoperasional17@gmail.com         → oc
+ *   vg.heavenscent@gmail.com          → marketing
+ *   recruitmentharumnya@gmail.com     → hr
+ *   harumnya.financeku@gmail.com      → finance
+ *   timaudiths@gmail.com              → audit
+ *   acc.harumnya@gmail.com            → accounting
+ *   logistikheavenscent@gmail.com     → logistik
+ *   purchasing.heavenscent@gmail.com  → purchasing
+ *   kasir.krian@harumnya.com          → cashier      (STR-KRIAN / WH-JATIM)
  *
  * Default password semua user: password
  */
@@ -41,7 +48,7 @@ class UserSeeder extends Seeder
 
         // ── Admin Pusat ───────────────────────────────────────────────────────
         $admin = User::firstOrCreate(
-            ['email' => 'admin@harumnya.com'],
+            ['email' => 'itdevelopmenths@gmail.com'],
             [
                 'name'                 => 'Admin Pusat',
                 'password'             => bcrypt('password'),
@@ -57,14 +64,15 @@ class UserSeeder extends Seeder
 
         // ── User back-office per Role ─────────────────────────────────────────
         $roleUsers = [
-            ['Accounting', 'accounting@harumnya.com', 'accounting'],
-            ['Finance',    'finance@harumnya.com',    'finance'],
-            ['Logistik',   'logistik@harumnya.com',   'logistik'],
-            ['Purchasing', 'purchasing@harumnya.com', 'purchasing'],
-            ['OCSC',       'ocsc@harumnya.com',       'ocsc'],
-            ['OC',         'oc@harumnya.com',         'oc'],
-            ['Marketing',  'marketing@harumnya.com',  'marketing'],
-            ['HR',         'hr@harumnya.com',         'hr'],
+            ['OCSC',       'compliancesupplychain@gmail.com', 'ocsc'],
+            ['OC',         'adoperasional17@gmail.com',       'oc'],
+            ['Marketing',  'vg.heavenscent@gmail.com',        'marketing'],
+            ['HR',         'recruitmentharumnya@gmail.com',   'hr'],
+            ['Finance',    'harumnya.financeku@gmail.com',    'finance'],
+            ['Audit',      'timaudiths@gmail.com',            'audit'],
+            ['Accounting', 'acc.harumnya@gmail.com',          'accounting'],
+            ['Logistik',   'logistikheavenscent@gmail.com',   'logistik'],
+            ['Purchasing', 'purchasing.heavenscent@gmail.com','purchasing'],
         ];
 
         foreach ($roleUsers as [$nama, $email, $roleName]) {
@@ -91,10 +99,15 @@ class UserSeeder extends Seeder
         }
 
         // ── Kasir per Toko ────────────────────────────────────────────────────
+        // Hapus semua kasir Jombang lama (sisakan hanya kasir Krian)
+        User::whereIn('email', [
+            'kasir.jombang1@harumnya.com',
+            'kasir.jombang2@harumnya.com',
+            'kasir.jombang3@harumnya.com',
+        ])->delete();
+
         $cashierMap = [
-            ['STR-JOMBANG1', 'WH-JATIM', 'Kasir Jombang 1', 'kasir.jombang1@harumnya.com'],
-            ['STR-JOMBANG2', 'WH-JATIM', 'Kasir Jombang 2', 'kasir.jombang2@harumnya.com'],
-            ['STR-JOMBANG3', 'WH-JATIM', 'Kasir Jombang 3', 'kasir.jombang3@harumnya.com'],
+            ['STR-KRIAN', 'WH-JATIM', 'Kasir Krian', 'kasir.krian@harumnya.com'],
         ];
 
         foreach ($cashierMap as [$storeCode, $whCode, $nama, $email]) {
@@ -125,8 +138,8 @@ class UserSeeder extends Seeder
             $user->syncRoles([$cashierRole]);
             
             // ── Contoh Direct Permission ──────────────────────────────────────
-            // Kasir Jatim diberi akses refund (spesifik untuk user ini saja)
-            if ($email === 'kasir.jombang1@harumnya.com') {
+            // Kasir Krian diberi akses refund (spesifik untuk user ini saja)
+            if ($email === 'kasir.krian@harumnya.com') {
                 $user->syncPermissions(['transactions-refund']);
             }
 

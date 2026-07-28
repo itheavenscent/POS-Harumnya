@@ -7,13 +7,21 @@
  *  - Network-only untuk navigasi & request lain (auth/data selalu fresh,
  *    tidak ada risiko halaman basi).
  *
- * Naikkan CACHE_VERSION saat ingin membersihkan cache lama.
+ * Versi diambil dari query ?v=<hash> saat register (berubah tiap deploy),
+ * sehingga cache lama otomatis dibersihkan pada activate.
  */
-const CACHE_VERSION = "harumnya-v1";
+const VERSION = new URL(self.location.href).searchParams.get("v") || "v1";
+const CACHE_VERSION = `harumnya-${VERSION}`;
 const ASSET_CACHE = `${CACHE_VERSION}-assets`;
 
 self.addEventListener("install", (event) => {
-    self.skipWaiting();
+    // Jangan skipWaiting otomatis: tunggu konfirmasi user (banner "Muat ulang")
+    // agar tidak reload paksa saat kasir sedang transaksi.
+});
+
+// Aktivasi SW baru saat user menekan "Muat ulang" di banner.
+self.addEventListener("message", (event) => {
+    if (event.data === "SKIP_WAITING") self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
