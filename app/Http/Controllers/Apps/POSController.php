@@ -914,27 +914,36 @@ class POSController extends Controller
         $groups = $requirements->groupBy(fn($r) => $r->group_key ?? 'grp_' . $r->id);
 
         foreach ($groups as $group) {
-            $groupMet = false;
+            $groupMet = true;
             foreach ($group as $req) {
-                $matchQty = collect($cartItems)->filter(function ($item) use ($req) {
-                    if ($req->size_id && ($item['size_id'] ?? null) !== $req->size_id)
-                        return false;
-                    if ($req->intensity_id && ($item['intensity_id'] ?? null) !== $req->intensity_id)
-                        return false;
-                    if ($req->variant_id && ($item['variant_id'] ?? null) !== $req->variant_id)
-                        return false;
-                    return true;
-                })->sum('qty');
+                if ($req->packaging_material_id) {
+                    $matchQty = collect($cartItems)->sum(function($item) use ($req) {
+                        $pQty = collect($item['packagings'] ?? [])
+                                    ->where('packaging_material_id', $req->packaging_material_id)
+                                    ->sum('qty');
+                        if (($item['packaging_material_id'] ?? null) == $req->packaging_material_id) {
+                            $pQty += $item['qty'] ?? 1;
+                        }
+                        return $pQty;
+                    });
+                } else {
+                    $matchQty = collect($cartItems)->filter(function ($item) use ($req) {
+                        if ($req->size_id && ($item['size_id'] ?? null) != $req->size_id) return false;
+                        if ($req->intensity_id && ($item['intensity_id'] ?? null) != $req->intensity_id) return false;
+                        if ($req->variant_id && ($item['variant_id'] ?? null) != $req->variant_id) return false;
+                        return true;
+                    })->sum('qty');
+                }
 
-                if ($matchQty >= ($req->required_quantity ?? 1)) {
-                    $groupMet = true;
+                if ($matchQty < ($req->required_quantity ?? 1)) {
+                    $groupMet = false;
                     break;
                 }
             }
-            if (!$groupMet)
-                return false;
+            if ($groupMet)
+                return true;
         }
-        return true;
+        return false;
     }
 
     /**
@@ -1060,8 +1069,21 @@ class POSController extends Controller
                 $groupMatched = true; // Anggap cocok sampai terbukti tidak
                 
                 foreach ($group as $req) {
-                    // Hitung total qty di cart untuk kriteria ini
-                    $currentQty = $carts->where('size_id', $req->size_id)->sum('qty');
+                    if ($req->packaging_material_id) {
+                        $currentQty = 0;
+                        foreach ($carts as $cart) {
+                            $currentQty += collect($cart->packagings ?? [])
+                                            ->where('packaging_material_id', $req->packaging_material_id)
+                                            ->sum('qty');
+                        }
+                    } else {
+                        $filtered = clone $carts;
+                        if ($req->size_id) $filtered = $filtered->where('size_id', $req->size_id);
+                        if ($req->intensity_id) $filtered = $filtered->where('intensity_id', $req->intensity_id);
+                        if ($req->variant_id) $filtered = $filtered->where('variant_id', $req->variant_id);
+                        
+                        $currentQty = $filtered->sum('qty');
+                    }
                     
                     if ($currentQty < $req->required_quantity) {
                         $groupMatched = false;
