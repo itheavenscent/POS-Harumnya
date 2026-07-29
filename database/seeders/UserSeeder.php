@@ -10,7 +10,7 @@ use Spatie\Permission\Models\Role;
 
 /**
  * User accounts yang dibuat:
- *   admin@harumnya.com                → super-admin  (WH-PUSAT)
+ *   itdevelopmenths@gmail.com                → super-admin  (WH-PUSAT)
  *   compliancesupplychain@gmail.com   → ocsc
  *   adoperasional17@gmail.com         → oc
  *   vg.heavenscent@gmail.com          → marketing
@@ -60,7 +60,7 @@ class UserSeeder extends Seeder
             $admin->update(['default_warehouse_id' => $whPusat->id]);
         }
         $admin->syncRoles([$superAdminRole]);
-        $rows[] = ['Admin Pusat', 'admin@harumnya.com', 'super-admin', 'WH-PUSAT', '-'];
+        $rows[] = ['Admin Pusat', 'itdevelopmenths@gmail.com', 'super-admin', 'WH-PUSAT', '-'];
 
         // ── User back-office per Role ─────────────────────────────────────────
         $roleUsers = [
@@ -99,15 +99,9 @@ class UserSeeder extends Seeder
         }
 
         // ── Kasir per Toko ────────────────────────────────────────────────────
-        // Hapus semua kasir Jombang lama (sisakan hanya kasir Krian)
-        User::whereIn('email', [
-            'kasir.jombang1@harumnya.com',
-            'kasir.jombang2@harumnya.com',
-            'kasir.jombang3@harumnya.com',
-        ])->delete();
 
         $cashierMap = [
-            ['STR-KRIAN', 'WH-JATIM', 'Kasir Krian', 'kasir.krian@harumnya.com'],
+            ['STR-KRIAN', 'WH-JATIM', 'Kasir Krian', 'harumnyaparfum@gmail.com'],
         ];
 
         foreach ($cashierMap as [$storeCode, $whCode, $nama, $email]) {
@@ -139,7 +133,7 @@ class UserSeeder extends Seeder
             
             // ── Contoh Direct Permission ──────────────────────────────────────
             // Kasir Krian diberi akses refund (spesifik untuk user ini saja)
-            if ($email === 'kasir.krian@harumnya.com') {
+            if ($email === 'harumnyaparfum@gmail.com') {
                 $user->syncPermissions(['transactions-refund']);
             }
 

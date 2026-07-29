@@ -50,7 +50,7 @@ export default function Index({
     const [showFilters, setShowFilters] = useState(false);
 
     React.useEffect(() => {
-        const t = setTimeout(() => { if (search !== filters.search) applyFilters({ search }); }, 500);
+        const t = setTimeout(() => { if ((search || "") !== (filters.search || "")) applyFilters({ search }); }, 500);
         return () => clearTimeout(t);
     }, [search]);
 

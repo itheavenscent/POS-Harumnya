@@ -1469,7 +1469,7 @@ export default function Index({
 
         stateSetter(true);
         router.post(route(submitRoute), finalPayload, {
-            preserveScroll: true, preserveState: true, only: ["carts", "carts_total"],
+            preserveScroll: true, preserveState: true, only: ["carts", "carts_total", "discounts"],
             onSuccess: () => {
                 toast.success(successMsg);
                 if (!isCustom) {
@@ -1507,7 +1507,7 @@ export default function Index({
         if (newQty < 1) return;
         setUpdatingId(cartId);
         router.patch(route("transactions.update-cart", cartId), { qty: newQty }, {
-            preserveScroll: true, preserveState: true, only: ["carts", "carts_total"],
+            preserveScroll: true, preserveState: true, only: ["carts", "carts_total", "discounts"],
             onFinish: () => setUpdatingId(null),
         });
     };
@@ -1519,7 +1519,7 @@ export default function Index({
         }
         setRemovingId(cartId);
         router.delete(route("transactions.destroy-cart", cartId), {
-            preserveScroll: true, preserveState: true, only: ["carts", "carts_total"],
+            preserveScroll: true, preserveState: true, only: ["carts", "carts_total", "discounts"],
             onSuccess: () => { toast.success("Item dihapus"); setRemovingId(null); },
             onError: () => { toast.error("Gagal menghapus"); setRemovingId(null); },
         });
@@ -1529,14 +1529,14 @@ export default function Index({
         if (!carts.length) { toast.error("Keranjang kosong"); return; }
         setIsHolding(true);
         router.post(route("transactions.hold"), { label: "Hold " + new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) }, {
-            preserveScroll: true, preserveState: true, only: ["carts", "carts_total", "heldCarts"],
+            preserveScroll: true, preserveState: true, only: ["carts", "carts_total", "heldCarts", "discounts"],
             onSuccess: () => { toast.success("Transaksi ditahan"); setIsHolding(false); setCartPackagings([]); },
             onFinish: () => setIsHolding(false),
         });
     };
 
-    const handleResume = (holdId) => router.post(route("transactions.resume", holdId), {}, { preserveScroll: true, preserveState: true, only: ["carts", "carts_total", "heldCarts"] });
-    const handleDeleteHeld = (holdId) => { if (!confirm("Hapus transaksi yang ditahan?")) return; router.delete(route("transactions.delete-held", holdId), { preserveScroll: true, preserveState: true, only: ["carts", "carts_total", "heldCarts"] }); };
+    const handleResume = (holdId) => router.post(route("transactions.resume", holdId), {}, { preserveScroll: true, preserveState: true, only: ["carts", "carts_total", "heldCarts", "discounts"] });
+    const handleDeleteHeld = (holdId) => { if (!confirm("Hapus transaksi yang ditahan?")) return; router.delete(route("transactions.delete-held", holdId), { preserveScroll: true, preserveState: true, only: ["carts", "carts_total", "heldCarts", "discounts"] }); };
 
     const handleAddPkg = (pkg) => {
         setCartPackagings(prev => {

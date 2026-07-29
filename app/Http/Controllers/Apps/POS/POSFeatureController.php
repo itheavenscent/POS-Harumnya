@@ -314,11 +314,19 @@ class POSFeatureController extends Controller
             ->selectRaw('
                 COUNT(*)                            AS total_transactions,
                 COALESCE(SUM(total), 0)             AS total_revenue,
-                COALESCE(SUM(discount_amount), 0)   AS total_discount,
                 COALESCE(AVG(total), 0)             AS avg_order,
                 COUNT(DISTINCT customer_id)         AS unique_customers
             ')
             ->first();
+
+        // Total diskon dari sale_discounts (bukan sales.discount_amount — kolom itu 0
+        // untuk transaksi reward/multiple discount). Sumber sama dgn dashboard admin.
+        $totalDiscount = DB::table('sale_discounts')
+            ->join('sales', 'sale_discounts.sale_id', '=', 'sales.id')
+            ->where('sales.store_id', $storeId)
+            ->where('sales.status', 'completed')
+            ->whereBetween('sales.sold_at', [$from, $to])
+            ->sum('sale_discounts.applied_amount');
 
         $itemsSold = DB::table('sale_items')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
@@ -384,7 +392,7 @@ class POSFeatureController extends Controller
             'summary'   => [
                 'totalTransactions' => (int)   $summary->total_transactions,
                 'totalRevenue'      => (float) round($summary->total_revenue, 2),
-                'totalDiscount'     => (float) round($summary->total_discount, 2),
+                'totalDiscount'     => (float) round($totalDiscount ?? 0, 2),
                 'avgOrder'          => (float) round($summary->avg_order, 2),
                 'uniqueCustomers'   => (int)   $summary->unique_customers,
                 'totalItemsSold'    => (int)   $itemsSold,

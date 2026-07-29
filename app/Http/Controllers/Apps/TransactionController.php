@@ -1164,7 +1164,8 @@ class TransactionController extends Controller
             ->whereNull('hold_id')
             ->get();
 
-        if ($carts->isEmpty()) {
+        // Boleh checkout jika ada item keranjang ATAU kemasan/botol standalone
+        if ($carts->isEmpty() && empty($request->standalone_packagings)) {
             return back()->withErrors(['message' => 'Keranjang kosong']);
         }
 
