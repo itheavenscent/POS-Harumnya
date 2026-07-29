@@ -58,6 +58,9 @@ Route::middleware('auth')->group(function () {
 
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
 
+    // Ganti password back office — wajib verifikasi OTP email.
+    Route::get('settings/password', [PasswordController::class, 'edit'])->name('password.edit');
+    Route::post('settings/password/otp', [PasswordController::class, 'sendOtp'])->name('password.otp');
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])

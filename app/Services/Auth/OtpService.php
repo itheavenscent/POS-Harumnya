@@ -4,6 +4,7 @@ namespace App\Services\Auth;
 
 use App\Models\User;
 use App\Notifications\LoginOtpNotification;
+use App\Notifications\PasswordOtpNotification;
 use Illuminate\Support\Facades\Hash;
 
 class OtpService
@@ -13,12 +14,18 @@ class OtpService
 
     /**
      * Buat OTP baru, simpan ter-hash di user, kirim ke email.
+     * $purpose menentukan template email: 'login' (default) atau 'password'.
      * Mengembalikan kode plaintext (untuk keperluan debug/log bila perlu).
      */
-    public function send(User $user): string
+    public function send(User $user, string $purpose = 'login'): string
     {
         $code = $this->generate($user);
-        $user->notify(new LoginOtpNotification($code, self::TTL_SECONDS));
+
+        $notification = $purpose === 'password'
+            ? new PasswordOtpNotification($code, self::TTL_SECONDS)
+            : new LoginOtpNotification($code, self::TTL_SECONDS);
+
+        $user->notify($notification);
 
         return $code;
     }

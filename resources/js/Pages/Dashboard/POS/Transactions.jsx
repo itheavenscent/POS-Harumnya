@@ -22,22 +22,37 @@ const fmtSoldAt = (soldAt) => {
 
 export default function Transactions({ sales, filters, canPrint = false }) {
     const [search, setSearch] = React.useState(filters.search || "");
+    const [dateFrom, setDateFrom] = React.useState(filters.date_from || "");
+    const [dateTo, setDateTo] = React.useState(filters.date_to || "");
     const [selectedSale, setSelectedSale] = React.useState(null);
     const [debouncedSearch] = useDebounce(search, 500);
 
     const isFirstRender = React.useRef(true);
+
+    const reload = (params) => {
+        router.get(
+            route("pos.transactions"),
+            { search: debouncedSearch, date_from: dateFrom, date_to: dateTo, ...params },
+            { preserveState: true, replace: true }
+        );
+    };
 
     React.useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
             return;
         }
-        router.get(
-            route("pos.transactions"),
-            { search: debouncedSearch },
-            { preserveState: true, replace: true }
-        );
-    }, [debouncedSearch]);
+        reload();
+    }, [debouncedSearch, dateFrom, dateTo]);
+
+    const resetFilters = () => {
+        setSearch("");
+        setDateFrom("");
+        setDateTo("");
+        router.get(route("pos.transactions"), {}, { preserveState: true, replace: true });
+    };
+
+    const hasFilter = search || dateFrom || dateTo;
 
     return (
         <POSLayout>
@@ -51,15 +66,51 @@ export default function Transactions({ sales, filters, canPrint = false }) {
                         <p className="text-xs text-slate-500 font-medium mt-0.5">Daftar penjualan toko Anda</p>
                     </div>
 
-                    <div className="relative w-full sm:w-64">
-                        <IconSearch size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                            type="text"
-                            placeholder="Cari no. faktur / pelanggan..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="w-full h-10 pl-10 pr-4 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-white text-sm focus:outline-none focus:border-cyan-500 transition-all"
-                        />
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        <div className="relative w-full sm:w-56">
+                            <IconSearch size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Cari no. faktur / pelanggan..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full h-10 pl-10 pr-4 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-white text-sm focus:outline-none focus:border-cyan-500 transition-all"
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                            <div className="relative">
+                                <input
+                                    type="date"
+                                    value={dateFrom}
+                                    max={dateTo || undefined}
+                                    onChange={(e) => setDateFrom(e.target.value)}
+                                    title="Dari tanggal"
+                                    className="h-10 px-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-white text-sm focus:outline-none focus:border-cyan-500 transition-all"
+                                />
+                            </div>
+                            <span className="text-slate-400 text-sm">—</span>
+                            <div className="relative">
+                                <input
+                                    type="date"
+                                    value={dateTo}
+                                    min={dateFrom || undefined}
+                                    onChange={(e) => setDateTo(e.target.value)}
+                                    title="Sampai tanggal"
+                                    className="h-10 px-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-white text-sm focus:outline-none focus:border-cyan-500 transition-all"
+                                />
+                            </div>
+                        </div>
+
+                        {hasFilter && (
+                            <button
+                                onClick={resetFilters}
+                                title="Reset filter"
+                                className="h-10 px-3 inline-flex items-center justify-center rounded-xl border-2 border-slate-100 dark:border-slate-800 text-slate-500 hover:text-rose-600 hover:border-rose-200 dark:hover:border-rose-900 transition-all"
+                            >
+                                <IconX size={16} />
+                            </button>
+                        )}
                     </div>
                 </div>
 

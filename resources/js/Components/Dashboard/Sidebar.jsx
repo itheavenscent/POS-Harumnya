@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { usePage, Link } from "@inertiajs/react";
-import { IconX, IconChevronDown, IconChevronRight, IconMenu2, IconSun, IconMoon, IconLogout, IconSearch, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand } from "@tabler/icons-react";
+import { IconX, IconChevronDown, IconChevronRight, IconMenu2, IconSun, IconMoon, IconLogout, IconSearch, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconShieldLock } from "@tabler/icons-react";
 import LinkItem from "@/Components/Dashboard/LinkItem";
 import LinkItemDropdown from "@/Components/Dashboard/LinkItemDropdown";
 import Menu from "@/Utils/Menu";
@@ -373,6 +373,14 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
                                             <span>{darkMode ? 'Mode Terang' : 'Mode Gelap'}</span>
                                         </button>
                                     )}
+                                    <Link
+                                        href={route('password.edit')}
+                                        onClick={() => setUserMenuOpen(false)}
+                                        className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-200 flex items-center gap-2 transition-colors cursor-pointer border-none bg-transparent"
+                                    >
+                                        <IconShieldLock size={15} />
+                                        <span>Ganti Password</span>
+                                    </Link>
                                     <Link
                                         href={route('logout')}
                                         method="post"

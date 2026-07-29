@@ -29,6 +29,7 @@ class RolePermissionSeeder extends Seeder
             'transactions-cancel',
             'transactions-print',
             'transactions-all',
+            'transactions-history-access',   // Menu "Riwayat Transaksi" (back office)
 
             // ── Products & Catalog ───────────────────────────────────────────
             'products-access',
@@ -123,6 +124,7 @@ class RolePermissionSeeder extends Seeder
             'stock-transfer',
             'stock-adjustment',
             'stock-repack',
+            'stock-movements-access',   // Menu "Log Pergerakan Stok"
 
             // ── Repacks (Produksi) ───────────────────────────────────────────
             'repacks-access',
@@ -144,12 +146,14 @@ class RolePermissionSeeder extends Seeder
             'sales-people-create',
             'sales-people-edit',
             'sales-people-delete',
+            'sales-people-productivity-access',   // Menu "Ranking Produktivitas"
 
             // ── Discounts (Promo) ─────────────────────────────────────────────
             'discounts-access',
             'discounts-create',
             'discounts-edit',
             'discounts-delete',
+            'reward-items-access',   // Menu "Hadiah / Reward"
 
             // ── Cash Drawers (Shift) ─────────────────────────────────────────
             'cash-drawers-access',
@@ -172,6 +176,7 @@ class RolePermissionSeeder extends Seeder
             'reports-stock',
             'reports-finance',
             'profits-access',
+            'laporan-mutasi-access',   // Menu "Mutasi Bahan & Kemasan"
 
             // ── Users ─────────────────────────────────────────────────────────
             'users-access',
@@ -205,9 +210,9 @@ class RolePermissionSeeder extends Seeder
 
         $reportsSales   = ['reports-access', 'reports-sales'];
         $reportsFinance = ['reports-finance', 'profits-access'];
-        $reportsStock   = ['reports-stock'];
+        $reportsStock   = ['reports-stock', 'laporan-mutasi-access'];
 
-        $transaksiView  = ['transactions-access', 'transactions-all', 'transactions-print'];
+        $transaksiView  = ['transactions-access', 'transactions-all', 'transactions-print', 'transactions-history-access'];
         $shiftView      = ['cash-drawers-access', 'cash-drawers-print'];
 
         // Lokasi (lihat semua)
@@ -224,12 +229,12 @@ class RolePermissionSeeder extends Seeder
         // Manajemen stok penuh
         $stockAll = [
             'stock-access', 'stock-warehouse-access', 'stock-store-access',
-            'stock-transfer', 'stock-adjustment', 'stock-repack',
+            'stock-transfer', 'stock-adjustment', 'stock-repack', 'stock-movements-access',
             'repacks-access', 'repacks-create', 'repacks-edit', 'repacks-delete', 'repacks-complete', 'repacks-cancel',
         ];
         // Manajemen stok tanpa produksi (repack) & tanpa transfer
         $stockNoProdNoTransfer = [
-            'stock-access', 'stock-warehouse-access', 'stock-store-access', 'stock-adjustment',
+            'stock-access', 'stock-warehouse-access', 'stock-store-access', 'stock-adjustment', 'stock-movements-access',
         ];
 
         // Bahan baku & produk (penuh)
@@ -260,9 +265,9 @@ class RolePermissionSeeder extends Seeder
             'payment-settings-access',
         ];
 
-        $discountsAll = ['discounts-access', 'discounts-create', 'discounts-edit', 'discounts-delete'];
+        $discountsAll = ['discounts-access', 'discounts-create', 'discounts-edit', 'discounts-delete', 'reward-items-access'];
         $customersAll = ['customers-access', 'customers-create', 'customers-edit', 'customers-delete', 'customers-export'];
-        $salesPeopleAll = ['sales-people-access', 'sales-people-create', 'sales-people-edit', 'sales-people-delete'];
+        $salesPeopleAll = ['sales-people-access', 'sales-people-create', 'sales-people-edit', 'sales-people-delete', 'sales-people-productivity-access'];
 
         $merge = fn (...$groups) => array_values(array_unique(array_merge(...$groups)));
 
@@ -368,7 +373,7 @@ class RolePermissionSeeder extends Seeder
         $cashier->syncPermissions($merge(
             ['dashboard-access'],
             // POS / Transaksi (fulfillment pakai transactions-*) — scoped ke toko sendiri
-            ['transactions-access', 'transactions-create', 'transactions-print'],
+            ['transactions-access', 'transactions-create', 'transactions-print', 'transactions-history-access'],
             // Shift Kasir
             ['cash-drawers-access', 'cash-drawers-open', 'cash-drawers-close', 'cash-drawers-print'],
             // Laporan penjualan
@@ -377,12 +382,12 @@ class RolePermissionSeeder extends Seeder
             ['products-access', 'variants-access', 'intensities-access', 'sizes-access', 'packaging-access'],
             // Pelanggan
             ['customers-access', 'customers-create'],
-            // Diskon (lihat)
-            ['discounts-access'],
-            // Stok toko (lihat)
-            ['stock-access', 'stock-store-access'],
+            // Diskon + Hadiah/Reward (lihat)
+            ['discounts-access', 'reward-items-access'],
+            // Stok toko + log pergerakan (lihat)
+            ['stock-access', 'stock-store-access', 'stock-movements-access'],
             // Sales (ranking produktivitas)
-            ['sales-people-access'],
+            ['sales-people-access', 'sales-people-productivity-access'],
         ));
 
         // ── Buat/sinkronkan role bermatriks ───────────────────────────────────

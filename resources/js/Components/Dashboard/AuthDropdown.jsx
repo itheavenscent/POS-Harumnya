@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Menu, Transition } from '@headlessui/react'
 import { Link, usePage } from '@inertiajs/react'
-import { IconLogout, IconUserCog } from '@tabler/icons-react'
+import { IconLogout, IconUserCog, IconShieldLock } from '@tabler/icons-react'
 import { useForm } from '@inertiajs/react'
 import MenuLink from '@/Utils/Menu'
 import LinkItem from './LinkItem'
@@ -65,11 +65,11 @@ export default function AuthDropdown({ auth, isMobile }) {
                     >
                         <Menu.Items className='absolute rounded-lg w-48 border mt-2 py-2 right-0 z-[100] bg-white dark:bg-gray-950 dark:border-gray-900'>
                             <div className='flex flex-col gap-1.5 divide-y divide-gray-100 dark:divide-gray-900'>
-                                {/* <Menu.Item>
-                                    <Link href="/apps/profile" className='px-3 py-1.5 text-sm flex items-center gap-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'>
-                                        <IconUserCog strokeWidth={'1.5'} size={'20'} /> Profile
+                                <Menu.Item>
+                                    <Link href={route('password.edit')} className='px-3 py-1.5 text-sm flex items-center gap-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'>
+                                        <IconShieldLock strokeWidth={'1.5'} size={'20'} /> Ganti Password
                                     </Link>
-                                </Menu.Item> */}
+                                </Menu.Item>
                                 <Menu.Item>
                                     <button onClick={logout} className='px-3 py-1.5 text-sm flex items-center gap-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'>
                                         <IconLogout strokeWidth={'1.5'} size={'20'} />

@@ -1545,6 +1545,9 @@ class TransactionController extends Controller
     {
         $request->validate([
             'customer_id' => 'nullable|uuid|exists:customers,id',
+            // Botol/kemasan "satuan" (standalone) belum tersimpan sebagai Cart di DB —
+            // masih di state frontend. Dikirim agar syarat botol promo bisa terhitung.
+            'standalone_packagings' => 'nullable|string',
         ]);
 
         $user    = Auth::user();
@@ -1593,6 +1596,20 @@ class TransactionController extends Controller
         // botol dihitung dari CartPackaging (packaging_material_id → qty).
         $paidCarts = $carts->reject(fn ($c) => $c->is_free)->values();
         $cartPkgQty = $this->cartPackagingQty($carts);
+
+        // Gabungkan botol/kemasan standalone (dari frontend) ke peta qty botol,
+        // supaya syarat "botol" pada promo (Spin Wheel dll) ikut terhitung
+        // walau botol ditambahkan lewat tab "Kemasan Satuan" (belum jadi Cart row).
+        $standalone = json_decode((string) $request->input('standalone_packagings', ''), true);
+        if (is_array($standalone)) {
+            foreach ($standalone as $sp) {
+                $pid = $sp['packaging_material_id'] ?? null;
+                $q   = (int) ($sp['qty'] ?? 0);
+                if ($pid && $q > 0) {
+                    $cartPkgQty[$pid] = ($cartPkgQty[$pid] ?? 0) + $q;
+                }
+            }
+        }
 
         // Promo hadiah (Spin Wheel / Buy X Get Y) saling eksklusif: begitu salah satu
         // diklaim, jenis promo hadiah lain tidak lagi ditampilkan.
@@ -1747,6 +1764,8 @@ class TransactionController extends Controller
             'reward_label'     => 'nullable|string|max:200',
             'packaging_material_id' => 'nullable|uuid|exists:packaging_materials,id',
             'qty'              => 'nullable|integer|min:1|max:99',
+            // Botol standalone (Kemasan Satuan) — ikut dihitung untuk syarat botol promo.
+            'standalone_packagings' => 'nullable|string',
         ]);
 
         $user    = Auth::user();
@@ -1794,6 +1813,20 @@ class TransactionController extends Controller
             // Syarat parfum & botol dihitung sama seperti di endpoint eligibility.
             $paidCarts  = $activeCarts->reject(fn ($c) => $c->is_free)->values();
             $cartPkgQty = $this->cartPackagingQty($activeCarts);
+
+            // Gabungkan botol standalone (sama seperti endpoint eligibility) agar
+            // syarat botol terpenuhi walau botol ditambahkan lewat "Kemasan Satuan".
+            $standalone = json_decode((string) $request->input('standalone_packagings', ''), true);
+            if (is_array($standalone)) {
+                foreach ($standalone as $sp) {
+                    $pid = $sp['packaging_material_id'] ?? null;
+                    $q   = (int) ($sp['qty'] ?? 0);
+                    if ($pid && $q > 0) {
+                        $cartPkgQty[$pid] = ($cartPkgQty[$pid] ?? 0) + $q;
+                    }
+                }
+            }
+
             $multiplier = $this->promoCartMultiplier($discount, $paidCarts, $cartPkgQty);
             abort_if(
                 $claimedCount >= $multiplier,

@@ -95,6 +95,8 @@ class POSFeatureController extends Controller
                       ->orWhere('customer_name', 'ilike', "%{$search}%");
                 });
             })
+            ->when($request->filled('date_from'), fn ($q) => $q->whereDate('sold_at', '>=', $request->date_from))
+            ->when($request->filled('date_to'), fn ($q) => $q->whereDate('sold_at', '<=', $request->date_to))
             ->latest('sold_at')
             ->paginate(20)
             ->withQueryString();
@@ -107,7 +109,7 @@ class POSFeatureController extends Controller
 
         return Inertia::render('Dashboard/POS/Transactions', [
             'sales' => $sales,
-            'filters' => $request->only(['search']),
+            'filters' => $request->only(['search', 'date_from', 'date_to']),
             'activeCashDrawer' => $activeCashDrawer,
             'canPrint' => $user->can('transactions-print'),
         ]);

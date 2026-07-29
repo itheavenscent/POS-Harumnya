@@ -1213,10 +1213,18 @@ export default function Index({
 
     // ── Effect: check eligible discounts when cart or customer changes ──────────
     const cartFingerprint = useMemo(() => carts.map(c => `${c.id}:${c.qty}`).join(','), [carts]);
+    // Botol standalone ("Kemasan Satuan") ikut menentukan eligibility promo (syarat botol),
+    // jadi perubahannya harus memicu ulang pengecekan.
+    const pkgFingerprint = useMemo(() => cartPackagings.map(p => `${p.pkg.id}:${p.qty}`).join(','), [cartPackagings]);
     useEffect(() => {
         if (carts.length === 0) { setEligiblePromos([]); return; }
         const params = {};
         if (selectedCustomer?.id) params.customer_id = selectedCustomer.id;
+        if (cartPackagings.length) {
+            params.standalone_packagings = JSON.stringify(
+                cartPackagings.map(p => ({ packaging_material_id: p.pkg.id, qty: p.qty }))
+            );
+        }
         axios.get(route('transactions.check-eligible-discounts'), { params })
             .then(res => {
                 if (res.data.success) {
@@ -1230,7 +1238,7 @@ export default function Index({
                 }
             })
             .catch(() => {});
-    }, [cartFingerprint, selectedCustomer?.id]);
+    }, [cartFingerprint, pkgFingerprint, selectedCustomer?.id]);
 
     // ── Fetch katalog varian POS ───────────────────────────────────────────────
     const fetchCatalogVariants = async () => {
@@ -1333,11 +1341,18 @@ export default function Index({
         }
     };
 
+    // Botol standalone ("Kemasan Satuan") harus ikut saat klaim reward, agar
+    // verifikasi syarat botol di server sama dengan hasil pengecekan eligibility.
+    const standalonePkgPayload = () =>
+        cartPackagings.length
+            ? JSON.stringify(cartPackagings.map(p => ({ packaging_material_id: p.pkg.id, qty: p.qty })))
+            : undefined;
+
     const handleAddDirectReward = (rewardOrPool, promo) => {
         if (!promo) return;
         const type = rewardOrPool?.reward_type;
-        const label = type === 'points' 
-            ? `${promo.name} - ${rewardOrPool.points_amount} Poin` 
+        const label = type === 'points'
+            ? `${promo.name} - ${rewardOrPool.points_amount} Poin`
             : `${promo.name} - ${rewardOrPool.reward_item_name || 'Merchandise'}`;
 
         router.post(route('transactions.add-reward-to-cart'), {
@@ -1346,6 +1361,7 @@ export default function Index({
             reward_item_id: rewardOrPool?.reward_item_id ?? null,
             points_amount: rewardOrPool?.points_amount ?? null,
             reward_label: label,
+            standalone_packagings: standalonePkgPayload(),
         }, {
             preserveScroll: true,
             onSuccess: () => toast.success(`✅ Reward "${label}" berhasil ditambahkan!`),
@@ -1368,6 +1384,7 @@ export default function Index({
             packaging_material_id: reward?.packaging_material_id ?? null,
             reward_label: label,
             qty,
+            standalone_packagings: standalonePkgPayload(),
         }, {
             preserveScroll: true,
             onSuccess: () => {

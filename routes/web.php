@@ -402,9 +402,9 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     //
 
     Route::prefix('stock-movements')->name('stock-movements.')->group(function () {
-        Route::get('/', [StockMovementController::class, 'index'])->name('index')->middleware('permission:stock-access');
-        Route::post('/available-stock', [StockMovementController::class, 'getAvailableStock'])->name('available-stock')->middleware('permission:stock-access');
-        Route::get('/{id}', [StockMovementController::class, 'show'])->name('show')->middleware('permission:stock-access');
+        Route::get('/', [StockMovementController::class, 'index'])->name('index')->middleware('permission:stock-movements-access');
+        Route::post('/available-stock', [StockMovementController::class, 'getAvailableStock'])->name('available-stock')->middleware('permission:stock-movements-access');
+        Route::get('/{id}', [StockMovementController::class, 'show'])->name('show')->middleware('permission:stock-movements-access');
     });
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -479,7 +479,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         ->name('sales-people.targets.store');
 
     Route::get('sales-people/productivity', [SalesPersonController::class, 'productivity'])
-        ->middleware('permission:sales-people-access')
+        ->middleware('permission:sales-people-productivity-access')
         ->name('sales-people.productivity');
 
     Route::resource('sales-people', SalesPersonController::class)
@@ -514,13 +514,13 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         ->name('reward-items.toggle');
 
     Route::get('reward-items/api-list', [RewardItemController::class, 'apiList'])
-        ->middleware('permission:discounts-access')
+        ->middleware('permission:reward-items-access')
         ->name('reward-items.api-list');
 
     Route::resource('reward-items', RewardItemController::class)
         ->except(['show', 'create', 'edit'])
         ->middleware([
-            'index'   => 'permission:discounts-access',
+            'index'   => 'permission:reward-items-access',
             'store'   => 'permission:discounts-create',
             'update'  => 'permission:discounts-edit',
             'destroy' => 'permission:discounts-delete',
@@ -538,8 +538,8 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
 
         // 1. Halaman
         Route::get('/', [TransactionController::class, 'index'])->name('index')->middleware('permission:transactions-access');
-        Route::get('/history', [TransactionController::class, 'history'])->name('history')->middleware('permission:transactions-access');
-        Route::get('/history/export', [TransactionController::class, 'exportHistory'])->name('history.export')->middleware('permission:transactions-access');
+        Route::get('/history', [TransactionController::class, 'history'])->name('history')->middleware('permission:transactions-history-access');
+        Route::get('/history/export', [TransactionController::class, 'exportHistory'])->name('history.export')->middleware('permission:transactions-history-access');
         Route::post('/{id}/cancel-sale', [TransactionController::class, 'cancelSale'])->name('cancel-sale')->middleware('permission:transactions-cancel');
         // NOTE: print permission (transactions-print) hanya dipakai untuk gate tombol
         // cetak di Riwayat Transaksi (via canPrint). Halaman print sendiri cukup
@@ -634,10 +634,10 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
             ->name('keuangan.export');
 
         Route::get('mutasi', [LaporanMutasiController::class, 'index'])
-            ->middleware('permission:reports-stock')
+            ->middleware('permission:laporan-mutasi-access')
             ->name('mutasi');
         Route::get('mutasi/export', [LaporanMutasiController::class, 'exportExcel'])
-            ->middleware('permission:reports-stock')
+            ->middleware('permission:laporan-mutasi-access')
             ->name('mutasi.export');
     });
 
