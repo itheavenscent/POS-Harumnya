@@ -207,6 +207,9 @@ class IngredientSupplierSeeder extends Seeder
             [$foWId, 'ING-FO-W066', 'ROCK FO', 'ml', 1416.2200],
         ];
 
+        // Semua bahan baku oil (kategori Fragrance Oil Wanita & Pria) harga jual = Rp 3.000
+        $oilCategoryIds = [$foWId, $foMId];
+
         foreach ($ingredients as [$catId, $code, $name, $unit, $avgCost]) {
             DB::table('ingredients')->insert([
                 'id' => Str::uuid(),
@@ -217,7 +220,7 @@ class IngredientSupplierSeeder extends Seeder
                 'description' => 'Standard ' . $name,
                 'image' => null,
                 'average_cost' => $avgCost,
-                'selling_price' => null,
+                'selling_price' => in_array($catId, $oilCategoryIds, true) ? 3000 : null,
                 'is_active' => true,
                 'created_at' => $now,
                 'updated_at' => $now,
