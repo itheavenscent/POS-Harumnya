@@ -194,31 +194,49 @@ class DiscountService
      */
     private function meetsSpecificRequirements($requirements, array $cartItems)
     {
+        $groups = [];
         foreach ($requirements as $requirement) {
-            $matchingItems = array_filter($cartItems, function ($item) use ($requirement) {
-                $matches = true;
+            $key = $requirement->group_key ?: '_default_';
+            $groups[$key][] = $requirement;
+        }
 
-                if ($requirement->variant_id && $item['variant_id'] != $requirement->variant_id) {
-                    $matches = false;
+        foreach ($groups as $groupKey => $groupReqs) {
+            $groupMet = true;
+
+            foreach ($groupReqs as $requirement) {
+                $matchingItems = array_filter($cartItems, function ($item) use ($requirement) {
+                    $matches = true;
+
+                    if ($requirement->variant_id && ($item['variant_id'] ?? null) != $requirement->variant_id) {
+                        $matches = false;
+                    }
+                    if ($requirement->intensity_id && ($item['intensity_id'] ?? null) != $requirement->intensity_id) {
+                        $matches = false;
+                    }
+                    if ($requirement->size_id && ($item['size_id'] ?? null) != $requirement->size_id) {
+                        $matches = false;
+                    }
+                    if ($requirement->packaging_material_id && ($item['packaging_material_id'] ?? null) != $requirement->packaging_material_id) {
+                        $matches = false;
+                    }
+
+                    return $matches;
+                });
+
+                $totalQty = array_sum(array_column($matchingItems, 'quantity'));
+
+                if ($totalQty < $requirement->required_quantity) {
+                    $groupMet = false;
+                    break;
                 }
-                if ($requirement->intensity_id && $item['intensity_id'] != $requirement->intensity_id) {
-                    $matches = false;
-                }
-                if ($requirement->size_id && $item['size_id'] != $requirement->size_id) {
-                    $matches = false;
-                }
+            }
 
-                return $matches;
-            });
-
-            $totalQty = array_sum(array_column($matchingItems, 'quantity'));
-
-            if ($totalQty < $requirement->required_quantity) {
-                return false;
+            if ($groupMet) {
+                return true;
             }
         }
 
-        return true;
+        return false;
     }
 
     /**
