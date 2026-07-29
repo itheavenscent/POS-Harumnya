@@ -2178,78 +2178,169 @@ export default function Index({
                         <span className="ml-auto text-lg font-black text-primary-600">{fmt(payable)}</span>
                     </div>
 
-                    {/* Body — selalu 2 kolom (juga di tab kecil) agar tidak perlu scroll */}
-                    <div className="flex-1 overflow-y-auto p-2 sm:p-3">
-                        <div className="mx-auto max-w-4xl grid grid-cols-3 gap-2 sm:gap-3">
-                            {/* ── Kolom kanan (kecil): Sales (Pelanggan dipindah ke atas keranjang) ── */}
-                            <div className="col-span-1 order-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 space-y-2.5 h-fit">
-                                {/* Sales Person (wajib) */}
-                                <div className="relative">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><IconUser size={10} /> Sales <span className="text-red-500">*</span></label>
-                                    <div className="relative">
-                                        <IconSearch size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300" />
-                                        <input
-                                            type="text" placeholder="Pilih Sales..."
-                                            value={selectedSalesPerson ? selectedSalesPerson.name : salesSearch}
-                                            onClick={() => { if (selectedSalesPerson) { setSelectedSalesPerson(null); setSalesSearch(""); } setShowSalesDropdown(true); }}
-                                            onChange={e => { setSalesSearch(e.target.value); setShowSalesDropdown(true); if (selectedSalesPerson) setSelectedSalesPerson(null); }}
-                                            className={`w-full h-9 pl-8 pr-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white bg-slate-50 dark:bg-slate-800 ${selectedSalesPerson ? "border-slate-200 dark:border-slate-700" : "border-red-200 dark:border-red-900/50"}`}
-                                        />
-                                    </div>
-                                    {showSalesDropdown && !selectedSalesPerson && (
-                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-30 overflow-hidden max-h-44 overflow-y-auto">
-                                            {salesPeople.filter(s => s.name.toLowerCase().includes(salesSearch.toLowerCase())).map(s => (
-                                                <button key={s.id} onClick={() => { setSelectedSalesPerson(s); setShowSalesDropdown(false); setSalesSearch(""); }} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0">
-                                                    <p className="font-semibold text-xs text-slate-800 dark:text-white">{s.name}</p>
-                                                    <p className="text-[10px] text-slate-400">{s.code}</p>
-                                                </button>
-                                            ))}
-                                            {salesPeople.length === 0 && <p className="p-3 text-center text-xs text-slate-400">Belum ada sales</p>}
+                    {/* Body — kiri: ringkasan pesanan (list pembelian + total), kanan: pembayaran */}
+                    <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+                        <div className="mx-auto max-w-5xl grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4">
+
+                            {/* ── Kolom kiri: Ringkasan Pesanan (list pembelian) ── */}
+                            <div className="lg:col-span-3 order-2 lg:order-1 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden">
+                                <div className="flex-shrink-0 px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                                    <h2 className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-1.5">
+                                        <IconShoppingCart size={16} className="text-primary-600" /> Ringkasan Pesanan
+                                    </h2>
+                                    <span className="text-[10px] font-black text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">{totalCartCount} item</span>
+                                </div>
+
+                                {/* List item */}
+                                <div className="p-3 space-y-0.5 max-h-[46vh] overflow-y-auto scrollbar-thin">
+                                    {carts.map(item => {
+                                        const isPointReward = item.points_amount !== null && item.points_amount !== undefined;
+                                        const isFree = isPointReward || Number(item.unit_price) === 0;
+                                        return (
+                                            <div key={item.id} className="flex items-start justify-between gap-3 py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        <p className="text-sm font-bold text-slate-800 dark:text-white truncate">
+                                                            {isPointReward ? (item.notes ?? `Reward: +${item.points_amount} Poin`) : (item.variant?.name ?? "Parfum Custom")}
+                                                        </p>
+                                                        {item.is_custom_order && <span className="px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 text-slate-700 dark:text-amber-200 text-[9px] font-black rounded flex-shrink-0">CUSTOM</span>}
+                                                    </div>
+                                                    <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                                                        {isPointReward
+                                                            ? "Poin ditambahkan otomatis setelah checkout"
+                                                            : item.is_custom_order
+                                                                ? `${item.custom_oil_qty}ml oil · ${item.custom_alcohol_qty ?? 0}ml alkohol`
+                                                                : `${item.intensity?.code ?? ""}${item.size?.volume_ml ? ` · ${item.size.volume_ml}ml` : ""}`}
+                                                    </p>
+                                                    {(item.packagings ?? []).length > 0 && (
+                                                        <p className="text-[10px] text-slate-400 mt-0.5 truncate">
+                                                            + {item.packagings.map(p => p.packaging_material?.name).filter(Boolean).join(", ")}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <div className="text-right flex-shrink-0">
+                                                    <p className="text-[11px] text-slate-400 font-semibold">x{item.qty}</p>
+                                                    <p className={`text-sm font-black ${isFree ? "text-emerald-600 dark:text-emerald-400" : "text-slate-700 dark:text-slate-300"}`}>
+                                                        {isFree ? "GRATIS" : fmt(getCartItemTotal(item))}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+
+                                    {cartPackagings.map(({ pkg, qty }) => (
+                                        <div key={pkg.id} className="flex items-start justify-between gap-3 py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{pkg.name}</p>
+                                                <p className="text-[10px] text-slate-400 mt-0.5">Kemasan Satuan</p>
+                                            </div>
+                                            <div className="text-right flex-shrink-0">
+                                                <p className="text-[11px] text-slate-400 font-semibold">x{qty}</p>
+                                                <p className={`text-sm font-black ${pkg.is_free ? "text-emerald-600 dark:text-emerald-400" : "text-slate-700 dark:text-slate-300"}`}>
+                                                    {pkg.is_free ? "GRATIS" : fmt(Number(pkg.selling_price || 0) * qty)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {carts.length === 0 && cartPackagings.length === 0 && (
+                                        <div className="py-10 flex flex-col items-center text-center">
+                                            <IconShoppingCart size={24} className="text-slate-300 dark:text-slate-600 mb-2" />
+                                            <p className="text-sm font-semibold text-slate-400">Keranjang kosong</p>
                                         </div>
                                     )}
                                 </div>
-                            </div>
 
-                            {/* ── Kolom kiri (besar): Metode & tunai ── */}
-                            <div className="col-span-2 order-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 space-y-2.5 h-fit">
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Metode Pembayaran</p>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {paymentMethods.map(method => (
-                                            <button key={method.id} onClick={() => setSelectedPaymentId(method.id)}
-                                                className={`px-3 py-2 rounded-lg border-2 text-left transition-all flex items-center justify-between gap-1 ${selectedPaymentId === method.id ? "border-primary-500 bg-slate-100 dark:bg-primary-950/30" : "border-slate-200 dark:border-slate-700"}`}>
-                                                <span className="font-bold text-sm text-slate-700 dark:text-slate-300 truncate">{method.name}</span>
-                                                {selectedPaymentId === method.id && <IconCheck size={14} className="text-primary-600 flex-shrink-0" />}
-                                            </button>
-                                        ))}
+                                {/* Breakdown total */}
+                                <div className="mt-auto flex-shrink-0 border-t border-slate-100 dark:border-slate-800 px-4 py-3 space-y-1.5 bg-slate-50/50 dark:bg-slate-800/20">
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-slate-500 dark:text-slate-400">Subtotal</span>
+                                        <span className="font-bold text-slate-700 dark:text-slate-300">{fmt(subtotal + pkgCartTotal)}</span>
+                                    </div>
+                                    {discountAmount > 0 && (
+                                        <div className="flex justify-between text-xs">
+                                            <span className="text-slate-500 dark:text-slate-400 truncate mr-2">{selectedDiscount?.name || "Diskon"}</span>
+                                            <span className="font-bold text-emerald-600 dark:text-emerald-400 flex-shrink-0">-{fmt(discountAmount)}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-700">
+                                        <span className="text-sm font-black text-slate-800 dark:text-white">Total</span>
+                                        <span className="text-2xl font-black text-primary-600 dark:text-primary-400">{fmt(payable)}</span>
                                     </div>
                                 </div>
-                                {isCash && (
-                                    <div className="space-y-2 pt-1">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Nominal Cepat</p>
-                                        <div className="grid grid-cols-4 gap-1.5">
-                                            {[payable, Math.ceil(payable / 10000) * 10000, Math.ceil(payable / 50000) * 50000, Math.ceil(payable / 100000) * 100000]
-                                                .filter((v, i, a) => a.indexOf(v) === i && v >= payable).slice(0, 4)
-                                                .map(amt => (
-                                                    <button key={amt} onClick={() => setCashInput(String(amt))}
-                                                        className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${Number(cashInput) === amt ? "bg-primary-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"}`}>
-                                                        {(amt / 1000).toLocaleString("id-ID")}rb
+                            </div>
+
+                            {/* ── Kolom kanan: Pembayaran ── */}
+                            <div className="lg:col-span-2 order-1 lg:order-2 space-y-3">
+                                {/* Sales Person (wajib) */}
+                                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3">
+                                    <div className="relative">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><IconUser size={10} /> Sales <span className="text-red-500">*</span></label>
+                                        <div className="relative">
+                                            <IconSearch size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300" />
+                                            <input
+                                                type="text" placeholder="Pilih Sales..."
+                                                value={selectedSalesPerson ? selectedSalesPerson.name : salesSearch}
+                                                onClick={() => { if (selectedSalesPerson) { setSelectedSalesPerson(null); setSalesSearch(""); } setShowSalesDropdown(true); }}
+                                                onChange={e => { setSalesSearch(e.target.value); setShowSalesDropdown(true); if (selectedSalesPerson) setSelectedSalesPerson(null); }}
+                                                className={`w-full h-9 pl-8 pr-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white bg-slate-50 dark:bg-slate-800 ${selectedSalesPerson ? "border-slate-200 dark:border-slate-700" : "border-red-200 dark:border-red-900/50"}`}
+                                            />
+                                        </div>
+                                        {showSalesDropdown && !selectedSalesPerson && (
+                                            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-30 overflow-hidden max-h-44 overflow-y-auto">
+                                                {salesPeople.filter(s => s.name.toLowerCase().includes(salesSearch.toLowerCase())).map(s => (
+                                                    <button key={s.id} onClick={() => { setSelectedSalesPerson(s); setShowSalesDropdown(false); setSalesSearch(""); }} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                                                        <p className="font-semibold text-xs text-slate-800 dark:text-white">{s.name}</p>
+                                                        <p className="text-[10px] text-slate-400">{s.code}</p>
                                                     </button>
                                                 ))}
-                                        </div>
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</span>
-                                            <input type="text" inputMode="numeric" value={cashInput} onChange={e => setCashInput(e.target.value.replace(/\D/g, ""))} placeholder="Jumlah diterima"
-                                                className="w-full h-11 pl-10 pr-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-lg font-black focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
-                                        </div>
-                                        {cash >= payable && payable > 0 && (
-                                            <div className="flex justify-between items-center px-3 py-2 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-slate-700 rounded-lg">
-                                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Kembalian</span>
-                                                <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">{fmt(kembalian)}</span>
+                                                {salesPeople.length === 0 && <p className="p-3 text-center text-xs text-slate-400">Belum ada sales</p>}
                                             </div>
                                         )}
                                     </div>
-                                )}
+                                </div>
+
+                                {/* Metode & tunai */}
+                                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3 space-y-2.5">
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Metode Pembayaran</p>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {paymentMethods.map(method => (
+                                                <button key={method.id} onClick={() => setSelectedPaymentId(method.id)}
+                                                    className={`px-3 py-2 rounded-lg border-2 text-left transition-all flex items-center justify-between gap-1 ${selectedPaymentId === method.id ? "border-primary-500 bg-slate-100 dark:bg-primary-950/30" : "border-slate-200 dark:border-slate-700"}`}>
+                                                    <span className="font-bold text-sm text-slate-700 dark:text-slate-300 truncate">{method.name}</span>
+                                                    {selectedPaymentId === method.id && <IconCheck size={14} className="text-primary-600 flex-shrink-0" />}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    {isCash && (
+                                        <div className="space-y-2 pt-1">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Nominal Cepat</p>
+                                            <div className="grid grid-cols-4 gap-1.5">
+                                                {[payable, Math.ceil(payable / 10000) * 10000, Math.ceil(payable / 50000) * 50000, Math.ceil(payable / 100000) * 100000]
+                                                    .filter((v, i, a) => a.indexOf(v) === i && v >= payable).slice(0, 4)
+                                                    .map(amt => (
+                                                        <button key={amt} onClick={() => setCashInput(String(amt))}
+                                                            className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${Number(cashInput) === amt ? "bg-primary-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"}`}>
+                                                            {(amt / 1000).toLocaleString("id-ID")}rb
+                                                        </button>
+                                                    ))}
+                                            </div>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</span>
+                                                <input type="text" inputMode="numeric" value={cashInput} onChange={e => setCashInput(e.target.value.replace(/\D/g, ""))} placeholder="Jumlah diterima"
+                                                    className="w-full h-11 pl-10 pr-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-lg font-black focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
+                                            </div>
+                                            {cash >= payable && payable > 0 && (
+                                                <div className="flex justify-between items-center px-3 py-2 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-slate-700 rounded-lg">
+                                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Kembalian</span>
+                                                    <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">{fmt(kembalian)}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
