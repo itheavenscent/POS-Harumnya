@@ -431,14 +431,13 @@ class PurchaseController extends Controller
             // bukan tanggal PO. Fallback ke purchase_date bila belum ada.
             $movementDate = $purchase->actual_delivery_date ?? $purchase->purchase_date;
 
-            // Pool biaya tambahan yang MENAIKKAN HPP (PPN + ongkir + adjustment) —
-            // dialokasi proporsional terhadap NILAI subtotal tiap item.
-            $valuePool = (float) $purchase->tax
-                       + (float) $purchase->shipping_cost
-                       + (float) $purchase->adjustment;
-            // Diskon MENURUNKAN HPP — dialokasi RATA per unit (by qty diterima),
-            // bukan by nilai, sesuai kebijakan HPP akunting.
-            $discountPool = (float) $purchase->discount;
+            // Pool biaya tambahan dialokasi proporsional terhadap NILAI subtotal tiap item:
+            //   alokasi_item = (subtotal_item / subtotal_total) × pool
+            // PPN + ongkir + adjustment MENAIKKAN HPP, diskon MENURUNKAN HPP.
+            $poolToDistribute = (float) $purchase->tax
+                              + (float) $purchase->shipping_cost
+                              + (float) $purchase->adjustment
+                              - (float) $purchase->discount;
             $totalSubtotal = (float) $purchase->subtotal;
             $totalReceivedQty = $purchase->items->sum('received_quantity');
 
@@ -455,22 +454,17 @@ class PurchaseController extends Controller
                     // Sehingga nilai HPP yang baru adalah total biaya (subtotal) / jumlah diterima
                     $baseCost = $itemSubtotal / $qty;
 
-                    // Alokasi PPN/ongkir/adjustment — proporsional nilai subtotal.
+                    // Alokasi pool proporsional nilai subtotal.
                     // Fallback ke basis qty bila semua item gratis (subtotal = 0).
                     if ($totalSubtotal > 0) {
-                        $allocatedValue = $valuePool * ($itemSubtotal / $totalSubtotal);
+                        $allocatedPool = $poolToDistribute * ($itemSubtotal / $totalSubtotal);
                     } else if ($totalReceivedQty > 0) {
-                        $allocatedValue = $valuePool * ($qty / $totalReceivedQty);
+                        $allocatedPool = $poolToDistribute * ($qty / $totalReceivedQty);
                     } else {
-                        $allocatedValue = 0.0;
+                        $allocatedPool = 0.0;
                     }
 
-                    // Alokasi diskon — flat per unit terhadap total qty diterima.
-                    $allocatedDiscount = $totalReceivedQty > 0
-                        ? $discountPool * ($qty / $totalReceivedQty)
-                        : 0.0;
-
-                    $landedCost = $baseCost + (($allocatedValue - $allocatedDiscount) / $qty);
+                    $landedCost = $baseCost + ($allocatedPool / $qty);
                 } else {
                     $landedCost = $unitPrice;
                 }

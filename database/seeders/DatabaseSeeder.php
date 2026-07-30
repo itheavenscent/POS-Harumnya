@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
             IntensitySeeder::class,          // sizes + intensities + isp + isq (size, intensitas, harga intensitas)
             // IngredientSupplierSeeder::class, // DINONAKTIFKAN — ingredient + supplier + kategori tak di-seed
             PackagingSeeder::class,          // packaging_materials — dipertahankan (dibutuhkan promo SPINWHEEL)
-            // VariantSeeder::class,            // DINONAKTIFKAN — varian tak di-seed
+            VariantSeeder::class,            // varian parfum (48 female + 23 male), brand di kolom description
 
             // ── 05. Store Categories ──────────────────────────────────────────
             // Kategori tetap di-seed; link kategori↔varian otomatis di-skip karena varian tak ada.
