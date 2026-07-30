@@ -659,7 +659,6 @@ function SizeModal({ show, onClose, onBack, variant, intensity, sizes, loading, 
 // ─── Packaging Modal ──────────────────────────────────────────────────────────
 function PackagingModal({ show, onClose, packagingMaterials = [], selectedPkgs = [], onToggle, onAddStandalone, isPendingMode = false, onSubmitPending = null, isSubmitting = false }) {
     const [search, setSearch] = useState("");
-    const [activeTab, setActiveTab] = useState("addon");
     const filtered = useMemo(() => {
         if (!search) return packagingMaterials;
         return packagingMaterials.filter(p =>
@@ -673,12 +672,6 @@ function PackagingModal({ show, onClose, packagingMaterials = [], selectedPkgs =
                 <h3 className="font-bold text-slate-800 dark:text-white text-lg">Kemasan Parfum</h3>
                 <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-100 hover:text-slate-700 flex items-center justify-center transition-colors"><IconX size={16} /></button>
             </div>
-            {!isPendingMode && (
-                <div className="flex border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
-                    <button onClick={() => setActiveTab("addon")} className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-colors ${activeTab === "addon" ? "text-slate-700 border-b-2 border-primary-500" : "text-slate-400 hover:text-slate-600"}`}><IconPackage size={13} /> Kemasan Parfum Ini</button>
-                    <button onClick={() => setActiveTab("standalone")} className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-colors ${activeTab === "standalone" ? "text-slate-700 border-b-2 border-orange-500" : "text-slate-400 hover:text-slate-600"}`}><IconBox size={13} /> Kemasan Satuan</button>
-                </div>
-            )}
             <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
                 <div className="relative">
                     <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -689,7 +682,7 @@ function PackagingModal({ show, onClose, packagingMaterials = [], selectedPkgs =
                 {filtered.map((pkg, idx) => {
                     const bg = PKG_BG_LIST[idx % PKG_BG_LIST.length];
                     const isOn = selectedPkgs.includes(pkg.id);
-                    if (isPendingMode || activeTab === "addon") return (
+                    if (isPendingMode) return (
                         <button key={pkg.id} onClick={() => onToggle(pkg.id)} className={`group flex items-center gap-3 p-3.5 mb-2 rounded-xl border-2 text-left transition-all w-full ${isOn ? "border-slate-300 bg-slate-100 dark:bg-primary-950/20" : "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800/50"}`}>
                             <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}><IconBox size={18} className="text-white" /></div>
                             <div className="flex-1 min-w-0">
@@ -1429,12 +1422,11 @@ export default function Index({
             size_id: size.id, qty: 1
         };
 
-        // Setelah pilih ukuran parfum, buka modal pilih botol (pending mode).
-        // Bisa ditutup — parfum tetap masuk keranjang tanpa botol (lihat handleClosePackagingModal).
+        // Parfum langsung masuk keranjang. Setelah sukses (kembali ke halaman katalog),
+        // modal pilih botol otomatis terbuka — bisa ditutup (opsional).
         setSelectedPkgs([]);
         setShowSizeModal(false);
-        setPendingOrder({ type: "regular", payload });
-        setShowPackagingModal(true);
+        submitPendingOrder({ type: "regular", payload, openBottlePicker: true });
     };
 
     // ── Custom order handler ───────────────────────────────────────────────────
@@ -1477,10 +1469,11 @@ export default function Index({
         if (!order) return;
 
         const isCustom = order.type === "custom";
+        const wasFree = pendingReward?.is_free || false;
         const finalPayload = {
             ...order.payload,
             packaging_ids: selectedPkgs,
-            is_free: pendingReward?.is_free || false
+            is_free: wasFree
         };
 
         const stateSetter = isCustom ? setAddingCustomToCart : setAddingToCart;
@@ -1503,7 +1496,9 @@ export default function Index({
                 setSelectedCategory(null);
                 setMobileView("catalog");
                 setPendingOrder(null);
-                setShowPackagingModal(false);
+                // Parfum reguler → buka modal pilih botol (standalone). Reward gratis
+                // sudah dapat botol otomatis dari server, jadi jangan buka modal.
+                setShowPackagingModal(order.openBottlePicker && !wasFree ? true : false);
             },
             onError: (errs) => {
                 const msg = typeof errs === "object" ? Object.values(errs)[0] : (errs?.message || "Gagal menambahkan");
@@ -1512,14 +1507,8 @@ export default function Index({
         });
     };
 
-    const handleClosePackagingModal = () => {
-        setShowPackagingModal(false);
-        // Ditutup saat masih ada parfum pending → parfum tetap masuk keranjang
-        // dengan botol yang sudah dicentang (jika ada), tanpa memaksa pilih botol.
-        if (pendingOrder) {
-            submitPendingOrder();
-        }
-    };
+    // Modal botol bersifat opsional — parfum sudah lebih dulu masuk keranjang.
+    const handleClosePackagingModal = () => setShowPackagingModal(false);
 
     const togglePkg = (pkgId) => setSelectedPkgs(prev => prev.includes(pkgId) ? prev.filter(id => id !== pkgId) : [...prev, pkgId]);
 

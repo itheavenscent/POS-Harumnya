@@ -264,15 +264,15 @@ export default function Show({ repack, movements = [] }) {
                             </h2>
                             <div className="p-3 bg-success-50 dark:bg-success-900/10 rounded-xl border border-success-200">
                                 <div className="font-bold text-slate-800 dark:text-slate-200">
-                                    {repack.repack_ingredient?.name}
+                                    {repack.output_ingredient?.name}
                                 </div>
                                 <div className="text-xs text-slate-500 mb-2">
-                                    {repack.repack_ingredient?.code} · {repack.repack_ingredient?.unit}
+                                    {repack.output_ingredient?.code} · {repack.output_ingredient?.unit}
                                 </div>
                                 {/* output_quantity → bigInteger */}
                                 <div className="text-2xl font-black text-success-600">
                                     +{fmtQty(repack.output_quantity)}{" "}
-                                    <span className="text-sm">{repack.repack_ingredient?.unit}</span>
+                                    <span className="text-sm">{repack.output_ingredient?.unit}</span>
                                 </div>
                                 {/* output_cost → decimal(15,4) */}
                                 <div className="text-xs text-slate-400 mt-1">
@@ -281,7 +281,7 @@ export default function Show({ repack, movements = [] }) {
                                 {repack.output_current_stock !== undefined && (
                                     <div className="text-xs text-slate-500 mt-1">
                                         Stok saat ini: {fmtQty(repack.output_current_stock)}{" "}
-                                        {repack.repack_ingredient?.unit}
+                                        {repack.output_ingredient?.unit}
                                     </div>
                                 )}
                             </div>
@@ -300,7 +300,7 @@ export default function Show({ repack, movements = [] }) {
                                 <div className="flex justify-between">
                                     <span className="text-slate-500">Output Qty</span>
                                     <span className="font-bold">
-                                        {fmtQty(repack.output_quantity)} {repack.repack_ingredient?.unit}
+                                        {fmtQty(repack.output_quantity)} {repack.output_ingredient?.unit}
                                     </span>
                                 </div>
                                 <div className="border-t pt-2 flex justify-between">
