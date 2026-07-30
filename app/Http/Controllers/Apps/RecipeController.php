@@ -353,7 +353,8 @@ class RecipeController extends Controller
             $recipes, $regenerate, &$generated, &$skipped, &$details
         ) {
             foreach ($sizes as $size) {
-                $existingProduct = Product::where('variant_id', $variant_id)
+                $existingProduct = Product::withTrashed()
+                    ->where('variant_id', $variant_id)
                     ->where('intensity_id', $intensity_id)
                     ->where('size_id', $size->id)
                     ->first();
@@ -383,22 +384,30 @@ class RecipeController extends Controller
                     continue;
                 }
 
-                if ($existingProduct && $regenerate) {
-                    $existingProduct->recipes()->delete();
-                    $existingProduct->delete();
-                }
-
                 $scaledMap = VariantRecipe::scaleCollection($recipes, $intensityQty);
 
-                $product = Product::create([
-                    'sku'           => $this->generateSKU($variant, $intensity, $size),
-                    'variant_id'    => $variant_id,
-                    'intensity_id'  => $intensity_id,
-                    'size_id'       => $size->id,
-                    'name'          => "{$variant->name} - {$intensity->code} - {$size->name}",
-                    'selling_price' => $priceRecord->price,
-                    'is_active'     => true,
-                ]);
+                if ($existingProduct && $regenerate) {
+                    $existingProduct->restore();
+                    $existingProduct->recipes()->delete();
+                    
+                    $product = $existingProduct;
+                    $product->update([
+                        'sku'           => $this->generateSKU($variant, $intensity, $size),
+                        'name'          => "{$variant->name} - {$intensity->code} - {$size->name}",
+                        'selling_price' => $priceRecord->price,
+                        'is_active'     => true,
+                    ]);
+                } else {
+                    $product = Product::create([
+                        'sku'           => $this->generateSKU($variant, $intensity, $size),
+                        'variant_id'    => $variant_id,
+                        'intensity_id'  => $intensity_id,
+                        'size_id'       => $size->id,
+                        'name'          => "{$variant->name} - {$intensity->code} - {$size->name}",
+                        'selling_price' => $priceRecord->price,
+                        'is_active'     => true,
+                    ]);
+                }
 
                 foreach ($recipes as $idx => $recipe) {
                     $scaledQty  = $scaledMap[$idx] ?? 0;
