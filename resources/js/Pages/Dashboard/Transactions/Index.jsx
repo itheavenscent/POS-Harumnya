@@ -1429,9 +1429,12 @@ export default function Index({
             size_id: size.id, qty: 1
         };
 
+        // Setelah pilih ukuran parfum, buka modal pilih botol (pending mode).
+        // Bisa ditutup — parfum tetap masuk keranjang tanpa botol (lihat handleClosePackagingModal).
         setSelectedPkgs([]);
         setShowSizeModal(false);
-        submitPendingOrder({ type: "regular", payload });
+        setPendingOrder({ type: "regular", payload });
+        setShowPackagingModal(true);
     };
 
     // ── Custom order handler ───────────────────────────────────────────────────
@@ -1510,10 +1513,11 @@ export default function Index({
     };
 
     const handleClosePackagingModal = () => {
+        setShowPackagingModal(false);
+        // Ditutup saat masih ada parfum pending → parfum tetap masuk keranjang
+        // dengan botol yang sudah dicentang (jika ada), tanpa memaksa pilih botol.
         if (pendingOrder) {
             submitPendingOrder();
-        } else {
-            setShowPackagingModal(false);
         }
     };
 
@@ -1632,6 +1636,22 @@ export default function Index({
             {/* Modals — alur baru: Varian → Intensitas → Ukuran → Kemasan */}
             <IntensityModal show={showIntensityModal} onClose={() => setShowIntensityModal(false)} variant={selectedVariant} intensities={availableIntensities} loading={loadingIntensities} onSelect={selectIntensity} onSelectCustom={openCustomModalWithVariant} />
             <SizeModal show={showSizeModal} onClose={() => setShowSizeModal(false)} onBack={() => { setShowSizeModal(false); setTimeout(() => setShowIntensityModal(true), 80); }} variant={selectedVariant} intensity={selectedIntensity} sizes={availableSizes} loading={loadingSizes} onSelect={selectSize} />
+
+            {/* Modal pilih botol/kemasan.
+                - Pending mode (setelah pilih parfum): centang botol → "Lanjut" nempel ke parfum;
+                  ditutup → parfum tetap masuk tanpa botol.
+                - Non-pending (tombol "Tambah Kemasan Satuan"): tambah botol standalone. */}
+            <PackagingModal
+                show={showPackagingModal}
+                onClose={handleClosePackagingModal}
+                packagingMaterials={packagingMaterials}
+                selectedPkgs={selectedPkgs}
+                onToggle={togglePkg}
+                onAddStandalone={handleAddPkg}
+                isPendingMode={!!pendingOrder}
+                onSubmitPending={() => submitPendingOrder()}
+                isSubmitting={addingToCart}
+            />
             <CustomOrderModal
                 show={showCustomModal}
                 onClose={() => { setShowCustomModal(false); setCustomTabVariant(null); }}
