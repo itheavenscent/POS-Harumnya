@@ -76,7 +76,8 @@ class RepackTransaction extends Model
     public static function generateNumber(): string
     {
         $prefix = 'RPK-' . now()->format('Ymd') . '-';
-        $last   = static::where('repack_number', 'like', $prefix . '%')
+        $last   = static::withTrashed()
+                        ->where('repack_number', 'like', $prefix . '%')
                         ->orderByDesc('repack_number')
                         ->value('repack_number');
         $seq = $last ? ((int) substr($last, -4)) + 1 : 1;

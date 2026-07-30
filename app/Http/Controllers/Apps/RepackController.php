@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Apps;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\UniqueConstraintViolationException;
 use App\Http\Controllers\Controller;
 use App\Models\RepackTransaction;
 use App\Models\StockMovement;
@@ -94,47 +95,63 @@ class RepackController extends Controller
             'items.*.quantity'      => 'required|integer|min:1',
         ]);
 
-        DB::transaction(function () use ($validated) {
-            $items = collect($validated['items'])->map(function ($item) use ($validated) {
-                $stock     = $this->findStock($validated['location_type'], $validated['location_id'], $item['ingredient_id']);
-                $unitCost  = $stock ? (float) $stock->average_cost : 0.0;
-                $qty       = (int) $item['quantity'];
-                $totalCost = round($qty * $unitCost, 2);
+        // Retry saat nomor repack tabrakan (race condition dua submit bersamaan).
+        // generateNumber() sudah pakai withTrashed(), jadi baris soft-deleted ikut terhitung.
+        $attempts = 0;
 
-                return [
-                    'ingredient_id' => $item['ingredient_id'],
-                    'quantity'      => $qty,
-                    'unit_cost'     => $unitCost,
-                    'total_cost'    => $totalCost,
-                ];
-            });
+        do {
+            try {
+                DB::transaction(function () use ($validated) {
+                    $items = collect($validated['items'])->map(function ($item) use ($validated) {
+                        $stock     = $this->findStock($validated['location_type'], $validated['location_id'], $item['ingredient_id']);
+                        $unitCost  = $stock ? (float) $stock->average_cost : 0.0;
+                        $qty       = (int) $item['quantity'];
+                        $totalCost = round($qty * $unitCost, 2);
 
-            $totalInputCost = (float) $items->sum('total_cost');
-            $outputQty      = (int) $validated['output_quantity'];
-            $outputCost     = $outputQty > 0
-                ? round($totalInputCost / $outputQty, 4)
-                : 0.0;
+                        return [
+                            'ingredient_id' => $item['ingredient_id'],
+                            'quantity'      => $qty,
+                            'unit_cost'     => $unitCost,
+                            'total_cost'    => $totalCost,
+                        ];
+                    });
 
-            $repack = RepackTransaction::create([
-                'repack_number'        => RepackTransaction::generateNumber(),
-                'location_type'        => $validated['location_type'],
-                'location_id'          => $validated['location_id'],
-                'output_ingredient_id' => $validated['repack_ingredient_id'],
-                'output_quantity'      => $outputQty,
-                'output_cost'          => $outputCost,
-                'repack_date'          => $validated['repack_date'],
-                'status'               => 'draft',
-                'notes'                => $validated['notes'] ?? null,
-                'created_by'           => auth()->id(),
-            ]);
+                    $totalInputCost = (float) $items->sum('total_cost');
+                    $outputQty      = (int) $validated['output_quantity'];
+                    $outputCost     = $outputQty > 0
+                        ? round($totalInputCost / $outputQty, 4)
+                        : 0.0;
 
-            foreach ($items as $item) {
-                $repack->items()->create($item);
+                    $repack = RepackTransaction::create([
+                        'repack_number'        => RepackTransaction::generateNumber(),
+                        'location_type'        => $validated['location_type'],
+                        'location_id'          => $validated['location_id'],
+                        'output_ingredient_id' => $validated['repack_ingredient_id'],
+                        'output_quantity'      => $outputQty,
+                        'output_cost'          => $outputCost,
+                        'repack_date'          => $validated['repack_date'],
+                        'status'               => 'draft',
+                        'notes'                => $validated['notes'] ?? null,
+                        'created_by'           => auth()->id(),
+                    ]);
+
+                    foreach ($items as $item) {
+                        $repack->items()->create($item);
+                    }
+                });
+
+                return to_route('repacks.index')
+                    ->with('success', 'Repack berhasil disimpan sebagai draft!');
+            } catch (UniqueConstraintViolationException $e) {
+                // Hanya retry kalau bentrok di nomor repack, error unik lain dilempar.
+                if (! str_contains($e->getMessage(), 'repack_number') || ++$attempts >= 3) {
+                    return back()
+                        ->withInput()
+                        ->with('error', 'Nomor repack sedang dipakai transaksi lain. Silakan simpan ulang.');
+                }
+                usleep(50_000); // jeda 50ms sebelum coba lagi
             }
-        });
-
-        return to_route('repacks.index')
-            ->with('success', 'Repack berhasil disimpan sebagai draft!');
+        } while (true);
     }
 
     // =========================================================================

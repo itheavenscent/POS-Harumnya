@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
-import { Head, useForm, Link } from "@inertiajs/react";
+import { Head, useForm, Link, usePage } from "@inertiajs/react";
 import Input from "@/Components/Dashboard/Input";
 import {
     IconArrowLeft, IconDeviceFloppy, IconFlask, IconPlus, IconTrash,
@@ -134,6 +134,12 @@ export default function Create({ warehouses, stores, ingredients }) {
         notes: "",
         items: [{ ingredient_id: "", quantity: "" }],
     });
+
+    // Flash error dari server (mis. nomor repack bentrok) → tampilkan toast
+    const { flash } = usePage().props;
+    useEffect(() => {
+        if (flash?.error) toast.error(flash.error);
+    }, [flash?.error]);
 
     // stockInfo menyimpan average_cost (decimal float) per ingredient_id
     const [stockInfo, setStockInfo] = useState({});

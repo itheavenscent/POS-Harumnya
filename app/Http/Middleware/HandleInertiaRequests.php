@@ -55,6 +55,10 @@ class HandleInertiaRequests extends Middleware
                 'super' => $user ? $user->isSuperAdmin() : false,
             ],
             'activeCashDrawer' => $activeCashDrawer,
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error'   => fn () => $request->session()->get('error'),
+            ],
         ];
     }
 }
