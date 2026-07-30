@@ -31,8 +31,8 @@ class VariantRecipeSeeder extends Seeder
     {
         $now = now();
 
-        // Clear existing variant recipes to allow clean, idempotent re-seeding
-        DB::table('variant_recipes')->delete();
+        // Cek jika butuh clear table, saat ini dinonaktifkan agar tidak menghapus yang sudah ada.
+        // DB::table('variant_recipes')->delete();
 
         $edt  = DB::table('intensities')->where('code', 'EDT')->first();
         $edp  = DB::table('intensities')->where('code', 'EDP')->first();
@@ -45,10 +45,10 @@ class VariantRecipeSeeder extends Seeder
         }
 
         $ingMap = DB::table('ingredients')->get()->keyBy('code');
-        $alcIng = $ingMap['ING-AL-001'] ?? null;
+        $alcIng = $ingMap['ALK'] ?? null;
 
         if (!$alcIng) {
-            $this->command->error('Ingredients ING-AL-001 tidak ditemukan.');
+            $this->command->error('Ingredients ALK (Alkohol) tidak ditemukan.');
             return;
         }
 
@@ -64,90 +64,9 @@ class VariantRecipeSeeder extends Seeder
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // Mapping: variant code (SKU BARU) → ingredient code FO
-        // Disesuaikan dengan VariantSeeder terbaru (Varian_Harumnya.xlsx)
+        // Mapping: variant code → ingredient code FO (LQD- / BSD-)
         // ─────────────────────────────────────────────────────────────────────
-        $variantFoMap = [
-            // ── Wanita ────────────────────────────────────────────────────────
-            'NAG'   => 'ING-FO-W039', // Nagita CV
-            'GRT'   => 'ING-FO-W041', // Green Tea CV
-            'RIA'   => 'ING-FO-W023', // Euphoria (Calvin Klein)
-            'GI'    => 'ING-FO-W041', // Garuda Indonesia — pakai Green Tea sebagai proxy (belum ada FO khusus)
-            'FOF'   => 'ING-FO-W046', // Flight Of Fancy
-            'CLP'   => 'ING-FO-W026', // Cloud Pink
-            'PINK'  => 'ING-FO-W053', // Pink Chifon SS
-            'HER'   => 'ING-FO-W034', // Her (Burberry)
-            'HERI'  => 'ING-FO-W006', // Her Intense
-            'GDS'   => 'ING-FO-W028', // Goddess
-            'BOA'   => 'ING-FO-W009', // Omnia Amethyste
-            'BLAN'  => 'ING-FO-W059', // Blanche
-            'GG'    => 'ING-FO-W027', // Good Girl
-            'GGB'   => 'ING-FO-W035', // Good Girl Blush
-            'NOMA'  => 'ING-FO-W049', // Nomadian (Chloe Nomade)
-            'BOUQ'  => 'ING-FO-W033', // Blooming Bouquet
-            'MISS'  => 'ING-FO-W032', // Miss Dior
-            'EAC'   => 'ING-FO-W045', // Eau Capitale
-            'CTA'   => 'ING-FO-W056', // Cherry In The Air
-            'WAY'   => 'ING-FO-W020', // My Way
-            'WAYN'  => 'ING-FO-W030', // My Way Nectar
-            'SIF'   => 'ING-FO-W001', // Si Fiori
-            'BLOM'  => 'ING-FO-W021', // Bloom
-            'FLO'   => 'ING-FO-W043', // Flora Gucci
-            'TWIL'  => 'ING-FO-W040', // Twilly CV
-            'JPS'   => 'ING-FO-W031', // Scandal
-            'POPY'  => 'ING-FO-W018', // Scarlet Poppy
-            'JME'   => 'ING-FO-W037', // JME Persia IBC CV (English Pear Freesia)
-            'VIVA'  => 'ING-FO-W054', // Viva La Juicy LZ
-            'EDEN'  => 'ING-FO-W013', // Eden Sparkling
-            'CANDY' => 'ING-FO-W002', // Vanilla Candy Rock
-            'VIE'   => 'ING-FO-W007', // La Vie Est Belle — pakai Libre sebagai proxy
-            'IDOL'  => 'ING-FO-W036', // Idol Nectar
-            'BRO'   => 'ING-FO-W012', // Baccarat Rouge 540
-            'BATH'  => 'ING-FO-W017', // Bubble Bath
-            'BREAK' => 'ING-FO-W022', // Coffee Break
-            'MVR'   => 'ING-FO-W029', // Vanilla Rose
-            'MJP'   => 'ING-FO-W016', // Perfect
-            'FAME'  => 'ING-FO-W010', // Fame
-            'IS'    => 'ING-FO-W055', // Incanto Shine
-            'MUSK'  => 'ING-FO-W008', // White Musk
-            'SCN'   => 'ING-FO-W011', // Scandalous
-            'VBS'   => 'ING-FO-W005', // Bombshell Escape
-            'VB'    => 'ING-FO-W015', // Bombshell
-            'VSC'   => 'ING-FO-W014', // Coconut Passion
-            'ROWI'  => 'ING-FO-W058', // Romantic Wish
-            'BOP'   => 'ING-FO-W025', // Black Opium
-            'BOPR'  => 'ING-FO-W003', // Black Opium Over Red
-            'LIB'   => 'ING-FO-W007', // Libre
-            'ORC'   => 'ING-FO-W057', // Orchid
-
-            // ── Pria ──────────────────────────────────────────────────────────
-            'BE'    => 'ING-FO-M006', // Blue Emotion
-            'BLACK' => 'ING-FO-M023', // Black Aigner
-            'BS'    => 'ING-FO-M002', // Blue Seduction
-            'WANT'  => 'ING-FO-M012', // The Most Wanted
-            'HERO'  => 'ING-FO-M013', // Hero
-            'BLEU'  => 'ING-FO-M003', // Bleu De Chanel
-            'SVG'   => 'ING-FO-M005', // Sauvage
-            'SVGE'  => 'ING-FO-M021', // Svg Elixir
-            'HOME'  => 'ING-FO-M022', // Homme
-            'CAV'   => 'ING-FO-M024', // Creed Aventus
-            'DDB'   => 'ING-FO-M014', // Desire Blue
-            'SWY'   => 'ING-FO-M018', // Stronger With You
-            'MANX'  => 'ING-FO-M004', // Halloween Man X
-            'SH'    => 'ING-FO-M017', // Scandal Homme
-            'JMW'   => 'ING-FO-M016', // Wood Sage & Salt
-            'SANT'  => 'ING-FO-M010', // Santal 33
-            'ONE'   => 'ING-FO-M001', // One Million Lucky
-            'ONER'  => 'ING-FO-M015', // One Million Royal
-            'BM'    => 'ING-FO-W008', // Black Musk — pakai White Musk FO sebagai proxy
-            'BIR'   => 'ING-FO-W004', // Born In Roma Green
-            'EROF'  => 'ING-FO-W024', // Eros Flame
-            'EROS'  => 'ING-FO-M009', // Eros
-            'Y'     => 'ING-FO-M011', // Y
-            'SELF'  => 'ING-FO-M008', // My Self
-        ];
-
-        $variants = DB::table('variants')->get()->keyBy('code');
+        $variants = DB::table('variants')->get();
 
         if ($variants->isEmpty()) {
             $this->command->error('Variants belum ada.');
@@ -157,17 +76,59 @@ class VariantRecipeSeeder extends Seeder
         $count   = 0;
         $skipped = 0;
 
-        foreach ($variantFoMap as $variantCode => $foCode) {
-            $variant = $variants[$variantCode] ?? null;
-            $foIng   = $ingMap[$foCode] ?? null;
+        foreach ($variants as $variant) {
+            $variantCode = $variant->code;
 
-            if (!$variant) {
-                $this->command->warn("Variant {$variantCode} tidak ditemukan di DB, skip.");
-                $skipped++;
-                continue;
-            }
+            // 1. Coba cari dengan format LQD-CODE atau BSD-CODE
+            $foIng = $ingMap["LQD-{$variantCode}"] ?? $ingMap["BSD-{$variantCode}"] ?? null;
+
+            // 2. Fallback mapping manual jika kodenya tidak presisi
             if (!$foIng) {
-                $this->command->warn("Ingredient {$foCode} tidak ditemukan (variant {$variantCode}), skip.");
+                $manualMap = [
+                    'CLP' => 'BSD-CLO',
+                    'NOMA' => 'LQD-NOMADE',
+                    'BOUQ' => 'BSD-BOOUQ',
+                    'EAC' => 'BSD-EAU',
+                    'BLOM' => 'BSD-BLOOM',
+                    'CANDY' => 'LQD-ROCK',
+                    'BRO' => 'BSD-BRO',
+                    'BATH' => 'BSD-BATH',
+                    'BREAK' => 'BSD-BREAK',
+                    'BOP' => 'BSD-BOP',
+                    'BOPR' => 'BSD-BOPR',
+                    'BLAN' => 'BSD-BLANC',
+                    'BLACK' => 'BSD-BLK',
+                    'CAV' => 'BSD-CAV',
+                    'DDB' => 'BSD-DDB',
+                    'BE' => 'BSD-BE',
+                    'BS' => 'BSD-BS',
+                    'BLEU' => 'BSD-BLEU',
+                    'SVGE' => 'LQD-ELIX',
+                    'POPY' => 'LQD-POPPY',
+                    'BOA' => 'BSD-BOA',
+                    'BIR' => 'BSD-BIR',
+                ];
+                
+                if (isset($manualMap[$variantCode])) {
+                    $foIng = $ingMap[$manualMap[$variantCode]] ?? null;
+                }
+            }
+            
+            // 3. Fallback fuzzy: cari nama yang mirip
+            if (!$foIng) {
+                foreach ($ingMap as $ingCode => $ing) {
+                    if (str_starts_with($ingCode, 'LQD-') || str_starts_with($ingCode, 'BSD-')) {
+                        $cleanIngName = trim(str_ireplace(['Liquid', 'Based'], '', $ing->name));
+                        if (stripos($variant->name, $cleanIngName) !== false || stripos($cleanIngName, $variant->name) !== false) {
+                            $foIng = $ing;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!$foIng) {
+                $this->command->warn("FO (Liquid/Based) untuk variant {$variantCode} ({$variant->name}) tidak ditemukan, skip.");
                 $skipped++;
                 continue;
             }
@@ -178,11 +139,11 @@ class VariantRecipeSeeder extends Seeder
                 $alcQty      = $qty['alc'];
 
                 $lines = [
-                    ['ingredient_id' => $foIng->id,   'qty' => $foQty,  'notes' => 'Fragrance Oil — konsentrat utama'],
+                    ['ingredient_id' => $foIng->id,   'qty' => $foQty,  'notes' => 'Fragrance Oil — (Liquid / Based)'],
                 ];
 
                 if ($alcQty > 0) {
-                    $lines[] = ['ingredient_id' => $alcIng->id,  'qty' => $alcQty, 'notes' => 'Ethanol 99% — pelarut utama'];
+                    $lines[] = ['ingredient_id' => $alcIng->id,  'qty' => $alcQty, 'notes' => 'Alkohol'];
                 }
 
                 foreach ($lines as $line) {
@@ -213,7 +174,7 @@ class VariantRecipeSeeder extends Seeder
         $this->command->info("✓ Variant recipes seeded ({$count} recipe lines, {$skipped} skipped).");
 
         if ($skipped > 0) {
-            $this->command->warn('Beberapa variant/ingredient tidak ditemukan. Pastikan VariantSeeder & IngredientSupplierSeeder sudah dijalankan.');
+            $this->command->warn('Beberapa variant tidak menemukan Liquid/Based yang cocok.');
         }
     }
 }
