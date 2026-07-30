@@ -46,7 +46,7 @@ export default function Index({ adjustments, filters = {}, summary = {}, typeOpt
     const [dateTo,   setDateTo]   = useState(filters.date_to   || "");
 
     React.useEffect(() => {
-        const t = setTimeout(() => { if (search !== filters.search) apply({ search }); }, 500);
+        const t = setTimeout(() => { if (search !== (filters.search || "")) apply({ search }); }, 500);
         return () => clearTimeout(t);
     }, [search]);
 

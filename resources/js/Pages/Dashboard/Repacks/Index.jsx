@@ -87,7 +87,7 @@ export default function Index({ repacks, filters = {}, summary = {} }) {
     // ── Filters ───────────────────────────────────────────────────────────────
     React.useEffect(() => {
         const t = setTimeout(() => {
-            if (search !== filters.search) handleFilter("search", search);
+            if (search !== (filters.search || "")) handleFilter("search", search);
         }, 500);
         return () => clearTimeout(t);
     }, [search]);
