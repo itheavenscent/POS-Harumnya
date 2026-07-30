@@ -107,7 +107,8 @@ class UserSeeder extends Seeder
         ])->delete();
 
         $cashierMap = [
-            ['STR-KRIAN', 'WH-JATIM', 'Kasir Krian', 'kasir.krian@harumnya.com'],
+            // WH-JATIM tak lagi di-seed → pakai WH-PUSAT (satu-satunya gudang).
+            ['STR-KRIAN', 'WH-PUSAT', 'Kasir Krian', 'kasir.krian@harumnya.com'],
         ];
 
         foreach ($cashierMap as [$storeCode, $whCode, $nama, $email]) {

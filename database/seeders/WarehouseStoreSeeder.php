@@ -23,6 +23,7 @@ class WarehouseStoreSeeder extends Seeder
     {
         $now = now();
 
+        // Hanya 1 gudang (WH-PUSAT) — minimal untuk referensi default_warehouse_id user.
         $warehouses = [
             [
                 'code'         => 'WH-PUSAT',
@@ -31,30 +32,6 @@ class WarehouseStoreSeeder extends Seeder
                 'phone'        => '031-3987000',
                 'manager_name' => 'Budi Santoso',
                 'email'        => 'gudang.pusat@harumnya.com',
-            ],
-            [
-                'code'         => 'WH-JATIM',
-                'name'         => 'Gudang Jawa Timur',
-                'address'      => 'Jl. Raya Waru No. 10, Sidoarjo',
-                'phone'        => '031-8912345',
-                'manager_name' => 'Agus Prasetyo',
-                'email'        => 'gudang.jatim@harumnya.com',
-            ],
-            [
-                'code'         => 'WH-JATENG',
-                'name'         => 'Gudang Jawa Tengah',
-                'address'      => 'Jl. Industri No. 5, Semarang',
-                'phone'        => '024-7601234',
-                'manager_name' => 'Eko Widodo',
-                'email'        => 'gudang.jateng@harumnya.com',
-            ],
-            [
-                'code'         => 'WH-JABAR',
-                'name'         => 'Gudang Jawa Barat',
-                'address'      => 'Jl. Soekarno-Hatta No. 8, Bandung',
-                'phone'        => '022-6031234',
-                'manager_name' => 'Dedi Kurniawan',
-                'email'        => 'gudang.jabar@harumnya.com',
             ],
         ];
 
@@ -69,31 +46,8 @@ class WarehouseStoreSeeder extends Seeder
             }
         }
 
+        // Hanya Toko Krian.
         $stores = [
-            [
-                'code'         => 'STR-JOMBANG1',
-                'name'         => 'Toko Jombang 1',
-                'address'      => 'Jl. Wahid Hasyim No. 1, Jombang',
-                'phone'        => '0321-111111',
-                'manager_name' => 'Siti Aminah',
-                'email'        => 'toko.jombang1@harumnya.com',
-            ],
-            [
-                'code'         => 'STR-JOMBANG2',
-                'name'         => 'Toko Jombang 2',
-                'address'      => 'Jl. Merdeka No. 10, Jombang',
-                'phone'        => '0321-222222',
-                'manager_name' => 'Hendra Wijaya',
-                'email'        => 'toko.jombang2@harumnya.com',
-            ],
-            [
-                'code'         => 'STR-JOMBANG3',
-                'name'         => 'Toko Jombang 3',
-                'address'      => 'Jl. Ahmad Yani No. 20, Jombang',
-                'phone'        => '0321-333333',
-                'manager_name' => 'Fitri Handayani',
-                'email'        => 'toko.jombang3@harumnya.com',
-            ],
             [
                 'code'         => 'STR-KRIAN',
                 'name'         => 'Toko Krian',
@@ -119,14 +73,8 @@ class WarehouseStoreSeeder extends Seeder
         $this->command->table(
             ['Code', 'Name', 'Type'],
             [
-                ['WH-PUSAT',  'Gudang Pusat',        'Warehouse'],
-                ['WH-JATIM',  'Gudang Jawa Timur',   'Warehouse'],
-                ['WH-JATENG', 'Gudang Jawa Tengah',  'Warehouse'],
-                ['WH-JABAR',  'Gudang Jawa Barat',   'Warehouse'],
-                ['STR-JOMBANG1', 'Toko Jombang 1',     'Store'],
-                ['STR-JOMBANG2', 'Toko Jombang 2',     'Store'],
-                ['STR-JOMBANG3', 'Toko Jombang 3',     'Store'],
-                ['STR-KRIAN',    'Toko Krian',         'Store'],
+                ['WH-PUSAT',  'Gudang Pusat',  'Warehouse'],
+                ['STR-KRIAN', 'Toko Krian',    'Store'],
             ]
         );
     }

@@ -24,12 +24,13 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
 
             // ── 04. Master Dimensi Produk ─────────────────────────────────────
-            IntensitySeeder::class,          // sizes + intensities + isp + isq
-            IngredientSupplierSeeder::class, // ingredient_categories + suppliers + ingredients
-            PackagingSeeder::class,          // packaging_categories + packaging_materials
-            VariantSeeder::class,            // variants
+            IntensitySeeder::class,          // sizes + intensities + isp + isq (size, intensitas, harga intensitas)
+            // IngredientSupplierSeeder::class, // DINONAKTIFKAN — ingredient + supplier + kategori tak di-seed
+            PackagingSeeder::class,          // packaging_materials — dipertahankan (dibutuhkan promo SPINWHEEL)
+            // VariantSeeder::class,            // DINONAKTIFKAN — varian tak di-seed
 
-            // ── 05. Store Categories (butuh variants) ─────────────────────────
+            // ── 05. Store Categories ──────────────────────────────────────────
+            // Kategori tetap di-seed; link kategori↔varian otomatis di-skip karena varian tak ada.
             StoreCategorySeeder::class,
 
             // ── 06. Sales People & Payment Methods ───────────────────────────
@@ -37,12 +38,15 @@ class DatabaseSeeder extends Seeder
             PaymentMethodSeeder::class,
 
             // ── 07. Resep & Produk ────────────────────────────────────────────
-            VariantRecipeSeeder::class,      // variant_recipes (butuh variants + intensities + ingredients)
-            ProductSeeder::class,            // products + product_recipes (butuh variants + intensities + sizes + ingredients)
+            // DINONAKTIFKAN — resep butuh ingredients (yang tak lagi di-seed).
+            // VariantSeeder sudah membersihkan variant_recipes & product_recipes.
+            // VariantRecipeSeeder::class,      // variant_recipes (butuh variants + intensities + ingredients)
+            // ProductSeeder::class,            // products + product_recipes (butuh variants + intensities + sizes + ingredients)
 
             // ── 08. Pembelian & Stok Awal ─────────────────────────────────────
             // PurchaseSeeder::class,           // purchases + purchase_items + stock_movements
-            StockSeeder::class,              // warehouse/store stock snapshots
+            // DINONAKTIFKAN — stok awal tak di-seed
+            // StockSeeder::class,              // warehouse/store stock snapshots
 
             // ── 09. Promo & Diskon ────────────────────────────────────────────
             DiscountSeeder::class,
