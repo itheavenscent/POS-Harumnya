@@ -1611,6 +1611,13 @@ class TransactionController extends Controller
             }
         }
 
+        // Peta ukuran botol: gabungan botol di keranjang + botol yang jadi syarat promo.
+        // Dipakai agar syarat botol dicocokkan by ukuran (semua botol 30 ml, dll).
+        $pkgSizeMap = $this->packagingSizeMap(array_merge(
+            array_keys($cartPkgQty),
+            $discounts->flatMap(fn($d) => $d->requirements->pluck('packaging_material_id'))->all()
+        ));
+
         // Promo hadiah (Spin Wheel / Buy X Get Y) saling eksklusif: begitu salah satu
         // diklaim, jenis promo hadiah lain tidak lagi ditampilkan.
         $rewardTypeById = $discounts->pluck('type', 'id');
@@ -1667,7 +1674,7 @@ class TransactionController extends Controller
             $metGroup       = null;
 
             foreach ($groups as $groupKey => $reqs) {
-                $groupMult = $this->groupMultiplier($reqs, $paidCarts, $cartPkgQty);
+                $groupMult = $this->groupMultiplier($reqs, $paidCarts, $cartPkgQty, $pkgSizeMap);
                 if ($groupMult > $bestMultiplier) {
                     $bestMultiplier = $groupMult;
                     $metGroup       = $groupKey;
@@ -1827,7 +1834,11 @@ class TransactionController extends Controller
                 }
             }
 
-            $multiplier = $this->promoCartMultiplier($discount, $paidCarts, $cartPkgQty);
+            $pkgSizeMap = $this->packagingSizeMap(array_merge(
+                array_keys($cartPkgQty),
+                $discount->requirements->pluck('packaging_material_id')->all()
+            ));
+            $multiplier = $this->promoCartMultiplier($discount, $paidCarts, $cartPkgQty, $pkgSizeMap);
             abort_if(
                 $claimedCount >= $multiplier,
                 422,
@@ -2150,11 +2161,11 @@ class TransactionController extends Controller
      * Kelipatan tertinggi promo terpenuhi oleh keranjang (OR antar group,
      * AND dalam group). Mendukung syarat parfum & botol.
      */
-    private function promoCartMultiplier(DiscountType $discount, Collection $paidCarts, array $cartPkgQty): int
+    private function promoCartMultiplier(DiscountType $discount, Collection $paidCarts, array $cartPkgQty, array $pkgSizeMap = []): int
     {
         $best = 0;
         foreach ($discount->requirements->groupBy('group_key') as $reqs) {
-            $best = max($best, $this->groupMultiplier($reqs, $paidCarts, $cartPkgQty));
+            $best = max($best, $this->groupMultiplier($reqs, $paidCarts, $cartPkgQty, $pkgSizeMap));
         }
         return $best;
     }
@@ -2162,11 +2173,11 @@ class TransactionController extends Controller
     /**
      * Kelipatan satu group syarat (AND) — min dari tiap baris syarat.
      */
-    private function groupMultiplier(Collection $reqs, Collection $paidCarts, array $cartPkgQty): int
+    private function groupMultiplier(Collection $reqs, Collection $paidCarts, array $cartPkgQty, array $pkgSizeMap = []): int
     {
         $mult = null;
         foreach ($reqs as $req) {
-            $m = $this->requirementMultiplier($req, $paidCarts, $cartPkgQty);
+            $m = $this->requirementMultiplier($req, $paidCarts, $cartPkgQty, $pkgSizeMap);
             if ($m === null) {
                 continue; // baris syarat kosong → diabaikan
             }
@@ -2177,21 +2188,37 @@ class TransactionController extends Controller
 
     /**
      * Kelipatan satu baris syarat.
-     *   - Baris botol  (packaging_material_id) → hitung qty botol di CartPackaging.
+     *   - Baris botol (packaging_material_id) → cocok berdasarkan UKURAN botol:
+     *     hitung SEMUA botol di keranjang yang size-nya sama dengan botol yang
+     *     diminta (mis. syarat "Botol Prisma 30 ml" terpenuhi oleh botol 30 ml
+     *     apa pun). Fallback ke id persis bila botol syarat tak punya size.
      *   - Baris parfum (variant/intensity/size sebagai filter; null = bebas) →
      *     jumlah qty item berbayar yang cocok.
      * Return null jika baris tidak punya kriteria (diabaikan).
      */
-    private function requirementMultiplier($req, Collection $paidCarts, array $cartPkgQty): ?int
+    private function requirementMultiplier($req, Collection $paidCarts, array $cartPkgQty, array $pkgSizeMap = []): ?int
     {
         $need = (int) $req->required_quantity;
         if ($need <= 0) {
             return null;
         }
 
-        // Syarat botol / kemasan
+        // Syarat botol / kemasan — cocokkan by ukuran botol (bukan id spesifik).
         if ($req->packaging_material_id) {
-            $qty = $cartPkgQty[$req->packaging_material_id] ?? 0;
+            $reqSize = $pkgSizeMap[$req->packaging_material_id] ?? null;
+
+            if ($reqSize !== null) {
+                $qty = 0;
+                foreach ($cartPkgQty as $pid => $q) {
+                    if (($pkgSizeMap[$pid] ?? null) === $reqSize) {
+                        $qty += $q;
+                    }
+                }
+            } else {
+                // Botol syarat tanpa size → jatuh balik ke pencocokan id persis.
+                $qty = $cartPkgQty[$req->packaging_material_id] ?? 0;
+            }
+
             return intdiv($qty, $need);
         }
 
@@ -2208,6 +2235,21 @@ class TransactionController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Peta packaging_material_id => size_id, untuk pencocokan syarat botol by ukuran.
+     */
+    private function packagingSizeMap(array $pkgIds): array
+    {
+        $pkgIds = array_values(array_unique(array_filter($pkgIds)));
+        if (empty($pkgIds)) {
+            return [];
+        }
+
+        return PackagingMaterial::whereIn('id', $pkgIds)
+            ->pluck('size_id', 'id')
+            ->toArray();
     }
 
     /**
