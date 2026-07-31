@@ -732,8 +732,10 @@ class RecipeController extends Controller
 
     private function generateSKU($variant, $intensity, $size): string
     {
+        // Pakai kode variant PENUH — bukan 3 huruf pertama.
+        // substr(...,0,3) bikin "HER" dan "HERO" tabrakan → SKU tidak unik antar variant.
         return sprintf('%s-%s-%d',
-            strtoupper(substr($variant->code, 0, 3)),
+            strtoupper($variant->code),
             strtoupper($intensity->code),
             $size->volume_ml
         );
