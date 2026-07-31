@@ -353,10 +353,18 @@ class RecipeController extends Controller
             $recipes, $regenerate, &$generated, &$skipped, &$details
         ) {
             foreach ($sizes as $size) {
+                $sku = $this->generateSKU($variant, $intensity, $size);
+
+                // Lookup by the unique key (sku) so a pre-existing/seeded product
+                // with a different id-tuple is matched instead of colliding on insert.
                 $existingProduct = Product::withTrashed()
-                    ->where('variant_id', $variant_id)
-                    ->where('intensity_id', $intensity_id)
-                    ->where('size_id', $size->id)
+                    ->where(function ($q) use ($variant_id, $intensity_id, $size, $sku) {
+                        $q->where(function ($qq) use ($variant_id, $intensity_id, $size) {
+                            $qq->where('variant_id', $variant_id)
+                               ->where('intensity_id', $intensity_id)
+                               ->where('size_id', $size->id);
+                        })->orWhere('sku', $sku);
+                    })
                     ->first();
 
                 if ($existingProduct && !$regenerate) {
@@ -392,14 +400,17 @@ class RecipeController extends Controller
                     
                     $product = $existingProduct;
                     $product->update([
-                        'sku'           => $this->generateSKU($variant, $intensity, $size),
+                        'sku'           => $sku,
+                        'variant_id'    => $variant_id,
+                        'intensity_id'  => $intensity_id,
+                        'size_id'       => $size->id,
                         'name'          => "{$variant->name} - {$intensity->code} - {$size->name}",
                         'selling_price' => $priceRecord->price,
                         'is_active'     => true,
                     ]);
                 } else {
                     $product = Product::create([
-                        'sku'           => $this->generateSKU($variant, $intensity, $size),
+                        'sku'           => $sku,
                         'variant_id'    => $variant_id,
                         'intensity_id'  => $intensity_id,
                         'size_id'       => $size->id,
