@@ -62,6 +62,51 @@ class AuditIngredientRefs extends Command
             }
         }
 
+        // 3. Stok & pergerakan menunjuk ingredient trashed/hilang
+        $stockTables = [
+            'store_ingredient_stocks'     => 'stok toko',
+            'warehouse_ingredient_stocks' => 'stok gudang',
+        ];
+        foreach ($stockTables as $table => $label) {
+            $this->line('');
+            $this->info("=== {$label} ({$table}): ingredient trashed/hilang ===");
+            $rows = DB::table("{$table} as s")
+                ->leftJoin('ingredients as i', 'i.id', '=', 's.ingredient_id')
+                ->select('s.ingredient_id', 'i.name', 'i.code', 'i.deleted_at',
+                    DB::raw('sum(s.quantity) as qty'), DB::raw('count(*) as rows'))
+                ->groupBy('s.ingredient_id', 'i.name', 'i.code', 'i.deleted_at')
+                ->get()
+                ->filter(fn ($r) => $r->name === null || $r->deleted_at !== null);
+
+            if ($rows->isEmpty()) { $this->line('  (bersih)'); continue; }
+            foreach ($rows as $r) {
+                $state = $r->name === null ? 'HILANG' : 'TRASHED';
+                $this->line(sprintf('  id=%s name=%s code=%s qty=%s rows=%d [%s]',
+                    $r->ingredient_id, $r->name ?? '?', $r->code ?? 'NO-CODE', $r->qty, $r->rows, $state));
+            }
+        }
+
+        // 4. Stock movement dengan ingredient trashed/hilang (jejak historis)
+        $this->line('');
+        $this->info('=== stock_movements (ingredient) trashed/hilang ===');
+        $mv = DB::table('stock_movements as m')
+            ->leftJoin('ingredients as i', 'i.id', '=', 'm.item_id')
+            ->where('m.item_type', 'ingredient')
+            ->select('m.item_id', 'i.name', 'i.code', 'i.deleted_at', DB::raw('count(*) as moves'))
+            ->groupBy('m.item_id', 'i.name', 'i.code', 'i.deleted_at')
+            ->get()
+            ->filter(fn ($r) => $r->name === null || $r->deleted_at !== null);
+
+        if ($mv->isEmpty()) {
+            $this->line('  (bersih)');
+        } else {
+            foreach ($mv as $r) {
+                $state = $r->name === null ? 'HILANG' : 'TRASHED';
+                $this->line(sprintf('  id=%s name=%s code=%s moves=%d [%s]',
+                    $r->item_id, $r->name ?? '?', $r->code ?? 'NO-CODE', $r->moves, $state));
+            }
+        }
+
         return self::SUCCESS;
     }
 }
