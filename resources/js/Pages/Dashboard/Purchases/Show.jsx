@@ -19,7 +19,7 @@ const STATUS_CFG = {
 };
 const STEPS = ["Draft", "Menunggu", "Disetujui", "Diterima", "Selesai"];
 
-const fmtRp   = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(parseInt(n) || 0);
+const fmtRp   = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(parseFloat(n) || 0);
 const fmtQty  = (n) => parseInt(n || 0).toLocaleString("id-ID");
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" }) : "-";
 const fmtTs   = (d) => d ? new Date(d).toLocaleString("id-ID") : "-";
@@ -282,11 +282,11 @@ export default function Show({ purchase, movements = [] }) {
                                 <span className="text-slate-500 font-bold">Estimasi Total</span>
                                 <span className="font-black text-violet-700">
                                     {fmtRp(
-                                        (parseInt(purchase.subtotal || 0))
-                                        + (parseInt(extraCosts.tax) || 0)
-                                        - (parseInt(purchase.discount || 0))
-                                        + (parseInt(extraCosts.shipping_cost) || 0)
-                                        + (parseInt(extraCosts.adjustment) || 0)
+                                        (parseFloat(purchase.subtotal || 0))
+                                        + (parseFloat(extraCosts.tax) || 0)
+                                        - (parseFloat(purchase.discount || 0))
+                                        + (parseFloat(extraCosts.shipping_cost) || 0)
+                                        + (parseFloat(extraCosts.adjustment) || 0)
                                     )}
                                 </span>
                             </div>

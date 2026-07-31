@@ -735,7 +735,9 @@ class PurchaseController extends Controller
             } else {
                 $rawPrice  = (float) ($item['unit_price'] ?? 0);
                 $unitPrice = $isInt ? (int) round($rawPrice) : round($rawPrice, 2);
-                $lineTotal = $isInt ? (int) round($qty * $unitPrice) : round($qty * $unitPrice, 2);
+                // Hitung lineTotal dari harga presisi-penuh (rawPrice), bukan unitPrice
+                // yang sudah dibulatkan — supaya subtotal tidak kehilangan presisi.
+                $lineTotal = $isInt ? (int) round($qty * $rawPrice) : round($qty * $rawPrice, 2);
             }
             
             // Gunakan sprintf untuk memastikan string numerik murni (menghindari notasi scientific)

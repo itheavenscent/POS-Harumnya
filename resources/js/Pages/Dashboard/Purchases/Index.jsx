@@ -18,7 +18,7 @@ const STATUS_CFG = {
     cancelled: { label: "Dibatal",   cls: "bg-slate-100 text-slate-700 border-slate-300",   step: -1 },
 };
 
-const fmt = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n || 0);
+const fmt = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(parseFloat(n) || 0);
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "-";
 
 export default function Index({ purchases, filters = {}, summary = {} }) {

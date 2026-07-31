@@ -367,7 +367,10 @@ class RecipeController extends Controller
                     })
                     ->first();
 
-                if ($existingProduct && !$regenerate) {
+                // Skip hanya jika produk LIVE (bukan soft-deleted) sudah ada dan
+                // tidak sedang regenerate. Produk trashed harus di-restore, bukan
+                // dilewati — kalau tidak, POS tetap kosong walau notif "berhasil".
+                if ($existingProduct && !$existingProduct->trashed() && !$regenerate) {
                     $skipped++;
                     $details[] = ['size' => $size->name, 'status' => 'skipped', 'reason' => 'Product sudah ada'];
                     continue;
@@ -394,10 +397,12 @@ class RecipeController extends Controller
 
                 $scaledMap = VariantRecipe::scaleCollection($recipes, $intensityQty);
 
-                if ($existingProduct && $regenerate) {
-                    $existingProduct->restore();
+                if ($existingProduct) {
+                    if ($existingProduct->trashed()) {
+                        $existingProduct->restore();
+                    }
                     $existingProduct->recipes()->delete();
-                    
+
                     $product = $existingProduct;
                     $product->update([
                         'sku'           => $sku,
