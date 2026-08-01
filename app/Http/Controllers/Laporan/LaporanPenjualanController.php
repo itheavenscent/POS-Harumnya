@@ -747,74 +747,76 @@ class LaporanPenjualanController extends Controller
             ->get()
             ->groupBy('sale_id');
 
-        $filename = "Laporan_Penjualan_{$dateFromDt->format('Ymd')}_{$dateToDt->format('Ymd')}.csv";
+        $filename = "Laporan_Penjualan_{$dateFromDt->format('Ymd')}_{$dateToDt->format('Ymd')}.xlsx";
 
-        return new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($sales, $saleItems, $saleDiscounts, $salePayments) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, [
-                'No. Invoice', 'Tanggal', 'Waktu', 'Status', 'Toko',
-                'No.Telp', 'Kasir', 'Sales Person',
-                'Item', 'Variant', 'Qty',
-                'Gross Sales', 'Discount Applied', 'Total', 'Payment Method',
-            ]);
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Laporan Penjualan');
 
-            foreach ($sales as $sale) {
-                $items    = $saleItems[$sale->id]    ?? collect();
-                $discApplied = ($saleDiscounts[$sale->id] ?? collect())
-                    ->map(fn ($d) => $d->discount_name . ' (-' . number_format($d->applied_amount, 0, ',', '.') . ')')
-                    ->implode('; ');
-                $payMethods = ($salePayments[$sale->id] ?? collect())
-                    ->map(fn ($p) => $p->payment_method_name)
-                    ->unique()
-                    ->implode(', ');
+        $sheet->fromArray([
+            'No. Invoice', 'Tanggal', 'Waktu', 'Status', 'Toko',
+            'No.Telp', 'Kasir', 'Sales Person',
+            'Item', 'Variant', 'Qty',
+            'Gross Sales', 'Discount Applied', 'Total', 'Payment Method',
+        ], null, 'A1');
+        $sheet->getStyle('A1:O1')->getFont()->setBold(true);
 
-                if ($items->isEmpty()) {
-                    fputcsv($handle, [
-                        $sale->sale_number,
-                        Carbon::parse($sale->sold_at)->format('Y-m-d'),
-                        Carbon::parse($sale->sold_at)->format('H:i:s'),
-                        $sale->status,
-                        $sale->store_name,
-                        $sale->customer_phone ?? '-',
-                        $sale->cashier_name ?? '-',
-                        $sale->sales_person_name ?? '-',
-                        '-', '-', 0,
-                        $sale->subtotal,
-                        $discApplied ?: '-',
-                        $sale->total,
-                        $payMethods ?: '-',
-                    ]);
-                } else {
-                    $first = true;
-                    foreach ($items as $item) {
-                        $itemName = $item->product_name
-                            ?: implode(' ', array_filter([$item->variant_name, $item->intensity_code, $item->size_ml ? $item->size_ml . 'ml' : null]));
+        $row = 2;
+        foreach ($sales as $sale) {
+            $items = $saleItems[$sale->id] ?? collect();
+            $discApplied = ($saleDiscounts[$sale->id] ?? collect())
+                ->map(fn ($d) => $d->discount_name . ' (-' . number_format($d->applied_amount, 0, ',', '.') . ')')
+                ->implode('; ');
+            $payMethods = ($salePayments[$sale->id] ?? collect())
+                ->map(fn ($p) => $p->payment_method_name)
+                ->unique()->implode(', ');
 
-                        fputcsv($handle, [
-                            $first ? $sale->sale_number : '',
-                            $first ? Carbon::parse($sale->sold_at)->format('Y-m-d') : '',
-                            $first ? Carbon::parse($sale->sold_at)->format('H:i:s') : '',
-                            $first ? $sale->status : '',
-                            $first ? $sale->store_name : '',
-                            $first ? ($sale->customer_phone ?? '-') : '',
-                            $first ? ($sale->cashier_name ?? '-') : '',
-                            $first ? ($sale->sales_person_name ?? '-') : '',
-                            $itemName ?: '-',
-                            $item->variant_name ?? '-',
-                            $item->qty,
-                            $item->subtotal,
-                            $first ? ($discApplied ?: '-') : '',
-                            $first ? $sale->total : '',
-                            $first ? ($payMethods ?: '-') : '',
-                        ]);
-                        $first = false;
-                    }
-                }
+            // Data transaksi yang diulang penuh di tiap baris item (tidak dikosongkan).
+            $base = [
+                $sale->sale_number,
+                Carbon::parse($sale->sold_at)->format('Y-m-d'),
+                Carbon::parse($sale->sold_at)->format('H:i:s'),
+                $sale->status,
+                $sale->store_name,
+                $sale->customer_phone ?? '-',
+                $sale->cashier_name ?? '-',
+                $sale->sales_person_name ?? '-',
+            ];
+
+            if ($items->isEmpty()) {
+                $sheet->fromArray(array_merge($base, [
+                    '-', '-', 0, (float) $sale->subtotal,
+                    $discApplied ?: '-', (float) $sale->total, $payMethods ?: '-',
+                ]), null, 'A' . $row);
+                $row++;
+                continue;
             }
-            fclose($handle);
-        }, 200, [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+
+            foreach ($items as $item) {
+                $itemName = $item->product_name
+                    ?: implode(' ', array_filter([$item->variant_name, $item->intensity_code, $item->size_ml ? $item->size_ml . 'ml' : null]));
+
+                $sheet->fromArray(array_merge($base, [
+                    $itemName ?: '-',
+                    $item->variant_name ?? '-',
+                    (int)   $item->qty,
+                    (float) $item->subtotal,
+                    $discApplied ?: '-',
+                    (float) $sale->total,
+                    $payMethods ?: '-',
+                ]), null, 'A' . $row);
+                $row++;
+            }
+        }
+
+        foreach (range('A', 'O') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
     }
 }

@@ -517,78 +517,82 @@ class TransactionController extends Controller
 
         $sales = $query->get();
 
-        $filename = 'Riwayat_Transaksi_' . now()->format('Ymd_His') . '.csv';
+        $filename = 'Riwayat_Transaksi_' . now()->format('Ymd_His') . '.xlsx';
 
-        return new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($sales) {
-            $handle = fopen('php://output', 'w');
-            // BOM agar Excel baca UTF-8
-            fwrite($handle, "\xEF\xBB\xBF");
-            fputcsv($handle, [
-                'No. Invoice', 'Tanggal', 'Waktu', 'Status', 'Toko',
-                'No.Telp', 'Pelanggan', 'Kasir', 'Sales Person',
-                'Item', 'Variant', 'Intensitas', 'Ukuran (ml)', 'Qty',
-                'Harga Satuan', 'Subtotal Item',
-                'Diskon Transaksi', 'Total Transaksi', 'Metode Pembayaran',
-            ]);
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Riwayat Transaksi');
 
-            foreach ($sales as $sale) {
-                $discApplied = $sale->discounts
-                    ->map(fn ($d) => $d->discount_name . ' (-' . number_format((float) $d->applied_amount, 0, ',', '.') . ')')
-                    ->implode('; ');
-                $payMethods = $sale->payments
-                    ->map(fn ($p) => $p->payment_method_name ?? optional($p->paymentMethod)->name)
-                    ->filter()->unique()->implode(', ');
-                $phone = optional($sale->customer)->phone ?? $sale->customer_name ?? '-';
-                $custName = optional($sale->customer)->name ?? $sale->customer_name ?? 'Umum';
+        $headers = [
+            'No. Invoice', 'Tanggal', 'Waktu', 'Status', 'Toko',
+            'No.Telp', 'Pelanggan', 'Kasir', 'Sales Person',
+            'Item', 'Variant', 'Intensitas', 'Ukuran (ml)', 'Qty',
+            'Harga Satuan', 'Subtotal Item',
+            'Diskon Transaksi', 'Total Transaksi', 'Metode Pembayaran',
+        ];
+        $sheet->fromArray($headers, null, 'A1');
+        $sheet->getStyle('A1:S1')->getFont()->setBold(true);
 
-                if ($sale->items->isEmpty()) {
-                    fputcsv($handle, [
-                        $sale->sale_number,
-                        \Illuminate\Support\Carbon::parse($sale->sold_at)->format('Y-m-d'),
-                        \Illuminate\Support\Carbon::parse($sale->sold_at)->format('H:i:s'),
-                        $sale->status, optional($sale->store)->name,
-                        $phone, $custName,
-                        optional($sale->cashier)->name ?? $sale->cashier_name ?? '-',
-                        optional($sale->salesPerson)->name ?? $sale->sales_person_name ?? '-',
-                        '-', '-', '-', '-', 0, 0, 0,
-                        $discApplied ?: '-', $sale->total, $payMethods ?: '-',
-                    ]);
-                    continue;
-                }
+        $row = 2;
+        foreach ($sales as $sale) {
+            $discApplied = $sale->discounts
+                ->map(fn ($d) => $d->discount_name . ' (-' . number_format((float) $d->applied_amount, 0, ',', '.') . ')')
+                ->implode('; ');
+            $payMethods = $sale->payments
+                ->map(fn ($p) => $p->payment_method_name ?? optional($p->paymentMethod)->name)
+                ->filter()->unique()->implode(', ');
+            $phone    = optional($sale->customer)->phone ?? $sale->customer_name ?? '-';
+            $custName = optional($sale->customer)->name ?? $sale->customer_name ?? 'Umum';
+            $date     = \Illuminate\Support\Carbon::parse($sale->sold_at)->format('Y-m-d');
+            $time     = \Illuminate\Support\Carbon::parse($sale->sold_at)->format('H:i:s');
+            $cashier  = optional($sale->cashier)->name ?? $sale->cashier_name ?? '-';
+            $sp       = optional($sale->salesPerson)->name ?? $sale->sales_person_name ?? '-';
+            $store    = optional($sale->store)->name ?? '-';
 
-                $first = true;
-                foreach ($sale->items as $item) {
-                    $itemName = $item->product_name
-                        ?: implode(' ', array_filter([$item->variant_name, $item->intensity_code, $item->size_ml ? $item->size_ml . 'ml' : null]));
-                    fputcsv($handle, [
-                        $first ? $sale->sale_number : '',
-                        $first ? \Illuminate\Support\Carbon::parse($sale->sold_at)->format('Y-m-d') : '',
-                        $first ? \Illuminate\Support\Carbon::parse($sale->sold_at)->format('H:i:s') : '',
-                        $first ? $sale->status : '',
-                        $first ? optional($sale->store)->name : '',
-                        $first ? $phone : '',
-                        $first ? $custName : '',
-                        $first ? (optional($sale->cashier)->name ?? $sale->cashier_name ?? '-') : '',
-                        $first ? (optional($sale->salesPerson)->name ?? $sale->sales_person_name ?? '-') : '',
-                        $itemName ?: '-',
-                        $item->variant_name ?? '-',
-                        $item->intensity_code ?? '-',
-                        $item->size_ml ?? '-',
-                        $item->qty,
-                        $item->unit_price,
-                        $item->subtotal,
-                        $first ? ($discApplied ?: '-') : '',
-                        $first ? $sale->total : '',
-                        $first ? ($payMethods ?: '-') : '',
-                    ]);
-                    $first = false;
-                }
+            // Baris "header transaksi" yang diulang di tiap item (data lengkap, tidak dikosongkan).
+            $base = [
+                $sale->sale_number, $date, $time, $sale->status, $store,
+                $phone, $custName, $cashier, $sp,
+            ];
+
+            if ($sale->items->isEmpty()) {
+                $sheet->fromArray(array_merge($base, [
+                    '-', '-', '-', '-', 0, 0, 0,
+                    $discApplied ?: '-', (float) $sale->total, $payMethods ?: '-',
+                ]), null, 'A' . $row);
+                $row++;
+                continue;
             }
 
-            fclose($handle);
-        }, 200, [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            foreach ($sale->items as $item) {
+                $itemName = $item->product_name
+                    ?: implode(' ', array_filter([$item->variant_name, $item->intensity_code, $item->size_ml ? $item->size_ml . 'ml' : null]));
+
+                // Setiap baris item TERISI PENUH — invoice/tanggal/dll diulang, bukan dikosongkan.
+                $sheet->fromArray(array_merge($base, [
+                    $itemName ?: '-',
+                    $item->variant_name ?? '-',
+                    $item->intensity_code ?? '-',
+                    $item->size_ml ?? '-',
+                    (int)   $item->qty,
+                    (float) $item->unit_price,
+                    (float) $item->subtotal,
+                    $discApplied ?: '-',
+                    (float) $sale->total,
+                    $payMethods ?: '-',
+                ]), null, 'A' . $row);
+                $row++;
+            }
+        }
+
+        foreach (range('A', 'S') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
     }
 
