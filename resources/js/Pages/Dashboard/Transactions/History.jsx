@@ -154,6 +154,29 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
                     </div>
                 </div>
 
+                {/* Search bar — cari no. invoice / nama pelanggan */}
+                <form onSubmit={applyFilters} className="relative">
+                    <IconSearch size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
+                    <input
+                        type="text"
+                        value={filterData.q}
+                        onChange={(e) => change("q", e.target.value)}
+                        placeholder="Cari no. invoice (mis. INV-20260731-00043) / nama pelanggan…"
+                        className="w-full pl-11 pr-28 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400"
+                    />
+                    {filterData.q && (
+                        <button type="button"
+                            onClick={() => { change("q", ""); router.get(route("transactions.history"), { ...filterData, q: "" }, { preserveScroll: true, preserveState: true, replace: true }); }}
+                            className="absolute right-[86px] top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                            <IconX size={16}/>
+                        </button>
+                    )}
+                    <button type="submit"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 rounded-lg bg-primary-500 hover:bg-primary-600 text-white text-xs font-semibold">
+                        Cari
+                    </button>
+                </form>
+
                 {/* Summary Cards */}
                 {Object.keys(sumStats).length > 0 && (
                     <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
