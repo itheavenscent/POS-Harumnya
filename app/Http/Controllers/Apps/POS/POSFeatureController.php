@@ -35,6 +35,7 @@ class POSFeatureController extends Controller
         if ($type === 'ingredient') {
             $stocks = StoreIngredientStock::with(['ingredient.category'])
                 ->join('ingredients', 'store_ingredient_stocks.ingredient_id', '=', 'ingredients.id')
+                ->whereNull('ingredients.deleted_at') // sembunyikan ingredient terhapus (ghost NO-CODE)
                 ->where('store_ingredient_stocks.store_id', $storeId)
                 ->when($request->search, function ($query, $search) {
                     $query->where(function ($q) use ($search) {
@@ -49,6 +50,7 @@ class POSFeatureController extends Controller
         } else {
             $stocks = StorePackagingStock::with(['packagingMaterial.category', 'packagingMaterial.size'])
                 ->join('packaging_materials', 'store_packaging_stocks.packaging_material_id', '=', 'packaging_materials.id')
+                ->whereNull('packaging_materials.deleted_at') // sembunyikan kemasan terhapus
                 ->where('store_packaging_stocks.store_id', $storeId)
                 ->when($request->search, function ($query, $search) {
                     $query->where(function ($q) use ($search) {

@@ -39,7 +39,7 @@ class Purchase extends Model
 
     protected $appends = [
         'can_edit', 'can_submit', 'can_approve',
-        'can_receive', 'can_complete', 'can_cancel',
+        'can_receive', 'can_complete', 'can_cancel', 'can_delete',
         'status_label',
     ];
 
@@ -57,6 +57,9 @@ class Purchase extends Model
     public function canReceive():  bool { return $this->status === 'approved'; }
     public function canComplete(): bool { return $this->status === 'received'; }
     public function canCancel():   bool { return in_array($this->status, ['draft', 'pending', 'approved']); }
+    // Hard-delete diblok hanya bila status 'completed' — di situ stok sudah
+    // diterapkan (complete()). Status lain (termasuk received) stok belum berubah.
+    public function canDelete():   bool { return $this->status !== 'completed'; }
 
     // ─── Appended accessors ───────────────────────────────────────────────────
     public function getCanEditAttribute():     bool { return $this->canEdit(); }
@@ -65,6 +68,7 @@ class Purchase extends Model
     public function getCanReceiveAttribute():  bool { return $this->canReceive(); }
     public function getCanCompleteAttribute(): bool { return $this->canComplete(); }
     public function getCanCancelAttribute():   bool { return $this->canCancel(); }
+    public function getCanDeleteAttribute():   bool { return $this->canDelete(); }
 
     public function getStatusLabelAttribute(): string
     {

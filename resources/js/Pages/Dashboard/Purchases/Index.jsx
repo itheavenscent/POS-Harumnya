@@ -6,7 +6,7 @@ import Pagination from "@/Components/Dashboard/Pagination";
 import Button from "@/Components/Dashboard/Button";
 import {
     IconShoppingBag, IconCirclePlus, IconDatabaseOff, IconEye,
-    IconPencilCog, IconCheck, IconChartBar, IconClock, IconTruck,
+    IconPencilCog, IconCheck, IconChartBar, IconClock, IconTruck, IconTrash,
 } from "@tabler/icons-react";
 
 const STATUS_CFG = {
@@ -36,6 +36,11 @@ export default function Index({ purchases, filters = {}, summary = {} }) {
         const f = { search, status, date_from: dateFrom, date_to: dateTo, ...overrides };
         Object.keys(f).forEach((k) => { if (!f[k]) delete f[k]; });
         router.get(route("purchases.index"), f, { preserveState: true, replace: true });
+    };
+
+    const handleDelete = (p) => {
+        if (!window.confirm(`Hapus permanen PO ${p.purchase_number}? Tindakan ini tidak bisa dibatalkan.`)) return;
+        router.delete(route("purchases.destroy", p.id), { preserveScroll: true });
     };
 
     const resetDates = () => {
@@ -159,6 +164,13 @@ export default function Index({ purchases, filters = {}, summary = {} }) {
                                                         className="p-1.5 bg-slate-100 text-slate-700 hover:bg-amber-100 border border-slate-300 rounded-lg">
                                                         <IconPencilCog size={14} />
                                                     </Link>
+                                                )}
+                                                {p.can_delete && (
+                                                    <button type="button" onClick={() => handleDelete(p)}
+                                                        title="Hapus permanen"
+                                                        className="p-1.5 bg-slate-100 text-red-600 hover:bg-red-100 border border-slate-300 rounded-lg">
+                                                        <IconTrash size={14} />
+                                                    </button>
                                                 )}
                                             </div>
                                         </Table.Td>

@@ -628,16 +628,20 @@ class PurchaseController extends Controller
 
     public function destroy(string $id)
     {
-        $purchase = Purchase::findOrFail($id);
+        $purchase = Purchase::withTrashed()->findOrFail($id);
 
-        if ($purchase->status !== 'draft') {
-            return back()->withErrors(['delete' => 'Hanya draft yang dapat dihapus.']);
+        // Blokir hard-delete bila status 'completed' (stok sudah diterapkan).
+        if (! $purchase->canDelete()) {
+            return back()->withErrors([
+                'delete' => 'PO yang sudah Selesai (stok sudah diterapkan) tidak dapat dihapus.',
+            ]);
         }
 
-        $purchase->delete(); // softDeletes
+        // Hard delete — items ikut terhapus via FK cascadeOnDelete.
+        $purchase->forceDelete();
 
         return to_route('purchases.index')
-            ->with('success', 'Draft Purchase Order dihapus.');
+            ->with('success', 'Purchase Order dihapus permanen.');
     }
 
     // =========================================================================

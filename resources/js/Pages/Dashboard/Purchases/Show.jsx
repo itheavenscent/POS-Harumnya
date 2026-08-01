@@ -5,7 +5,7 @@ import Table from "@/Components/Dashboard/Table";
 import {
     IconArrowLeft, IconShoppingBag, IconCheck, IconX, IconSend,
     IconTruck, IconPencilCog, IconHistory, IconTrendingUp,
-    IconBuilding, IconCalendar, IconInfoCircle, IconAlertTriangle,
+    IconBuilding, IconCalendar, IconInfoCircle, IconAlertTriangle, IconTrash,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 
@@ -361,6 +361,15 @@ export default function Show({ purchase, movements = [] }) {
                             <button onClick={() => setShowCancelModal(true)}
                                 className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 border border-red-200 rounded-xl text-sm font-bold hover:bg-red-100">
                                 <IconX size={16} /> Batalkan
+                            </button>
+                        )}
+                        {purchase.can_delete && (
+                            <button onClick={() => {
+                                if (!window.confirm(`Hapus permanen PO ${purchase.purchase_number}? Tindakan ini tidak bisa dibatalkan.`)) return;
+                                router.delete(route("purchases.destroy", purchase.id));
+                            }}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold">
+                                <IconTrash size={16} /> Hapus
                             </button>
                         )}
                     </div>
