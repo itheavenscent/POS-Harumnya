@@ -730,7 +730,7 @@ class LaporanKeuanganController extends Controller
         foreach ($data['discountByCategory'] as $c) {
             $sheet5->setCellValue('A' . $row, $c['category']);
             $sheet5->setCellValue('B' . $row, $c['usage_count']);
-            $sheet5->setCellValue('C' . $row, $c['total_discount']);
+            $sheet5->setCellValue('C' . $row, $c['total_amount']);
             $row++;
         }
 
@@ -747,12 +747,12 @@ class LaporanKeuanganController extends Controller
         $sheet6->getStyle('A1:G1')->getFont()->setBold(true);
         $row = 2;
         foreach ($data['detailTransactions'] as $tx) {
-            $sheet6->setCellValue('A' . $row, $tx['sale_number']);
-            $sheet6->setCellValue('B' . $row, $tx['sold_at']);
-            $sheet6->setCellValue('C' . $row, $tx['store_name']);
-            $sheet6->setCellValue('D' . $row, $tx['customer_name']);
-            $sheet6->setCellValue('E' . $row, $tx['total']);
-            $sheet6->setCellValue('F' . $row, $tx['cogs_total']);
+            $sheet6->setCellValue('A' . $row, $tx['invoice']);
+            $sheet6->setCellValue('B' . $row, $tx['date'] . ' ' . $tx['time']);
+            $sheet6->setCellValue('C' . $row, $tx['store']);
+            $sheet6->setCellValue('D' . $row, $tx['customer']);
+            $sheet6->setCellValue('E' . $row, $tx['revenue']);
+            $sheet6->setCellValue('F' . $row, $tx['cogs']);
             $sheet6->setCellValue('G' . $row, $tx['gross_profit']);
             $row++;
         }
