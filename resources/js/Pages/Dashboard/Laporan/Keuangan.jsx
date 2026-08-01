@@ -476,10 +476,10 @@ export default function LaporanKeuangan({
                                                 <div className="flex justify-between items-start mb-1.5">
                                                     <div>
                                                         <p className="text-sm font-bold text-slate-900 dark:text-white">{item.label}</p>
-                                                        <p className="text-[11px] text-slate-400">Rev: {compact(item.rev)}</p>
+                                                        <p className="text-[11px] text-slate-400">Rev: {idr(item.rev)}</p>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="text-sm font-bold" style={{ color: item.color }}>{compact(item.value)}</p>
+                                                        <p className="text-sm font-bold" style={{ color: item.color }}>{idr(item.value)}</p>
                                                         <p className="text-[11px] text-slate-400">Margin {pct(margin)}</p>
                                                     </div>
                                                 </div>
@@ -495,7 +495,7 @@ export default function LaporanKeuangan({
                                     <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
                                         <div className="flex justify-between">
                                             <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Total COGS</span>
-                                            <span className="text-sm font-black text-red-600 dark:text-red-400">{compact(summary.totalCogs)}</span>
+                                            <span className="text-sm font-black text-red-600 dark:text-red-400">{idr(summary.totalCogs)}</span>
                                         </div>
                                         <p className="text-[11px] text-slate-400 mt-0.5 text-right">
                                             {pct(summary.totalRevenue > 0 ? (summary.totalCogs / summary.totalRevenue) * 100 : 0)} dari Revenue
@@ -525,7 +525,7 @@ export default function LaporanKeuangan({
                                                                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-medium">{p.type}</span>
                                                             </div>
                                                             <div className="text-right">
-                                                                <p className="text-sm font-bold text-slate-900 dark:text-white">{compact(p.amount)}</p>
+                                                                <p className="text-sm font-bold text-slate-900 dark:text-white">{idr(p.amount)}</p>
                                                                 <p className="text-[10px] text-slate-400">{p.transactions} tx · {share}%</p>
                                                             </div>
                                                         </div>
@@ -534,7 +534,7 @@ export default function LaporanKeuangan({
                                                         </div>
                                                         {p.admin_fee > 0 && (
                                                             <p className="text-[10px] text-slate-400 text-right mt-0.5">
-                                                                Admin fee: {compact(p.admin_fee)} · Net: {compact(p.net_amount)}
+                                                                Admin fee: {idr(p.admin_fee)} · Net: {idr(p.net_amount)}
                                                             </p>
                                                         )}
                                                     </div>
@@ -569,7 +569,7 @@ export default function LaporanKeuangan({
                                                             <p className="text-sm font-bold text-slate-800 dark:text-white capitalize">{d.category}</p>
                                                             <p className="text-[10px] text-slate-400">{d.usage_count} transaksi · {share}%</p>
                                                         </div>
-                                                        <span className="text-sm font-black text-amber-600 dark:text-amber-400">{compact(d.total_amount)}</span>
+                                                        <span className="text-sm font-black text-amber-600 dark:text-amber-400">{idr(d.total_amount)}</span>
                                                     </div>
                                                     <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                                         <div className="h-full rounded-full" style={{ width: `${share}%`, background: PALETTE[i] }} />
@@ -579,7 +579,7 @@ export default function LaporanKeuangan({
                                         })}
                                         <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
                                             <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Total Diskon</span>
-                                            <span className="text-base font-black text-amber-600 dark:text-amber-400">{compact(summary.totalDiscount)}</span>
+                                            <span className="text-base font-black text-amber-600 dark:text-amber-400">{idr(summary.totalDiscount)}</span>
                                         </div>
                                     </div>
                                 ) : <EmptyState icon={IconDiscount2} text="Tidak ada diskon dalam periode ini" />}
@@ -931,7 +931,7 @@ export default function LaporanKeuangan({
                                                         <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 capitalize">{d.category}</span>
                                                     </div>
                                                     <div className="text-right">
-                                                        <span className="text-sm font-black text-amber-600 dark:text-amber-400">{compact(d.total_amount)}</span>
+                                                        <span className="text-sm font-black text-amber-600 dark:text-amber-400">{idr(d.total_amount)}</span>
                                                         <span className="text-[10px] text-slate-400 ml-1">({share}%)</span>
                                                     </div>
                                                 </div>

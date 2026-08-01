@@ -8,9 +8,10 @@ use Illuminate\Support\Facades\DB;
 class PruneOrphanIngredientStock extends Command
 {
     protected $signature = 'stock:prune-orphan-ingredients
-        {--apply : Eksekusi hapus (tanpa ini = dry-run)}';
+        {--apply : Eksekusi hapus (tanpa ini = dry-run)}
+        {--warehouse : Ikut prune stok gudang juga (default: hanya stok toko)}';
 
-    protected $description = 'Hapus baris store/warehouse ingredient stock yang qty=0 dan ingredient-nya tidak dipakai product_recipe/variant_recipe manapun (mis. Based Abe sisa mapping lama).';
+    protected $description = 'Hapus baris store ingredient stock yang qty=0 dan ingredient-nya tidak dipakai product_recipe/variant_recipe manapun (mis. Based Abe sisa mapping lama). Gudang hanya jika --warehouse.';
 
     public function handle(): int
     {
@@ -22,10 +23,10 @@ class PruneOrphanIngredientStock extends Command
             ->merge(DB::table('variant_recipes')->distinct()->pluck('ingredient_id'))
             ->unique()->filter()->values();
 
-        $tables = [
-            'store_ingredient_stocks'     => 'stok toko',
-            'warehouse_ingredient_stocks' => 'stok gudang',
-        ];
+        $tables = ['store_ingredient_stocks' => 'stok toko'];
+        if ($this->option('warehouse')) {
+            $tables['warehouse_ingredient_stocks'] = 'stok gudang';
+        }
 
         $totalPruned = 0;
 

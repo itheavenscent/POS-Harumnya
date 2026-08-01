@@ -311,13 +311,15 @@ class LaporanKeuanganController extends Controller
             ->where('sales.status', 'completed')
             ->where('sale_payments.payment_status', 'completed')
             ->whereBetween('sales.sold_at', [$dateFromDt, $dateToDt])
-            ->selectRaw('
+            ->selectRaw("
                 sale_payments.payment_method_name                           AS name,
                 sale_payments.payment_method_type                           AS type,
                 COUNT(DISTINCT sales.id)                                    AS transactions,
-                COALESCE(SUM(sale_payments.amount), 0)                      AS total_amount,
+                -- Tunai: amount = uang diterima (termasuk kembalian). Kurangi change
+                -- agar total pembayaran = revenue (net yang benar-benar masuk).
+                COALESCE(SUM(sale_payments.amount - CASE WHEN sale_payments.payment_method_type = 'cash' THEN sales.change_amount ELSE 0 END), 0) AS total_amount,
                 COALESCE(SUM(sale_payments.admin_fee), 0)                   AS total_admin_fee
-            ')
+            ")
             ->groupBy(
                 'sale_payments.payment_method_name',
                 'sale_payments.payment_method_type'
