@@ -101,11 +101,15 @@ class CustomerController extends Controller
             $handle = fopen('php://output', 'w');
             fputcsv($handle, [
                 'Kode', 'Nama', 'Email', 'Telepon', 'Gender',
-                'Poin Aktif', 'Total Poin Diperoleh', 'Total Transaksi',
-                'Total Belanja', 'Status', 'Terdaftar',
+                'Poin Aktif', 'Total Poin Diperoleh', 'Total Redeem', 'Total Transaksi',
+                'Total Belanja', 'Kunjungan Terakhir', 'Store Pembuatan', 'Status', 'Terdaftar',
             ]);
 
-            Customer::withTrashed(false)->chunk(500, function ($customers) use ($handle) {
+            Customer::query()
+                ->selectRaw('(SELECT MAX(s.sold_at) FROM sales s WHERE s.customer_id = customers.id AND s.status = \'completed\' AND s.deleted_at IS NULL) AS last_visit')
+                ->selectRaw('(SELECT COALESCE(SUM(s.points_redeemed), 0) FROM sales s WHERE s.customer_id = customers.id AND s.deleted_at IS NULL) AS total_redeem')
+                ->selectRaw('(SELECT st.name FROM sales s JOIN stores st ON st.id = s.store_id WHERE s.customer_id = customers.id AND s.deleted_at IS NULL ORDER BY s.sold_at ASC LIMIT 1) AS origin_store_name')
+                ->chunk(500, function ($customers) use ($handle) {
                 foreach ($customers as $c) {
                     fputcsv($handle, [
                         $c->code,
@@ -115,8 +119,11 @@ class CustomerController extends Controller
                         $c->gender,
                         $c->points,
                         $c->lifetime_points_earned,
+                        $c->total_redeem,
                         $c->total_transactions,
                         $c->lifetime_spending,
+                        $c->last_visit ? \Carbon\Carbon::parse($c->last_visit)->format('d/m/Y') : '-',
+                        $c->origin_store_name ?? '-',
                         $c->is_active ? 'Aktif' : 'Nonaktif',
                         $c->registered_at?->format('d/m/Y') ?? '-',
                     ]);

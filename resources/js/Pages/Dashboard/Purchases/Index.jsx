@@ -122,7 +122,7 @@ export default function Index({ purchases, filters = {}, summary = {} }) {
                                 <Table.Th className="text-center">Item</Table.Th>
                                 <Table.Th className="text-right">Total</Table.Th>
                                 <Table.Th>Tgl PO</Table.Th>
-                                <Table.Th>Est. Tiba</Table.Th>
+                                <Table.Th>Tgl Aktual Tiba</Table.Th>
                                 <Table.Th>Status</Table.Th>
                                 <Table.Th className="text-center w-20">Aksi</Table.Th>
                             </tr>
@@ -149,7 +149,7 @@ export default function Index({ purchases, filters = {}, summary = {} }) {
                                         <Table.Td className="text-center text-sm font-bold text-slate-700">{p.items?.length ?? 0}</Table.Td>
                                         <Table.Td className="text-right font-bold text-slate-800">{fmt(p.total)}</Table.Td>
                                         <Table.Td className="text-sm text-slate-500">{fmtDate(p.purchase_date)}</Table.Td>
-                                        <Table.Td className="text-sm text-slate-500">{fmtDate(p.expected_delivery_date)}</Table.Td>
+                                        <Table.Td className="text-sm text-slate-500">{fmtDate(p.actual_delivery_date)}</Table.Td>
                                         <Table.Td>
                                             <span className={`text-[10px] px-2 py-1 rounded-full font-bold border whitespace-nowrap ${st.cls}`}>{st.label}</span>
                                         </Table.Td>
