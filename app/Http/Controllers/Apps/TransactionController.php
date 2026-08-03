@@ -489,7 +489,7 @@ class TransactionController extends Controller
         $defaultStoreId = $user->default_store_id;
 
         $query = Sale::with([
-            'items', 'discounts', 'payments.paymentMethod',
+            'items.packagings.packagingMaterial', 'discounts', 'payments.paymentMethod',
             'customer:id,name,phone', 'cashier:id,name',
             'salesPerson:id,name', 'store:id,name',
         ])->latest('sold_at');
@@ -526,12 +526,12 @@ class TransactionController extends Controller
         $headers = [
             'No. Invoice', 'Tanggal', 'Waktu', 'Status', 'Toko',
             'No.Telp', 'Pelanggan', 'Kasir', 'Sales Person',
-            'Item', 'Variant', 'Intensitas', 'Ukuran (ml)', 'Qty',
+            'Item', 'Variant', 'Intensitas', 'Ukuran (ml)', 'Botol/Kemasan', 'Qty',
             'Harga Satuan', 'Subtotal Item',
             'Diskon Transaksi', 'Total Transaksi', 'Metode Pembayaran',
         ];
         $sheet->fromArray($headers, null, 'A1');
-        $sheet->getStyle('A1:S1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:T1')->getFont()->setBold(true);
 
         $row = 2;
         foreach ($sales as $sale) {
@@ -557,7 +557,7 @@ class TransactionController extends Controller
 
             if ($sale->items->isEmpty()) {
                 $sheet->fromArray(array_merge($base, [
-                    '-', '-', '-', '-', 0, 0, 0,
+                    '-', '-', '-', '-', '-', 0, 0, 0,
                     $discApplied ?: '-', (float) $sale->total, $payMethods ?: '-',
                 ]), null, 'A' . $row);
                 $row++;
@@ -568,12 +568,19 @@ class TransactionController extends Controller
                 $itemName = $item->product_name
                     ?: implode(' ', array_filter([$item->variant_name, $item->intensity_code, $item->size_ml ? $item->size_ml . 'ml' : null]));
 
+                $botol = $item->packagings
+                    ->map(fn ($p) => trim(($p->packaging_name ?? optional($p->packagingMaterial)->name ?? '')
+                        . ((int) $p->qty > 1 ? ' x' . (int) $p->qty : '')))
+                    ->filter()
+                    ->implode(', ');
+
                 // Setiap baris item TERISI PENUH — invoice/tanggal/dll diulang, bukan dikosongkan.
                 $sheet->fromArray(array_merge($base, [
                     $itemName ?: '-',
                     $item->variant_name ?? '-',
                     $item->intensity_code ?? '-',
                     $item->size_ml ?? '-',
+                    $botol ?: '-',
                     (int)   $item->qty,
                     (float) $item->unit_price,
                     (float) $item->subtotal,
@@ -585,7 +592,7 @@ class TransactionController extends Controller
             }
         }
 
-        foreach (range('A', 'S') as $col) {
+        foreach (range('A', 'T') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -1766,7 +1773,7 @@ class TransactionController extends Controller
     {
         $request->validate([
             'discount_type_id' => 'required|uuid|exists:discount_types,id',
-            'reward_type'      => 'nullable|in:variant,points,reward_item',
+            'reward_type'      => 'nullable|in:variant,points,reward_item,packaging',
             'variant_id'       => 'nullable|uuid|exists:variants,id',
             'intensity_id'     => 'nullable|uuid|exists:intensities,id',
             'size_id'          => 'nullable|uuid|exists:sizes,id',
@@ -1866,20 +1873,20 @@ class TransactionController extends Controller
                 ->value('price') ?? 0;
         }
 
-        // Botol yang otomatis ikut ke keranjang saat hadiah parfum:
-        //   1. Pakai packaging_material_id eksplisit dari reward/pool, atau
-        //   2. Fallback: botol default (kategori "Botol") yang cocok dgn ukuran hadiah.
-        $freeBottleId = null;
-        if ($request->variant_id && $request->size_id) {
-            $freeBottleId = $request->packaging_material_id;
+        // Botol hadiah yang ikut ke keranjang:
+        //   1. packaging_material_id eksplisit dari reward/pool — berlaku SELALU,
+        //      termasuk promo hadiah botol-saja (tanpa parfum), agar stok botol
+        //      tetap terpotong & tercatat di riwayat.
+        //   2. Fallback botol default (kategori "Botol") by ukuran — hanya bila
+        //      hadiah berupa parfum (variant + size).
+        $freeBottleId = $request->packaging_material_id;
 
-            if (!$freeBottleId) {
-                $freeBottleId = PackagingMaterial::where('size_id', $request->size_id)
-                    ->where('is_active', true)
-                    ->whereHas('category', fn ($q) => $q->where('name', 'Botol'))
-                    ->orderBy('sort_order')
-                    ->value('id');
-            }
+        if (!$freeBottleId && $request->variant_id && $request->size_id) {
+            $freeBottleId = PackagingMaterial::where('size_id', $request->size_id)
+                ->where('is_active', true)
+                ->whereHas('category', fn ($q) => $q->where('name', 'Botol'))
+                ->orderBy('sort_order')
+                ->value('id');
         }
 
         DB::transaction(function () use ($request, $user, $storeId, $discount, $price, $freeBottleId, $addCount) {
@@ -2353,11 +2360,19 @@ class TransactionController extends Controller
         if ($cart->product?->name) {
             return $cart->product->name;
         }
-        return implode(' - ', array_filter([
+        $name = implode(' - ', array_filter([
             $cart->variant?->name,
             $cart->intensity?->code,
             $cart->size?->volume_ml ? $cart->size->volume_ml . 'ml' : null,
         ]));
+
+        // Hadiah botol-saja (tanpa parfum) tidak punya snapshot varian/intensity/size —
+        // pakai catatan reward agar baris tetap bernama di riwayat, bukan kosong.
+        if ($name === '' && $cart->notes) {
+            return $cart->notes;
+        }
+
+        return $name;
     }
 
     private function generateSaleNumber(string $storeId): string

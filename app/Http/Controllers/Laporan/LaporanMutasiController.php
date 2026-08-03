@@ -63,10 +63,10 @@ class LaporanMutasiController extends Controller
                 'stock_movements.item_type',
                 'stock_movements.item_id',
                 'stock_movements.movement_type',
-                'stock_adjustments.type as adjustment_type',
+                'stock_movements.reference_type',
                 DB::raw('SUM(stock_movements.qty_change) as total_qty_change')
             )
-            ->groupBy('stock_movements.item_type', 'stock_movements.item_id', 'stock_movements.movement_type', 'stock_adjustments.type')
+            ->groupBy('stock_movements.item_type', 'stock_movements.item_id', 'stock_movements.movement_type', 'stock_movements.reference_type')
             ->get();
 
         // ── 3. Lookup for movements in period ──
@@ -75,7 +75,7 @@ class LaporanMutasiController extends Controller
             $itemType = $mv->item_type;
             $itemId = $mv->item_id;
             $mType = $mv->movement_type;
-            $adjType = $mv->adjustment_type;
+            $refType = $mv->reference_type;
             $change = (int) $mv->total_qty_change;
 
             if (!isset($movementsLookup[$itemType][$itemId])) {
@@ -97,8 +97,12 @@ class LaporanMutasiController extends Controller
                 $movementsLookup[$itemType][$itemId]['transfer'] += $change;
             } elseif ($mType === 'production_in' || $mType === 'production_out') {
                 $movementsLookup[$itemType][$itemId]['manufacturing'] += $change;
-            } elseif ($adjType === 'stock_opname') {
+            } elseif ($refType === 'App\\Models\\StockAdjustment') {
+                // Fitur penyesuaian stok manual (adjustment_in/out, opname, dll)
                 $movementsLookup[$itemType][$itemId]['stock_take'] += $change;
+            } elseif ($mType === 'return_in') {
+                // Hanya transaksi penjualan yang di-cancel (retur masuk)
+                $movementsLookup[$itemType][$itemId]['adjustment'] += $change;
             } else {
                 $movementsLookup[$itemType][$itemId]['adjustment'] += $change;
             }
@@ -296,10 +300,10 @@ class LaporanMutasiController extends Controller
                 'stock_movements.item_type',
                 'stock_movements.item_id',
                 'stock_movements.movement_type',
-                'stock_adjustments.type as adjustment_type',
+                'stock_movements.reference_type',
                 DB::raw('SUM(stock_movements.qty_change) as total_qty_change')
             )
-            ->groupBy('stock_movements.item_type', 'stock_movements.item_id', 'stock_movements.movement_type', 'stock_adjustments.type')
+            ->groupBy('stock_movements.item_type', 'stock_movements.item_id', 'stock_movements.movement_type', 'stock_movements.reference_type')
             ->get();
 
         $movementsLookup = [];
@@ -307,7 +311,7 @@ class LaporanMutasiController extends Controller
             $itemType = $mv->item_type;
             $itemId = $mv->item_id;
             $mType = $mv->movement_type;
-            $adjType = $mv->adjustment_type;
+            $refType = $mv->reference_type;
             $change = (int) $mv->total_qty_change;
 
             if (!isset($movementsLookup[$itemType][$itemId])) {
@@ -325,8 +329,12 @@ class LaporanMutasiController extends Controller
                 $movementsLookup[$itemType][$itemId]['transfer'] += $change;
             } elseif ($mType === 'production_in' || $mType === 'production_out') {
                 $movementsLookup[$itemType][$itemId]['manufacturing'] += $change;
-            } elseif ($adjType === 'stock_opname') {
+            } elseif ($refType === 'App\\Models\\StockAdjustment') {
+                // Fitur penyesuaian stok manual (adjustment_in/out, opname, dll)
                 $movementsLookup[$itemType][$itemId]['stock_take'] += $change;
+            } elseif ($mType === 'return_in') {
+                // Hanya transaksi penjualan yang di-cancel (retur masuk)
+                $movementsLookup[$itemType][$itemId]['adjustment'] += $change;
             } else {
                 $movementsLookup[$itemType][$itemId]['adjustment'] += $change;
             }

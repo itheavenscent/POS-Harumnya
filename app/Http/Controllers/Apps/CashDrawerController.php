@@ -79,12 +79,14 @@ class CashDrawerController extends Controller
             ->where('status', 'open')
             ->firstOrFail();
 
+        // sale_payments.amount = uang diserahkan (termasuk kembalian). Kas bersih
+        // yang masuk laci = amount - change_amount untuk pembayaran tunai.
         $cashSales = DB::table('sale_payments')
             ->join('sales', 'sale_payments.sale_id', '=', 'sales.id')
             ->where('sales.cash_drawer_id', $drawer->id)
             ->where('sales.status', 'completed')
             ->where('sale_payments.payment_method_type', 'cash')
-            ->sum('sale_payments.amount');
+            ->sum(DB::raw('sale_payments.amount - sales.change_amount'));
 
         $nonCashSales = DB::table('sale_payments')
             ->join('sales', 'sale_payments.sale_id', '=', 'sales.id')
@@ -260,7 +262,8 @@ class CashDrawerController extends Controller
             ->select(
                 'payment_methods.name',
                 DB::raw('COUNT(sale_payments.id) as count'),
-                DB::raw('SUM(sale_payments.amount) as total')
+                // Kurangi kembalian untuk tunai agar breakdown = kas bersih, bukan uang diserahkan.
+                DB::raw("SUM(sale_payments.amount - CASE WHEN sale_payments.payment_method_type = 'cash' THEN sales.change_amount ELSE 0 END) as total")
             )
             ->groupBy('payment_methods.name')
             ->get();

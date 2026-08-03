@@ -384,6 +384,30 @@ class POSFeatureController extends Controller
                 'revenue' => (float) $r->revenue,
             ]);
 
+        // Rincian metode pembayaran (jumlah transaksi + nominal).
+        // Cash (type=cash) nominalnya termasuk kembalian → dikurangi change_amount
+        // agar match total_revenue. Kembalian hanya melekat pada baris pembayaran cash.
+        $paymentBreakdown = DB::table('sale_payments as sp')
+            ->join('sales as s', 's.id', '=', 'sp.sale_id')
+            ->where('s.store_id', $storeId)
+            ->where('s.status', 'completed')
+            ->whereBetween('s.sold_at', [$from, $to])
+            ->selectRaw("
+                COALESCE(sp.payment_method_name, 'Lainnya')                                                      AS method,
+                sp.payment_method_type                                                                           AS type,
+                COUNT(*)                                                                                         AS count,
+                COALESCE(SUM(sp.amount - CASE WHEN sp.payment_method_type = 'cash' THEN s.change_amount ELSE 0 END), 0) AS amount
+            ")
+            ->groupBy('sp.payment_method_name', 'sp.payment_method_type')
+            ->orderByDesc('amount')
+            ->get()
+            ->map(fn ($r) => [
+                'method' => $r->method,
+                'type'   => $r->type,
+                'count'  => (int)   $r->count,
+                'amount' => (float) round($r->amount, 2),
+            ]);
+
         $activeCashDrawer = CashDrawer::where('store_id', $storeId)
             ->where('cashier_id', $user->id)
             ->where('status', 'open')
@@ -401,9 +425,10 @@ class POSFeatureController extends Controller
                 'uniqueCustomers'   => (int)   $summary->unique_customers,
                 'totalItemsSold'    => (int)   $itemsSold,
             ],
-            'trend'       => $trend,
-            'topVariants' => $topVariants,
-            'activeCashDrawer' => $activeCashDrawer,
+            'trend'             => $trend,
+            'topVariants'       => $topVariants,
+            'paymentBreakdown'  => $paymentBreakdown,
+            'activeCashDrawer'  => $activeCashDrawer,
         ]);
     }
 

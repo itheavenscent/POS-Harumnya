@@ -184,6 +184,7 @@ export default function LaporanPenjualan({
     hourlyData = [],
     memberTrend = [],
     recentTransactions = [],
+    byPayment = [],
 }) {
     const [activeTab, setActiveTab] = useState('ringkasan');
     const [lf, setLf] = useState({
@@ -222,6 +223,7 @@ export default function LaporanPenjualan({
         { key: 'produk',    label: 'Produk' },
         { key: 'pelanggan', label: 'Pelanggan' },
         { key: 'tim',       label: 'Tim & Kasir' },
+        { key: 'pembayaran', label: 'Pembayaran' },
         { key: 'toko',      label: 'Per Toko', hide: !isSuperAdmin },
         { key: 'detail',    label: 'Detail Transaksi' },
     ].filter(t => !t.hide);
@@ -847,6 +849,68 @@ export default function LaporanPenjualan({
                                         <Tooltip content={<ChartTip />} />
                                         <Bar dataKey="total_revenue" name="Revenue" radius={[0, 4, 4, 0]}>
                                             {byCashier.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </Card>
+                        )}
+                    </div>
+                )}
+
+                {/* ═══════════════════════════════════════════════════════════ */}
+                {/* TAB: PEMBAYARAN (breakdown per metode)                      */}
+                {/* ═══════════════════════════════════════════════════════════ */}
+                {activeTab === 'pembayaran' && (
+                    <div className="space-y-5">
+                        <Card>
+                            <SectionTitle icon={IconChartBar} sub="Kas bersih per metode (kembalian tunai sudah dikurangi)">Total per Metode Pembayaran</SectionTitle>
+                            {byPayment.length > 0 ? (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="text-left text-[11px] uppercase text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                                                <th className="py-2 pr-4">Metode</th>
+                                                <th className="py-2 pr-4">Tipe</th>
+                                                <th className="py-2 pr-4 text-right">Transaksi</th>
+                                                <th className="py-2 pr-4 text-right">Total</th>
+                                                <th className="py-2 text-right">Biaya Admin</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {byPayment.map((p, i) => (
+                                                <tr key={i} className="border-b border-slate-100 dark:border-slate-800">
+                                                    <td className="py-2.5 pr-4 font-semibold text-slate-900 dark:text-white">{p.method_name}</td>
+                                                    <td className="py-2.5 pr-4 text-slate-400 uppercase text-[11px]">{p.method_type}</td>
+                                                    <td className="py-2.5 pr-4 text-right text-slate-600 dark:text-slate-300">{num(p.tx_count)}</td>
+                                                    <td className="py-2.5 pr-4 text-right font-black text-slate-900 dark:text-white">{idr(p.total_amount)}</td>
+                                                    <td className="py-2.5 text-right text-slate-500">{idr(p.total_admin_fee)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr className="font-black text-slate-900 dark:text-white">
+                                                <td className="py-2.5 pr-4" colSpan={2}>TOTAL</td>
+                                                <td className="py-2.5 pr-4 text-right">{num(byPayment.reduce((a, b) => a + b.tx_count, 0))}</td>
+                                                <td className="py-2.5 pr-4 text-right">{idr(byPayment.reduce((a, b) => a + b.total_amount, 0))}</td>
+                                                <td className="py-2.5 text-right">{idr(byPayment.reduce((a, b) => a + b.total_admin_fee, 0))}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            ) : <EmptyState icon={IconChartBar} text="Belum ada data pembayaran" />}
+                        </Card>
+
+                        {byPayment.length > 0 && (
+                            <Card>
+                                <SectionTitle icon={IconChartBar} sub="Nominal per metode">Perbandingan Metode</SectionTitle>
+                                <ResponsiveContainer width="100%" height={220}>
+                                    <BarChart data={byPayment} layout="vertical" barSize={16}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} className="dark:stroke-slate-800" />
+                                        <XAxis type="number" tickFormatter={v => compact(v).replace('Rp ', '')} tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} />
+                                        <YAxis type="category" dataKey="method_name" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} width={110} />
+                                        <Tooltip content={<ChartTip />} />
+                                        <Bar dataKey="total_amount" name="Total" radius={[0, 4, 4, 0]}>
+                                            {byPayment.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
                                         </Bar>
                                     </BarChart>
                                 </ResponsiveContainer>

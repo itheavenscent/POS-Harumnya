@@ -79,6 +79,7 @@ class LaporanPenjualanController extends Controller
         $breakdowns = $this->getProductBreakdowns($storeId, $status, $dateFromDt, $dateToDt);
         $rankings   = $this->getPeopleRankings($storeId, $status, $dateFromDt, $dateToDt, $isSuperAdmin);
         $miscData   = $this->getMiscReportData($storeId, $status, $dateFromDt, $dateToDt, $groupExpr, $labelExpr);
+        $byPayment  = $this->getPaymentBreakdown($storeId, $status, $dateFromDt, $dateToDt);
 
         // ══════════════════════════════════════════════════════════════════════
         //  RETURN
@@ -108,7 +109,47 @@ class LaporanPenjualanController extends Controller
             'hourlyData'         => $miscData['hourlyData'],
             'memberTrend'        => $miscData['memberTrend'],
             'recentTransactions' => $miscData['recentTransactions'],
+            'byPayment'          => $byPayment,
         ]);
+    }
+
+    /**
+     * Breakdown total transaksi per metode pembayaran.
+     * total_amount = kas bersih: untuk tunai, kembalian (sales.change_amount) dikurangi
+     * karena sale_payments.amount menyimpan uang yang diserahkan customer.
+     * Menghormati filter store/tanggal/status yang sama dengan laporan.
+     */
+    private function getPaymentBreakdown($storeId, $status, $dateFromDt, $dateToDt): array
+    {
+        return DB::table('sale_payments')
+            ->join('sales', 'sale_payments.sale_id', '=', 'sales.id')
+            ->leftJoin('payment_methods', 'sale_payments.payment_method_id', '=', 'payment_methods.id')
+            ->when($storeId, fn ($q) => $q->where('sales.store_id', $storeId))
+            ->when($status !== 'all', fn ($q) => $q->where('sales.status', $status))
+            ->whereBetween('sales.sold_at', [$dateFromDt, $dateToDt])
+            ->selectRaw("
+                COALESCE(sale_payments.payment_method_name, payment_methods.name, 'Tidak Diketahui') AS method_name,
+                COALESCE(sale_payments.payment_method_type, payment_methods.type, 'other')           AS method_type,
+                COUNT(DISTINCT sales.id)                                                             AS tx_count,
+                COALESCE(SUM(sale_payments.amount - CASE WHEN sale_payments.payment_method_type = 'cash' THEN sales.change_amount ELSE 0 END), 0) AS total_amount,
+                COALESCE(SUM(sale_payments.admin_fee), 0)                                            AS total_admin_fee
+            ")
+            ->groupBy(
+                'sale_payments.payment_method_name',
+                'sale_payments.payment_method_type',
+                'payment_methods.name',
+                'payment_methods.type'
+            )
+            ->orderByDesc('total_amount')
+            ->get()
+            ->map(fn ($r) => [
+                'method_name'     => $r->method_name,
+                'method_type'     => $r->method_type,
+                'tx_count'        => (int)   $r->tx_count,
+                'total_amount'    => (float) round($r->total_amount, 2),
+                'total_admin_fee' => (float) round($r->total_admin_fee, 2),
+            ])
+            ->toArray();
     }
 
 
@@ -811,6 +852,38 @@ class LaporanPenjualanController extends Controller
 
         foreach (range('A', 'O') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // ── Sheet: Breakdown Metode Pembayaran ────────────────────────────────
+        $byPayment = $this->getPaymentBreakdown($storeId, $status, $dateFromDt, $dateToDt);
+        $paySheet  = $spreadsheet->createSheet();
+        $paySheet->setTitle('Metode Pembayaran');
+        $paySheet->fromArray(
+            ['Metode', 'Tipe', 'Jumlah Transaksi', 'Total (Kas Bersih)', 'Total Biaya Admin'],
+            null,
+            'A1'
+        );
+        $paySheet->getStyle('A1:E1')->getFont()->setBold(true);
+
+        $pRow = 2;
+        foreach ($byPayment as $p) {
+            $paySheet->fromArray([
+                $p['method_name'],
+                $p['method_type'],
+                (int)   $p['tx_count'],
+                (float) $p['total_amount'],
+                (float) $p['total_admin_fee'],
+            ], null, 'A' . $pRow);
+            $pRow++;
+        }
+        $paySheet->setCellValue('A' . $pRow, 'TOTAL');
+        $paySheet->getStyle('A' . $pRow . ':E' . $pRow)->getFont()->setBold(true);
+        $paySheet->setCellValue('C' . $pRow, array_sum(array_column($byPayment, 'tx_count')));
+        $paySheet->setCellValue('D' . $pRow, array_sum(array_column($byPayment, 'total_amount')));
+        $paySheet->setCellValue('E' . $pRow, array_sum(array_column($byPayment, 'total_admin_fee')));
+
+        foreach (range('A', 'E') as $col) {
+            $paySheet->getColumnDimension($col)->setAutoSize(true);
         }
 
         return response()->streamDownload(function () use ($spreadsheet) {

@@ -493,7 +493,7 @@ class DashboardController extends Controller
                 COALESCE(sale_payments.payment_method_name, payment_methods.name, \'Tidak Diketahui\') AS method_name,
                 COALESCE(sale_payments.payment_method_type, payment_methods.type, \'other\')           AS method_type,
                 COUNT(DISTINCT sales.id)                        AS total_transactions,
-                COALESCE(SUM(sale_payments.amount), 0)          AS total_amount
+                COALESCE(SUM(sale_payments.amount - CASE WHEN sale_payments.payment_method_type = \'cash\' THEN sales.change_amount ELSE 0 END), 0) AS total_amount
             ')
             ->groupBy(
                 'sale_payments.payment_method_name',

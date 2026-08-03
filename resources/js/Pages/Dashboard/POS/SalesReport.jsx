@@ -3,14 +3,14 @@ import { Head, router } from "@inertiajs/react";
 import POSLayout from "@/Layouts/POSLayout";
 import {
     IconChartArrowsVertical, IconReceipt, IconCash, IconBox,
-    IconDiscount2, IconUsers, IconTrendingUp,
+    IconDiscount2, IconUsers, IconTrendingUp, IconWallet,
 } from "@tabler/icons-react";
 
 const fmt = (v = 0) =>
     Number(v || 0).toLocaleString("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 });
 const fmtNum = (v = 0) => Number(v || 0).toLocaleString("id-ID");
 
-export default function SalesReport({ storeName, filters, summary, trend = [], topVariants = [] }) {
+export default function SalesReport({ storeName, filters, summary, trend = [], topVariants = [], paymentBreakdown = [] }) {
     const [dateFrom, setDateFrom] = React.useState(filters.date_from);
     const [dateTo, setDateTo] = React.useState(filters.date_to);
 
@@ -20,6 +20,15 @@ export default function SalesReport({ storeName, filters, summary, trend = [], t
     };
 
     const maxRevenue = Math.max(1, ...trend.map((t) => t.revenue));
+
+    const payTotalAmount = paymentBreakdown.reduce((s, p) => s + Number(p.amount || 0), 0);
+    const payTotalCount = paymentBreakdown.reduce((s, p) => s + Number(p.count || 0), 0);
+    const payColor = (type) => ({
+        cash: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400",
+        qris: "bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-400",
+        transfer: "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400",
+        debit: "bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400",
+    }[type] || "bg-slate-100 text-slate-500 dark:bg-slate-800");
 
     const cards = [
         { label: "Total Transaksi", value: fmtNum(summary.totalTransactions), icon: IconReceipt,   color: "cyan" },
@@ -139,6 +148,40 @@ export default function SalesReport({ storeName, filters, summary, trend = [], t
                                 </div>
                             )}
                         </div>
+                    </div>
+
+                    {/* Metode Pembayaran */}
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 flex items-center justify-center">
+                                <IconWallet size={17} />
+                            </div>
+                            <h3 className="text-sm font-black text-slate-800 dark:text-white">Metode Pembayaran</h3>
+                        </div>
+                        {paymentBreakdown.length === 0 ? (
+                            <p className="text-sm text-slate-400 text-center py-8">Belum ada data pada rentang ini.</p>
+                        ) : (
+                            <>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                                    {paymentBreakdown.map((p, i) => (
+                                        <div key={i} className="flex items-center gap-3 rounded-xl border border-slate-100 dark:border-slate-800 p-3">
+                                            <span className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${payColor(p.type)}`}>
+                                                <IconCash size={17} />
+                                            </span>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">{p.method}</p>
+                                                <p className="text-[11px] font-bold text-slate-400">{fmtNum(p.count)} transaksi</p>
+                                            </div>
+                                            <p className="text-sm font-black text-slate-800 dark:text-white text-right shrink-0">{fmt(p.amount)}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Total ({fmtNum(payTotalCount)} transaksi)</span>
+                                    <span className="text-base font-black text-slate-800 dark:text-white">{fmt(payTotalAmount)}</span>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
