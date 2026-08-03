@@ -274,6 +274,8 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
 
         // 2. CRUD
         Route::get('/', [RecipeController::class, 'index'])->name('index')->middleware('permission:recipes-access');
+        // Export (statis — WAJIB sebelum wildcard /{variant}/{intensity})
+        Route::get('/export', [RecipeController::class, 'exportExcel'])->name('export')->middleware('permission:recipes-access');
         Route::get('/create', [RecipeController::class, 'create'])->name('create')->middleware('permission:recipes-create');
         Route::post('/', [RecipeController::class, 'store'])->name('store')->middleware('permission:recipes-create');
 

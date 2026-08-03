@@ -100,6 +100,187 @@ class RecipeController extends Controller
     }
 
     // =========================================================================
+    // EXPORT EXCEL — Formula & Resep (rapi, siap download)
+    // =========================================================================
+
+    public function exportExcel()
+    {
+        // Semua baris resep, urut variant → intensity → bahan.
+        $recipes = VariantRecipe::with([
+                'variant:id,code,name',
+                'intensity:id,code,name',
+                'ingredient:id,name,unit,ingredient_category_id',
+                'ingredient.category:id,ingredient_type',
+            ])
+            ->get()
+            ->sort(function ($a, $b) {
+                return [$a->variant->name ?? '', $a->intensity->code ?? '', $a->ingredient->name ?? '']
+                   <=> [$b->variant->name ?? '', $b->intensity->code ?? '', $b->ingredient->name ?? ''];
+            })
+            ->values();
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+
+        // Style helper.
+        $titleStyle = [
+            'font'      => ['bold' => true, 'size' => 14, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => '7C3AED']],
+            'alignment' => ['horizontal' => 'center', 'vertical' => 'center'],
+        ];
+        $headStyle = [
+            'font'      => ['bold' => true, 'size' => 10, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => '4338CA']],
+            'alignment' => ['horizontal' => 'center', 'vertical' => 'center'],
+            'borders'   => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'C7D2FE']]],
+        ];
+        $groupStyle = [
+            'font' => ['bold' => true, 'size' => 10, 'color' => ['rgb' => '1E293B']],
+            'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'EDE9FE']],
+        ];
+        $typeLabel = ['oil' => 'Bibit/Oil', 'alcohol' => 'Alkohol', 'other' => 'Lainnya'];
+
+        // ── SHEET 1: FORMULA DASAR (base 30 ml) ──────────────────────────────
+        $s1 = $spreadsheet->getActiveSheet();
+        $s1->setTitle('Formula Dasar');
+
+        $s1->setCellValue('A1', 'FORMULA & RESEP PARFUM — BASE 30 ML');
+        $s1->mergeCells('A1:F1');
+        $s1->getStyle('A1')->applyFromArray($titleStyle);
+        $s1->getRowDimension(1)->setRowHeight(24);
+
+        $s1->setCellValue('A2', 'Diekspor: ' . now()->format('d/m/Y H:i') . ' WIB');
+        $s1->mergeCells('A2:F2');
+        $s1->getStyle('A2')->getFont()->setItalic(true)->setSize(9)->getColor()->setRGB('64748B');
+
+        $headers = ['No', 'Bahan', 'Tipe', 'Base Qty', 'Satuan', 'Catatan'];
+        foreach ($headers as $i => $h) {
+            $s1->setCellValue(chr(65 + $i) . '4', $h);
+        }
+        $s1->getStyle('A4:F4')->applyFromArray($headStyle);
+
+        $row = 5;
+        $grouped = $recipes->groupBy(fn ($r) => ($r->variant->id ?? '') . '|' . ($r->intensity->id ?? ''));
+
+        foreach ($grouped as $items) {
+            $first    = $items->first();
+            $vName    = trim(($first->variant->name ?? '—') . ' (' . ($first->variant->code ?? '?') . ')');
+            $iName    = ($first->intensity->code ?? '—') . ' — ' . ($first->intensity->name ?? '');
+            $totalBase = $items->sum(fn ($r) => (float) $r->base_quantity);
+
+            // Baris group header (variant + intensity).
+            $s1->setCellValue('A' . $row, $vName . '  •  ' . $iName);
+            $s1->mergeCells("A{$row}:F{$row}");
+            $s1->getStyle("A{$row}:F{$row}")->applyFromArray($groupStyle);
+            $row++;
+
+            $no = 1;
+            foreach ($items as $r) {
+                $type = $r->ingredient->category->ingredient_type ?? 'other';
+                $s1->setCellValue('A' . $row, $no++);
+                $s1->setCellValue('B' . $row, $r->ingredient->name ?? '—');
+                $s1->setCellValue('C' . $row, $typeLabel[$type] ?? ucfirst($type));
+                $s1->setCellValue('D' . $row, (float) $r->base_quantity);
+                $s1->setCellValue('E' . $row, $r->unit ?? 'ml');
+                $s1->setCellValue('F' . $row, $r->notes ?? '');
+                $s1->getStyle("A{$row}:F{$row}")->applyFromArray([
+                    'borders' => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'E2E8F0']]],
+                ]);
+                $s1->getStyle("A{$row}")->getAlignment()->setHorizontal('center');
+                $s1->getStyle("D{$row}")->getAlignment()->setHorizontal('right');
+                $row++;
+            }
+
+            // Baris total base per kombinasi.
+            $s1->setCellValue('C' . $row, 'TOTAL');
+            $s1->setCellValue('D' . $row, $totalBase);
+            $s1->setCellValue('E' . $row, $first->unit ?? 'ml');
+            $s1->getStyle("A{$row}:F{$row}")->getFont()->setBold(true);
+            $s1->getStyle("C{$row}")->getAlignment()->setHorizontal('right');
+            $s1->getStyle("D{$row}")->getAlignment()->setHorizontal('right');
+            $s1->getStyle("A{$row}:F{$row}")->getFill()
+               ->setFillType('solid')->getStartColor()->setRGB('F1F5F9');
+            $row += 2; // spasi antar group
+        }
+
+        if ($recipes->isEmpty()) {
+            $s1->setCellValue('A5', 'Belum ada data resep.');
+            $s1->mergeCells('A5:F5');
+        }
+
+        foreach (range('A', 'F') as $col) {
+            $s1->getColumnDimension($col)->setAutoSize(true);
+        }
+        $s1->freezePane('A5');
+
+        // ── SHEET 2: SKALA PER UKURAN ────────────────────────────────────────
+        $s2 = $spreadsheet->createSheet();
+        $s2->setTitle('Skala per Ukuran');
+
+        $s2->setCellValue('A1', 'SKALA RESEP PER UKURAN BOTOL');
+        $s2->mergeCells('A1:G1');
+        $s2->getStyle('A1')->applyFromArray($titleStyle);
+        $s2->getRowDimension(1)->setRowHeight(24);
+
+        $h2 = ['Varian', 'Intensitas', 'Ukuran', 'Bahan', 'Tipe', 'Qty', 'Satuan'];
+        foreach ($h2 as $i => $h) {
+            $s2->setCellValue(chr(65 + $i) . '3', $h);
+        }
+        $s2->getStyle('A3:G3')->applyFromArray($headStyle);
+
+        $row2 = 4;
+        foreach ($grouped as $items) {
+            $first   = $items->first();
+            $recipesForCombo = $items; // sudah punya ingredient loaded
+            $vLabel  = trim(($first->variant->name ?? '—') . ' (' . ($first->variant->code ?? '?') . ')');
+            $iLabel  = $first->intensity->code ?? '—';
+
+            $sizes = IntensitySizeQuantity::with('size')
+                ->where('intensity_id', $first->intensity_id)
+                ->where('is_active', true)
+                ->get()
+                ->sortBy(fn ($q) => $q->size->volume_ml ?? 0);
+
+            foreach ($sizes as $sq) {
+                $sizeLabel = ($sq->size->name ?? '') . ' (' . ($sq->size->volume_ml ?? '?') . ' ml)';
+                foreach ($this->buildScaledIngredients($recipesForCombo, $sq) as $ing) {
+                    $s2->setCellValue('A' . $row2, $vLabel);
+                    $s2->setCellValue('B' . $row2, $iLabel);
+                    $s2->setCellValue('C' . $row2, $sizeLabel);
+                    $s2->setCellValue('D' . $row2, $ing['name']);
+                    $s2->setCellValue('E' . $row2, $typeLabel[$ing['ingredient_type']] ?? ucfirst($ing['ingredient_type']));
+                    $s2->setCellValue('F' . $row2, (float) $ing['scaled_quantity']);
+                    $s2->setCellValue('G' . $row2, $ing['unit'] ?? 'ml');
+                    $s2->getStyle("F{$row2}")->getAlignment()->setHorizontal('right');
+                    $s2->getStyle("A{$row2}:G{$row2}")->applyFromArray([
+                        'borders' => ['allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'E2E8F0']]],
+                    ]);
+                    $row2++;
+                }
+            }
+        }
+
+        if ($row2 === 4) {
+            $s2->setCellValue('A4', 'Belum ada skala ukuran aktif.');
+            $s2->mergeCells('A4:G4');
+        }
+
+        foreach (range('A', 'G') as $col) {
+            $s2->getColumnDimension($col)->setAutoSize(true);
+        }
+        $s2->freezePane('A4');
+
+        $spreadsheet->setActiveSheetIndex(0);
+
+        $filename = 'Formula_Resep_' . now()->format('Ymd_His') . '.xlsx';
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    // =========================================================================
     // CREATE
     // =========================================================================
 

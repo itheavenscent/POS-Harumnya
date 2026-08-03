@@ -254,6 +254,22 @@ class CashDrawerController extends Controller
             ->with('user:id,name')
             ->get();
 
+        // Kas bersih dari penjualan tunai (amount dikurangi kembalian).
+        $cashSales = (float) DB::table('sale_payments')
+            ->join('sales', 'sale_payments.sale_id', '=', 'sales.id')
+            ->where('sales.cash_drawer_id', $drawer->id)
+            ->where('sales.status', 'completed')
+            ->where('sale_payments.payment_method_type', 'cash')
+            ->sum(DB::raw('sale_payments.amount - sales.change_amount'));
+
+        $totalCashIn  = (float) $cashTransactions->where('type', 'cash_in')->sum('amount');
+        $totalCashOut = (float) $cashTransactions->where('type', 'cash_out')->sum('amount');
+
+        // Sisa cash di laci = modal awal + penjualan tunai + kas masuk - kas keluar.
+        // Sama dengan expected_ending_cash saat tutup shift; dihitung live agar
+        // shift yang masih buka pun menampilkan angka konsisten.
+        $expectedCash = (float) $drawer->starting_cash + $cashSales + $totalCashIn - $totalCashOut;
+
         $paymentSummary = DB::table('sale_payments')
             ->join('sales', 'sale_payments.sale_id', '=', 'sales.id')
             ->join('payment_methods', 'sale_payments.payment_method_id', '=', 'payment_methods.id')
@@ -276,8 +292,11 @@ class CashDrawerController extends Controller
             'categories' => $categorySummary,
             'items' => $itemsSold,
             'cash_transactions' => $cashTransactions,
-            'total_cash_in' => (float)$cashTransactions->where('type', 'cash_in')->sum('amount'),
-            'total_cash_out' => (float)$cashTransactions->where('type', 'cash_out')->sum('amount'),
+            'total_cash_in' => $totalCashIn,
+            'total_cash_out' => $totalCashOut,
+            'cash_sales' => $cashSales,
+            'starting_cash' => (float) $drawer->starting_cash,
+            'expected_cash' => $expectedCash,
             'payments' => $paymentSummary,
         ];
     }

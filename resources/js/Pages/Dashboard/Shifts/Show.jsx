@@ -271,6 +271,39 @@ export default function Show({ drawer, summary, isAdmin }) {
                                     </tbody>
                                 </table>
                             </div>
+
+                            {/* Rekonsiliasi Sisa Cash */}
+                            <div className="px-5 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1.5">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-slate-500 dark:text-slate-400">Modal Awal</span>
+                                    <span className="font-bold text-slate-800 dark:text-white">{fmt(summary.starting_cash)}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-slate-500 dark:text-slate-400">Penjualan Tunai</span>
+                                    <span className="font-bold text-slate-800 dark:text-white">+ {fmt(summary.cash_sales)}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-slate-500 dark:text-slate-400">Kas Masuk</span>
+                                    <span className="font-bold text-emerald-600">+ {fmt(summary.total_cash_in)}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-slate-500 dark:text-slate-400">Kas Keluar</span>
+                                    <span className="font-bold text-rose-600">- {fmt(summary.total_cash_out)}</span>
+                                </div>
+                                <div className="h-px bg-slate-200 dark:bg-slate-700 my-2" />
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">Sisa Cash (Laci)</span>
+                                    <span className="text-xl font-black text-cyan-600">{fmt(summary.expected_cash)}</span>
+                                </div>
+                                {drawer.status === 'closed' && (
+                                    <div className="flex justify-between text-xs pt-1">
+                                        <span className="text-slate-400">Cash Fisik Saat Tutup</span>
+                                        <span className={`font-bold ${Number(drawer.difference) === 0 ? 'text-slate-500' : Number(drawer.difference) > 0 ? 'text-cyan-600' : 'text-rose-600'}`}>
+                                            {fmt(drawer.actual_ending_cash)} ({Number(drawer.difference) >= 0 ? '+' : ''}{fmt(drawer.difference)})
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* Breakdown by Category */}

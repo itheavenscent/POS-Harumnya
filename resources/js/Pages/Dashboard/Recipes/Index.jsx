@@ -4,7 +4,7 @@ import { Head, Link, router } from "@inertiajs/react";
 import {
     IconPlus, IconEye, IconEdit, IconTrash, IconFlask,
     IconChevronDown, IconChevronUp, IconAlertTriangle, IconCircleCheck,
-    IconFileImport, IconDownload, IconSparkles, IconSearch,
+    IconFileImport, IconDownload, IconSparkles, IconSearch, IconFileSpreadsheet,
     IconX, IconDroplet, IconLock, IconPackage, IconRefresh,
     IconChevronRight, IconUsers, IconAdjustments,
 } from "@tabler/icons-react";
@@ -571,6 +571,13 @@ export default function Index({ variantRecipes }) {
                             className="h-11 px-4 bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-[9px] text-xs font-bold hover:bg-slate-50 flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer flex-shrink-0"
                         >
                             <IconDownload size={15} /> Template
+                        </a>
+
+                        <a
+                            href={route("recipes.export")}
+                            className="h-11 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[9px] text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer flex-shrink-0"
+                        >
+                            <IconFileSpreadsheet size={15} /> Export Excel
                         </a>
 
                         <Link
