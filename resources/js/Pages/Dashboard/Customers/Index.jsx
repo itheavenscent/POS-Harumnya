@@ -19,17 +19,23 @@ export default function Index({ customers, filters }) {
     const [search, setSearch] = useState(filters.search || "");
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            router.get(route("customers.index"), { ...filters, search }, {
-                preserveState: true,
-                replace: true,
-            });
-        }, 400);
-        return () => clearTimeout(timer);
+        if ((search || "") !== (filters.search || "")) {
+            const timer = setTimeout(() => {
+                const newFilters = { ...filters, search };
+                delete newFilters.page;
+                router.get(route("customers.index"), newFilters, {
+                    preserveState: true,
+                    replace: true,
+                });
+            }, 400);
+            return () => clearTimeout(timer);
+        }
     }, [search]);
 
     const handleFilter = (key, value) => {
-        router.get(route("customers.index"), { ...filters, [key]: value }, {
+        const newFilters = { ...filters, [key]: value };
+        delete newFilters.page;
+        router.get(route("customers.index"), newFilters, {
             preserveState: true,
             replace: true,
         });
