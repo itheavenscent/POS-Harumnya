@@ -1,0 +1,99 @@
+name: Deploy to Production
+
+# Promote MANUAL. Tidak jalan otomatis saat push.
+# Jalankan dari: Actions → "Deploy to Production" → Run workflow →
+# paste commit SHA yang SUDAH ditest di staging.
+# Image yang dipakai = image SHA yang sama persis dgn yang diuji di staging
+# (tidak build ulang), jadi production dapat artefak identik.
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_sha:
+        description: 'Commit SHA yang sudah ditest di staging (full 40-char SHA)'
+        required: true
+        type: string
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    # Opsional: aktifkan required reviewers di Settings → Environments → production
+    # supaya deploy prod perlu approval manual.
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Validasi format SHA
+        run: |
+          if ! echo "${{ inputs.git_sha }}" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "ERROR: git_sha harus full 40-char commit SHA (lihat ringkasan job Staging)."
+            exit 1
+          fi
+
+      - name: Deploy to Production via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GIT_SHA: ${{ inputs.git_sha }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_ACTOR: ${{ github.actor }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: GIT_SHA,GHCR_TOKEN,GHCR_ACTOR
+          script: |
+            set -e
+            IMAGE="ghcr.io/itheavenscent/pos-harumnya"
+
+            cd /var/www/POS-Harumnya
+
+            # Checkout commit yang sudah ditest di staging.
+            git fetch origin
+            git checkout -f "$GIT_SHA"
+
+            # Login GHCR & pull image SHA yang sama dgn staging.
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_ACTOR" --password-stdin
+            docker pull "$IMAGE:$GIT_SHA"
+            # compose production mereferensi :latest — retag lokal ke :latest.
+            docker tag "$IMAGE:$GIT_SHA" "$IMAGE:latest"
+
+            # Ekstrak static assets dari image ke host (untuk nginx).
+            docker run --rm --user root -v $(pwd)/public:/host-public "$IMAGE:$GIT_SHA" \
+              sh -c "rm -rf /host-public/build && cp -r /var/www/public/build /host-public/ && chmod -R 755 /host-public/build"
+
+            mkdir -p logs/nginx logs/nginx-proxy storage bootstrap/cache \
+                     storage/app/public storage/framework/cache/data \
+                     storage/framework/sessions storage/framework/views storage/logs
+
+            if [ ! -f .env ]; then
+              echo "ERROR: .env production tidak ada!" && exit 1
+            fi
+
+            docker compose up -d --remove-orphans
+
+            echo "Menunggu database..."
+            sleep 15
+
+            if ! grep -q "^APP_KEY=base64:" .env; then
+              docker compose exec -T --user root app php artisan key:generate --force
+              docker compose exec -T --user root app chown www-data:www-data /var/www/.env
+            fi
+
+            docker compose exec -T --user root app chown -R www-data:www-data \
+              /var/www/storage /var/www/bootstrap/cache
+            docker compose exec -T --user root app chmod -R 775 \
+              /var/www/storage /var/www/bootstrap/cache
+
+            docker compose exec -T app php artisan migrate --force
+            docker compose exec -T app php artisan storage:link --force
+            docker compose exec -T app php artisan optimize:clear
+            docker compose exec -T app php artisan optimize
+
+            echo "Production deploy selesai untuk commit $GIT_SHA"
+            docker compose ps
