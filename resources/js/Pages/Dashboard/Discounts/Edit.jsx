@@ -569,9 +569,9 @@ export default function Edit({ discount, stores, variants, intensities, sizes, r
                                             ))}
                                         </div>
                                         {data.store_ids.length === 0 && (
-                                            <div className="mt-3 flex items-start gap-2 text-xs text-slate-400 dark:text-slate-500">
+                                            <div className="mt-3 flex items-start gap-2 text-xs text-amber-600 dark:text-amber-500">
                                                 <IconInfoCircle size={13} className="flex-shrink-0 mt-0.5" />
-                                                Kosong = berlaku di semua toko
+                                                Belum ada toko dipilih — promo tidak akan tampil di toko manapun. Pilih minimal satu toko.
                                             </div>
                                         )}
                                     </CardBody>

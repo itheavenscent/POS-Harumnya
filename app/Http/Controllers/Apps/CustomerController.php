@@ -106,6 +106,7 @@ class CustomerController extends Controller
             ]);
 
             Customer::query()
+                ->select('customers.*')
                 ->selectRaw('(SELECT MAX(s.sold_at) FROM sales s WHERE s.customer_id = customers.id AND s.status = \'completed\' AND s.deleted_at IS NULL) AS last_visit')
                 ->selectRaw('(SELECT COALESCE(SUM(s.points_redeemed), 0) FROM sales s WHERE s.customer_id = customers.id AND s.deleted_at IS NULL) AS total_redeem')
                 ->selectRaw('(SELECT st.name FROM sales s JOIN stores st ON st.id = s.store_id WHERE s.customer_id = customers.id AND s.deleted_at IS NULL ORDER BY s.sold_at ASC LIMIT 1) AS origin_store_name')

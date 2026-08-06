@@ -151,12 +151,17 @@ class DiscountService
      */
     private function isDiscountApplicableToStore($discount, $storeId)
     {
-        // If no specific stores set, applies to all
+        // Promo tanpa baris store sama sekali = tidak tampil di toko manapun.
         if ($discount->stores->isEmpty()) {
+            return false;
+        }
+
+        // Baris store_id=NULL (seeder "semua toko") = berlaku global.
+        if ($discount->stores->contains('store_id', null)) {
             return true;
         }
 
-        // Check if this store is in the list
+        // Selain itu, hanya tampil jika toko ini di-assign.
         return $discount->stores->contains('store_id', $storeId);
     }
 

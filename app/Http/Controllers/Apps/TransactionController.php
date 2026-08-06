@@ -1593,10 +1593,10 @@ class TransactionController extends Controller
         $discounts = DiscountType::where('is_active', true)
             ->where(fn($q) => $q->whereNull('start_date')->orWhereDate('start_date', '<=', today()))
             ->where(fn($q) => $q->whereNull('end_date')->orWhereDate('end_date', '>=', today()))
-            // Promo berlaku semua toko jika tak punya baris store SPESIFIK.
-            // Baris discount_stores dgn store_id=NULL (seeder "semua toko") harus
-            // tetap dianggap global — cek whereNotNull di dalam whereDoesntHave.
-            ->where(fn($q) => $q->whereDoesntHave('stores', fn($sq) => $sq->whereNotNull('store_id'))
+            // Promo hanya tampil di toko yang di-assign.
+            // Baris discount_stores dgn store_id=NULL (seeder "semua toko") tetap global.
+            // Promo TANPA baris store sama sekali = tidak tampil di toko manapun.
+            ->where(fn($q) => $q->whereHas('stores', fn($sq) => $sq->whereNull('store_id'))
                 ->orWhereHas('stores', fn($sq) => $sq->where('store_id', $storeId)))
             ->with(['requirements.packagingMaterial:id,name,code', 'rewards.pools', 'rewards.pools.rewardItem', 'rewards.intensity', 'rewards.size', 'rewards.rewardItem', 'rewards.packagingMaterial:id,name,code'])
             ->orderByDesc('priority')
@@ -2115,9 +2115,9 @@ class TransactionController extends Controller
                 ->orWhereDate('start_date', '<=', today()))
             ->where(fn($q) => $q->whereNull('end_date')
                 ->orWhereDate('end_date', '>=', today()))
-            // Promo berlaku semua toko jika tak punya baris store SPESIFIK
-            // (store_id=NULL dari seeder tetap dianggap global).
-            ->where(fn($q) => $q->whereDoesntHave('stores', fn($sq) => $sq->whereNotNull('store_id'))
+            // Promo hanya tampil di toko yang di-assign (store_id=NULL dari seeder tetap global).
+            // Promo TANPA baris store sama sekali = tidak tampil.
+            ->where(fn($q) => $q->whereHas('stores', fn($sq) => $sq->whereNull('store_id'))
                 ->orWhereHas('stores', fn($sq) => $sq->where('store_id', $storeId)))
             ->with(['requirements', 'applicabilities'])
             ->orderByDesc('priority')
