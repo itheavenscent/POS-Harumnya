@@ -109,15 +109,15 @@ jobs:
               docker compose -p pos-staging -f docker-compose.staging.yml exec -T --user root staging-app chown www-data:www-data /var/www/.env
             fi
 
-            docker compose -p pos-staging -f docker-compose.staging.yml exec -T staging-app php artisan migrate --force
-            docker compose -p pos-staging -f docker-compose.staging.yml exec -T staging-app php artisan storage:link --force
-            docker compose -p pos-staging -f docker-compose.staging.yml exec -T staging-app php artisan optimize:clear
-            docker compose -p pos-staging -f docker-compose.staging.yml exec -T staging-app php artisan optimize
-
             docker compose -p pos-staging -f docker-compose.staging.yml exec -T --user root staging-app \
               chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
             docker compose -p pos-staging -f docker-compose.staging.yml exec -T --user root staging-app \
               chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+
+            docker compose -p pos-staging -f docker-compose.staging.yml exec -T staging-app php artisan migrate --force
+            docker compose -p pos-staging -f docker-compose.staging.yml exec -T staging-app php artisan storage:link --force
+            docker compose -p pos-staging -f docker-compose.staging.yml exec -T staging-app php artisan optimize:clear
+            docker compose -p pos-staging -f docker-compose.staging.yml exec -T staging-app php artisan optimize
 
             echo "Staging deploy selesai untuk commit $GIT_SHA"
             docker compose -p pos-staging -f docker-compose.staging.yml ps

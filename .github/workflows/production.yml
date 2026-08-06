@@ -85,15 +85,15 @@ jobs:
               docker compose exec -T --user root app chown www-data:www-data /var/www/.env
             fi
 
-            docker compose exec -T app php artisan migrate --force
-            docker compose exec -T app php artisan storage:link --force
-            docker compose exec -T app php artisan optimize:clear
-            docker compose exec -T app php artisan optimize
-
             docker compose exec -T --user root app chown -R www-data:www-data \
               /var/www/storage /var/www/bootstrap/cache
             docker compose exec -T --user root app chmod -R 775 \
               /var/www/storage /var/www/bootstrap/cache
+
+            docker compose exec -T app php artisan migrate --force
+            docker compose exec -T app php artisan storage:link --force
+            docker compose exec -T app php artisan optimize:clear
+            docker compose exec -T app php artisan optimize
 
             echo "Production deploy selesai untuk commit $GIT_SHA"
             docker compose ps
