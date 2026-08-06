@@ -31,12 +31,8 @@ export default function Show({ drawer, summary, isAdmin }) {
             year: "numeric",
         }) + " at " + new Date(date).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
 
-    const { props: { auth } } = usePage();
-    const isUserCashier = auth.roles.includes('cashier') && !auth.super;
-    const Layout = !isUserCashier ? AppLayout : POSLayout;
-
     return (
-        <Layout>
+        <>
             <Head title={`Detail Shift - ${drawer.cashier?.name}`} />
             <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden">
                 {/* Header Section */}
@@ -388,6 +384,15 @@ export default function Show({ drawer, summary, isAdmin }) {
                     </div>
                 </div>
             </div>
-        </Layout>
+        </>
     );
 }
+
+Show.layout = (page) => {
+    const isUserCashier = page.props.auth?.roles?.includes('cashier') && !page.props.auth?.super;
+    return isUserCashier ? (
+        <POSLayout children={page} />
+    ) : (
+        <AppLayout children={page} />
+    );
+};

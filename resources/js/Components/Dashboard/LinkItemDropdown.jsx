@@ -1,11 +1,22 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { Link, usePage } from '@inertiajs/react'
 import { IconChevronDown, IconChevronUp, IconCornerDownRight } from '@tabler/icons-react'
 
 export default function LinkItemDropdown({ icon, title, data, access, sidebarOpen, ...props }) {
     const { url } = usePage();
-    const [isOpen, setIsOpen] = useState(false);
     const { auth } = usePage().props;
+
+    const isChildActive = useMemo(() => {
+        return data?.some(item => url === item.href || url.startsWith(item.href));
+    }, [url, data]);
+
+    const [isOpen, setIsOpen] = useState(isChildActive);
+
+    useEffect(() => {
+        if (isChildActive) {
+            setIsOpen(true);
+        }
+    }, [isChildActive]);
 
     const hasAccess = auth.super === true || access === true;
     if (!hasAccess) return null;

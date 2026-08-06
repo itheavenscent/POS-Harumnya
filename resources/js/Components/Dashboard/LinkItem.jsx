@@ -35,7 +35,7 @@ export default function LinkItem({ href, icon, access, title, sidebarOpen, exact
                 data-active={String(isActive)}
                 className={`sb-link-exp flex items-center gap-[10px] mx-3 my-[2px] px-[10px] py-[8px] rounded-[8px] no-underline text-[14px] transition-all duration-200 cursor-pointer ${
                     isActive
-                        ? 'bg-white dark:bg-slate-800 border border-[#f7f7f7] dark:border-slate-750 font-semibold text-slate-900 dark:text-white shadow-[0px_1px_3px_rgba(15,23,42,0.08),inset_0px_2px_2px_rgba(221,221,221,0.15),0px_0px_0px_1px_rgba(132,132,132,0.15)] shadow-sm'
+                        ? 'bg-white dark:bg-slate-800 font-semibold text-slate-900 dark:text-white shadow-[0px_0px_0px_1px_rgba(225,225,225,1.00)] outline outline-1 outline-offset-[-1px] outline-neutral-100 dark:shadow-[0px_0px_0px_1px_rgba(51,65,85,1.00)] dark:outline-slate-700'
                         : 'border border-transparent font-medium text-[#4d5360] dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-white'
                 }`}
                 {...props}
@@ -60,7 +60,7 @@ export default function LinkItem({ href, icon, access, title, sidebarOpen, exact
             data-active={String(isActive)}
             className={`sb-link-col flex items-center justify-center mx-3 my-[3px] p-[9px] rounded-[8px] transition-all duration-200 ${
                 isActive
-                    ? 'bg-white dark:bg-slate-800 border border-[#f7f7f7] dark:border-slate-750 text-slate-900 dark:text-white shadow-[0px_1px_3px_rgba(15,23,42,0.08),inset_0px_2px_2px_rgba(221,221,221,0.15),0px_0px_0px_1px_rgba(132,132,132,0.15)]'
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-[0px_0px_0px_1px_rgba(225,225,225,1.00)] outline outline-1 outline-offset-[-1px] outline-neutral-100 dark:shadow-[0px_0px_0px_1px_rgba(51,65,85,1.00)] dark:outline-slate-700'
                     : 'text-slate-450 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-white'
             }`}
             {...props}

@@ -18,6 +18,32 @@ import {
     ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts';
 
+// ─── CUSTOM ACTIVE DOT FOR RECHARTS ──────────────────────────────────────────
+const CustomActiveDot = (props) => {
+    const { cx, cy } = props;
+    if (cx === undefined || cy === undefined) return null;
+    return (
+        <foreignObject x={cx - 24} y={cy - 24} width={48} height={48} className="overflow-visible">
+            <div className="w-full h-full flex items-center justify-center relative">
+                {/* Outer Ripple Ring 2 */}
+                <div className="absolute size-[38px] rounded-full border border-[#F2A196]/20 dark:border-[#F2A196]/10 pointer-events-none" />
+
+                {/* Inner Ripple Ring 1 */}
+                <div className="absolute size-[26px] rounded-full border border-[#F2A196]/40 dark:border-[#F2A196]/20 pointer-events-none" />
+
+                {/* Center Dot with linear gradient border */}
+                <div
+                    className="size-4 rounded-full shadow-[0px_5px_25px_0px_rgba(0,0,0,0.10)] shadow-[0px_0px_0px_2px_rgba(255,255,255,1.00)] z-10"
+                    style={{
+                        border: '6px solid transparent',
+                        background: 'linear-gradient(white, white) padding-box, linear-gradient(to bottom, #F2A196, #E85542) border-box',
+                    }}
+                />
+            </div>
+        </foreignObject>
+    );
+};
+
 // ─── SELF-CONTAINED COMPONENTS (replaces @/Components/Dashboard/*) ───────────
 function Card({ children, className = '', style }) {
     return (
@@ -35,10 +61,14 @@ function Widget({ title, subtitle, icon, total }) {
         <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex flex-col gap-[14px] items-start p-[16px] rounded-[16px] w-full shadow-sm">
             <div className="flex gap-[12px] items-center w-full">
                 <div
-                    className="size-9 p-2 bg-gradient-to-b from-[#f4f4f4] to-[#fefefe] dark:from-slate-800 dark:to-slate-900 rounded-[10px] border-[3px] border-solid border-white dark:border-slate-950 inline-flex justify-center items-center overflow-hidden flex-shrink-0"
-                    style={{ boxShadow: '0px 0px 0.225px 0.225px rgba(0,0,0,0.07), 0px 0px 0.225px 0.675px rgba(0,0,0,0.05), 0px 2.698px 2.923px -1.349px rgba(0,0,0,0.25), 0px 0.899px 3.598px 0.899px rgba(0,0,0,0.12), 0px 0px 0px 4px #f2f2f2' }}
+                    className="size-9 p-2 relative bg-gradient-to-b from-teal-400 to-cyan-600 rounded-[8px] outline outline-[0.50px] outline-offset-[-0.50px] outline-teal-200/60 inline-flex justify-center items-center gap-2.5 overflow-hidden flex-shrink-0"
+                    style={{
+                        boxShadow:
+                            '0px 0px 0px 0.5px rgba(44, 156, 168, 1.00), 0px 0px 0.224852px 0.224852px rgba(0,0,0,0.07), inset 0px 2px 3px 0px rgba(72, 208, 223, 0.50)',
+                    }}
                 >
-                    <div className="size-5 relative overflow-hidden flex items-center justify-center text-slate-600 dark:text-slate-350">
+                    <div className="w-20 h-9 left-[-22px] top-[33px] absolute bg-gradient-to-r from-teal-200 to-teal-200/0 rounded-full blur-[5px] pointer-events-none" />
+                    <div className="size-5 relative z-10 overflow-hidden flex items-center justify-center text-white">
                         {icon}
                     </div>
                 </div>
@@ -240,11 +270,15 @@ function KpiCard({ label, value, sub, icon: Icon, accent = C.primary }) {
             {/* Icon + Label row */}
             <div className="flex gap-[12px] items-start shrink-0">
                 <div
-                    className="size-9 p-2 bg-gradient-to-b from-[#f4f4f4] to-[#fefefe] dark:from-slate-800 dark:to-slate-900 rounded-[10px] border-[3px] border-solid border-white dark:border-slate-950 inline-flex justify-center items-center overflow-hidden flex-shrink-0"
-                    style={{ boxShadow: '0px 0px 0.225px 0.225px rgba(0,0,0,0.07), 0px 0px 0.225px 0.675px rgba(0,0,0,0.05), 0px 2.698px 2.923px -1.349px rgba(0,0,0,0.25), 0px 0.899px 3.598px 0.899px rgba(0,0,0,0.12), 0px 0px 0px 4px #f2f2f2' }}
+                    className="size-9 p-2 relative bg-gradient-to-b from-teal-400 to-cyan-600 rounded-[8px] outline outline-[0.50px] outline-offset-[-0.50px] outline-teal-200/60 inline-flex justify-center items-center gap-2.5 overflow-hidden flex-shrink-0"
+                    style={{
+                        boxShadow:
+                            '0px 0px 0px 0.5px rgba(44, 156, 168, 1.00), 0px 0px 0.224852px 0.224852px rgba(0,0,0,0.07), inset 0px 2px 3px 0px rgba(72, 208, 223, 0.50)',
+                    }}
                 >
-                    <div className="size-5 relative overflow-hidden flex items-center justify-center">
-                        {Icon && <Icon size={18} style={{ color: accent }} strokeWidth={1.8} />}
+                    <div className="w-20 h-9 left-[-22px] top-[33px] absolute bg-gradient-to-r from-teal-200 to-teal-200/0 rounded-full blur-[5px] pointer-events-none" />
+                    <div className="size-5 relative z-10 overflow-hidden flex items-center justify-center text-white">
+                        {Icon && <Icon size={18} strokeWidth={1.8} className="text-white" />}
                     </div>
                 </div>
                 <div className="flex flex-col justify-center h-[36px]">
@@ -252,7 +286,7 @@ function KpiCard({ label, value, sub, icon: Icon, accent = C.primary }) {
                 </div>
             </div>
             {/* Value row */}
-            <div className="flex flex-col gap-[4px] items-start leading-[1.4] overflow-hidden w-full">
+            <div className="flex flex-col gap-[14px] items-start leading-[1.4] overflow-hidden w-full">
                 <p className="font-bold text-[26px] text-slate-900 dark:text-white leading-none truncate w-full">{value}</p>
                 {sub && <div className="font-medium text-[14px] text-slate-500 dark:text-slate-400 leading-tight w-full">{sub}</div>}
             </div>
@@ -775,9 +809,9 @@ export default function Dashboard({
                                 </div>
                                 <div className="flex gap-[14px] items-center flex-shrink-0">
                                     {[
-                                        { label: 'Revenue', color: C.primary },
-                                        { label: 'Profit',  color: C.success },
-                                        { label: 'COGS',    color: '#4A3AFF' },
+                                        { label: 'Revenue', color: '#ff718b' },
+                                        { label: 'Profit',  color: '#0f894d' },
+                                        { label: 'COGS',    color: '#4a3aff' },
                                     ].map(({ label, color }) => (
                                         <div key={label} className="flex gap-[6px] items-center">
                                             <span className="size-[7px] rounded-full flex-shrink-0" style={{ background: color }} />
@@ -804,7 +838,7 @@ export default function Dashboard({
                                         <Tooltip
                                             content={({ active, payload, label }) => {
                                                 if (!active || !payload?.length) return null;
-                                                const colors = { Revenue: C.primary, Profit: C.success, COGS: '#4A3AFF' };
+                                                const colors = { Revenue: '#ff718b', Profit: '#0f894d', COGS: '#4a3aff' };
                                                 return (
                                                     <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 rounded-[10px] px-[12px] py-[10px] flex flex-col gap-[8px] min-w-[150px]" style={{ boxShadow: '0px 6px 18px -4px rgba(15,23,41,0.14)' }}>
                                                         <p className="font-semibold text-[14px] text-slate-900 dark:text-white leading-[1.4] whitespace-nowrap">{label}</p>
@@ -821,9 +855,9 @@ export default function Dashboard({
                                                 );
                                             }}
                                         />
-                                        <Line type="monotone" dataKey="revenue" name="Revenue" stroke={C.primary}  strokeWidth={2.5} dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: 'white', fill: C.primary }} />
-                                        <Line type="monotone" dataKey="profit"  name="Profit"  stroke={C.success}  strokeWidth={2}   dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: 'white', fill: C.success }} />
-                                        <Line type="monotone" dataKey="cogs"    name="COGS"    stroke="#4A3AFF"    strokeWidth={2}   dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: 'white', fill: '#4A3AFF' }} />
+                                        <Line type="monotone" dataKey="revenue" name="Revenue" stroke="#ff718b" strokeWidth={2.5} dot={false} activeDot={<CustomActiveDot />} />
+                                        <Line type="monotone" dataKey="profit"  name="Profit"  stroke="#0f894d" strokeWidth={2}   dot={false} activeDot={<CustomActiveDot />} />
+                                        <Line type="monotone" dataKey="cogs"    name="COGS"    stroke="#4a3aff" strokeWidth={2}   dot={false} activeDot={<CustomActiveDot />} />
                                     </LineChart>
                                 </ResponsiveContainer>
                             ) : <EmptyState message="Belum ada data tren" icon="📈" />}

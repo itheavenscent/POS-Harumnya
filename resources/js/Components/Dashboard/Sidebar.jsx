@@ -19,7 +19,14 @@ import Menu from "@/Utils/Menu";
 export default function Sidebar({ themeSwitcher, darkMode }) {
     const { auth } = usePage().props;
     const menuNavigation = Menu();
-    const [openSections, setOpenSections] = useState({});
+    const [openSections, setOpenSections] = useState(() => {
+        try {
+            const saved = localStorage.getItem("sidebarOpenSections");
+            return saved ? JSON.parse(saved) : {};
+        } catch (e) {
+            return {};
+        }
+    });
     const [mobileOpen, setMobileOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -50,8 +57,29 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
         });
     };
 
-    const toggleSection = (index) =>
-        setOpenSections((prev) => ({ ...prev, [index]: !prev[index] }));
+    const toggleSection = (index) => {
+        setOpenSections((prev) => {
+            const next = { ...prev, [index]: !prev[index] };
+            localStorage.setItem("sidebarOpenSections", JSON.stringify(next));
+            return next;
+        });
+    };
+
+    const navRef = React.useRef(null);
+
+    // Scroll the active link into view after every render
+    React.useEffect(() => {
+        const nav = navRef.current;
+        if (!nav) return;
+        // Wait one frame so the DOM has fully painted
+        const raf = requestAnimationFrame(() => {
+            const activeEl = nav.querySelector('[data-active="true"]');
+            if (activeEl) {
+                activeEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            }
+        });
+        return () => cancelAnimationFrame(raf);
+    });
 
     const closeMobile = () => {
         setMobileOpen(false);
@@ -87,16 +115,18 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
                     a[data-active="true"].sb-link-exp {
                         color: #0f172a !important;
                         background: #ffffff !important;
-                        border: 1px solid #f2f2f2 !important;
                         font-weight: 600 !important;
-                        box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.05), inset 0px 2px 2px rgba(221, 221, 221, 0.29), 0px 0px 0px 1px rgba(132, 132, 132, 0.2) !important;
+                        box-shadow: 0px 0px 0px 1px rgba(225, 225, 225, 1.00) !important;
+                        outline: 1px solid #f5f5f5 !important;
+                        outline-offset: -1px !important;
                     }
                     .dark a[data-active="true"].sb-link-exp {
                         color: #ffffff !important;
                         background: #1e293b !important;
-                        border: 1px solid #334155 !important;
                         font-weight: 600 !important;
-                        box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.05), inset 0px 2px 2px rgba(0, 0, 0, 0.2), 0px 0px 0px 1px rgba(255, 255, 255, 0.05) !important;
+                        box-shadow: 0px 0px 0px 1px rgba(51, 65, 85, 1.00) !important;
+                        outline: 1px solid #334155 !important;
+                        outline-offset: -1px !important;
                     }
                     a[data-active="true"].sb-link-exp .sb-icon {
                         background: transparent !important;
@@ -129,14 +159,16 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
                     a[data-active="true"].sb-link-col {
                         color: #0f172a !important;
                         background: #ffffff !important;
-                        border: 1px solid #f2f2f2 !important;
-                        box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.05), inset 0px 2px 2px rgba(221, 221, 221, 0.29), 0px 0px 0px 1px rgba(132, 132, 132, 0.2) !important;
+                        box-shadow: 0px 0px 0px 1px rgba(225, 225, 225, 1.00) !important;
+                        outline: 1px solid #f5f5f5 !important;
+                        outline-offset: -1px !important;
                     }
                     .dark a[data-active="true"].sb-link-col {
                         color: #ffffff !important;
                         background: #1e293b !important;
-                        border: 1px solid #334155 !important;
-                        box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.05), inset 0px 2px 2px rgba(0, 0, 0, 0.2), 0px 0px 0px 1px rgba(255, 255, 255, 0.05) !important;
+                        box-shadow: 0px 0px 0px 1px rgba(51, 65, 85, 1.00) !important;
+                        outline: 1px solid #334155 !important;
+                        outline-offset: -1px !important;
                     }
                     a[data-active="true"].sb-link-col .sb-icon {
                         background: transparent !important;
@@ -249,7 +281,7 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
 
 
                     {/* ── Nav ── */}
-                    <nav className="sb-scroll flex-1 min-h-0 overflow-y-auto py-2">
+                    <nav ref={navRef} className="sb-scroll flex-1 min-h-0 overflow-y-auto py-2">
                         {filteredMenu.map((section, index) => {
                             const hasPermission = section.details.some(d => d.permissions === true);
                             if (!hasPermission) return null;

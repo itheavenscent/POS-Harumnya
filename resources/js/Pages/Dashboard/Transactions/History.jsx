@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Head, router, Link } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import Pagination from "@/Components/Dashboard/Pagination";
@@ -49,12 +49,19 @@ const STATUS_LABEL = {
 };
 
 export default function History({ sales, filters, summary = {}, stores = [], isAdmin = false, canCancelSale = false, canPrint = false }) {
-    const [filterData,   setFilterData]   = useState({ ...defaultFilters, ...filters });
+    const [q,          setQ]          = useState(filters.q          || "");
+    const [dateFrom,   setDateFrom]   = useState(filters.date_from  || "");
+    const [dateTo,     setDateTo]     = useState(filters.date_to    || "");
+    const [status,     setStatus]     = useState(filters.status     || "");
+    const [storeId,    setStoreId]    = useState(filters.store_id   || "");
     const [showFilters,  setShowFilters]  = useState(false);
     const [selectedSale, setSelectedSale] = useState(null);
     const [showCancelSale, setShowCancelSale] = useState(false);
     const [cancelReason, setCancelReason]     = useState("");
     const [cancellingSale, setCancellingSale] = useState(false);
+
+    // Derived: current filter state as object
+    const filterData = { q, date_from: dateFrom, date_to: dateTo, status, store_id: storeId };
 
     const handleCancelSale = () => {
         if (!selectedSale || !cancelReason.trim()) return;
@@ -70,26 +77,24 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
         });
     };
 
-    useEffect(() => { setFilterData({ ...defaultFilters, ...filters }); }, [filters]);
-
-    const change = (f, v) => setFilterData(p => ({ ...p, [f]: v }));
-
     const applyFilters = (e) => {
         e.preventDefault();
-        router.get(route("transactions.history"), filterData, { preserveScroll: true, preserveState: true });
+        const f = { q, date_from: dateFrom, date_to: dateTo, status, store_id: storeId };
+        Object.keys(f).forEach(k => { if (!f[k]) delete f[k]; });
+        router.get(route("transactions.history"), f, { preserveScroll: true, preserveState: true, replace: true });
         setShowFilters(false);
     };
 
     const resetFilters = () => {
-        setFilterData(defaultFilters);
-        router.get(route("transactions.history"), defaultFilters, { preserveScroll: true, preserveState: true, replace: true });
+        setQ(""); setDateFrom(""); setDateTo(""); setStatus(""); setStoreId("");
+        router.get(route("transactions.history"), {}, { preserveState: false, replace: true });
     };
 
     const rows        = sales?.data         ?? [];
     const links       = sales?.links        ?? [];
     const currentPage = sales?.current_page ?? 1;
     const perPage     = Number(sales?.per_page || 20);
-    const hasFilter   = filterData.q || filterData.date_from || filterData.date_to || filterData.status || filterData.store_id;
+    const hasFilter   = q || dateFrom || dateTo || status || storeId;
 
     // URL export mengikuti filter aktif
     const exportUrl = (() => {
@@ -102,8 +107,8 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
     const sumStats = summary && typeof summary === "object" ? summary : {};
 
     // Nama toko yang sedang difilter
-    const selectedStoreName = filterData.store_id
-        ? (stores.find(s => String(s.id) === String(filterData.store_id))?.name ?? "")
+    const selectedStoreName = storeId
+        ? (stores.find(s => String(s.id) === String(storeId))?.name ?? "")
         : "";
 
     return (
@@ -232,8 +237,8 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
                                         No. Transaksi / Pelanggan
                                     </label>
                                     <input type="text" placeholder="INV/... atau nama pelanggan"
-                                        value={filterData.q}
-                                        onChange={e => change("q", e.target.value)}
+                                        value={q}
+                                        onChange={e => setQ(e.target.value)}
                                         className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
                                     />
                                 </div>
@@ -244,7 +249,7 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                                             Toko
                                         </label>
-                                        <select value={filterData.store_id} onChange={e => change("store_id", e.target.value)}
+                                        <select value={storeId} onChange={e => setStoreId(e.target.value)}
                                             className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all">
                                             <option value="">Semua Toko</option>
                                             {stores.map(store => (
@@ -256,23 +261,23 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
 
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Tanggal Mulai</label>
-                                    <input type="date" value={filterData.date_from}
-                                        onChange={e => change("date_from", e.target.value)}
+                                    <input type="date" value={dateFrom}
+                                        onChange={e => setDateFrom(e.target.value)}
                                         className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Tanggal Akhir</label>
-                                    <input type="date" value={filterData.date_to}
-                                        onChange={e => change("date_to", e.target.value)}
+                                    <input type="date" value={dateTo}
+                                        onChange={e => setDateTo(e.target.value)}
                                         className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Status</label>
-                                    <select value={filterData.status} onChange={e => change("status", e.target.value)}
+                                    <select value={status} onChange={e => setStatus(e.target.value)}
                                         className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all">
                                         <option value="">Semua Status</option>
                                         <option value="completed">Selesai</option>

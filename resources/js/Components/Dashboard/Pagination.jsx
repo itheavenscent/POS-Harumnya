@@ -41,6 +41,7 @@ export default function Pagination({ links }) {
                             <li key={`prev-${index}`}>
                                 <Link
                                     href={link.url}
+                                    preserveScroll={true}
                                     className={navigationButtonStyle}
                                     aria-label="Previous page"
                                 >
@@ -56,6 +57,7 @@ export default function Pagination({ links }) {
                             <li key={`next-${index}`}>
                                 <Link
                                     href={link.url}
+                                    preserveScroll={true}
                                     className={navigationButtonStyle}
                                     aria-label="Next page"
                                 >
@@ -70,6 +72,7 @@ export default function Pagination({ links }) {
                         <li key={`page-${index}`}>
                             <Link
                                 href={link.url}
+                                preserveScroll={true}
                                 className={pageButtonStyle(link.active)}
                                 aria-label={`Page ${link.label}`}
                                 aria-current={link.active ? 'page' : undefined}

@@ -20,4 +20,4 @@ yarn-error.log
 /.vscode
 /logs
 /storage/logs
-
+database/seeders/DesignSliceSeeder.php

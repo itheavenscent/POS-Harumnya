@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import POSLayout from "@/Layouts/POSLayout";
 import AppLayout from "@/Layouts/DashboardLayout";
+import Pagination from "@/Components/Dashboard/Pagination";
 import {
     IconCalendar,
     IconChevronRight,
@@ -24,6 +25,7 @@ export default function Index({ drawers, filters, isAdmin }) {
             date_to: dateTo,
         }, {
             preserveState: true,
+            preserveScroll: true,
             replace: true,
         });
     };
@@ -35,12 +37,8 @@ export default function Index({ drawers, filters, isAdmin }) {
             minimumFractionDigits: 0,
         });
 
-    const { props: { auth } } = usePage();
-    const isUserCashier = auth.roles.includes('cashier') && !auth.super;
-    const Layout = !isUserCashier ? AppLayout : POSLayout;
-
     return (
-        <Layout>
+        <>
             <Head title="Histori Shift" />
             <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden">
                 {/* Header Section */}
@@ -174,26 +172,20 @@ export default function Index({ drawers, filters, isAdmin }) {
                     </div>
 
                     {/* Pagination */}
-                    {drawers.links.length > 3 && (
-                        <div className="mt-6 flex justify-center">
-                            <div className="flex gap-1">
-                                {drawers.links.map((link, i) => (
-                                    <Link
-                                        key={i}
-                                        href={link.url}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
-                                            link.active
-                                                ? "bg-cyan-600 text-white shadow-md shadow-cyan-600/20"
-                                                : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50"
-                                        } ${!link.url ? "opacity-50 cursor-not-allowed" : ""}`}
-                                    />
-                                ))}
-                            </div>
-                        </div>
+                    {drawers.links && drawers.links.length > 3 && (
+                        <Pagination links={drawers.links} />
                     )}
                 </div>
             </div>
-        </Layout>
+        </>
     );
 }
+
+Index.layout = (page) => {
+    const isUserCashier = page.props.auth?.roles?.includes('cashier') && !page.props.auth?.super;
+    return isUserCashier ? (
+        <POSLayout children={page} />
+    ) : (
+        <AppLayout children={page} />
+    );
+};
