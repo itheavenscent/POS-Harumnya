@@ -95,146 +95,133 @@ export default function POSLayout({ children, headerActions }) {
         >
             {/* ── Top Navigation Bar ── */}
             <header
-                className="flex-shrink-0 flex items-center justify-between px-4 lg:px-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm"
-                style={{ height: 56 }}
+                className="flex-shrink-0 flex items-center justify-between px-5 py-[10px] bg-white dark:bg-slate-900 border-b border-[#e8e8e8] dark:border-slate-800 relative w-full h-[56px] transition-colors"
             >
-                {/* Left: Brand & Time */}
-                <div className="flex items-center gap-4 lg:gap-6">
-                    {/* Mobile Menu Toggle */}
+                {/* Left: Toolbar Container */}
+                <div className="flex items-center gap-[24px]">
+                    {/* Sidebar / Mobile Menu Toggle */}
                     <button
-                        onClick={() => setShowMobileMenu(!showMobileMenu)}
-                        className="md:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        onClick={() => toggleSidebar()}
+                        className="p-1 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center"
+                        title="Toggle Sidebar"
                     >
-                        {showMobileMenu
-                            ? <IconX size={20} className="text-slate-600 dark:text-slate-400" />
-                            : <IconMenu2 size={20} className="text-slate-600 dark:text-slate-400" />
-                        }
+                        <IconMenu2 size={20} className="text-slate-800 dark:text-slate-200" />
                     </button>
 
-                    {/* Brand — no dashboard link, stays in POS */}
-                    <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-700 flex items-center justify-center flex-shrink-0">
-                            <span className="text-white font-bold text-xs">H</span>
-                        </div>
-                        <span className="hidden sm:block text-base font-bold text-slate-800 dark:text-white">
-                            Harumnya POS
-                        </span>
-                        {props.storeName && (
-                            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 bg-cyan-50 dark:bg-cyan-900/30 border border-cyan-100 dark:border-cyan-800 rounded-full ml-1">
-                                <IconBuildingStore size={12} className="text-cyan-600 dark:text-cyan-400"/>
-                                <span className="text-[10px] font-black text-cyan-700 dark:text-cyan-300 uppercase tracking-wider">{props.storeName}</span>
+                    {/* Brand & Clock */}
+                    <div className="flex items-center gap-[16px]">
+                        {/* Logo & Wordmark */}
+                        <div className="flex gap-[8px] items-center">
+                            <div className="bg-white dark:bg-slate-900 border-2 border-[rgba(86,184,195,0.3)] flex flex-col items-center justify-center p-[2px] rounded-[11px] shadow-[0px_4px_14px_0px_rgba(86,184,195,0.2)] shrink-0 size-[32px]">
+                                <img src="/Logo.png" alt="Harumnya Logo" className="size-[24px] object-cover" />
                             </div>
-                        )}
-                    </div>
-
-                    {/* Date/Time */}
-                    <div className="hidden sm:flex flex-col items-start">
-                        <div className="text-sm font-bold text-slate-800 dark:text-white tabular-nums leading-none">
-                            {formatTime(currentTime)}
+                            <div className="flex flex-col items-start leading-[1.4]">
+                                <p className="font-semibold text-[#0f172a] dark:text-white text-[14px] leading-tight">
+                                    Harumnya POS
+                                </p>
+                                <p className="font-normal text-[12px] text-slate-500 dark:text-slate-400 leading-tight">
+                                    {props.storeName || auth?.user?.store?.name || "Toko Krian"}
+                                </p>
+                            </div>
                         </div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                            {formatDate(currentTime)}
+
+                        {/* Divider */}
+                        <div className="hidden sm:block bg-[#e8e8e8] dark:bg-slate-800 h-[28px] w-px shrink-0" />
+
+                        {/* Clock */}
+                        <div className="hidden sm:flex flex-col items-start leading-[1.4]">
+                            <p className="font-semibold text-[#0f172a] dark:text-white text-[14px] leading-tight tabular-nums">
+                                {formatTime(currentTime)}
+                            </p>
+                            <p className="font-normal text-[12px] text-slate-500 dark:text-slate-400 leading-tight">
+                                {formatDate(currentTime)}
+                            </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Right: Shift + Actions + User */}
-                <div className="flex items-center gap-2 lg:gap-3">
-                    {/* ── Shift Button ── always rendered, toggles open/close */}
-                    <div className="flex items-center gap-2">
+                {/* Right: Actions & Cashier */}
+                <div className="flex gap-[12px] items-center">
+                    {/* Toolbar Buttons */}
+                    <div className="flex gap-[4px] items-center">
+                        {/* Shift Status Pill */}
                         {activeCashDrawer ? (
-                            <>
-                                <button
-                                    onClick={() => setIsCloseShiftModalOpen(true)}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-all border border-emerald-200 dark:border-emerald-800"
-                                >
-                                    <IconCashBanknote size={15} />
-                                    <span className="hidden sm:inline">Shift Aktif</span>
-                                </button>
-                                <button
-                                    onClick={() => setIsCashModalOpen(true)}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black text-slate-600 bg-slate-100 dark:text-slate-300 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700"
-                                    title="Kas Masuk / Kas Keluar"
-                                >
-                                    <IconArrowsExchange size={15} />
-                                    <span className="hidden lg:inline">Kas Masuk/Keluar</span>
-                                </button>
-                            </>
+                            <button
+                                onClick={() => setIsCloseShiftModalOpen(true)}
+                                className="bg-[#e6f5ed] border border-[rgba(15,137,77,0.18)] flex gap-[6px] h-[34px] items-center px-[10px] rounded-[8px] hover:bg-[#d8f0e3] transition-colors"
+                            >
+                                <span className="size-[6px] bg-[#0f894d] rounded-full shrink-0" />
+                                <span className="font-medium leading-[16px] text-[#0f894d] text-[12px] whitespace-nowrap">
+                                    Shift Aktif
+                                </span>
+                            </button>
                         ) : (
                             <button
                                 onClick={() => setIsOpenShiftModalOpen(true)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black text-rose-600 bg-rose-50 dark:text-rose-400 dark:bg-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-all border border-rose-200 dark:border-rose-800 animate-pulse"
+                                className="bg-rose-50 border border-rose-200 dark:bg-rose-900/30 dark:border-rose-800 flex gap-[6px] h-[34px] items-center px-[10px] rounded-[8px] hover:bg-rose-100 transition-colors animate-pulse"
                             >
-                                <IconCash size={15} />
-                                <span>Buka Shift</span>
+                                <span className="size-[6px] bg-rose-500 rounded-full shrink-0" />
+                                <span className="font-medium leading-[16px] text-rose-600 dark:text-rose-400 text-[12px] whitespace-nowrap">
+                                    Buka Shift
+                                </span>
                             </button>
                         )}
+
+                        {/* Kas Masuk/Keluar Button */}
+                        {activeCashDrawer && (
+                            <button
+                                onClick={() => setIsCashModalOpen(true)}
+                                className="bg-white dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 flex h-[34px] items-center justify-center px-[12px] rounded-[8px] text-[#64748b] dark:text-slate-300 text-[12px] font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                            >
+                                Kas Masuk/Keluar
+                            </button>
+                        )}
+
+                        {/* Printer Button */}
+                        <button
+                            onClick={() => setIsPrinterModalOpen(true)}
+                            className="bg-white dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 flex h-[34px] items-center justify-center px-[12px] gap-1.5 rounded-[8px] text-[#64748b] dark:text-slate-300 text-[12px] font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                        >
+                            Printer
+                            <span className={`w-1.5 h-1.5 rounded-full ${printerConnected ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                        </button>
                     </div>
 
-                    <div className="w-px h-7 bg-slate-200 dark:bg-slate-700" />
-
-                    {/* Header Actions (slot) */}
+                    {/* Header Actions Slot */}
                     {headerActions && (
                         <div className="flex items-center gap-2">
                             {headerActions}
-                            <div className="hidden lg:block w-px h-7 bg-slate-200 dark:bg-slate-700" />
                         </div>
                     )}
 
-                    {/* Printer Connect */}
-                    <button
-                        onClick={() => setIsPrinterModalOpen(true)}
-                        className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all border ${
-                            printerConnected
-                                ? "text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800"
-                                : "text-slate-500 bg-slate-100 dark:text-slate-400 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700"
-                        }`}
-                        title="Printer Thermal"
-                    >
-                        <IconPrinter size={15} />
-                        <span className="hidden lg:inline">{printerConnected ? "Printer" : "Printer"}</span>
-                        <span className={`w-2 h-2 rounded-full ${
-                            printerConnected ? "bg-emerald-500" : printerBusy ? "bg-amber-400 animate-pulse" : "bg-slate-400"
-                        }`} />
-                    </button>
-
-                    {/* Fullscreen Toggle */}
+                    {/* Fullscreen Toggle Icon Button */}
                     <button
                         onClick={toggleFullscreen}
-                        className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center"
+                        className="p-[8px] rounded-[12px] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center text-slate-500 dark:text-slate-400"
                         title={isFullscreen ? "Keluar Fullscreen" : "Fullscreen"}
                     >
-                        {isFullscreen
-                            ? <IconMinimize size={18} className="text-slate-500 dark:text-slate-400" />
-                            : <IconMaximize size={18} className="text-slate-500 dark:text-slate-400" />
-                        }
+                        {isFullscreen ? <IconMinimize size={18} /> : <IconMaximize size={18} />}
                     </button>
 
-                    {/* User Info */}
-                    <div className="flex items-center gap-2 pl-2 lg:pl-3 border-l border-slate-200 dark:border-slate-700">
-                        <div className="hidden sm:block text-right">
-                            <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-tight">
-                                {auth?.user?.name}
-                            </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">Kasir</p>
-                        </div>
-                        <img
-                            src={auth?.user?.avatar || `https://ui-avatars.com/api/?name=${auth?.user?.name}&background=6366f1&color=fff`}
-                            alt={auth?.user?.name}
-                            className="w-8 h-8 rounded-full ring-2 ring-slate-200 dark:ring-slate-700 flex-shrink-0"
-                        />
-                    </div>
+                    {/* Divider */}
+                    <div className="bg-[#e8e8e8] dark:bg-slate-800 h-[28px] w-px shrink-0" />
 
-                    {/* Logout */}
-                    <Link
-                        href={route("logout")}
-                        method="post"
-                        as="button"
-                        className="hidden lg:flex p-2 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors items-center justify-center"
-                        title="Keluar"
-                    >
-                        <IconLogout size={18} />
-                    </Link>
+                    {/* Cashier Profile */}
+                    <div className="flex gap-[8px] items-center">
+                        <div className="bg-[#f7f9fc] dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 flex items-center justify-center rounded-full size-[32px] shrink-0 text-[#64748b] dark:text-slate-300 font-semibold text-[12px]">
+                            {auth?.user?.name
+                                ? auth.user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                                : 'KJ'}
+                        </div>
+                        <div className="hidden sm:flex flex-col items-start leading-[16px] text-[12px]">
+                            <p className="font-semibold text-[#0f172a] dark:text-white">
+                                {auth?.user?.name || "Kasir"}
+                            </p>
+                            <p className="font-normal text-[#94a3b8]">
+                                Kasir
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </header>
 

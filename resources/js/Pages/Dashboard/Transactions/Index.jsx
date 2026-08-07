@@ -3,6 +3,7 @@ import { Head, router, usePage } from "@inertiajs/react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import POSLayout from "@/Layouts/POSLayout";
+import CategoryIcon from "@/Components/Dashboard/CategoryIcon";
 import {
     IconBottle, IconChevronRight, IconFlask,
     IconMinus, IconPackage, IconPlus, IconReceipt,
@@ -521,19 +522,30 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
 // Set true untuk menampilkan kembali opsi "Komposisi Bebas" (custom order)
 const SHOW_KOMPOSISI_BEBAS = false;
 
-function IntensityModal({ show, onClose, variant, intensities, loading, onSelect, onSelectCustom }) {
+function IntensityModal({ show, onClose, variant, intensities, loading, onSelect, onSelectCustom, selectedIntensity }) {
     return (
         <Modal show={show} onClose={onClose} maxW="max-w-md">
-            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
-                <div>
-                    <p className="text-xs text-slate-400 mb-0.5">Pilih Konsentrasi</p>
-                    <h3 className="font-bold text-slate-800 dark:text-white text-sm leading-snug">{variant?.name}</h3>
+            {/* Header */}
+            <div className="px-[20px] py-[14px] border-b border-[#e8e8e8] dark:border-slate-800 flex items-center justify-between shrink-0">
+                <div className="flex flex-col gap-[2px] items-start">
+                    <p className="text-[14px] font-medium text-[#64748b] dark:text-slate-400 leading-[1.4]">
+                        Pilih Konsentrasi
+                    </p>
+                    <h3 className="font-semibold text-[#1e293b] dark:text-white text-[16px] leading-[1.4]">
+                        {variant?.name}
+                    </h3>
                 </div>
-                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-100 hover:text-slate-700 flex items-center justify-center transition-colors">
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="size-[36px] bg-[#f1f5f9] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-[16px] flex items-center justify-center text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
+                >
                     <IconX size={16} />
                 </button>
             </div>
-            <div className="p-4 overflow-y-auto flex-1">
+
+            {/* Options Body */}
+            <div className="p-[16px] overflow-y-auto flex-1 max-h-[70vh]">
                 {loading ? (
                     <div className="py-12 flex flex-col items-center gap-3 text-slate-400">
                         <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
@@ -545,51 +557,113 @@ function IntensityModal({ show, onClose, variant, intensities, loading, onSelect
                         <p className="text-sm text-slate-500">Tidak ada konsentrasi tersedia untuk varian ini</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 gap-2.5">
+                    <div className="flex flex-col gap-[10px]">
                         {/* Opsi Custom Order (Komposisi Bebas) */}
                         {SHOW_KOMPOSISI_BEBAS && (
-                        <div className="mb-1 border-b border-slate-100 dark:border-slate-800 pb-3">
-                            <button onClick={() => { onSelectCustom(variant); onClose(); }}
-                                className="group w-full relative p-3 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100/50 dark:bg-amber-950/20 hover:border-slate-300 hover:bg-slate-100 text-left transition-all duration-200">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center shadow-sm flex-shrink-0">
-                                        <IconAdjustments size={18} className="text-white" />
+                            <button
+                                type="button"
+                                onClick={() => { onSelectCustom(variant); onClose(); }}
+                                className="bg-white dark:bg-slate-900 border-2 border-dashed border-[#e8e8e8] dark:border-slate-800 rounded-[6px] p-[14px] flex items-center justify-between hover:border-amber-400 transition-all text-left cursor-pointer w-full group"
+                            >
+                                <div className="flex items-center gap-[10px]">
+                                    <div className="bg-amber-100 dark:bg-amber-950/40 px-[8px] py-[4px] rounded-full text-amber-700 dark:text-amber-300 text-[12px] font-bold">
+                                        CUSTOM
                                     </div>
-                                    <div className="flex-1">
-                                        <p className="font-black text-slate-700 dark:text-amber-200 text-sm">Komposisi Bebas</p>
-                                        <span className="text-[10px] text-slate-700 dark:text-slate-300 block mt-0.5">Tentukan rasio ml minyak & alkohol sendiri</span>
+                                    <div>
+                                        <p className="font-semibold text-[#0f172a] dark:text-white text-[15px]">Komposisi Bebas</p>
+                                        <p className="text-[12px] text-[#64748b] dark:text-slate-400">Tentukan rasio ml minyak & alkohol sendiri</p>
                                     </div>
-                                    <IconChevronRight size={14} className="text-slate-700 flex-shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" />
                                 </div>
+                                <IconChevronRight size={16} className="text-slate-400 group-hover:text-amber-500 transition-colors" />
                             </button>
-                        </div>
                         )}
 
-                        {intensities.map((intensity, i) => {
-                            const c = INTENSITY_COLORS[i % INTENSITY_COLORS.length];
-                            const oilPct = parseFloat(intensity.oil_ratio) || 0;
+                        {/* List Konsentrasi (EDT, EDP, Extrait, Pure, dll) */}
+                        {intensities.map((intensity) => {
+                            const oNum = parseFloat(intensity.oil_ratio) || 0;
+                            const aNum = parseFloat(intensity.alcohol_ratio) || 0;
+                            const isSelected = selectedIntensity?.id === intensity.id;
+                            const isPure = (intensity.name ?? "").toLowerCase().includes("pure") || aNum === 0;
+
+                            // Calculate actual percentage of oil bar width (ratio parts or percentages)
+                            let oilPct = 0;
+                            if (isPure) {
+                                oilPct = 100;
+                            } else if (oNum > 0 || aNum > 0) {
+                                const totalParts = oNum + aNum;
+                                oilPct = (oNum / totalParts) * 100;
+                            }
+
+                            // Format simplified ratio text (e.g. 1:2, 1:1, 2:1, 1:0)
+                            let ratioText = `${oNum}:${aNum}`;
+                            if (isPure) {
+                                ratioText = "1:0";
+                            } else if (oNum > 0 && aNum > 0) {
+                                const gcd = (x, y) => (y === 0 ? x : gcd(y, x % y));
+                                const oInt = Math.round(oNum);
+                                const aInt = Math.round(aNum);
+                                const d = gcd(oInt, aInt);
+                                ratioText = d > 0 ? `${oInt / d}:${aInt / d}` : `${oInt}:${aInt}`;
+                            }
+
                             return (
-                                <button key={intensity.id} onClick={() => { onSelect(intensity); onClose(); }}
-                                    className={`group relative p-4 rounded-2xl border-2 text-left transition-all duration-200 ${c.border} ${c.light} hover:shadow-md`}>
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className={`w-10 h-10 rounded-xl ${c.bg} flex items-center justify-center shadow-sm flex-shrink-0`}>
-                                            <IconFlask size={18} className="text-white" />
+                                <button
+                                    key={intensity.id}
+                                    type="button"
+                                    onClick={() => { onSelect(intensity); onClose(); }}
+                                    className={`flex flex-col gap-[12px] p-[14px] rounded-[6px] relative text-left transition-all group cursor-pointer w-full bg-white dark:bg-slate-900 ${
+                                        isSelected
+                                            ? "border-[1.5px] border-[#54b8c3] shadow-sm"
+                                            : "border border-[#e8e8e8] dark:border-slate-800 hover:border-[#54b8c3] dark:hover:border-teal-500 hover:shadow-sm"
+                                    }`}
+                                >
+                                    {/* Head */}
+                                    <div className="flex items-center justify-between w-full">
+                                        <div className="flex items-center gap-[6px] flex-1 min-w-0">
+                                            <div className="bg-[#f7f7f7] dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 px-[6px] py-[2px] rounded-full shrink-0">
+                                                <span className="text-[12px] font-medium text-[#64748b] dark:text-slate-300 leading-[1.4]">
+                                                    {intensity.code}
+                                                </span>
+                                            </div>
+                                            <p className="font-semibold text-[#0f172a] dark:text-white text-[16px] leading-[1.4] truncate">
+                                                {intensity.name}
+                                            </p>
                                         </div>
-                                        <div className="flex-1">
-                                            <p className="font-black text-slate-800 dark:text-white text-sm">{intensity.name}</p>
-                                            <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-black ${c.light} ${c.text}`}>{intensity.code}</span>
-                                        </div>
-                                        <IconChevronRight size={14} className={`${c.text} flex-shrink-0 opacity-50 group-hover:opacity-100 transition-opacity`} />
+                                        {isSelected ? (
+                                            <div className="bg-[#54b8c3] border border-[#3ebdcb] size-[20px] rounded-full flex items-center justify-center text-white shrink-0 shadow-sm">
+                                                <IconCheck size={12} stroke={3} />
+                                            </div>
+                                        ) : (
+                                            <div className="bg-white dark:bg-slate-800 border-[1.5px] border-[#cbd5e1] dark:border-slate-600 size-[20px] rounded-full shrink-0 group-hover:border-[#54b8c3] transition-colors" />
+                                        )}
                                     </div>
-                                    <div className="space-y-1">
-                                        <div className="flex justify-between text-[11px] text-slate-500">
-                                            <span>Kadar minyak</span>
-                                            <span className="font-bold text-slate-700 dark:text-slate-300">{intensity.oil_ratio}%</span>
+
+                                    {/* Ratio & Legend */}
+                                    <div className="flex flex-col gap-[8px] w-full">
+                                        <div className="flex items-center justify-between text-[12px] leading-[16px]">
+                                            <div className="flex items-center gap-[6px]">
+                                                <span className="size-[8px] rounded-full bg-[#54b8c3] inline-block shrink-0" />
+                                                <span className="text-[#64748b] dark:text-slate-400">Kadar minyak</span>
+                                            </div>
+                                            <span className="font-semibold text-[#0f172a] dark:text-white">
+                                                {ratioText}
+                                            </span>
+                                            <div className="flex items-center gap-[6px]">
+                                                <span className="text-[#64748b] dark:text-slate-400">Alkohol</span>
+                                                <span className="size-[8px] rounded-full bg-[#cbd5e1] dark:bg-slate-600 inline-block shrink-0" />
+                                            </div>
                                         </div>
-                                        <div className="h-1.5 bg-white/60 dark:bg-slate-700/60 rounded-full overflow-hidden">
-                                            <div className={`h-full ${c.bar} rounded-full transition-all`} style={{ width: `${Math.min(oilPct, 100)}%` }} />
+
+                                        {/* Progress bar mix with diagonal striped line fill for minyak */}
+                                        <div className="bg-[#cbd5e1] dark:bg-slate-800 flex items-center rounded-full w-full h-[8px] overflow-hidden">
+                                            <div
+                                                className="h-[8px] rounded-full transition-all"
+                                                style={{
+                                                    width: `${Math.min(Math.max(oilPct, 0), 100)}%`,
+                                                    background: "repeating-linear-gradient(135deg, #54b8c3, #54b8c3 4px, #42a4af 4px, #42a4af 8px)",
+                                                }}
+                                            />
                                         </div>
-                                        <div className="text-[11px] text-slate-400">Alkohol {intensity.alcohol_ratio}%</div>
                                     </div>
                                 </button>
                             );
@@ -1732,59 +1806,56 @@ export default function Index({
                             <div className="flex-1 overflow-y-auto p-4 md:p-6">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                                     {/* Card Parfum */}
-                                    <button onClick={() => setSelectedCategory('parfum')} className="group relative p-4 rounded-2xl border-2 text-left transition-all border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-md">
-                                        <div className="flex items-start gap-3 mb-3">
-                                            <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
-                                                <IconFlask size={20} className="text-primary-600 dark:text-primary-400" />
+                                    <button
+                                        onClick={() => setSelectedCategory('parfum')}
+                                        className="self-stretch p-2.5 bg-white dark:bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-gray-200 dark:outline-slate-800 inline-flex justify-start items-center gap-3 overflow-hidden text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:outline-teal-300 dark:hover:outline-teal-700 hover:shadow-sm transition-all group cursor-pointer"
+                                    >
+                                        <CategoryIcon icon={<IconFlask size={20} />} variant="teal" size="size-9" />
+                                        <div className="flex-1 inline-flex flex-col justify-start items-start gap-0.5 overflow-hidden min-w-0">
+                                            <div className="self-stretch inline-flex justify-between items-center overflow-hidden">
+                                                <div className="justify-start text-slate-900 dark:text-white text-sm font-semibold leading-5 truncate">
+                                                    Parfum
+                                                </div>
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">Parfume</p>
-                                                <span className="text-[10px] text-slate-400 mt-0.5 block">Varian, konsentrasi, ukuran</span>
+                                            <div className="justify-start text-slate-500 dark:text-slate-400 text-xs font-normal leading-4 truncate w-full">
+                                                Varian, konsentrasi, ukuran
                                             </div>
-                                            <span className="px-1.5 py-0.5 rounded text-[9px] font-black flex-shrink-0 bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">
-                                                Katalog
-                                            </span>
                                         </div>
-                                        <div className="flex items-center justify-end">
-                                            <span className="text-[11px] text-slate-400 font-semibold">+ Pilih →</span>
+                                    </button>
+
+                                    {/* Card Botol */}
+                                    <button
+                                        onClick={() => setSelectedCategory('packaging')}
+                                        className="self-stretch p-2.5 bg-white dark:bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-gray-200 dark:outline-slate-800 inline-flex justify-start items-center gap-3 overflow-hidden text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:outline-orange-300 dark:hover:outline-orange-700 hover:shadow-sm transition-all group cursor-pointer"
+                                    >
+                                        <CategoryIcon icon={<IconBox size={20} />} variant="teal" size="size-9" />
+                                        <div className="flex-1 inline-flex flex-col justify-start items-start gap-0.5 overflow-hidden min-w-0">
+                                            <div className="self-stretch inline-flex justify-between items-center overflow-hidden">
+                                                <div className="justify-start text-slate-900 dark:text-white text-sm font-semibold leading-5 truncate">
+                                                    Botol
+                                                </div>
+                                            </div>
+                                            <div className="justify-start text-slate-500 dark:text-slate-400 text-xs font-normal leading-4 truncate w-full">
+                                                Botol, tutup spray, aksesoris
+                                            </div>
                                         </div>
                                     </button>
 
                                     {/* Card Kemasan */}
-                                    <button onClick={() => setSelectedCategory('packaging')} className="group relative p-4 rounded-2xl border-2 text-left transition-all border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md">
-                                        <div className="flex items-start gap-3 mb-3">
-                                            <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0">
-                                                <IconBox size={20} className="text-orange-600 dark:text-orange-400" />
+                                    <button
+                                        onClick={() => setSelectedCategory('spunbond')}
+                                        className="self-stretch p-2.5 bg-white dark:bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-gray-200 dark:outline-slate-800 inline-flex justify-start items-center gap-3 overflow-hidden text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:outline-emerald-300 dark:hover:outline-emerald-700 hover:shadow-sm transition-all group cursor-pointer"
+                                    >
+                                        <CategoryIcon icon={<IconShoppingBag size={20} />} variant="teal" size="size-9" />
+                                        <div className="flex-1 inline-flex flex-col justify-start items-start gap-0.5 overflow-hidden min-w-0">
+                                            <div className="self-stretch inline-flex justify-between items-center overflow-hidden">
+                                                <div className="justify-start text-slate-900 dark:text-white text-sm font-semibold leading-5 truncate">
+                                                    Kemasan
+                                                </div>
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">Botol</p>
-                                                <span className="text-[10px] text-slate-400 mt-0.5 block">Botol, tutup spray, aksesoris</span>
+                                            <div className="justify-start text-slate-500 dark:text-slate-400 text-xs font-normal leading-4 truncate w-full">
+                                                Tas spunbond eksklusif
                                             </div>
-                                            <span className="px-1.5 py-0.5 rounded text-[9px] font-black flex-shrink-0 bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
-                                                Katalog
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-end">
-                                            <span className="text-[11px] text-slate-400 font-semibold">+ Pilih →</span>
-                                        </div>
-                                    </button>
-
-                                    {/* Card Spunbond */}
-                                    <button onClick={() => setSelectedCategory('spunbond')} className="group relative p-4 rounded-2xl border-2 text-left transition-all border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-emerald-300 dark:hover:border-emerald-600 hover:shadow-md">
-                                        <div className="flex items-start gap-3 mb-3">
-                                            <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
-                                                <IconShoppingBag size={20} className="text-emerald-600 dark:text-emerald-400" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">Kemasan</p>
-                                                <span className="text-[10px] text-slate-400 mt-0.5 block">Tas spunbond eksklusif</span>
-                                            </div>
-                                            <span className="px-1.5 py-0.5 rounded text-[9px] font-black flex-shrink-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                                                Katalog
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-end">
-                                            <span className="text-[11px] text-slate-400 font-semibold">+ Pilih →</span>
                                         </div>
                                     </button>
                                 </div>
@@ -1795,21 +1866,42 @@ export default function Index({
                         {selectedCategory === "parfum" && (
                             <div className="flex-1 overflow-y-auto p-4">
                                 {/* Search + filter gender */}
-                                <div className="flex gap-2 mb-3">
-                                    <div className="relative flex-1">
-                                        <IconSearch size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                                        <input type="text" placeholder="Cari varian..." value={catalogSearch}
-                                            onChange={e => setCatalogSearch(e.target.value)}
-                                            className="w-full h-8 pl-8 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white" />
+                                <div className="flex gap-[8px] items-center mb-3">
+                                    {/* Search */}
+                                    <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex flex-1 gap-[8px] h-[37px] items-center px-[12px] py-[4px] rounded-[8px] relative">
+                                        <IconSearch size={14} className="text-[#64748b] dark:text-slate-400 shrink-0" />
+                                        <input
+                                            type="text"
+                                            placeholder="Cari varian..."
+                                            value={catalogSearch}
+                                            onChange={(e) => setCatalogSearch(e.target.value)}
+                                            className="w-full bg-transparent border-0 text-[14px] text-slate-900 dark:text-white placeholder-[#64748b] dark:placeholder-slate-400 focus:outline-none focus:ring-0 p-0 leading-[20px]"
+                                        />
                                     </div>
-                                    <div className="flex gap-1">
-                                        {["all", "male", "female"].map(g => (
-                                            <button key={g} onClick={() => setCatalogGender(g)}
-                                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${catalogGender === g ? "bg-primary-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200"
-                                                    }`}>
-                                                {g === "all" ? "Semua" : g === "male" ? "Pria" : "Wanita"}
-                                            </button>
-                                        ))}
+
+                                    {/* Filters */}
+                                    <div className="bg-[#fbfbfb] dark:bg-slate-800/80 border border-[#e8e8e8] dark:border-slate-700 flex gap-[2px] items-center p-[4px] rounded-[8px] shrink-0">
+                                        {[
+                                            { key: "all", label: "Semua" },
+                                            { key: "male", label: "Pria" },
+                                            { key: "female", label: "Wanita" },
+                                        ].map((g) => {
+                                            const isActive = catalogGender === g.key;
+                                            return (
+                                                <button
+                                                    key={g.key}
+                                                    type="button"
+                                                    onClick={() => setCatalogGender(g.key)}
+                                                    className={`px-[12px] py-[6px] text-[12px] leading-[1.4] transition-all ${
+                                                        isActive
+                                                            ? "bg-white dark:bg-slate-900 border border-[#e5e5e5] dark:border-slate-700 rounded-[6px] shadow-[0px_1px_3px_0px_rgba(15,23,41,0.08)] font-semibold text-[#0f172a] dark:text-white"
+                                                            : "rounded-[7px] font-medium text-[#64748b] dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                                                    }`}
+                                                >
+                                                    {g.label}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
@@ -1833,29 +1925,44 @@ export default function Index({
                                         </div>
                                     ) : (
                                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3">
-                                            {filtered.map((variant, idx) => {
-                                                const genderColor = variant.gender === "male"
-                                                    ? "bg-blue-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                                                    : variant.gender === "female"
-                                                        ? "bg-pink-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                            {filtered.map((variant) => {
+                                                const isMale = variant.gender === "male";
+                                                const isFemale = variant.gender === "female";
+                                                const chipClass = isMale
+                                                    ? "bg-[#dbe6fb] text-[#1e40af] dark:bg-blue-900/40 dark:text-blue-300"
+                                                    : isFemale
+                                                        ? "bg-[#f9d8e7] text-[#9d174d] dark:bg-pink-900/40 dark:text-pink-300"
                                                         : "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300";
-                                                const accentBg = INTENSITY_COLORS[idx % INTENSITY_COLORS.length].bg;
+
                                                 return (
-                                                    <button key={variant.id} onClick={() => selectCatalogVariant(variant)}
-                                                        className="group relative p-4 rounded-2xl border-2 text-left transition-all border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-primary-600 hover:shadow-md">
-                                                        <div className="flex items-start gap-2 mb-3">
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="font-black text-slate-800 dark:text-white text-sm leading-tight">{variant.name}</p>
-                                                                {variant.code && <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">{variant.code}</span>}
+                                                    <button
+                                                        key={variant.id}
+                                                        type="button"
+                                                        onClick={() => selectCatalogVariant(variant)}
+                                                        className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex gap-[10px] items-center px-[12px] py-[10px] rounded-[6px] relative text-left hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm transition-all group cursor-pointer w-full"
+                                                    >
+                                                        {/* Info */}
+                                                        <div className="flex flex-col gap-[2px] items-start justify-center flex-1 min-w-0">
+                                                            <div className="flex gap-[6px] items-center w-full">
+                                                                <p className="font-semibold text-[#0f172a] dark:text-white text-[14px] leading-[20px] truncate flex-1 min-w-0">
+                                                                    {variant.name}
+                                                                </p>
+                                                                {variant.gender && (
+                                                                    <span className={`px-[6px] py-[2px] rounded-full text-[12px] font-medium leading-[1.2] shrink-0 ${chipClass}`}>
+                                                                        {GENDER_LABEL[variant.gender] ?? variant.gender}
+                                                                    </span>
+                                                                )}
                                                             </div>
-                                                            {variant.gender && (
-                                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black flex-shrink-0 ${genderColor}`}>
-                                                                    {GENDER_LABEL[variant.gender] ?? variant.gender}
-                                                                </span>
+                                                            {variant.code && (
+                                                                <p className="font-normal text-[#64748b] dark:text-slate-400 text-[12px] leading-[16px] truncate w-full">
+                                                                    {variant.code}
+                                                                </p>
                                                             )}
                                                         </div>
-                                                        <div className="flex items-center justify-end">
-                                                            <span className="text-[11px] text-slate-400 font-semibold">+ Pilih →</span>
+
+                                                        {/* Add Icon Button */}
+                                                        <div className="bg-[#f7f7f7] dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 flex items-center justify-center rounded-[6px] shrink-0 size-[28px] text-[#64748b] dark:text-slate-400 group-hover:bg-slate-200 dark:group-hover:bg-slate-700 transition-colors">
+                                                            <IconPlus size={14} />
                                                         </div>
                                                     </button>
                                                 );
@@ -1975,46 +2082,41 @@ export default function Index({
                             </div>
                         )}
 
-                        {/* Cart header */}
-                        <div className="flex-shrink-0 px-3 py-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <IconShoppingCart size={11} /> Keranjang
-                                {totalCartCount > 0 && <span className="px-1.5 py-0.5 bg-primary-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full text-[10px] font-black">{totalCartCount}</span>}
+                        {/* ── 1. Pelanggan Section (Figma Node 3258:3553) ── */}
+                        <div className="flex-shrink-0 border-b border-[#e8e8e8] dark:border-slate-800 flex flex-col gap-[10px] items-start px-[10px] py-[12.686px] relative" ref={customerRef}>
+                            <p className="font-semibold text-[#0f172a] dark:text-white text-[14px] leading-[1.4]">
+                                Pelanggan
                             </p>
-                            {carts.length > 0 && (
-                                <button onClick={handleHold} disabled={isHolding} className="text-[11px] text-slate-700 font-bold flex items-center gap-1 px-2 py-1 hover:bg-slate-100 dark:hover:bg-amber-950/30 rounded-lg transition-colors">
-                                    <IconClock size={11} /> Tahan
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Pelanggan (dipindah dari halaman pembayaran ke atas keranjang) */}
-                        <div className="flex-shrink-0 px-3 py-2 border-b border-slate-100 dark:border-slate-800 relative" ref={customerRef}>
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><IconUser size={10} /> Pelanggan</label>
-                            <div className="flex items-center gap-2">
-                                <div className="flex-1 relative">
-                                    <IconSearch size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300" />
+                            <div className="flex gap-[8px] items-center w-full">
+                                <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex flex-1 gap-[8px] items-center p-[8px] rounded-[8px] relative">
+                                    <IconSearch size={14} className="text-[#64748b] dark:text-slate-400 shrink-0" />
                                     <input
-                                        type="text" placeholder="Cari / pilih pelanggan (No. Telepon)..."
+                                        type="text"
+                                        placeholder="Cari / Pilih pelanggan (No. Telepon)"
                                         value={selectedCustomer ? (selectedCustomer.phone || selectedCustomer.name) : customerSearch}
                                         onClick={() => { if (selectedCustomer) { setSelectedCustomer(null); setCustomerSearch(""); } setShowCustomerDropdown(true); }}
                                         onChange={e => { setCustomerSearch(e.target.value); setShowCustomerDropdown(true); if (selectedCustomer) setSelectedCustomer(null); }}
-                                        className="w-full h-9 pl-8 pr-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white"
+                                        className="w-full bg-transparent border-0 text-[10px] text-slate-900 dark:text-white placeholder-[#64748b] dark:placeholder-slate-400 focus:outline-none focus:ring-0 p-0 leading-[1.4]"
                                     />
                                 </div>
-                                <button onClick={() => setShowAddCustomer(true)} className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-primary-950/30 text-slate-700 flex items-center justify-center hover:bg-primary-100 flex-shrink-0" title="Tambah Pelanggan Baru">
-                                    <IconUserPlus size={15} />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddCustomer(true)}
+                                    className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex items-center justify-center p-[8px] rounded-[8px] shrink-0 text-[#64748b] dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                                    title="Tambah Pelanggan Baru"
+                                >
+                                    <IconUserPlus size={14} />
                                 </button>
                             </div>
                             {selectedCustomer && (
-                                <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                                <div className="mt-0.5 flex items-center gap-2 flex-wrap w-full">
                                     <p className="text-[11px] text-slate-700 dark:text-slate-300 flex items-center gap-1"><IconCheck size={11} /> {selectedCustomer.phone || selectedCustomer.name}</p>
                                     {Number(selectedCustomer.points ?? 0) > 0 && <span className="text-[10px] text-slate-500 font-bold">{Number(selectedCustomer.points).toLocaleString("id-ID")} poin</span>}
                                     {Number(selectedCustomer.points ?? 0) >= loyalty_reward_threshold && <span className="ml-auto text-[10px] font-black text-amber-600">🏆 Reward tersedia</span>}
                                 </div>
                             )}
                             {showCustomerDropdown && !selectedCustomer && (
-                                <div className="absolute top-full left-3 right-3 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-30 overflow-hidden max-h-44 overflow-y-auto">
+                                <div className="absolute top-full left-2 right-2 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-30 overflow-hidden max-h-44 overflow-y-auto">
                                     <button onClick={() => { setSelectedCustomer({ id: null, name: "Pelanggan Umum" }); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2 text-xs text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800">👤 Pelanggan Umum (Walk-in)</button>
                                     {filteredCustomers.map(c => (
                                         <button key={c.id} onClick={() => { setSelectedCustomer(c); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0">
@@ -2023,6 +2125,30 @@ export default function Index({
                                         </button>
                                     ))}
                                 </div>
+                            )}
+                        </div>
+
+                        {/* ── 2. Keranjang Header (Figma Node 3258:3567) ── */}
+                        <div className="bg-[#fbfbfb] dark:bg-slate-900/50 border-b border-[#e8e8e8] dark:border-slate-800 flex items-center justify-between px-[10px] py-[12.686px] relative shrink-0">
+                            <div className="flex gap-[6.343px] items-center shrink-0">
+                                <p className="font-semibold text-[#0f172a] dark:text-white text-[14px] leading-[1.4]">
+                                    Keranjang
+                                </p>
+                                <div className="bg-[#36adba] flex items-center justify-center px-[6px] py-[2px] rounded-full shrink-0 min-w-[18px]">
+                                    <span className="font-semibold text-[10px] text-white leading-[1.4]">
+                                        {totalCartCount}
+                                    </span>
+                                </div>
+                            </div>
+                            {carts.length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={handleHold}
+                                    disabled={isHolding}
+                                    className="bg-white dark:bg-slate-800 border border-[#e5e5e5] dark:border-slate-700 flex items-center justify-center px-[8px] py-[4px] rounded-[4px] shrink-0 text-[10px] font-medium text-[#0f172a] dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                                >
+                                    Tahan Transaksi
+                                </button>
                             )}
                         </div>
 
