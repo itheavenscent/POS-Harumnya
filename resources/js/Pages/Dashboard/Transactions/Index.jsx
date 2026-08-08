@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Head, router, usePage } from "@inertiajs/react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { PerfumeIcon, Package01Icon, ShoppingCart01Icon } from "@hugeicons/core-free-icons";
 import POSLayout from "@/Layouts/POSLayout";
 import CategoryIcon from "@/Components/Dashboard/CategoryIcon";
 import {
@@ -62,6 +64,29 @@ function Modal({ show, onClose, children, maxW = "max-w-lg" }) {
                 {children}
             </div>
         </div>
+    );
+}
+
+// ─── Button / Bayar Component ───────────────────────────────────────────────
+function ButtonBayar({ onClick, disabled, payable = 0, fmt }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            disabled={disabled}
+            className="border-[0.793px] border-white/12 content-stretch flex gap-[6.343px] items-center justify-center overflow-clip py-[9.514px] px-[12px] relative rounded-[8px] w-full bg-gradient-to-b from-[#54b8c3] to-[#39a1ac] hover:from-[#46a9b4] hover:to-[#2c909b] active:scale-[0.99] transition-all shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group"
+            data-node-id="3298:33440"
+            data-name="Button / Bayar"
+        >
+            <span className="[word-break:break-word] font-semibold leading-[1.4] relative text-[14px] text-white whitespace-nowrap z-10">
+                Bayar
+            </span>
+            <div className="bg-white/50 h-[12.686px] relative shrink-0 w-[0.793px] z-10" />
+            <span className="[word-break:break-word] font-semibold leading-[1.4] relative text-[14px] text-white whitespace-nowrap z-10">
+                {fmt ? fmt(payable) : `Rp ${payable.toLocaleString("id-ID")}`}
+            </span>
+            <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_0px_0px_0px_1px_rgba(16,24,40,0.24),inset_0px_6.404px_6.404px_0px_rgba(255,255,255,0.1),inset_0px_-6.404px_6.404px_0px_rgba(0,0,0,0.1)]" />
+        </button>
     );
 }
 
@@ -678,26 +703,40 @@ function IntensityModal({ show, onClose, variant, intensities, loading, onSelect
 // ─── Size Modal ───────────────────────────────────────────────────────────────
 function SizeModal({ show, onClose, onBack, variant, intensity, sizes, loading, onSelect }) {
     return (
-        <Modal show={show} onClose={onClose} maxW="max-w-sm">
-            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
-                <div className="flex items-center gap-2.5">
+        <Modal show={show} onClose={onClose} maxW="max-w-md">
+            {/* Header */}
+            <div className="px-[20px] py-[16px] border-b border-[#e8e8e8] dark:border-slate-800 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-[10px]">
                     {onBack && (
-                        <button onClick={onBack} aria-label="Kembali ke pilih intensitas" className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-700 flex items-center justify-center transition-colors flex-shrink-0">
+                        <button
+                            type="button"
+                            onClick={onBack}
+                            aria-label="Kembali ke pilih konsentrasi"
+                            className="size-[32px] rounded-[10px] bg-[#f1f5f9] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors shrink-0"
+                        >
                             <IconArrowLeft size={16} />
                         </button>
                     )}
-                    <div>
-                        <p className="text-xs text-slate-400 mb-0.5">Pilih Ukuran</p>
-                        <h3 className="font-bold text-slate-800 dark:text-white text-sm leading-snug">
-                            <span className="text-slate-700 dark:text-slate-300">{intensity?.code}</span> · {variant?.name}
+                    <div className="flex flex-col gap-[2px] items-start">
+                        <p className="text-[14px] font-medium text-[#64748b] dark:text-slate-400 leading-[1.4]">
+                            Pilih Ukuran
+                        </p>
+                        <h3 className="font-semibold text-[#0f172a] dark:text-white text-[16px] leading-[1.4]">
+                            {intensity?.code ? `${intensity.code} · ` : ""}{variant?.name}
                         </h3>
                     </div>
                 </div>
-                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-100 hover:text-slate-700 flex items-center justify-center transition-colors">
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="size-[36px] bg-[#f1f5f9] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-[16px] flex items-center justify-center text-slate-500 dark:text-slate-400 transition-colors cursor-pointer shrink-0"
+                >
                     <IconX size={16} />
                 </button>
             </div>
-            <div className="p-4 overflow-y-auto flex-1">
+
+            {/* Options Body */}
+            <div className="p-[16px] overflow-y-auto flex-1 max-h-[70vh]">
                 {loading ? (
                     <div className="py-12 flex flex-col items-center gap-3 text-slate-400">
                         <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
@@ -709,18 +748,44 @@ function SizeModal({ show, onClose, onBack, variant, intensity, sizes, loading, 
                         <p className="text-sm text-slate-500">Tidak ada ukuran tersedia</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-3 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-[10px]">
                         {sizes.map((size) => (
-                            <button key={size.id} onClick={() => { onSelect(size); onClose(); }}
-                                className="group flex flex-col items-center p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-primary-600 bg-white dark:bg-slate-800/50 hover:bg-slate-100/50 dark:hover:bg-primary-950/20 transition-all">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center mb-2 shadow-sm">
-                                    <IconBottle size={18} className="text-white" />
+                            <button
+                                key={size.id}
+                                type="button"
+                                onClick={() => { onSelect(size); onClose(); }}
+                                className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex gap-[14px] items-center p-[12px] rounded-[8px] text-left hover:border-[#54b8c3] dark:hover:border-teal-500 hover:shadow-sm transition-all group cursor-pointer w-full"
+                            >
+                                {/* Category Icon dengan Hugeicons PerfumeIcon */}
+                                <CategoryIcon
+                                    icon={
+                                        <HugeiconsIcon
+                                            icon={PerfumeIcon}
+                                            size={20}
+                                            color="currentColor"
+                                            strokeWidth={1.5}
+                                        />
+                                    }
+                                    variant="teal"
+                                    size="size-[40px]"
+                                />
+
+                                {/* Text Area */}
+                                <div className="flex flex-col gap-[2px] items-start min-w-0 flex-1">
+                                    <div className="flex items-baseline gap-[3px]">
+                                        <span className="font-medium text-[#0f172a] dark:text-white text-[14px] leading-[1.4]">
+                                            {size.volume_ml}
+                                        </span>
+                                        <span className="font-normal text-[#94a3b8] dark:text-slate-400 text-[12px] leading-[16px]">
+                                            ml
+                                        </span>
+                                    </div>
+                                    {size.price != null && (
+                                        <p className="font-semibold text-[#0f172a] dark:text-white text-[16px] leading-[1.4]">
+                                            {fmt(size.price)}
+                                        </p>
+                                    )}
                                 </div>
-                                <p className="text-2xl font-black text-slate-800 dark:text-white leading-none">{size.volume_ml}</p>
-                                <p className="text-[10px] font-semibold text-slate-400 mt-0.5">ml</p>
-                                {size.price != null && (
-                                    <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mt-1.5 text-center">{fmt(size.price)}</p>
-                                )}
                             </button>
                         ))}
                     </div>
@@ -739,56 +804,147 @@ function PackagingModal({ show, onClose, packagingMaterials = [], selectedPkgs =
             p.name.toLowerCase().includes(search.toLowerCase()) || (p.code ?? "").toLowerCase().includes(search.toLowerCase())
         );
     }, [packagingMaterials, search]);
-    const PKG_BG_LIST = ["bg-orange-500", "bg-violet-500", "bg-rose-500", "bg-teal-500", "bg-sky-500", "bg-amber-500", "bg-indigo-500"];
+
     return (
-        <Modal show={show} onClose={onClose} maxW="max-w-xl">
-            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
-                <h3 className="font-bold text-slate-800 dark:text-white text-lg">Kemasan Parfum</h3>
-                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-100 hover:text-slate-700 flex items-center justify-center transition-colors"><IconX size={16} /></button>
-            </div>
-            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
-                <div className="relative">
-                    <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input type="text" placeholder="Cari kemasan..." value={search} onChange={e => setSearch(e.target.value)} className="w-full h-9 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
-                </div>
-            </div>
-            <div className="overflow-y-auto p-4 flex-1">
-                {filtered.map((pkg, idx) => {
-                    const bg = PKG_BG_LIST[idx % PKG_BG_LIST.length];
-                    const isOn = selectedPkgs.includes(pkg.id);
-                    if (isPendingMode) return (
-                        <button key={pkg.id} onClick={() => onToggle(pkg.id)} className={`group flex items-center gap-3 p-3.5 mb-2 rounded-xl border-2 text-left transition-all w-full ${isOn ? "border-slate-300 bg-slate-100 dark:bg-primary-950/20" : "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800/50"}`}>
-                            <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}><IconBox size={18} className="text-white" /></div>
-                            <div className="flex-1 min-w-0">
-                                <p className="font-bold text-slate-800 dark:text-white text-sm truncate">{pkg.name}</p>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                    {pkg.is_free ? <span className="text-[10px] px-1.5 py-0.5 bg-emerald-100 dark:bg-slate-800 text-slate-700 rounded font-black">GRATIS</span> : <span className="text-[10px] font-bold text-slate-700">+{fmt(pkg.selling_price)}</span>}
-                                </div>
-                            </div>
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isOn ? "bg-primary-500" : "bg-slate-100 dark:bg-slate-700"}`}>{isOn ? <IconCheck size={13} className="text-white" /> : <IconPlus size={13} className="text-slate-400" />}</div>
-                        </button>
-                    );
-                    return (
-                        <button key={pkg.id} onClick={() => { onAddStandalone(pkg); onClose(); }} className="group flex items-center gap-3 p-3.5 mb-2 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800/50 hover:border-slate-300 text-left transition-all w-full">
-                            <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}><IconBox size={18} className="text-white" /></div>
-                            <div className="flex-1 min-w-0">
-                                <p className="font-bold text-slate-800 dark:text-white text-sm truncate">{pkg.name}</p>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                    {pkg.is_free ? <span className="text-[10px] px-1.5 py-0.5 bg-emerald-100 text-slate-700 rounded font-black">GRATIS</span> : <span className="text-[10px] font-bold text-slate-700">{fmt(pkg.selling_price)}</span>}
-                                </div>
-                            </div>
-                            <IconPlus size={13} className="text-slate-400 group-hover:text-slate-700 flex-shrink-0" />
-                        </button>
-                    );
-                })}
+        <Modal show={show} onClose={onClose} maxW="max-w-lg">
+            {/* Header */}
+            <div className="px-[20px] py-[16px] h-[60px] border-b border-[#e8e8e8] dark:border-slate-800 flex items-center justify-between shrink-0">
+                <h3 className="font-semibold text-[#0f172a] dark:text-white text-[16px] leading-[1.4]">
+                    Kemasan Parfum
+                </h3>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="size-[36px] bg-[#f1f5f9] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-[16px] flex items-center justify-center text-slate-500 dark:text-slate-400 transition-colors cursor-pointer shrink-0"
+                >
+                    <IconX size={16} />
+                </button>
             </div>
 
+            {/* Filter Search */}
+            <div className="px-[16px] pt-[12px] pb-[4px] shrink-0">
+                <div className="relative">
+                    <IconSearch size={14} className="absolute left-[12px] top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                        type="text"
+                        placeholder="Cari kemasan..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full h-[36px] pl-[34px] pr-[12px] rounded-[8px] border border-[#e8e8e8] dark:border-slate-800 bg-[#f8fafc] dark:bg-slate-800 text-[13px] text-[#0f172a] dark:text-white focus:outline-none focus:border-[#54b8c3] transition-colors"
+                    />
+                </div>
+            </div>
+
+            {/* Options List */}
+            <div className="p-[16px] overflow-y-auto flex-1 max-h-[70vh]">
+                {filtered.length === 0 ? (
+                    <div className="py-12 text-center">
+                        <IconAlertTriangle size={32} className="mx-auto mb-2 text-amber-400" />
+                        <p className="text-sm text-slate-500">Tidak ada kemasan ditemukan</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-[10px]">
+                        {filtered.map((pkg) => {
+                            const isOn = selectedPkgs.includes(pkg.id);
+                            const isFree = pkg.is_free || parseFloat(pkg.selling_price ?? pkg.price ?? 0) === 0;
+                            const nameLower = (pkg.name || "").toLowerCase();
+                            const isBag = nameLower.includes("bag") || nameLower.includes("kresek") || nameLower.includes("plastik") || nameLower.includes("tas");
+                            const cardIcon = isBag ? Package01Icon : PerfumeIcon;
+
+                            if (isPendingMode) {
+                                return (
+                                    <button
+                                        key={pkg.id}
+                                        type="button"
+                                        onClick={() => onToggle(pkg.id)}
+                                        className={`bg-white dark:bg-slate-900 flex gap-[14px] items-center p-[12px] rounded-[8px] text-left transition-all group cursor-pointer w-full ${
+                                            isOn
+                                                ? "border-[1.5px] border-[#54b8c3] shadow-sm"
+                                                : "border border-[#e8e8e8] dark:border-slate-800 hover:border-[#54b8c3] dark:hover:border-teal-500 hover:shadow-sm"
+                                        }`}
+                                    >
+                                        <CategoryIcon
+                                            icon={
+                                                <HugeiconsIcon
+                                                    icon={cardIcon}
+                                                    size={20}
+                                                    color="currentColor"
+                                                    strokeWidth={1.5}
+                                                />
+                                            }
+                                            variant="teal"
+                                            size="size-[40px]"
+                                        />
+                                        <div className="flex flex-col gap-[2px] items-start min-w-0 flex-1 overflow-hidden">
+                                            <p className="font-semibold text-[#0f172a] dark:text-white text-[14px] leading-[1.4] whitespace-nowrap overflow-hidden text-ellipsis w-full">
+                                                {pkg.name}
+                                            </p>
+                                            {isFree ? (
+                                                <p className="font-medium text-[#0f894d] dark:text-emerald-400 text-[12px] leading-[1.4]">
+                                                    GRATIS
+                                                </p>
+                                            ) : (
+                                                <p className="font-medium text-[#0f172a] dark:text-white text-[12px] leading-[1.4]">
+                                                    {fmt(pkg.selling_price ?? pkg.price)}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </button>
+                                );
+                            }
+
+                            return (
+                                <button
+                                    key={pkg.id}
+                                    type="button"
+                                    onClick={() => { onAddStandalone(pkg); onClose(); }}
+                                    className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex gap-[14px] items-center p-[12px] rounded-[8px] text-left hover:border-[#54b8c3] dark:hover:border-teal-500 hover:shadow-sm transition-all group cursor-pointer w-full"
+                                >
+                                    <CategoryIcon
+                                        icon={
+                                            <HugeiconsIcon
+                                                icon={cardIcon}
+                                                size={20}
+                                                color="currentColor"
+                                                strokeWidth={1.5}
+                                            />
+                                        }
+                                        variant="teal"
+                                        size="size-[40px]"
+                                    />
+                                    <div className="flex flex-col gap-[2px] items-start min-w-0 flex-1 overflow-hidden">
+                                        <p className="font-semibold text-[#0f172a] dark:text-white text-[14px] leading-[1.4] whitespace-nowrap overflow-hidden text-ellipsis w-full">
+                                            {pkg.name}
+                                        </p>
+                                        {isFree ? (
+                                            <p className="font-medium text-[#0f894d] dark:text-emerald-400 text-[12px] leading-[1.4]">
+                                                GRATIS
+                                            </p>
+                                        ) : (
+                                            <p className="font-medium text-[#0f172a] dark:text-white text-[12px] leading-[1.4]">
+                                                {fmt(pkg.selling_price ?? pkg.price)}
+                                            </p>
+                                        )}
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* Footer Pending Mode */}
             {isPendingMode && (
-                <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex-shrink-0 bg-slate-50 dark:bg-slate-800/50">
-                    <button onClick={onSubmitPending} disabled={isSubmitting} className="w-full h-12 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-sm transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 disabled:opacity-50">
+                <div className="p-[16px] border-t border-[#e8e8e8] dark:border-slate-800 bg-[#f8fafc] dark:bg-slate-900 shrink-0">
+                    <button
+                        type="button"
+                        onClick={onSubmitPending}
+                        disabled={isSubmitting}
+                        className="w-full h-[44px] rounded-[8px] bg-[#36adba] hover:bg-[#2c9ca8] text-white font-semibold text-[14px] transition-all flex items-center justify-center gap-[8px] cursor-pointer shadow-sm disabled:opacity-50"
+                    >
                         {isSubmitting ? (
                             <>
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                 Menyimpan...
                             </>
                         ) : (
@@ -1200,8 +1356,9 @@ export default function Index({
     // ── State: misc ────────────────────────────────────────────────────────────
     const [mobileView, setMobileView] = useState("catalog");
     const [leftTab, setLeftTab] = useState("parfum");
-    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [selectedCategory, setSelectedCategory] = useState("parfum");
     const [pendingReward, setSelectedReward] = useState(null);
+    const [isFooterCollapsed, setIsFooterCollapsed] = useState(false);
 
     // ── State: eligible promo / reward ─────────────────────────────────────────
     const [eligiblePromos, setEligiblePromos] = useState([]);
@@ -1779,286 +1936,465 @@ export default function Index({
                 </div>
 
                 <div className="flex-1 flex overflow-hidden">
-                    {/* ── LEFT: Catalog ────────────────────────────────────── */}
+                    {/* ── LEFT: Catalog or Payment Form Pane ────────────────────────────────────── */}
                     <div className={`flex-1 flex flex-col overflow-hidden ${mobileView === "catalog" ? "flex" : "hidden md:flex"}`}>
-                        {/* ── Header & Back Button ── */}
-                        {selectedCategory && (
-                            <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
+                        {showPaymentModal ? (
+                            /* ── PAYMENT VIEW IN LEFT PANE (1:1 Figma Node 3442:19156 + 3307:33585) ── */
+                            <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-slate-900 border-r border-[#e8e8e8] dark:border-slate-800">
+                                {/* Header Page Pembayaran (1:1 Figma Node 3442:19156) */}
+                                <div className="bg-white dark:bg-slate-900 border-[#e8e8e8] dark:border-slate-800 border-b border-solid flex items-center pl-[10px] pr-[20px] py-[12px] relative shrink-0 w-full">
                                     <button
-                                        onClick={() => setSelectedCategory(null)}
-                                        className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors"
+                                        type="button"
+                                        onClick={() => setShowPaymentModal(false)}
+                                        className="flex gap-[10px] items-center text-[#0f172a] dark:text-white hover:opacity-80 transition-opacity cursor-pointer"
                                     >
-                                        <IconArrowLeft size={18} />
-                                    </button>
-                                    <h1 className="font-black text-slate-800 dark:text-white text-base capitalize">
-                                        {selectedCategory === 'packaging' ? 'Botol' : selectedCategory === 'spunbond' ? 'Kemasan' : selectedCategory}
-                                    </h1>
-                                </div>
-                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-lg">
-                                    Pilih Item
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ── Category Selection View ── */}
-                        {!selectedCategory && (
-                            <div className="flex-1 overflow-y-auto p-4 md:p-6">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                                    {/* Card Parfum */}
-                                    <button
-                                        onClick={() => setSelectedCategory('parfum')}
-                                        className="self-stretch p-2.5 bg-white dark:bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-gray-200 dark:outline-slate-800 inline-flex justify-start items-center gap-3 overflow-hidden text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:outline-teal-300 dark:hover:outline-teal-700 hover:shadow-sm transition-all group cursor-pointer"
-                                    >
-                                        <CategoryIcon icon={<IconFlask size={20} />} variant="teal" size="size-9" />
-                                        <div className="flex-1 inline-flex flex-col justify-start items-start gap-0.5 overflow-hidden min-w-0">
-                                            <div className="self-stretch inline-flex justify-between items-center overflow-hidden">
-                                                <div className="justify-start text-slate-900 dark:text-white text-sm font-semibold leading-5 truncate">
-                                                    Parfum
-                                                </div>
-                                            </div>
-                                            <div className="justify-start text-slate-500 dark:text-slate-400 text-xs font-normal leading-4 truncate w-full">
-                                                Varian, konsentrasi, ukuran
-                                            </div>
-                                        </div>
-                                    </button>
-
-                                    {/* Card Botol */}
-                                    <button
-                                        onClick={() => setSelectedCategory('packaging')}
-                                        className="self-stretch p-2.5 bg-white dark:bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-gray-200 dark:outline-slate-800 inline-flex justify-start items-center gap-3 overflow-hidden text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:outline-orange-300 dark:hover:outline-orange-700 hover:shadow-sm transition-all group cursor-pointer"
-                                    >
-                                        <CategoryIcon icon={<IconBox size={20} />} variant="teal" size="size-9" />
-                                        <div className="flex-1 inline-flex flex-col justify-start items-start gap-0.5 overflow-hidden min-w-0">
-                                            <div className="self-stretch inline-flex justify-between items-center overflow-hidden">
-                                                <div className="justify-start text-slate-900 dark:text-white text-sm font-semibold leading-5 truncate">
-                                                    Botol
-                                                </div>
-                                            </div>
-                                            <div className="justify-start text-slate-500 dark:text-slate-400 text-xs font-normal leading-4 truncate w-full">
-                                                Botol, tutup spray, aksesoris
-                                            </div>
-                                        </div>
-                                    </button>
-
-                                    {/* Card Kemasan */}
-                                    <button
-                                        onClick={() => setSelectedCategory('spunbond')}
-                                        className="self-stretch p-2.5 bg-white dark:bg-slate-900 rounded-lg outline outline-1 outline-offset-[-1px] outline-gray-200 dark:outline-slate-800 inline-flex justify-start items-center gap-3 overflow-hidden text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:outline-emerald-300 dark:hover:outline-emerald-700 hover:shadow-sm transition-all group cursor-pointer"
-                                    >
-                                        <CategoryIcon icon={<IconShoppingBag size={20} />} variant="teal" size="size-9" />
-                                        <div className="flex-1 inline-flex flex-col justify-start items-start gap-0.5 overflow-hidden min-w-0">
-                                            <div className="self-stretch inline-flex justify-between items-center overflow-hidden">
-                                                <div className="justify-start text-slate-900 dark:text-white text-sm font-semibold leading-5 truncate">
-                                                    Kemasan
-                                                </div>
-                                            </div>
-                                            <div className="justify-start text-slate-500 dark:text-slate-400 text-xs font-normal leading-4 truncate w-full">
-                                                Tas spunbond eksklusif
-                                            </div>
-                                        </div>
+                                        <IconArrowLeft size={22} className="shrink-0 text-[#0f172a] dark:text-white" />
+                                        <span className="font-semibold text-[#0f172a] dark:text-white text-[18px] leading-[1.4] whitespace-nowrap">
+                                            Pembayaran
+                                        </span>
                                     </button>
                                 </div>
-                            </div>
-                        )}
 
-                        {/* ── TAB PARFUM Content ── */}
-                        {selectedCategory === "parfum" && (
-                            <div className="flex-1 overflow-y-auto p-4">
-                                {/* Search + filter gender */}
-                                <div className="flex gap-[8px] items-center mb-3">
-                                    {/* Search */}
-                                    <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex flex-1 gap-[8px] h-[37px] items-center px-[12px] py-[4px] rounded-[8px] relative">
-                                        <IconSearch size={14} className="text-[#64748b] dark:text-slate-400 shrink-0" />
-                                        <input
-                                            type="text"
-                                            placeholder="Cari varian..."
-                                            value={catalogSearch}
-                                            onChange={(e) => setCatalogSearch(e.target.value)}
-                                            className="w-full bg-transparent border-0 text-[14px] text-slate-900 dark:text-white placeholder-[#64748b] dark:placeholder-slate-400 focus:outline-none focus:ring-0 p-0 leading-[20px]"
-                                        />
+                                {/* Content Pane: Sales, Metode Pembayaran, Nominal (1:1 Figma Node 3307:33585) */}
+                                <div className="flex-1 overflow-y-auto flex flex-col bg-slate-50 dark:bg-slate-950 p-4 gap-3">
+                                    {/* Card 1: Sales */}
+                                    <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 rounded-[8px] flex flex-col overflow-hidden shadow-sm">
+                                        <div className="bg-[#fbfbfb] dark:bg-slate-800/80 px-[16px] py-[12px] border-b border-[#e8e8e8] dark:border-slate-800 flex items-center">
+                                            <p className="font-semibold text-[14px] text-[#0f172a] dark:text-white leading-[1.4]">
+                                                Sales
+                                            </p>
+                                        </div>
+                                        <div className="p-[14px] flex flex-col relative">
+                                            <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex gap-[8px] h-[37px] items-center px-[8px] py-[8px] rounded-[8px] w-full relative">
+                                                <IconSearch size={16} className="text-[#64748b] dark:text-slate-400 shrink-0" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Cari nama sales"
+                                                    value={selectedSalesPerson ? selectedSalesPerson.name : salesSearch}
+                                                    onClick={() => {
+                                                        if (selectedSalesPerson) {
+                                                            setSelectedSalesPerson(null);
+                                                            setSalesSearch("");
+                                                        }
+                                                        setShowSalesDropdown(true);
+                                                    }}
+                                                    onChange={(e) => {
+                                                        setSalesSearch(e.target.value);
+                                                        setShowSalesDropdown(true);
+                                                        if (selectedSalesPerson) setSelectedSalesPerson(null);
+                                                    }}
+                                                    className="w-full bg-transparent border-0 text-[12px] text-[#0f172a] dark:text-white placeholder-[#64748b] dark:placeholder-slate-400 focus:outline-none focus:ring-0 p-0 leading-[1.4]"
+                                                />
+                                                {selectedSalesPerson && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setSelectedSalesPerson(null); setSalesSearch(""); }}
+                                                        className="text-slate-400 hover:text-slate-600 p-1"
+                                                    >
+                                                        <IconX size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* Dropdown list sales */}
+                                            {showSalesDropdown && !selectedSalesPerson && (
+                                                <div className="absolute top-full left-[14px] right-[14px] mt-1 bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-700 rounded-[8px] shadow-xl z-30 overflow-hidden max-h-44 overflow-y-auto">
+                                                    {salesPeople.filter(s => s.name.toLowerCase().includes(salesSearch.toLowerCase())).map(s => (
+                                                        <button
+                                                            key={s.id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setSelectedSalesPerson(s);
+                                                                setShowSalesDropdown(false);
+                                                                setSalesSearch("");
+                                                            }}
+                                                            className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-[#e8e8e8] dark:border-slate-800 last:border-0 cursor-pointer"
+                                                        >
+                                                            <p className="font-semibold text-xs text-[#0f172a] dark:text-white">{s.name}</p>
+                                                            <p className="text-[10px] text-[#64748b] dark:text-slate-400">{s.code}</p>
+                                                        </button>
+                                                    ))}
+                                                    {salesPeople.length === 0 && <p className="p-3 text-center text-xs text-slate-400">Belum ada sales</p>}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
 
-                                    {/* Filters */}
-                                    <div className="bg-[#fbfbfb] dark:bg-slate-800/80 border border-[#e8e8e8] dark:border-slate-700 flex gap-[2px] items-center p-[4px] rounded-[8px] shrink-0">
-                                        {[
-                                            { key: "all", label: "Semua" },
-                                            { key: "male", label: "Pria" },
-                                            { key: "female", label: "Wanita" },
-                                        ].map((g) => {
-                                            const isActive = catalogGender === g.key;
-                                            return (
-                                                <button
-                                                    key={g.key}
-                                                    type="button"
-                                                    onClick={() => setCatalogGender(g.key)}
-                                                    className={`px-[12px] py-[6px] text-[12px] leading-[1.4] transition-all ${
-                                                        isActive
-                                                            ? "bg-white dark:bg-slate-900 border border-[#e5e5e5] dark:border-slate-700 rounded-[6px] shadow-[0px_1px_3px_0px_rgba(15,23,41,0.08)] font-semibold text-[#0f172a] dark:text-white"
-                                                            : "rounded-[7px] font-medium text-[#64748b] dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-                                                    }`}
-                                                >
-                                                    {g.label}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                {loadingCatalog ? (
-                                    <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-400">
-                                        <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                                        <span className="text-sm">Memuat katalog...</span>
-                                    </div>
-                                ) : (() => {
-                                    const filtered = catalogVariants.filter(v => {
-                                        const matchSearch = !catalogSearch ||
-                                            v.name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
-                                            (v.code ?? "").toLowerCase().includes(catalogSearch.toLowerCase());
-                                        const matchGender = catalogGender === "all" || v.gender === catalogGender;
-                                        return matchSearch && matchGender;
-                                    });
-                                    return filtered.length === 0 && !loadingCatalog ? (
-                                        <div className="flex flex-col items-center justify-center py-16">
-                                            <IconAlertTriangle size={28} className="text-amber-400 mb-2" />
-                                            <p className="font-semibold text-slate-500 text-sm">Tidak ada varian ditemukan</p>
+                                    {/* Card 2: Metode Pembayaran */}
+                                    <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 rounded-[8px] flex flex-col overflow-hidden shadow-sm">
+                                        <div className="bg-[#fbfbfb] dark:bg-slate-800/80 px-[16px] py-[12px] border-b border-[#e8e8e8] dark:border-slate-800 flex items-center">
+                                            <p className="font-semibold text-[14px] text-[#0f172a] dark:text-white leading-[1.4]">
+                                                Metode Pembayaran
+                                            </p>
                                         </div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3">
-                                            {filtered.map((variant) => {
-                                                const isMale = variant.gender === "male";
-                                                const isFemale = variant.gender === "female";
-                                                const chipClass = isMale
-                                                    ? "bg-[#dbe6fb] text-[#1e40af] dark:bg-blue-900/40 dark:text-blue-300"
-                                                    : isFemale
-                                                        ? "bg-[#f9d8e7] text-[#9d174d] dark:bg-pink-900/40 dark:text-pink-300"
-                                                        : "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300";
-
+                                        <div className="p-[14px] flex gap-[10px] items-center w-full">
+                                            {paymentMethods.map((method) => {
+                                                const isActive = selectedPaymentId === method.id;
                                                 return (
                                                     <button
-                                                        key={variant.id}
+                                                        key={method.id}
                                                         type="button"
-                                                        onClick={() => selectCatalogVariant(variant)}
-                                                        className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex gap-[10px] items-center px-[12px] py-[10px] rounded-[6px] relative text-left hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm transition-all group cursor-pointer w-full"
+                                                        onClick={() => setSelectedPaymentId(method.id)}
+                                                        className={`border border-solid flex flex-[1_0_0] flex-col gap-[8px] items-center justify-center min-w-0 p-[12px] relative rounded-[8px] cursor-pointer transition-all ${
+                                                            isActive
+                                                                ? "border-[#54b8c3] bg-[#f0fdfa] dark:bg-teal-950/30 text-[#0f172a] dark:text-white shadow-sm ring-1 ring-[#54b8c3]"
+                                                                : "border-[#e8e8e8] dark:border-slate-800 bg-white dark:bg-slate-900 text-[#64748b] dark:text-slate-400 hover:border-slate-300"
+                                                        }`}
                                                     >
-                                                        {/* Info */}
-                                                        <div className="flex flex-col gap-[2px] items-start justify-center flex-1 min-w-0">
-                                                            <div className="flex gap-[6px] items-center w-full">
-                                                                <p className="font-semibold text-[#0f172a] dark:text-white text-[14px] leading-[20px] truncate flex-1 min-w-0">
-                                                                    {variant.name}
-                                                                </p>
-                                                                {variant.gender && (
-                                                                    <span className={`px-[6px] py-[2px] rounded-full text-[12px] font-medium leading-[1.2] shrink-0 ${chipClass}`}>
-                                                                        {GENDER_LABEL[variant.gender] ?? variant.gender}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            {variant.code && (
-                                                                <p className="font-normal text-[#64748b] dark:text-slate-400 text-[12px] leading-[16px] truncate w-full">
-                                                                    {variant.code}
-                                                                </p>
+                                                        <div className="size-[24px] flex items-center justify-center">
+                                                            {method.name.toLowerCase().includes("tunai") ? (
+                                                                <IconCurrencyDollar size={24} className={isActive ? "text-[#36adba]" : "text-[#64748b]"} />
+                                                            ) : method.name.toLowerCase().includes("qris") ? (
+                                                                <IconBox size={24} className={isActive ? "text-[#36adba]" : "text-[#64748b]"} />
+                                                            ) : (
+                                                                <IconReceipt size={24} className={isActive ? "text-[#36adba]" : "text-[#64748b]"} />
                                                             )}
                                                         </div>
-
-                                                        {/* Add Icon Button */}
-                                                        <div className="bg-[#f7f7f7] dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 flex items-center justify-center rounded-[6px] shrink-0 size-[28px] text-[#64748b] dark:text-slate-400 group-hover:bg-slate-200 dark:group-hover:bg-slate-700 transition-colors">
-                                                            <IconPlus size={14} />
-                                                        </div>
+                                                        <p className={`font-semibold text-[14px] leading-[20px] whitespace-nowrap ${isActive ? "text-[#0f172a] dark:text-white" : "text-[#64748b] dark:text-slate-400"}`}>
+                                                            {method.name}
+                                                        </p>
                                                     </button>
                                                 );
                                             })}
+                                        </div>
+                                    </div>
 
-                                            {/* Card Custom Order */}
-                                            {SHOW_KOMPOSISI_BEBAS && (
-                                            <button onClick={openCustomModal}
-                                                className="group relative p-4 rounded-2xl border-2 border-dashed text-left transition-all border-slate-300 dark:border-slate-700 bg-slate-100/50 dark:bg-amber-950/20 hover:border-slate-300 dark:hover:border-amber-600 hover:shadow-md">
-                                                <div className="flex items-start gap-2 mb-3">
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-black text-slate-700 dark:text-amber-200 text-sm leading-tight">Komposisi Bebas</p>
-                                                        <span className="text-[10px] text-slate-700/70 font-mono mt-0.5 block">CUSTOM</span>
-                                                    </div>
-                                                    <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center shadow-sm flex-shrink-0">
-                                                        <IconAdjustments size={16} className="text-white" />
-                                                    </div>
+                                    {/* Card 3: Nominal */}
+                                    <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 rounded-[8px] flex flex-col overflow-hidden shadow-sm">
+                                        <div className="bg-[#fbfbfb] dark:bg-slate-800/80 px-[16px] py-[12px] border-b border-[#e8e8e8] dark:border-slate-800 flex items-center">
+                                            <p className="font-semibold text-[14px] text-[#0f172a] dark:text-white leading-[1.4]">
+                                                Nominal
+                                            </p>
+                                        </div>
+                                        <div className="p-[14px] flex flex-col gap-[12px] w-full">
+                                            {/* Quick Amount Buttons if cash */}
+                                            {isCash && (
+                                                <div className="grid grid-cols-4 gap-1.5">
+                                                    {[payable, Math.ceil(payable / 10000) * 10000, Math.ceil(payable / 50000) * 50000, Math.ceil(payable / 100000) * 100000]
+                                                        .filter((v, i, a) => a.indexOf(v) === i && v >= payable).slice(0, 4)
+                                                        .map((amt) => (
+                                                            <button
+                                                                key={amt}
+                                                                type="button"
+                                                                onClick={() => setCashInput(String(amt))}
+                                                                className={`py-1.5 rounded-[6px] text-[11px] font-semibold transition-all border ${
+                                                                    Number(cashInput) === amt
+                                                                        ? "bg-[#54b8c3] text-white border-[#54b8c3]"
+                                                                        : "bg-[#fbfbfb] dark:bg-slate-800 text-[#64748b] dark:text-slate-300 border-[#e8e8e8] dark:border-slate-700 hover:border-slate-300"
+                                                                }`}
+                                                            >
+                                                                {(amt / 1000).toLocaleString("id-ID")}rb
+                                                            </button>
+                                                        ))}
                                                 </div>
-                                                <div className="flex items-center justify-end">
-                                                    <span className="text-[11px] text-slate-700 font-semibold">+ Buat →</span>
+                                            )}
+
+                                            {/* Input Group 1:1 Figma */}
+                                            <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex h-[52px] items-center overflow-hidden rounded-[8px] w-full">
+                                                <div className="bg-[#fbfbfb] dark:bg-slate-800 border-r border-[#e8e8e8] dark:border-slate-700 flex h-full items-center justify-center px-[14px] shrink-0">
+                                                    <p className="font-semibold text-[#64748b] dark:text-slate-400 text-[14px]">
+                                                        Rp
+                                                    </p>
                                                 </div>
-                                            </button>
+                                                <div className="flex flex-1 h-full items-center px-[14px] min-w-0">
+                                                    <input
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        value={cashInput}
+                                                        onChange={(e) => setCashInput(e.target.value.replace(/\D/g, ""))}
+                                                        placeholder="0"
+                                                        className="w-full bg-transparent border-0 font-semibold text-[24px] leading-[1.4] text-[#0f172a] dark:text-white placeholder-[#94a3b8] focus:outline-none focus:ring-0 p-0"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Kembalian if cash */}
+                                            {isCash && cash >= payable && payable > 0 && (
+                                                <div className="flex justify-between items-center px-[14px] py-[10px] bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-slate-700 rounded-[8px]">
+                                                    <span className="text-xs font-semibold text-[#0f172a] dark:text-white">Kembalian</span>
+                                                    <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{fmt(kembalian)}</span>
+                                                </div>
                                             )}
                                         </div>
-                                    );
-                                })()}
+                                    </div>
+                                </div>
                             </div>
-                        )}
+                        ) : (
+                            /* ── CATALOG VIEW IN LEFT PANE ── */
+                            <>
+                                {/* ── Persistent Category Header Tabs ── */}
+                                <div className="p-3 md:p-4 pb-2 border-b border-[#e8e8e8] dark:border-slate-800 bg-[#fbfbfb] dark:bg-slate-900/50 shrink-0">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                        {/* Card Parfum Tab */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedCategory('parfum')}
+                                            className={`p-2.5 rounded-lg border inline-flex items-center gap-3 text-left transition-all group cursor-pointer w-full ${
+                                                (selectedCategory === 'parfum' || !selectedCategory)
+                                                    ? "bg-white dark:bg-slate-900 border-[#54b8c3] dark:border-teal-500 shadow-sm ring-1 ring-[#54b8c3]/30"
+                                                    : "bg-white/60 dark:bg-slate-900/40 border-[#e8e8e8] dark:border-slate-800 hover:bg-white dark:hover:bg-slate-900 hover:border-slate-300"
+                                            }`}
+                                        >
+                                            <CategoryIcon icon={<IconFlask size={20} />} variant="teal" size="size-9" />
+                                            <div className="flex-1 flex flex-col justify-start items-start gap-0.5 overflow-hidden min-w-0">
+                                                <div className="self-stretch inline-flex justify-between items-center overflow-hidden">
+                                                    <div className="justify-start text-slate-900 dark:text-white text-sm font-semibold leading-5 truncate">
+                                                        Parfum
+                                                    </div>
+                                                </div>
+                                                <div className="justify-start text-slate-500 dark:text-slate-400 text-xs font-normal leading-4 truncate w-full">
+                                                    Varian, konsentrasi, ukuran
+                                                </div>
+                                            </div>
+                                        </button>
 
-                        {/* ── TAB KEMASAN / SPUNBOND Content ── */}
-                        {(selectedCategory === "packaging" || selectedCategory === "spunbond") && (
-                            <div className="flex-1 overflow-y-auto p-4">
-                                {(() => {
-                                    const items = packagingMaterials.filter(pkg => {
-                                        const isSpunbond = pkg.name.toLowerCase().includes('kresek') || pkg.name.toLowerCase().includes('spunbond');
-                                        return selectedCategory === 'spunbond' ? isSpunbond : !isSpunbond;
-                                    });
+                                        {/* Card Botol Tab */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedCategory('packaging')}
+                                            className={`p-2.5 rounded-lg border inline-flex items-center gap-3 text-left transition-all group cursor-pointer w-full ${
+                                                selectedCategory === 'packaging'
+                                                    ? "bg-white dark:bg-slate-900 border-[#54b8c3] dark:border-teal-500 shadow-sm ring-1 ring-[#54b8c3]/30"
+                                                    : "bg-white/60 dark:bg-slate-900/40 border-[#e8e8e8] dark:border-slate-800 hover:bg-white dark:hover:bg-slate-900 hover:border-slate-300"
+                                            }`}
+                                        >
+                                            <CategoryIcon icon={<IconBox size={20} />} variant="teal" size="size-9" />
+                                            <div className="flex-1 flex flex-col justify-start items-start gap-0.5 overflow-hidden min-w-0">
+                                                <div className="self-stretch inline-flex justify-between items-center overflow-hidden">
+                                                    <div className="justify-start text-slate-900 dark:text-white text-sm font-semibold leading-5 truncate">
+                                                        Botol
+                                                    </div>
+                                                </div>
+                                                <div className="justify-start text-slate-500 dark:text-slate-400 text-xs font-normal leading-4 truncate w-full">
+                                                    Botol, tutup spray, aksesoris
+                                                </div>
+                                            </div>
+                                        </button>
 
-                                    return items.length === 0 ? (
-                                        <div className="flex flex-col items-center justify-center py-16">
-                                            <IconBox size={28} className="text-slate-300 dark:text-slate-600 mb-3" />
-                                            <p className="font-semibold text-slate-500">Belum ada item di kategori ini</p>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <p className="text-[11px] text-slate-400 mb-3 uppercase tracking-wider font-bold">
-                                                Klik item untuk menambahkan langsung ke keranjang
-                                            </p>
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
-                                                {items.map((pkg, i) => {
-                                                    const bg = ["bg-orange-500", "bg-violet-500", "bg-rose-500", "bg-teal-500", "bg-sky-500", "bg-amber-500", "bg-indigo-500"][i % 7];
-                                                    const inCart = cartPackagings.find(p => p.pkg.id === pkg.id);
+                                        {/* Card Kemasan Tab */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedCategory('spunbond')}
+                                            className={`p-2.5 rounded-lg border inline-flex items-center gap-3 text-left transition-all group cursor-pointer w-full ${
+                                                selectedCategory === 'spunbond'
+                                                    ? "bg-white dark:bg-slate-900 border-[#54b8c3] dark:border-teal-500 shadow-sm ring-1 ring-[#54b8c3]/30"
+                                                    : "bg-white/60 dark:bg-slate-900/40 border-[#e8e8e8] dark:border-slate-800 hover:bg-white dark:hover:bg-slate-900 hover:border-slate-300"
+                                            }`}
+                                        >
+                                            <CategoryIcon icon={<IconShoppingBag size={20} />} variant="teal" size="size-9" />
+                                            <div className="flex-1 flex flex-col justify-start items-start gap-0.5 overflow-hidden min-w-0">
+                                                <div className="self-stretch inline-flex justify-between items-center overflow-hidden">
+                                                    <div className="justify-start text-slate-900 dark:text-white text-sm font-semibold leading-5 truncate">
+                                                        Kemasan
+                                                    </div>
+                                                </div>
+                                                <div className="justify-start text-slate-500 dark:text-slate-400 text-xs font-normal leading-4 truncate w-full">
+                                                    Tas spunbond eksklusif
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* ── TAB PARFUM Content ── */}
+                                {selectedCategory === "parfum" && (
+                                    <div className="flex-1 overflow-y-auto p-4">
+                                        {/* Search + filter gender */}
+                                        <div className="flex gap-[8px] items-center mb-3">
+                                            {/* Search */}
+                                            <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex flex-1 gap-[8px] h-[37px] items-center px-[12px] py-[4px] rounded-[8px] relative">
+                                                <IconSearch size={14} className="text-[#64748b] dark:text-slate-400 shrink-0" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Cari varian..."
+                                                    value={catalogSearch}
+                                                    onChange={(e) => setCatalogSearch(e.target.value)}
+                                                    className="w-full bg-transparent border-0 text-[14px] text-slate-900 dark:text-white placeholder-[#64748b] dark:placeholder-slate-400 focus:outline-none focus:ring-0 p-0 leading-[20px]"
+                                                />
+                                            </div>
+
+                                            {/* Filters */}
+                                            <div className="bg-[#fbfbfb] dark:bg-slate-800/80 border border-[#e8e8e8] dark:border-slate-700 flex gap-[2px] items-center p-[4px] rounded-[8px] shrink-0">
+                                                {[
+                                                    { key: "all", label: "Semua" },
+                                                    { key: "male", label: "Pria" },
+                                                    { key: "female", label: "Wanita" },
+                                                ].map((g) => {
+                                                    const isActive = catalogGender === g.key;
                                                     return (
-                                                        <button key={pkg.id} onClick={() => handleAddPkg(pkg)}
-                                                            className={`group relative flex flex-col rounded-2xl border-2 text-left overflow-hidden transition-all ${inCart ? "border-orange-400 dark:border-orange-600 ring-2 ring-orange-500/20 bg-slate-50 dark:bg-orange-950/20" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md"}`}>
-
-                                                            {/* Gambar besar — aspect persegi, object-contain agar botol utuh */}
-                                                            <div className="relative aspect-square w-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
-                                                                {pkg.image_url ? (
-                                                                    <img src={pkg.image_url} alt={pkg.name} className="w-full h-full object-contain p-2" />
-                                                                ) : (
-                                                                    <div className={`w-full h-full ${bg} flex items-center justify-center`}>
-                                                                        <IconBox size={44} className="text-white/90" />
-                                                                    </div>
-                                                                )}
-                                                                {inCart && (
-                                                                    <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[11px] font-black bg-orange-500 text-white shadow-sm">
-                                                                        {inCart.qty}x
-                                                                    </span>
-                                                                )}
-                                                                {pkg.is_free && !inCart && (
-                                                                    <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-white shadow-sm">
-                                                                        GRATIS
-                                                                    </span>
-                                                                )}
-                                                            </div>
-
-                                                            {/* Info */}
-                                                            <div className="flex flex-col gap-1 p-3">
-                                                                <p className="font-black text-slate-800 dark:text-white text-sm leading-tight line-clamp-2">{pkg.name}</p>
-                                                                {pkg.code && <span className="text-[10px] text-slate-400 font-mono">{pkg.code}</span>}
-                                                                <div className="flex items-center justify-between mt-1">
-                                                                    <span className="text-sm font-black text-slate-700 dark:text-slate-300">
-                                                                        {pkg.is_free ? "Rp 0" : fmt(pkg.selling_price)}
-                                                                    </span>
-                                                                    <span className="text-[11px] text-orange-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity">+ Tambah</span>
-                                                                </div>
-                                                            </div>
+                                                        <button
+                                                            key={g.key}
+                                                            type="button"
+                                                            onClick={() => setCatalogGender(g.key)}
+                                                            className={`px-[12px] py-[6px] text-[12px] leading-[1.4] transition-all ${
+                                                                isActive
+                                                                    ? "bg-white dark:bg-slate-900 border border-[#e5e5e5] dark:border-slate-700 rounded-[6px] shadow-[0px_1px_3px_0px_rgba(15,23,41,0.08)] font-semibold text-[#0f172a] dark:text-white"
+                                                                    : "rounded-[7px] font-medium text-[#64748b] dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                                                            }`}
+                                                        >
+                                                            {g.label}
                                                         </button>
                                                     );
                                                 })}
                                             </div>
-                                        </>
-                                    );
-                                })()}
-                            </div>
+                                        </div>
+
+                                        {loadingCatalog ? (
+                                            <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-400">
+                                                <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                                                <span className="text-sm">Memuat katalog...</span>
+                                            </div>
+                                        ) : (() => {
+                                            const filtered = catalogVariants.filter(v => {
+                                                const matchSearch = !catalogSearch ||
+                                                    v.name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+                                                    (v.code ?? "").toLowerCase().includes(catalogSearch.toLowerCase());
+                                                const matchGender = catalogGender === "all" || v.gender === catalogGender;
+                                                return matchSearch && matchGender;
+                                            });
+                                            return filtered.length === 0 && !loadingCatalog ? (
+                                                <div className="flex flex-col items-center justify-center py-16">
+                                                    <IconAlertTriangle size={28} className="text-amber-400 mb-2" />
+                                                    <p className="font-semibold text-slate-500 text-sm">Tidak ada varian ditemukan</p>
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3">
+                                                    {filtered.map((variant) => {
+                                                        const isMale = variant.gender === "male";
+                                                        const isFemale = variant.gender === "female";
+                                                        const chipClass = isMale
+                                                            ? "bg-[#dbe6fb] text-[#1e40af] dark:bg-blue-900/40 dark:text-blue-300"
+                                                            : isFemale
+                                                                ? "bg-[#f9d8e7] text-[#9d174d] dark:bg-pink-900/40 dark:text-pink-300"
+                                                                : "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300";
+
+                                                        return (
+                                                            <button
+                                                                key={variant.id}
+                                                                type="button"
+                                                                onClick={() => selectCatalogVariant(variant)}
+                                                                className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex gap-[10px] items-center px-[12px] py-[10px] rounded-[6px] relative text-left hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm transition-all group cursor-pointer w-full"
+                                                            >
+                                                                {/* Info */}
+                                                                <div className="flex flex-col gap-[2px] items-start justify-center flex-1 min-w-0">
+                                                                    <div className="flex gap-[6px] items-center w-full">
+                                                                        <p className="font-semibold text-[#0f172a] dark:text-white text-[14px] leading-[20px] truncate flex-1 min-w-0">
+                                                                            {variant.name}
+                                                                        </p>
+                                                                        {variant.gender && (
+                                                                            <span className={`px-[6px] py-[2px] rounded-full text-[12px] font-medium leading-[1.2] shrink-0 ${chipClass}`}>
+                                                                                {GENDER_LABEL[variant.gender] ?? variant.gender}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    {variant.code && (
+                                                                        <p className="font-normal text-[#64748b] dark:text-slate-400 text-[12px] leading-[16px] truncate w-full">
+                                                                            {variant.code}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Add Icon Button */}
+                                                                <div className="bg-[#f7f7f7] dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 flex items-center justify-center rounded-[6px] shrink-0 size-[28px] text-[#64748b] dark:text-slate-400 group-hover:bg-slate-200 dark:group-hover:bg-slate-700 transition-colors">
+                                                                    <IconPlus size={14} />
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    })}
+
+                                                    {/* Card Custom Order */}
+                                                    {SHOW_KOMPOSISI_BEBAS && (
+                                                    <button onClick={openCustomModal}
+                                                        className="group relative p-4 rounded-2xl border-2 border-dashed text-left transition-all border-slate-300 dark:border-slate-700 bg-slate-100/50 dark:bg-amber-950/20 hover:border-slate-300 dark:hover:border-amber-600 hover:shadow-md">
+                                                        <div className="flex items-start gap-2 mb-3">
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-black text-slate-700 dark:text-amber-200 text-sm leading-tight">Komposisi Bebas</p>
+                                                                <span className="text-[10px] text-slate-700/70 font-mono mt-0.5 block">CUSTOM</span>
+                                                            </div>
+                                                            <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center shadow-sm flex-shrink-0">
+                                                                <IconAdjustments size={16} className="text-white" />
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center justify-end">
+                                                            <span className="text-[11px] text-slate-700 font-semibold">+ Buat →</span>
+                                                        </div>
+                                                    </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
+                                )}
+
+                                {/* ── TAB KEMASAN / SPUNBOND Content ── */}
+                                {(selectedCategory === "packaging" || selectedCategory === "spunbond") && (
+                                    <div className="flex-1 overflow-y-auto p-4">
+                                        {(() => {
+                                            const items = packagingMaterials.filter(pkg => {
+                                                const isSpunbond = pkg.name.toLowerCase().includes('kresek') || pkg.name.toLowerCase().includes('spunbond');
+                                                return selectedCategory === 'spunbond' ? isSpunbond : !isSpunbond;
+                                            });
+
+                                            return items.length === 0 ? (
+                                                <div className="flex flex-col items-center justify-center py-16">
+                                                    <IconBox size={28} className="text-slate-300 dark:text-slate-600 mb-3" />
+                                                    <p className="font-semibold text-slate-500">Belum ada item di kategori ini</p>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <p className="text-[11px] text-slate-400 mb-3 uppercase tracking-wider font-bold">
+                                                        Klik item untuk menambahkan langsung ke keranjang
+                                                    </p>
+                                                    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+                                                        {items.map((pkg, i) => {
+                                                            const bg = ["bg-orange-500", "bg-violet-500", "bg-rose-500", "bg-teal-500", "bg-sky-500", "bg-amber-500", "bg-indigo-500"][i % 7];
+                                                            const inCart = cartPackagings.find(p => p.pkg.id === pkg.id);
+                                                            return (
+                                                                <button key={pkg.id} onClick={() => handleAddPkg(pkg)}
+                                                                    className={`group relative flex flex-col rounded-2xl border-2 text-left overflow-hidden transition-all ${inCart ? "border-orange-400 dark:border-orange-600 ring-2 ring-orange-500/20 bg-slate-50 dark:bg-orange-950/20" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md"}`}>
+
+                                                                    {/* Gambar besar — aspect persegi, object-contain agar botol utuh */}
+                                                                    <div className="relative aspect-square w-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
+                                                                        {pkg.image_url ? (
+                                                                            <img src={pkg.image_url} alt={pkg.name} className="w-full h-full object-contain p-2" />
+                                                                        ) : (
+                                                                            <div className={`w-full h-full ${bg} flex items-center justify-center`}>
+                                                                                <IconBox size={44} className="text-white/90" />
+                                                                            </div>
+                                                                        )}
+                                                                        {inCart && (
+                                                                            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[11px] font-black bg-orange-500 text-white shadow-sm">
+                                                                                {inCart.qty}x
+                                                                            </span>
+                                                                        )}
+                                                                        {pkg.is_free && !inCart && (
+                                                                            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-white shadow-sm">
+                                                                                GRATIS
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* Info */}
+                                                                    <div className="flex flex-col gap-1 p-3">
+                                                                        <p className="font-black text-slate-800 dark:text-white text-sm leading-tight line-clamp-2">{pkg.name}</p>
+                                                                        {pkg.code && <span className="text-[10px] text-slate-400 font-mono">{pkg.code}</span>}
+                                                                        <div className="flex items-center justify-between mt-1">
+                                                                            <span className="text-sm font-black text-slate-700 dark:text-slate-300">
+                                                                                {pkg.is_free ? "Rp 0" : fmt(pkg.selling_price)}
+                                                                            </span>
+                                                                            <span className="text-[11px] text-orange-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity">+ Tambah</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
 
@@ -2109,20 +2445,71 @@ export default function Index({
                                 </button>
                             </div>
                             {selectedCustomer && (
-                                <div className="mt-0.5 flex items-center gap-2 flex-wrap w-full">
-                                    <p className="text-[11px] text-slate-700 dark:text-slate-300 flex items-center gap-1"><IconCheck size={11} /> {selectedCustomer.phone || selectedCustomer.name}</p>
-                                    {Number(selectedCustomer.points ?? 0) > 0 && <span className="text-[10px] text-slate-500 font-bold">{Number(selectedCustomer.points).toLocaleString("id-ID")} poin</span>}
-                                    {Number(selectedCustomer.points ?? 0) >= loyalty_reward_threshold && <span className="ml-auto text-[10px] font-black text-amber-600">🏆 Reward tersedia</span>}
+                                <div className="mt-[6px] flex items-center gap-[6px] flex-wrap w-full">
+                                    <div className="size-[12px] bg-[#12a55c] rounded-full flex items-center justify-center text-white shrink-0">
+                                        <IconCheck size={8} strokeWidth={3} />
+                                    </div>
+                                    <div className="flex items-center gap-[10px] shrink-0 flex-wrap">
+                                        <p className="font-medium text-[#0f172a] dark:text-white text-[10px] leading-[1.4] whitespace-nowrap">
+                                            {selectedCustomer.phone || "-"}
+                                        </p>
+                                        <div className="w-px h-[10px] bg-[#e8e8e8] dark:bg-slate-700 shrink-0" />
+                                        <p className="font-medium text-[#0f172a] dark:text-white text-[10px] leading-[1.4] whitespace-nowrap">
+                                            {selectedCustomer.name}
+                                        </p>
+                                        {selectedCustomer.id && (
+                                            <>
+                                                <div className="w-px h-[10px] bg-[#e8e8e8] dark:bg-slate-700 shrink-0" />
+                                                <p className="font-medium text-[#0f172a] dark:text-white text-[10px] leading-[1.4] whitespace-nowrap">
+                                                    {Number(selectedCustomer.points ?? 0).toLocaleString("id-ID")} Poin
+                                                </p>
+                                            </>
+                                        )}
+                                        {Number(selectedCustomer.points ?? 0) >= loyalty_reward_threshold && (
+                                            <span className="ml-auto text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                                                🏆 Reward tersedia
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                             {showCustomerDropdown && !selectedCustomer && (
-                                <div className="absolute top-full left-2 right-2 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-30 overflow-hidden max-h-44 overflow-y-auto">
-                                    <button onClick={() => { setSelectedCustomer({ id: null, name: "Pelanggan Umum" }); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2 text-xs text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800">👤 Pelanggan Umum (Walk-in)</button>
-                                    {filteredCustomers.map(c => (
-                                        <button key={c.id} onClick={() => { setSelectedCustomer(c); setShowCustomerDropdown(false); setCustomerSearch(""); }} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0">
-                                            <p className="font-semibold text-xs text-slate-800 dark:text-white">{c.phone || "Tanpa No. HP"}</p>
-                                            <p className="text-[10px] text-slate-400">{c.name}</p>
-                                        </button>
+                                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 rounded-[8px] p-[10px] shadow-[0px_20px_12px_0px_rgba(0,0,0,0.06),0px_9px_9px_0px_rgba(0,0,0,0.08)] z-30 max-h-60 overflow-y-auto flex flex-col gap-[10px] items-start w-full">
+                                    {/* Pelanggan Umum Item */}
+                                    <button
+                                        type="button"
+                                        onClick={() => { setSelectedCustomer({ id: null, name: "Pelanggan Umum" }); setShowCustomerDropdown(false); setCustomerSearch(""); }}
+                                        className="flex flex-col gap-[2px] items-start w-full text-left p-[6px] rounded-[4px] hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group"
+                                    >
+                                        <p className="font-semibold text-[#0f172a] dark:text-white text-[12px] leading-[1.4]">
+                                            -
+                                        </p>
+                                        <p className="font-medium text-[#64748b] dark:text-slate-400 text-[10px] leading-[1.4]">
+                                            Pelanggan Umum
+                                        </p>
+                                    </button>
+
+                                    <div className="h-[0.8px] bg-[#e8e8e8] dark:bg-slate-800 w-full shrink-0" />
+
+                                    {/* Filtered Registered Customers */}
+                                    {filteredCustomers.map((c, idx) => (
+                                        <React.Fragment key={c.id}>
+                                            <button
+                                                type="button"
+                                                onClick={() => { setSelectedCustomer(c); setShowCustomerDropdown(false); setCustomerSearch(""); }}
+                                                className="flex flex-col gap-[2px] items-start w-full text-left p-[6px] rounded-[4px] hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group"
+                                            >
+                                                <p className="font-semibold text-[#0f172a] dark:text-white text-[12px] leading-[1.4]">
+                                                    {c.phone || "-"}
+                                                </p>
+                                                <p className="font-medium text-[#64748b] dark:text-slate-400 text-[10px] leading-[1.4]">
+                                                    {c.name}
+                                                </p>
+                                            </button>
+                                            {idx < filteredCustomers.length - 1 && (
+                                                <div className="h-[0.8px] bg-[#e8e8e8] dark:bg-slate-800 w-full shrink-0" />
+                                            )}
+                                        </React.Fragment>
                                     ))}
                                 </div>
                             )}
@@ -2153,367 +2540,311 @@ export default function Index({
                         </div>
 
                         {/* Cart items */}
-                        <div className="flex-1 overflow-y-auto min-h-0 p-3 space-y-2">
+                        <div className="flex-1 overflow-y-auto min-h-0 p-[10px] space-y-[10px]">
                             {carts.length === 0 && cartPackagings.length === 0 ? (
-                                <div className="py-10 flex flex-col items-center text-center">
-                                    <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3"><IconShoppingCart size={22} className="text-slate-300 dark:text-slate-600" /></div>
-                                    <p className="text-sm font-semibold text-slate-400">Keranjang kosong</p>
-                                    <p className="text-xs text-slate-300 dark:text-slate-600 mt-1">Pilih parfum dari katalog</p>
+                                <div className="py-[40px] flex flex-col items-center justify-center text-center w-full">
+                                    <div className="bg-[#f7f7f7] dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 size-[56px] rounded-[12px] flex items-center justify-center text-[#0f172a] dark:text-white shrink-0 mb-[12px]">
+                                        <HugeiconsIcon
+                                            icon={ShoppingCart01Icon}
+                                            size={22}
+                                            color="currentColor"
+                                            strokeWidth={1.5}
+                                        />
+                                    </div>
+                                    <p className="font-semibold text-[#0f172a] dark:text-white text-[14px] leading-[1.4] text-center">
+                                        Keranjang kosong
+                                    </p>
+                                    <p className="font-normal text-[#94a3b8] dark:text-slate-400 text-[12px] leading-[1.4] text-center mt-[4px]">
+                                        Pilih parfum dari katalog
+                                    </p>
                                 </div>
                             ) : (
-                                <>
+                                <div className="flex flex-col gap-[8px] w-full">
                                     {carts.map(item => {
                                         const isPointReward = item.points_amount !== null && item.points_amount !== undefined;
+                                        const intensityName = item.intensity?.code ?? item.intensity_code ?? "EDT";
+                                        const volumeText = item.size?.volume_ml ? `${item.size.volume_ml}ml` : item.volume_ml ? `${item.volume_ml}ml` : null;
+
                                         return (
-                                            <div key={item.id} className={`py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0 transition-opacity ${removingId === item.id ? "opacity-40" : ""} ${isPointReward ? "animate-pulse" : ""}`}>
-                                                <div className="flex items-start gap-2">
-                                                    <div className="flex-1 min-w-0">
-                                                        {isPointReward ? (
-                                                            <>
-                                                                <div className="flex items-center gap-1.5 flex-wrap">
-                                                                    <p className="text-sm font-bold text-slate-800 dark:text-white leading-tight truncate">
-                                                                        {item.notes ?? `Reward: +${item.points_amount} Poin`}
-                                                                    </p>
-                                                                </div>
-                                                                <p className="text-[11px] text-slate-700 dark:text-slate-300 mt-0.5 font-bold">
-                                                                    Poin ditambahkan otomatis setelah checkout
-                                                                </p>
-                                                                <div className="flex items-center justify-between mt-1.5">
-                                                                    <div className="flex items-center gap-1">
-                                                                        <span className="w-7 text-left text-sm font-bold text-slate-500 dark:text-slate-400">Qty: {item.qty}</span>
-                                                                    </div>
-                                                                    <span className="text-xs font-black text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded">
-                                                                        🎁 GRATIS
+                                            <div key={item.id} className={`flex flex-col gap-[8px] bg-white dark:bg-slate-900 border-b border-[#e8e8e8] dark:border-slate-800 pb-[8px] last:border-0 transition-opacity ${removingId === item.id ? "opacity-40" : ""}`}>
+                                                <div className="flex items-start justify-between gap-[10px] p-[2px] w-full">
+                                                    {/* Info */}
+                                                    <div className="flex-1 min-w-0 flex flex-col gap-[4.75px]">
+                                                        <div className="flex items-center gap-[6px]">
+                                                            <p className="font-semibold text-[#0f172a] dark:text-white text-[14px] leading-[1.4] truncate">
+                                                                {item.variant?.name ?? item.notes ?? "Parfum Custom"}
+                                                            </p>
+                                                            {item.is_custom_order && (
+                                                                <span className="px-[6px] py-[2px] bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-[10px] font-semibold rounded-full shrink-0">
+                                                                    CUSTOM
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex items-center gap-[4px] flex-wrap">
+                                                            {!isPointReward && (
+                                                                <div className="bg-[#f7f7f7] dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 px-[6px] py-[2px] rounded-full shrink-0">
+                                                                    <span className="text-[10px] font-medium text-[#64748b] dark:text-slate-300 leading-[1.4]">
+                                                                        {intensityName}
                                                                     </span>
                                                                 </div>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <div className="flex items-center gap-1.5 flex-wrap">
-                                                                    <p className="text-sm font-bold text-slate-800 dark:text-white leading-tight truncate">{item.variant?.name ?? "Parfum Custom"}</p>
-                                                                    {item.is_custom_order && <span className="px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 text-slate-700 dark:text-amber-200 text-[9px] font-black rounded flex-shrink-0">CUSTOM</span>}
+                                                            )}
+                                                            {volumeText && (
+                                                                <div className="bg-[#f7f7f7] dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 px-[6px] py-[2px] rounded-full shrink-0">
+                                                                    <span className="text-[10px] font-medium text-[#64748b] dark:text-slate-300 leading-[1.4]">
+                                                                        {volumeText}
+                                                                    </span>
                                                                 </div>
-                                                                {item.is_custom_order ? (
-                                                                    <p className="text-[11px] text-slate-700 dark:text-slate-300 mt-0.5">
-                                                                        {item.custom_oil_qty}ml oil · {item.custom_alcohol_qty ?? 0}ml alkohol
-                                                                        <span className="ml-1.5 px-1 py-0.5 bg-emerald-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[9px] font-black rounded">alkohol gratis</span>
-                                                                    </p>
-                                                                ) : (
-                                                                    <p className="text-[11px] text-slate-400 mt-0.5">
-                                                                        <span className="font-semibold text-slate-700">{item.intensity?.code}</span> · {item.size?.volume_ml}ml
-                                                                    </p>
-                                                                )}
-                                                                {(item.packagings ?? []).length > 0 && (
-                                                                    <div className="flex flex-wrap gap-1 mt-1">
-                                                                        {item.packagings.map((p, pi) => (
-                                                                            <span key={pi} className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${p.packaging_material?.is_free ? "bg-emerald-100 dark:bg-slate-800 text-slate-700" : "bg-orange-100 dark:bg-slate-800 text-slate-700"}`}>
-                                                                                {p.packaging_material?.name ?? "Kemasan"}{p.packaging_material?.is_free && " 🎁"}
-                                                                            </span>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                                <div className="flex items-center justify-between mt-1.5">
-                                                                    <div className="flex items-center gap-1">
-                                                                        <button onClick={() => handleUpdateQty(item.id, item.qty - 1)} disabled={item.qty <= 1 || updatingId === item.id} className="w-6 h-6 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center hover:bg-slate-100 disabled:opacity-40 transition-colors shadow-sm"><IconMinus size={10} /></button>
-                                                                        <span className="w-7 text-center text-sm font-bold text-slate-800 dark:text-white">{item.qty}</span>
-                                                                        <button onClick={() => handleUpdateQty(item.id, item.qty + 1)} disabled={updatingId === item.id} className="w-6 h-6 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center hover:bg-slate-100 disabled:opacity-40 transition-colors shadow-sm"><IconPlus size={10} /></button>
-                                                                    </div>
-                                                                    {Number(item.unit_price) === 0 ? (
-                                                                        <div className="flex flex-col items-end">
-                                                                            {Number(item.original_price ?? 0) > 0 && (
-                                                                                <span className="text-xs text-slate-400 dark:text-slate-500 line-through font-semibold">
-                                                                                    {fmt(Number(item.original_price) * item.qty)}
-                                                                                </span>
-                                                                            )}
-                                                                            <span className="text-xs font-black text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                                                                                🎁 GRATIS
-                                                                            </span>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <p className={`text-sm font-black ${item.is_custom_order ? "text-slate-700 dark:text-slate-300" : "text-slate-700 dark:text-slate-300"}`}>{fmt(getCartItemTotal(item))}</p>
-                                                                    )}
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                    <button onClick={() => handleRemove(item.id)} disabled={removingId === item.id} className="p-1.5 text-slate-300 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-red-950/30 rounded-lg transition-colors flex-shrink-0"><IconTrash size={13} /></button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-
-                                    {/* Kemasan standalone */}
-                                    {cartPackagings.length > 0 && (
-                                        <>
-                                            {carts.length > 0 && <div className="flex items-center gap-2 py-0.5"><div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" /><span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1"><IconPackage size={9} /> Kemasan</span><div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" /></div>}
-                                            {cartPackagings.map(({ pkg, qty }, i) => (
-                                                <div key={pkg.id} className="py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0 flex items-center gap-2">
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                                            <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{pkg.name}</p>
-                                                            {pkg.is_free && <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-slate-800 text-slate-700 text-[9px] font-black rounded flex-shrink-0">GRATIS</span>}
+                                                            )}
+                                                            {isPointReward && (
+                                                                <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                                                                    🎁 GRATIS REWARD
+                                                                </span>
+                                                            )}
                                                         </div>
-                                                        <div className="flex items-center justify-between mt-1.5">
-                                                            <div className="flex items-center gap-1">
-                                                                <button onClick={() => handleUpdatePkgQty(pkg.id, -1)} className="w-6 h-6 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center hover:bg-slate-100 transition-colors shadow-sm"><IconMinus size={10} /></button>
-                                                                <span className="w-7 text-center text-sm font-bold text-slate-800 dark:text-white">{qty}</span>
-                                                                <button onClick={() => handleUpdatePkgQty(pkg.id, 1)} className="w-6 h-6 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center hover:bg-slate-100 transition-colors shadow-sm"><IconPlus size={10} /></button>
+                                                    </div>
+
+                                                    {/* Price & Stepper */}
+                                                    <div className="flex flex-col gap-[6.34px] items-end shrink-0">
+                                                        <p className="font-semibold text-[#0f172a] dark:text-white text-[14px] leading-[1.4] text-right">
+                                                            {Number(item.unit_price) === 0 || item.is_free ? "GRATIS" : fmt(getCartItemTotal(item))}
+                                                        </p>
+
+                                                        <div className="flex items-center gap-[4px]">
+                                                            <div className="border border-[#e8e8e8] dark:border-slate-700 rounded-[4.75px] flex items-center overflow-hidden h-[22px] bg-white dark:bg-slate-900">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleUpdateQty(item.id, item.qty - 1)}
+                                                                    disabled={item.qty <= 1 || updatingId === item.id}
+                                                                    className="size-[22px] bg-[#f7f9fc] dark:bg-slate-800 flex items-center justify-center text-[#64748b] dark:text-slate-300 text-[11px] font-medium hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 transition-colors cursor-pointer"
+                                                                >
+                                                                    −
+                                                                </button>
+                                                                <span className="w-[28.5px] h-[22px] flex items-center justify-center text-[12px] font-semibold text-[#0f172a] dark:text-white">
+                                                                    {item.qty}
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleUpdateQty(item.id, item.qty + 1)}
+                                                                    disabled={updatingId === item.id}
+                                                                    className="size-[22px] bg-[#f7f9fc] dark:bg-slate-800 flex items-center justify-center text-[#64748b] dark:text-slate-300 text-[11px] font-medium hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 transition-colors cursor-pointer"
+                                                                >
+                                                                    +
+                                                                </button>
                                                             </div>
-                                                            <p className={`text-sm font-black ${pkg.is_free ? "text-slate-700" : "text-slate-700"}`}>{pkg.is_free ? "GRATIS" : fmt((pkg.is_free ? 0 : Number(pkg.selling_price || 0)) * qty)}</p>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemove(item.id)}
+                                                                disabled={removingId === item.id}
+                                                                className="p-1 text-slate-300 hover:text-rose-500 rounded transition-colors shrink-0 cursor-pointer"
+                                                            >
+                                                                <IconTrash size={14} />
+                                                            </button>
                                                         </div>
                                                     </div>
-                                                    <button onClick={() => handleUpdatePkgQty(pkg.id, -qty)} className="p-1.5 text-slate-300 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-red-950/30 rounded-lg transition-colors flex-shrink-0"><IconTrash size={13} /></button>
-                                                </div>
-                                            ))}
-                                        </>
-                                    )}
-
-                                    {packagingMaterials.length > 0 && (
-                                        <button onClick={() => setShowPackagingModal(true)} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-slate-300 hover:bg-slate-100/50 transition-all text-left">
-                                            <div className="w-8 h-8 rounded-xl bg-orange-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0"><IconPackage size={15} className="text-slate-700" /></div>
-                                            <div className="flex-1 min-w-0"><p className="text-xs font-bold text-slate-700 dark:text-slate-300">Tambah Kemasan Satuan</p><p className="text-[10px] text-slate-400 mt-0.5">{packagingMaterials.length} jenis tersedia</p></div>
-                                            <IconChevronRight size={13} className="text-orange-300 flex-shrink-0" />
-                                        </button>
-                                    )}
-
-                                    {/* Diskon / Voucher — ikut area scroll */}
-                                    <button onClick={() => setShowDiscountModal(true)}
-                                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border-2 transition-all relative ${selectedDiscount ? "border-slate-300 bg-slate-100 dark:bg-emerald-950/30" : "border-dashed border-slate-200 dark:border-slate-700 hover:border-slate-300 hover:bg-slate-100/50"}`}>
-                                        {eligiblePromos.length > 0 && !selectedDiscount && (
-                                            <span className="absolute -top-2 -right-2 w-5 h-5 bg-amber-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg shadow-amber-500/40 animate-bounce">
-                                                {eligiblePromos.length}
-                                            </span>
-                                        )}
-                                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${selectedDiscount ? "bg-emerald-100 dark:bg-slate-800" : "bg-slate-100 dark:bg-slate-800"}`}><IconTag size={13} className={selectedDiscount ? "text-slate-700" : "text-slate-400"} /></div>
-                                        <div className="flex-1 text-left min-w-0">
-                                            <p className={`text-xs font-bold truncate ${selectedDiscount ? "text-slate-700 dark:text-slate-300" : "text-slate-500"}`}>{selectedDiscount ? selectedDiscount.name : "Tambah Diskon / Voucher"}</p>
-                                            {selectedDiscount && <p className="text-[10px] text-slate-700 font-semibold">-{fmt(selectedDiscount.amount)}</p>}
-                                            {eligiblePromos.length > 0 && !selectedDiscount && <p className="text-[9px] text-slate-700 font-black animate-pulse">PROMO TERSEDIA!</p>}
-                                        </div>
-                                        {selectedDiscount ? <button onClick={e => { e.stopPropagation(); setSelectedDiscount(null); }} className="p-0.5 text-slate-400 hover:text-slate-700 flex-shrink-0"><IconX size={13} /></button> : <IconChevronRight size={13} className="text-slate-300 flex-shrink-0" />}
-                                    </button>
-                                </>
-                            )}
-                        </div>
-
-                        {/* Summary + checkout */}
-                        <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 space-y-2.5">
-                            <div className="space-y-1">
-                                {discountAmount > 0 &&<div className="flex justify-between text-xs"><span className="text-slate-700 dark:text-slate-300">Diskon</span><span className="text-slate-700 font-bold">-{fmt(discountAmount)}</span></div>}
-                                <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800">
-                                    <span className="font-black text-slate-800 dark:text-white text-sm">Total</span>
-                                    <span className="text-2xl font-black text-slate-700 dark:text-slate-300">{fmt(payable)}</span>
-                                </div>
-                            </div>
-
-                            <button onClick={handleCheckout} disabled={!totalCartCount}
-                                className={`w-full h-12 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all ${totalCartCount ? "bg-success-600 hover:bg-success-700 text-white shadow-lg shadow-success-600/25" : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"}`}>
-                                <IconReceipt size={16} />
-                                {totalCartCount ? `Bayar ${fmt(payable)}` : "Keranjang Kosong"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* ── Halaman Pembayaran (full-screen, bukan modal) ───────────────── */}
-            {showPaymentModal && (
-                <div className="fixed inset-0 z-50 flex flex-col bg-slate-50 dark:bg-slate-950">
-                    {/* Header halaman — slim */}
-                    <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 py-2 flex items-center gap-2">
-                        <button onClick={() => setShowPaymentModal(false)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors" title="Kembali ke keranjang">
-                            <IconArrowLeft size={18} />
-                        </button>
-                        <h1 className="font-black text-slate-800 dark:text-white text-sm flex items-center gap-1.5">
-                            <IconReceipt size={16} className="text-primary-600" /> Pembayaran
-                        </h1>
-                        <span className="ml-auto text-lg font-black text-primary-600">{fmt(payable)}</span>
-                    </div>
-
-                    {/* Body — kiri: ringkasan pesanan (list pembelian + total), kanan: pembayaran */}
-                    <div className="flex-1 overflow-y-auto p-3 sm:p-4">
-                        <div className="mx-auto max-w-5xl grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4">
-
-                            {/* ── Kolom kiri: Ringkasan Pesanan (list pembelian) ── */}
-                            <div className="lg:col-span-3 order-2 lg:order-1 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden">
-                                <div className="flex-shrink-0 px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                                    <h2 className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-1.5">
-                                        <IconShoppingCart size={16} className="text-primary-600" /> Ringkasan Pesanan
-                                    </h2>
-                                    <span className="text-[10px] font-black text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">{totalCartCount} item</span>
-                                </div>
-
-                                {/* List item */}
-                                <div className="p-3 space-y-0.5 max-h-[46vh] overflow-y-auto scrollbar-thin">
-                                    {carts.map(item => {
-                                        const isPointReward = item.points_amount !== null && item.points_amount !== undefined;
-                                        const isFree = isPointReward || Number(item.unit_price) === 0;
-                                        return (
-                                            <div key={item.id} className="flex items-start justify-between gap-3 py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0">
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                                        <p className="text-sm font-bold text-slate-800 dark:text-white truncate">
-                                                            {isPointReward ? (item.notes ?? `Reward: +${item.points_amount} Poin`) : (item.variant?.name ?? "Parfum Custom")}
-                                                        </p>
-                                                        {item.is_custom_order && <span className="px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 text-slate-700 dark:text-amber-200 text-[9px] font-black rounded flex-shrink-0">CUSTOM</span>}
-                                                    </div>
-                                                    <p className="text-[11px] text-slate-400 mt-0.5 truncate">
-                                                        {isPointReward
-                                                            ? "Poin ditambahkan otomatis setelah checkout"
-                                                            : item.is_custom_order
-                                                                ? `${item.custom_oil_qty}ml oil · ${item.custom_alcohol_qty ?? 0}ml alkohol`
-                                                                : `${item.intensity?.code ?? ""}${item.size?.volume_ml ? ` · ${item.size.volume_ml}ml` : ""}`}
-                                                    </p>
-                                                    {(item.packagings ?? []).length > 0 && (
-                                                        <p className="text-[10px] text-slate-400 mt-0.5 truncate">
-                                                            + {item.packagings.map(p => p.packaging_material?.name).filter(Boolean).join(", ")}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                                <div className="text-right flex-shrink-0">
-                                                    <p className="text-[11px] text-slate-400 font-semibold">x{item.qty}</p>
-                                                    <p className={`text-sm font-black ${isFree ? "text-emerald-600 dark:text-emerald-400" : "text-slate-700 dark:text-slate-300"}`}>
-                                                        {isFree ? "GRATIS" : fmt(getCartItemTotal(item))}
-                                                    </p>
                                                 </div>
                                             </div>
                                         );
                                     })}
 
+                                    {/* Divider Kemasan */}
+                                    {cartPackagings.length > 0 && (
+                                        <div className="flex gap-[10px] items-center pt-[12px] pb-[8px] w-full">
+                                            <div className="bg-[#e8e8e8] dark:bg-slate-800 flex-1 h-px" />
+                                            <p className="font-medium text-[12px] text-[#64748b] dark:text-slate-400 leading-[1.2] whitespace-nowrap">
+                                                Kemasan
+                                            </p>
+                                            <div className="bg-[#e8e8e8] dark:bg-slate-800 flex-1 h-px" />
+                                        </div>
+                                    )}
+
+                                    {/* Kemasan Items */}
                                     {cartPackagings.map(({ pkg, qty }) => (
-                                        <div key={pkg.id} className="flex items-start justify-between gap-3 py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0">
-                                            <div className="min-w-0 flex-1">
-                                                <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{pkg.name}</p>
-                                                <p className="text-[10px] text-slate-400 mt-0.5">Kemasan Satuan</p>
-                                            </div>
-                                            <div className="text-right flex-shrink-0">
-                                                <p className="text-[11px] text-slate-400 font-semibold">x{qty}</p>
-                                                <p className={`text-sm font-black ${pkg.is_free ? "text-emerald-600 dark:text-emerald-400" : "text-slate-700 dark:text-slate-300"}`}>
-                                                    {pkg.is_free ? "GRATIS" : fmt(Number(pkg.selling_price || 0) * qty)}
-                                                </p>
+                                        <div key={pkg.id} className="flex flex-col gap-[8px] bg-white dark:bg-slate-900 border-b border-[#e8e8e8] dark:border-slate-800 pb-[8px] last:border-0">
+                                            <div className="flex items-start justify-between gap-[10px] p-[2px] w-full">
+                                                <div className="flex-1 min-w-0 flex flex-col gap-[4.75px]">
+                                                    <p className="font-semibold text-[#0f172a] dark:text-white text-[14px] leading-[1.4] truncate">
+                                                        {pkg.name}
+                                                    </p>
+                                                    <div className="bg-[#f7f7f7] dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 px-[6px] py-[2px] rounded-full shrink-0 w-fit">
+                                                        <span className="text-[10px] font-medium text-[#64748b] dark:text-slate-300 leading-[1.4]">
+                                                            {pkg.volume_ml ? `${pkg.volume_ml}ml` : "Kemasan"}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-col gap-[6.34px] items-end shrink-0">
+                                                    <p className="font-semibold text-[#0f172a] dark:text-white text-[14px] leading-[1.4] text-right">
+                                                        {pkg.is_free ? "GRATIS" : fmt((Number(pkg.selling_price || pkg.price || 0)) * qty)}
+                                                    </p>
+                                                    <div className="flex items-center gap-[4px]">
+                                                        <div className="border border-[#e8e8e8] dark:border-slate-700 rounded-[4.75px] flex items-center overflow-hidden h-[22px] bg-white dark:bg-slate-900">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleUpdatePkgQty(pkg.id, -1)}
+                                                                className="size-[22px] bg-[#f7f9fc] dark:bg-slate-800 flex items-center justify-center text-[#64748b] dark:text-slate-300 text-[11px] font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                                                            >
+                                                                −
+                                                            </button>
+                                                            <span className="w-[28.5px] h-[22px] flex items-center justify-center text-[12px] font-semibold text-[#0f172a] dark:text-white">
+                                                                {qty}
+                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleUpdatePkgQty(pkg.id, 1)}
+                                                                className="size-[22px] bg-[#f7f9fc] dark:bg-slate-800 flex items-center justify-center text-[#64748b] dark:text-slate-300 text-[11px] font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                                                            >
+                                                                +
+                                                            </button>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleUpdatePkgQty(pkg.id, -qty)}
+                                                            className="p-1 text-slate-300 hover:text-rose-500 rounded transition-colors shrink-0 cursor-pointer"
+                                                        >
+                                                            <IconTrash size={14} />
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
 
-                                    {carts.length === 0 && cartPackagings.length === 0 && (
-                                        <div className="py-10 flex flex-col items-center text-center">
-                                            <IconShoppingCart size={24} className="text-slate-300 dark:text-slate-600 mb-2" />
-                                            <p className="text-sm font-semibold text-slate-400">Keranjang kosong</p>
-                                        </div>
+                                    {/* Card Tambah Kemasan Satuan (Dashed) */}
+                                    {packagingMaterials.length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPackagingModal(true)}
+                                            className="bg-[#fbfbfb] dark:bg-slate-800/40 border border-dashed border-[#d4d4d4] dark:border-slate-700 rounded-[6px] p-[10px] flex items-center justify-between hover:border-[#54b8c3] transition-all text-left cursor-pointer w-full mt-[8px] group"
+                                        >
+                                            <div className="flex items-center gap-[6.34px]">
+                                                <div className="bg-[#fdf3e1] dark:bg-amber-950/40 size-[22.2px] rounded-[4.75px] flex items-center justify-center shrink-0">
+                                                    <div className="size-[9.5px] rounded-[1.5px] border-[1.2px] border-[#cc8409]" />
+                                                </div>
+                                                <div className="flex flex-col gap-[2px] text-[12px] text-[#64748b] dark:text-slate-400">
+                                                    <p className="font-semibold text-[#0f172a] dark:text-white leading-[1.4]">
+                                                        Tambah Kemasan Satuan
+                                                    </p>
+                                                    <p className="font-normal leading-[1.4]">
+                                                        {packagingMaterials.length} jenis tersedia
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <IconPlus size={16} className="text-slate-400 group-hover:text-[#36adba] transition-colors" />
+                                        </button>
                                     )}
                                 </div>
+                            )}
+                        </div>
 
-                                {/* Breakdown total */}
-                                <div className="mt-auto flex-shrink-0 border-t border-slate-100 dark:border-slate-800 px-4 py-3 space-y-1.5 bg-slate-50/50 dark:bg-slate-800/20">
-                                    <div className="flex justify-between text-xs">
-                                        <span className="text-slate-500 dark:text-slate-400">Subtotal</span>
-                                        <span className="font-bold text-slate-700 dark:text-slate-300">{fmt(subtotal + pkgCartTotal)}</span>
-                                    </div>
-                                    {discountAmount > 0 && (
-                                        <div className="flex justify-between text-xs">
-                                            <span className="text-slate-500 dark:text-slate-400 truncate mr-2">{selectedDiscount?.name || "Diskon"}</span>
-                                            <span className="font-bold text-emerald-600 dark:text-emerald-400 flex-shrink-0">-{fmt(discountAmount)}</span>
+                        {/* ── Cart Footer & Total Component (Figma Node 3298:33425) ── */}
+                        <div className="bg-white dark:bg-slate-900 border-t border-[#e8e8e8] dark:border-slate-800 rounded-t-[12px] px-[14px] pt-[8px] pb-[12px] flex flex-col gap-[10px] shrink-0 transition-all duration-300 ease-in-out">
+                            {/* Handle Pill — Clickable to collapse / expand */}
+                            <button
+                                type="button"
+                                onClick={() => setIsFooterCollapsed(!isFooterCollapsed)}
+                                className="w-full flex justify-center py-[4px] cursor-pointer group hover:opacity-90 transition-opacity focus:outline-none shrink-0"
+                                title={isFooterCollapsed ? "Buka rincian & diskon" : "Tutup rincian (tampilkan total & bayar saja)"}
+                            >
+                                <div className="w-[56px] h-[3.5px] bg-[#d4d4d4] dark:bg-slate-700 group-hover:bg-[#54b8c3] rounded-full transition-all duration-300 shrink-0 group-hover:scale-x-110" />
+                            </button>
+
+                            {/* Collapsible Content Area (Discount & Subtotal) */}
+                            <div
+                                className={`grid transition-all duration-300 ease-in-out ${
+                                    isFooterCollapsed ? "grid-rows-[0fr] opacity-0 pointer-events-none" : "grid-rows-[1fr] opacity-100"
+                                }`}
+                            >
+                                <div className="overflow-hidden flex flex-col gap-[10px] w-full">
+                                    {/* Discount Component */}
+                                    {selectedDiscount ? (
+                                        <div className="bg-[#f0fdf4] dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 rounded-[6px] p-[10px] flex items-center justify-between text-[12px]">
+                                            <div className="flex items-center gap-[6px] text-emerald-700 dark:text-emerald-300 font-semibold">
+                                                <IconTag size={14} />
+                                                <span>Diskon: {selectedDiscount.name} (-{fmt(discountAmount)})</span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedDiscount(null)}
+                                                className="text-[12px] text-rose-500 hover:underline font-semibold cursor-pointer"
+                                            >
+                                                Hapus
+                                            </button>
                                         </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowDiscountModal(true)}
+                                            className="bg-[#fbfbfb] dark:bg-slate-800/40 border border-dashed border-[#d4d4d4] dark:border-slate-700 rounded-[6px] p-[10px] flex items-center justify-center gap-[8px] hover:border-[#54b8c3] transition-all text-center cursor-pointer w-full text-[12px] font-semibold text-[#64748b] dark:text-slate-300 group"
+                                        >
+                                            <IconPlus size={14} className="text-[#64748b] dark:text-slate-400 group-hover:text-[#36adba]" />
+                                            <span>Tambah Diskon / Voucher</span>
+                                        </button>
                                     )}
-                                    <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-700">
-                                        <span className="text-sm font-black text-slate-800 dark:text-white">Total</span>
-                                        <span className="text-2xl font-black text-primary-600 dark:text-primary-400">{fmt(payable)}</span>
-                                    </div>
-                                </div>
-                            </div>
 
-                            {/* ── Kolom kanan: Pembayaran ── */}
-                            <div className="lg:col-span-2 order-1 lg:order-2 space-y-3">
-                                {/* Sales Person (wajib) */}
-                                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3">
-                                    <div className="relative">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><IconUser size={10} /> Sales <span className="text-red-500">*</span></label>
-                                        <div className="relative">
-                                            <IconSearch size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300" />
-                                            <input
-                                                type="text" placeholder="Pilih Sales..."
-                                                value={selectedSalesPerson ? selectedSalesPerson.name : salesSearch}
-                                                onClick={() => { if (selectedSalesPerson) { setSelectedSalesPerson(null); setSalesSearch(""); } setShowSalesDropdown(true); }}
-                                                onChange={e => { setSalesSearch(e.target.value); setShowSalesDropdown(true); if (selectedSalesPerson) setSelectedSalesPerson(null); }}
-                                                className={`w-full h-9 pl-8 pr-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:text-white bg-slate-50 dark:bg-slate-800 ${selectedSalesPerson ? "border-slate-200 dark:border-slate-700" : "border-red-200 dark:border-red-900/50"}`}
-                                            />
+                                    {/* Subtotal Breakdown */}
+                                    <div className="flex flex-col gap-[4px] w-full">
+                                        <div className="flex items-center justify-between text-[14px] text-[#0f172a] dark:text-white font-normal leading-[1.4] w-full">
+                                            <span>Subtotal</span>
+                                            <span>{fmt(subtotal + pkgCartTotal)}</span>
                                         </div>
-                                        {showSalesDropdown && !selectedSalesPerson && (
-                                            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-30 overflow-hidden max-h-44 overflow-y-auto">
-                                                {salesPeople.filter(s => s.name.toLowerCase().includes(salesSearch.toLowerCase())).map(s => (
-                                                    <button key={s.id} onClick={() => { setSelectedSalesPerson(s); setShowSalesDropdown(false); setSalesSearch(""); }} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0">
-                                                        <p className="font-semibold text-xs text-slate-800 dark:text-white">{s.name}</p>
-                                                        <p className="text-[10px] text-slate-400">{s.code}</p>
-                                                    </button>
-                                                ))}
-                                                {salesPeople.length === 0 && <p className="p-3 text-center text-xs text-slate-400">Belum ada sales</p>}
+                                        {discountAmount > 0 && (
+                                            <div className="flex items-center justify-between text-[14px] text-emerald-600 dark:text-emerald-400 font-normal leading-[1.4] w-full">
+                                                <span>Diskon</span>
+                                                <span>-{fmt(discountAmount)}</span>
                                             </div>
                                         )}
                                     </div>
-                                </div>
 
-                                {/* Metode & tunai */}
-                                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3 space-y-2.5">
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Metode Pembayaran</p>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {paymentMethods.map(method => (
-                                                <button key={method.id} onClick={() => setSelectedPaymentId(method.id)}
-                                                    className={`px-3 py-2 rounded-lg border-2 text-left transition-all flex items-center justify-between gap-1 ${selectedPaymentId === method.id ? "border-primary-500 bg-slate-100 dark:bg-primary-950/30" : "border-slate-200 dark:border-slate-700"}`}>
-                                                    <span className="font-bold text-sm text-slate-700 dark:text-slate-300 truncate">{method.name}</span>
-                                                    {selectedPaymentId === method.id && <IconCheck size={14} className="text-primary-600 flex-shrink-0" />}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    {isCash && (
-                                        <div className="space-y-2 pt-1">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Nominal Cepat</p>
-                                            <div className="grid grid-cols-4 gap-1.5">
-                                                {[payable, Math.ceil(payable / 10000) * 10000, Math.ceil(payable / 50000) * 50000, Math.ceil(payable / 100000) * 100000]
-                                                    .filter((v, i, a) => a.indexOf(v) === i && v >= payable).slice(0, 4)
-                                                    .map(amt => (
-                                                        <button key={amt} onClick={() => setCashInput(String(amt))}
-                                                            className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${Number(cashInput) === amt ? "bg-primary-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"}`}>
-                                                            {(amt / 1000).toLocaleString("id-ID")}rb
-                                                        </button>
-                                                    ))}
-                                            </div>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</span>
-                                                <input type="text" inputMode="numeric" value={cashInput} onChange={e => setCashInput(e.target.value.replace(/\D/g, ""))} placeholder="Jumlah diterima"
-                                                    className="w-full h-11 pl-10 pr-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-lg font-black focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
-                                            </div>
-                                            {cash >= payable && payable > 0 && (
-                                                <div className="flex justify-between items-center px-3 py-2 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-slate-700 rounded-lg">
-                                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Kembalian</span>
-                                                    <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">{fmt(kembalian)}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
+                                    {/* Hairline Divider */}
+                                    <div className="h-[0.8px] bg-[#e8e8e8] dark:bg-slate-800 w-full mb-[2px]" />
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    {/* Footer sticky */}
-                    <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-3 py-2.5">
-                        {discountAmount > 0 && (
-                            <div className="mx-auto max-w-4xl flex justify-end gap-3 text-[11px] text-slate-500 mb-1.5">
-                                <span>{selectedDiscount?.name || "Diskon"}: <span className="font-bold text-slate-700 dark:text-slate-300">-{fmt(discountAmount)}</span></span>
+                            {/* Total Row & Button (Selalu Tampil) */}
+                            <div className="flex flex-col gap-[10px] w-full">
+                                <div className="flex items-center justify-between text-[#0f172a] dark:text-white text-[16px] leading-[1.4] w-full">
+                                    <span className="font-semibold">Total</span>
+                                    <span className="font-bold">{fmt(payable)}</span>
+                                </div>
+
+                                {/* Button / Bayar Component */}
+                                {showPaymentModal ? (
+                                    <button
+                                        type="button"
+                                        onClick={handleSubmit}
+                                        disabled={(isCash && cash < payable) || isSubmitting || !selectedPaymentId}
+                                        className={`w-full py-[10px] rounded-[8px] font-bold text-[14px] leading-[1.4] flex items-center justify-center gap-[8px] transition-all cursor-pointer ${
+                                            (!isCash || cash >= payable) && !isSubmitting && selectedPaymentId
+                                                ? "bg-[#54b8c3] hover:bg-[#36adba] text-white shadow-sm"
+                                                : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
+                                        }`}
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                <span>Memproses...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <IconReceipt size={16} />
+                                                <span>Selesaikan · {fmt(payable)}</span>
+                                            </>
+                                        )}
+                                    </button>
+                                ) : (
+                                    <ButtonBayar
+                                        onClick={handleCheckout}
+                                        disabled={!totalCartCount}
+                                        payable={payable}
+                                        fmt={fmt}
+                                    />
+                                )}
                             </div>
-                        )}
-                        <div className="mx-auto max-w-4xl flex items-center gap-2">
-                            <button onClick={() => setShowPaymentModal(false)} className="px-4 py-2.5 rounded-lg border-2 border-slate-200 dark:border-slate-700 font-bold text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 transition-colors">Kembali</button>
-                            <button onClick={handleSubmit} disabled={(isCash && cash < payable) || isSubmitting || !selectedPaymentId}
-                                className={`flex-1 py-2.5 rounded-lg font-black text-sm flex items-center justify-center gap-2 transition-all ${(!isCash || cash >= payable) && !isSubmitting && selectedPaymentId ? "bg-success-600 hover:bg-success-700 text-white shadow-lg shadow-success-600/25" : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"}`}>
-                                {isSubmitting ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Memproses...</> : <><IconReceipt size={15} /> Selesaikan · {fmt(payable)}</>}
-                            </button>
                         </div>
                     </div>
                 </div>
-            )}
+            </div>
             {/* ── Eligible Promo & Reward Modals ────────────────────────────── */}
             <EligiblePromoModal
                 show={showEligibleModal}
