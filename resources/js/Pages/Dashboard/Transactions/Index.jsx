@@ -2590,9 +2590,9 @@ export default function Index({
                                                 <div className="flex items-start justify-between gap-[10px] p-[2px] w-full">
                                                     {/* Info */}
                                                     <div className="flex-1 min-w-0 flex flex-col gap-[4.75px]">
-                                                        <div className="flex items-center gap-[6px]">
+                                                        <div className="flex items-center gap-[6px] flex-wrap">
                                                             <p className="font-semibold text-[#0f172a] dark:text-white text-[14px] leading-[1.4] truncate">
-                                                                {item.variant?.name ?? item.notes ?? "Parfum Custom"}
+                                                                {isPointReward ? (item.notes ?? `Reward: +${item.points_amount} Poin`) : (item.variant?.name ?? "Parfum Custom")}
                                                             </p>
                                                             {item.is_custom_order && (
                                                                 <span className="px-[6px] py-[2px] bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-[10px] font-semibold rounded-full shrink-0">
@@ -2601,6 +2601,21 @@ export default function Index({
                                                             )}
                                                         </div>
 
+                                                        {/* Sub-info: Variant Code */}
+                                                        {item.variant?.code && (
+                                                            <p className="text-[10px] text-[#64748b] dark:text-slate-400 font-mono leading-[1.2] truncate">
+                                                                {item.variant.code}
+                                                            </p>
+                                                        )}
+
+                                                        {/* Sub-info: Custom Order Details */}
+                                                        {item.is_custom_order && (
+                                                            <p className="text-[10px] text-amber-700 dark:text-amber-400 font-medium leading-[1.2]">
+                                                                {item.custom_oil_qty}ml Bibit Oil · {item.custom_alcohol_qty ?? 0}ml Alkohol
+                                                            </p>
+                                                        )}
+
+                                                        {/* Sub-info: Intensity, Volume, Reward Badge */}
                                                         <div className="flex items-center gap-[4px] flex-wrap">
                                                             {!isPointReward && (
                                                                 <div className="bg-[#f7f7f7] dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 px-[6px] py-[2px] rounded-full shrink-0">
@@ -2617,17 +2632,34 @@ export default function Index({
                                                                 </div>
                                                             )}
                                                             {isPointReward && (
-                                                                <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
-                                                                    🎁 GRATIS REWARD
+                                                                <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                                    🎁 REWARD POIN (+{item.points_amount} Poin)
                                                                 </span>
                                                             )}
                                                         </div>
+
+                                                        {/* Sub-info: Attached Packagings */}
+                                                        {(item.packagings ?? []).length > 0 && (
+                                                            <div className="flex items-center gap-1 text-[10px] text-[#64748b] dark:text-slate-400 mt-[1px]">
+                                                                <IconPackage size={12} className="shrink-0 text-[#54b8c3]" />
+                                                                <span className="truncate">
+                                                                    + {item.packagings.map(p => p.packaging_material?.name ?? p.name).filter(Boolean).join(", ")}
+                                                                </span>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Sub-info: Notes */}
+                                                        {item.notes && item.variant?.name && (
+                                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 italic truncate">
+                                                                Catatan: {item.notes}
+                                                            </p>
+                                                        )}
                                                     </div>
 
                                                     {/* Price & Stepper */}
                                                     <div className="flex flex-col gap-[6.34px] items-end shrink-0">
                                                         <p className="font-semibold text-[#0f172a] dark:text-white text-[14px] leading-[1.4] text-right">
-                                                            {Number(item.unit_price) === 0 || item.is_free ? "GRATIS" : fmt(getCartItemTotal(item))}
+                                                            {Number(item.unit_price) === 0 || item.is_free || isPointReward ? "GRATIS" : fmt(getCartItemTotal(item))}
                                                         </p>
 
                                                         <div className="flex items-center gap-[4px]">
@@ -2684,13 +2716,11 @@ export default function Index({
                                             <div className="flex items-start justify-between gap-[10px] p-[2px] w-full">
                                                 <div className="flex-1 min-w-0 flex flex-col gap-[4.75px]">
                                                     <p className="font-semibold text-[#0f172a] dark:text-white text-[14px] leading-[1.4] truncate">
-                                                        {pkg.name}
+                                                        {pkg.name ?? "Kemasan"}
                                                     </p>
-                                                    <div className="bg-[#f7f7f7] dark:bg-slate-800 border border-[#e8e8e8] dark:border-slate-700 px-[6px] py-[2px] rounded-full shrink-0 w-fit">
-                                                        <span className="text-[10px] font-medium text-[#64748b] dark:text-slate-300 leading-[1.4]">
-                                                            {pkg.volume_ml ? `${pkg.volume_ml}ml` : "Kemasan"}
-                                                        </span>
-                                                    </div>
+                                                    <span className="text-[10px] text-[#64748b] dark:text-slate-400 font-medium">
+                                                        {pkg.volume_ml ? `${pkg.volume_ml}ml` : "Kemasan"}
+                                                    </span>
                                                 </div>
 
                                                 <div className="flex flex-col gap-[6.34px] items-end shrink-0">

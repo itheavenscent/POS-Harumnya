@@ -4,6 +4,7 @@ import {
     IconMinus,
     IconPlus,
     IconShoppingCart,
+    IconAward,
 } from "@tabler/icons-react";
 import { getProductImageUrl } from "@/Utils/imageUrl";
 
@@ -66,7 +67,7 @@ function CartItem({ item, onUpdateQty, onRemove, isRemoving }) {
                 <button
                     onClick={() => onRemove(item.id)}
                     disabled={isRemoving}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-950/50 transition-colors opacity-0 group-hover:opacity-100"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-950/50 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
                 >
                     <IconTrash size={16} />
                 </button>
@@ -78,7 +79,7 @@ function CartItem({ item, onUpdateQty, onRemove, isRemoving }) {
                             onUpdateQty(item.id, Math.max(1, item.qty - 1))
                         }
                         disabled={item.qty <= 1}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
                     >
                         <IconMinus size={14} />
                     </button>
@@ -87,7 +88,7 @@ function CartItem({ item, onUpdateQty, onRemove, isRemoving }) {
                     </span>
                     <button
                         onClick={() => onUpdateQty(item.id, item.qty + 1)}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors cursor-pointer"
                     >
                         <IconPlus size={14} />
                     </button>
@@ -123,11 +124,15 @@ export default function CartPanel({
     onUpdateQty,
     onRemove,
     removingItemId,
+    selectedCustomer = null,
     className = "",
 }) {
     const totalItems = items.reduce((sum, item) => sum + item.qty, 0);
     // Note: item.price from backend is already sell_price * qty
-    const subtotal = items.reduce((sum, item) => sum + item.price, 0);
+    const subtotal = items.reduce((sum, item) => sum + (item.price || 0), 0);
+
+    // Program Loyalitas Poin: Setiap transaksi Rp 10.000 = 1 Poin
+    const estimatedPoints = Math.floor(subtotal / 10000);
 
     return (
         <div className={`flex flex-col h-full ${className}`}>
@@ -152,8 +157,8 @@ export default function CartPanel({
             {/* Cart Items */}
             {items.length > 0 ? (
                 <div
-                    className="flex-1 overflow-y-auto p-3 space-y-2"
-                    style={{ maxHeight: "300px", minHeight: "150px" }}
+                    className="flex-1 overflow-y-auto p-3 space-y-3"
+                    style={{ maxHeight: "360px", minHeight: "150px" }}
                 >
                     {items.map((item) => (
                         <CartItem
@@ -164,6 +169,84 @@ export default function CartPanel({
                             isRemoving={removingItemId === item.id}
                         />
                     ))}
+
+                    {/* ── 1. SpinWheel Promo Banner ── */}
+                    <div className="bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/5 border border-purple-200 dark:border-purple-800/60 rounded-xl p-3 flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-base">🎰</span>
+                                <span className="font-bold text-xs text-purple-900 dark:text-purple-200">
+                                    Gratis 1x SpinWheel
+                                </span>
+                            </div>
+                            <span className="px-1.5 py-0.5 text-[9px] font-extrabold bg-purple-200 dark:bg-purple-900/80 text-purple-800 dark:text-purple-200 rounded-full uppercase">
+                                PROMO
+                            </span>
+                        </div>
+                        <p className="text-[11px] text-purple-800 dark:text-purple-300 leading-snug">
+                            Setiap pembelian parfum sesuai ketentuan gratis 1 kali SpinWheel dengan hadiah:
+                        </p>
+                        <div className="grid grid-cols-1 gap-1 text-[10px] text-purple-700 dark:text-purple-300 font-medium pl-1">
+                            <div className="flex items-center gap-1">
+                                <span className="text-purple-500">✦</span> P30 EDT (pilih varian) + Botol P30
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <span className="text-purple-500">✦</span> P10 EDT (pilih varian) + Botol P10 Spray
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <span className="text-purple-500">✦</span> Poin Member +1
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── 2. Promo Opening Buy 1 P50 + Botol Banner ── */}
+                    <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 border border-amber-300 dark:border-amber-800/60 rounded-xl p-3 flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-base">🎉</span>
+                                <span className="font-bold text-xs text-amber-900 dark:text-amber-200">
+                                    Promo Opening: Buy 1 P50 + Botol
+                                </span>
+                            </div>
+                            <span className="px-1.5 py-0.5 text-[9px] font-extrabold bg-amber-200 dark:bg-amber-900/80 text-amber-800 dark:text-amber-200 rounded-full uppercase">
+                                BUY 1 GET 1
+                            </span>
+                        </div>
+                        <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-snug">
+                            Buy 1 P50 + botol (All Kategori) → <strong>Free 1 P10 EDT (1:2) + Botol P10 Spray</strong>
+                        </p>
+                    </div>
+
+                    {/* ── 3. Program Loyalitas Poin Banner ── */}
+                    <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/5 border border-emerald-300 dark:border-emerald-800/60 rounded-xl p-3 flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                                <IconAward size={16} className="text-emerald-600 dark:text-emerald-400" />
+                                <span className="font-bold text-xs text-emerald-900 dark:text-emerald-200">
+                                    Program Loyalitas Poin
+                                </span>
+                            </div>
+                            <span className="px-1.5 py-0.5 text-[9px] font-extrabold bg-emerald-200 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-200 rounded-full uppercase">
+                                LOYALTY
+                            </span>
+                        </div>
+                        <div className="text-[11px] text-emerald-800 dark:text-emerald-300 space-y-1">
+                            <p>
+                                💰 Setiap transaksi <strong>Rp 10.000 = 1 Poin</strong>
+                            </p>
+                            <p>
+                                🏆 Kumpulkan <strong>30 Poin</strong>, tukarkan dengan <strong>1 Parfum P30 EDT + Botol P30 Gratis</strong> (Pilih Varian).
+                            </p>
+                        </div>
+                        <div className="mt-1 pt-1.5 border-t border-emerald-200 dark:border-emerald-800/50 flex items-center justify-between text-[11px]">
+                            <span className="text-emerald-700 dark:text-emerald-400 font-medium">
+                                Estimasi Poin Transaksi Ini:
+                            </span>
+                            <span className="font-bold text-emerald-900 dark:text-emerald-200 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-md">
+                                +{estimatedPoints} Poin
+                            </span>
+                        </div>
+                    </div>
                 </div>
             ) : (
                 <EmptyCart />
