@@ -3,7 +3,7 @@ import { Head, router, usePage } from "@inertiajs/react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { PerfumeIcon, Package01Icon, ShoppingCart01Icon } from "@hugeicons/core-free-icons";
+import { PerfumeIcon, Package01Icon, ShoppingCart01Icon, CreditCardIcon, QrCodeIcon, Money03Icon } from "@hugeicons/core-free-icons";
 import POSLayout from "@/Layouts/POSLayout";
 import CategoryIcon from "@/Components/Dashboard/CategoryIcon";
 import {
@@ -1958,10 +1958,10 @@ export default function Index({
                                 </div>
 
                                 {/* Content Pane: Sales, Metode Pembayaran, Nominal (1:1 Figma Node 3307:33585) */}
-                                <div className="flex-1 overflow-y-auto flex flex-col bg-slate-50 dark:bg-slate-950 p-4 gap-3">
+                                <div className="flex-1 overflow-y-auto flex flex-col bg-white dark:bg-slate-900 p-0 gap-0">
                                     {/* Card 1: Sales */}
-                                    <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 rounded-[8px] flex flex-col shadow-sm">
-                                        <div className="bg-[#fbfbfb] dark:bg-slate-800/80 px-[16px] py-[12px] border-b border-[#e8e8e8] dark:border-slate-800 flex items-center rounded-t-[8px]">
+                                    <div className="bg-white dark:bg-slate-900 border-b border-[#e8e8e8] dark:border-slate-800 flex flex-col w-full">
+                                        <div className="bg-[#fbfbfb] dark:bg-slate-800/80 px-[16px] py-[12px] border-b border-[#e8e8e8] dark:border-slate-800 flex items-center">
                                             <p className="font-semibold text-[14px] text-[#0f172a] dark:text-white leading-[1.4]">
                                                 Sales
                                             </p>
@@ -2041,7 +2041,7 @@ export default function Index({
                                     </div>
 
                                     {/* Card 2: Metode Pembayaran */}
-                                    <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 rounded-[8px] flex flex-col overflow-hidden shadow-sm">
+                                    <div className="bg-white dark:bg-slate-900 border-b border-[#e8e8e8] dark:border-slate-800 flex flex-col w-full">
                                         <div className="bg-[#fbfbfb] dark:bg-slate-800/80 px-[16px] py-[12px] border-b border-[#e8e8e8] dark:border-slate-800 flex items-center">
                                             <p className="font-semibold text-[14px] text-[#0f172a] dark:text-white leading-[1.4]">
                                                 Metode Pembayaran
@@ -2062,12 +2062,12 @@ export default function Index({
                                                         }`}
                                                     >
                                                         <div className="size-[24px] flex items-center justify-center">
-                                                            {method.name.toLowerCase().includes("tunai") ? (
-                                                                <IconCurrencyDollar size={24} className={isActive ? "text-[#36adba]" : "text-[#64748b]"} />
-                                                            ) : method.name.toLowerCase().includes("qris") ? (
-                                                                <IconBox size={24} className={isActive ? "text-[#36adba]" : "text-[#64748b]"} />
+                                                            {method.name.toLowerCase().includes("edc") || method.name.toLowerCase().includes("card") || method.name.toLowerCase().includes("debit") || method.name.toLowerCase().includes("kredit") || method.code?.toLowerCase().includes("edc") ? (
+                                                                <HugeiconsIcon icon={CreditCardIcon} size={24} className={isActive ? "text-[#0f172a] dark:text-white" : "text-[#64748b] dark:text-slate-400"} />
+                                                            ) : method.name.toLowerCase().includes("qris") || method.code?.toLowerCase().includes("qris") ? (
+                                                                <HugeiconsIcon icon={QrCodeIcon} size={24} className={isActive ? "text-[#0f172a] dark:text-white" : "text-[#64748b] dark:text-slate-400"} />
                                                             ) : (
-                                                                <IconReceipt size={24} className={isActive ? "text-[#36adba]" : "text-[#64748b]"} />
+                                                                <HugeiconsIcon icon={Money03Icon} size={24} className={isActive ? "text-[#0f172a] dark:text-white" : "text-[#64748b] dark:text-slate-400"} />
                                                             )}
                                                         </div>
                                                         <p className={`font-semibold text-[14px] leading-[20px] whitespace-nowrap ${isActive ? "text-[#0f172a] dark:text-white" : "text-[#64748b] dark:text-slate-400"}`}>
@@ -2079,48 +2079,28 @@ export default function Index({
                                         </div>
                                     </div>
 
-                                    {/* Card 3: Nominal */}
-                                    <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 rounded-[8px] flex flex-col overflow-hidden shadow-sm">
+                                    {/* Card 3: Nominal (1:1 Figma Node 3410:59742) */}
+                                    <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex flex-col overflow-hidden">
                                         <div className="bg-[#fbfbfb] dark:bg-slate-800/80 px-[16px] py-[12px] border-b border-[#e8e8e8] dark:border-slate-800 flex items-center">
                                             <p className="font-semibold text-[14px] text-[#0f172a] dark:text-white leading-[1.4]">
                                                 Nominal
                                             </p>
                                         </div>
                                         <div className="p-[14px] flex flex-col gap-[12px] w-full">
-                                            {/* Quick Amount Buttons if cash */}
-                                            {isCash && (
-                                                <div className="grid grid-cols-4 gap-1.5">
-                                                    {[payable, Math.ceil(payable / 10000) * 10000, Math.ceil(payable / 50000) * 50000, Math.ceil(payable / 100000) * 100000]
-                                                        .filter((v, i, a) => a.indexOf(v) === i && v >= payable).slice(0, 4)
-                                                        .map((amt) => (
-                                                            <button
-                                                                key={amt}
-                                                                type="button"
-                                                                onClick={() => setCashInput(String(amt))}
-                                                                className={`py-1.5 rounded-[6px] text-[11px] font-semibold transition-all border ${
-                                                                    Number(cashInput) === amt
-                                                                        ? "bg-[#54b8c3] text-white border-[#54b8c3]"
-                                                                        : "bg-[#fbfbfb] dark:bg-slate-800 text-[#64748b] dark:text-slate-300 border-[#e8e8e8] dark:border-slate-700 hover:border-slate-300"
-                                                                }`}
-                                                            >
-                                                                {(amt / 1000).toLocaleString("id-ID")}rb
-                                                            </button>
-                                                        ))}
-                                                </div>
-                                            )}
-
-                                            {/* Input Group 1:1 Figma */}
-                                            <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex h-[52px] items-center overflow-hidden rounded-[8px] w-full">
+                                            {/* Input Group (1:1 Figma Node 3410:59747) */}
+                                            <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-700 flex h-[52px] items-center overflow-hidden rounded-[8px] w-full">
+                                                {/* Prefix */}
                                                 <div className="bg-[#fbfbfb] dark:bg-slate-800 border-r border-[#e8e8e8] dark:border-slate-700 flex h-full items-center justify-center px-[14px] shrink-0">
-                                                    <p className="font-semibold text-[#64748b] dark:text-slate-400 text-[14px]">
+                                                    <p className="font-semibold text-[#64748b] dark:text-slate-400 text-[14px] leading-[20px]">
                                                         Rp
                                                     </p>
                                                 </div>
-                                                <div className="flex flex-1 h-full items-center px-[14px] min-w-0">
+                                                {/* Value */}
+                                                <div className="flex-1 flex h-full items-center px-[14px] min-w-0">
                                                     <input
                                                         type="text"
                                                         inputMode="numeric"
-                                                        value={cashInput}
+                                                        value={cashInput ? Number(cashInput).toLocaleString("id-ID") : ""}
                                                         onChange={(e) => setCashInput(e.target.value.replace(/\D/g, ""))}
                                                         placeholder="0"
                                                         className="w-full bg-transparent border-0 font-semibold text-[24px] leading-[1.4] text-[#0f172a] dark:text-white placeholder-[#94a3b8] focus:outline-none focus:ring-0 p-0"
@@ -2128,9 +2108,48 @@ export default function Index({
                                                 </div>
                                             </div>
 
+                                            {/* Nominal Cepat (1:1 Figma Node 3410:59752) */}
+                                            {isCash && (
+                                                <div className="flex flex-col gap-[8px] w-full">
+                                                    <p className="font-semibold text-[12px] text-[#0f172a] dark:text-white leading-[16px]">
+                                                        Nominal Cepat
+                                                    </p>
+                                                    <div className="flex gap-[8px] items-center w-full">
+                                                        {(() => {
+                                                            const baseAmts = [
+                                                                payable,
+                                                                Math.ceil(payable / 10000) * 10000 === payable ? payable + 10000 : Math.ceil(payable / 10000) * 10000,
+                                                                Math.ceil(payable / 50000) * 50000 === payable ? payable + 50000 : Math.ceil(payable / 50000) * 50000,
+                                                                Math.ceil(payable / 100000) * 100000 === payable ? payable + 100000 : Math.ceil(payable / 100000) * 100000,
+                                                                100000,
+                                                            ];
+                                                            const quickAmts = Array.from(new Set(baseAmts)).filter(a => a >= payable && a > 0).slice(0, 3);
+
+                                                            return quickAmts.map((amt) => {
+                                                                const isSelected = Number(cashInput) === amt;
+                                                                return (
+                                                                    <button
+                                                                        key={amt}
+                                                                        type="button"
+                                                                        onClick={() => setCashInput(String(amt))}
+                                                                        className={`flex-1 py-[8px] rounded-[8px] flex items-center justify-center transition-all cursor-pointer text-[12px] whitespace-nowrap ${
+                                                                            isSelected
+                                                                                ? "border-[#54b8c3] border-[1.5px] bg-white dark:bg-slate-900 text-[#0f172a] dark:text-white font-semibold shadow-sm"
+                                                                                : "bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 text-[#64748b] dark:text-slate-400 font-semibold hover:border-slate-300 dark:hover:border-slate-700"
+                                                                        }`}
+                                                                    >
+                                                                        Rp {amt.toLocaleString("id-ID")}
+                                                                    </button>
+                                                                );
+                                                            });
+                                                        })()}
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             {/* Kembalian if cash */}
                                             {isCash && cash >= payable && payable > 0 && (
-                                                <div className="flex justify-between items-center px-[14px] py-[10px] bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-slate-700 rounded-[8px]">
+                                                <div className="flex justify-between items-center px-[14px] py-[10px] bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-slate-700 rounded-[8px] mt-1">
                                                     <span className="text-xs font-semibold text-[#0f172a] dark:text-white">Kembalian</span>
                                                     <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{fmt(kembalian)}</span>
                                                 </div>
