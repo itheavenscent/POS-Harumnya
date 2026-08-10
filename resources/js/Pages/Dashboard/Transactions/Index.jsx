@@ -3,9 +3,11 @@ import { Head, router, usePage } from "@inertiajs/react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { PerfumeIcon, Package01Icon, ShoppingCart01Icon, CreditCardIcon, QrCodeIcon, Money03Icon } from "@hugeicons/core-free-icons";
+import { PerfumeIcon, Package01Icon, ShoppingCart01Icon, CreditCardIcon, QrCodeIcon, Money03Icon, ShoppingBag02Icon } from "@hugeicons/core-free-icons";
 import POSLayout from "@/Layouts/POSLayout";
 import CategoryIcon from "@/Components/Dashboard/CategoryIcon";
+import ButtonBayar from "@/Components/POS/ButtonBayar";
+import Alert, { showAlert } from "@/Components/Alert";
 import {
     IconBottle, IconChevronRight, IconFlask,
     IconMinus, IconPackage, IconPlus, IconReceipt,
@@ -64,29 +66,6 @@ function Modal({ show, onClose, children, maxW = "max-w-lg" }) {
                 {children}
             </div>
         </div>
-    );
-}
-
-// ─── Button / Bayar Component ───────────────────────────────────────────────
-function ButtonBayar({ onClick, disabled, payable = 0, fmt }) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            disabled={disabled}
-            className="border-[0.793px] border-white/12 content-stretch flex gap-[6.343px] items-center justify-center overflow-clip py-[9.514px] px-[12px] relative rounded-[8px] w-full bg-gradient-to-b from-[#54b8c3] to-[#39a1ac] hover:from-[#46a9b4] hover:to-[#2c909b] active:scale-[0.99] transition-all shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group"
-            data-node-id="3298:33440"
-            data-name="Button / Bayar"
-        >
-            <span className="[word-break:break-word] font-semibold leading-[1.4] relative text-[14px] text-white whitespace-nowrap z-10">
-                Bayar
-            </span>
-            <div className="bg-white/50 h-[12.686px] relative shrink-0 w-[0.793px] z-10" />
-            <span className="[word-break:break-word] font-semibold leading-[1.4] relative text-[14px] text-white whitespace-nowrap z-10">
-                {fmt ? fmt(payable) : `Rp ${payable.toLocaleString("id-ID")}`}
-            </span>
-            <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_0px_0px_0px_1px_rgba(16,24,40,0.24),inset_0px_6.404px_6.404px_0px_rgba(255,255,255,0.1),inset_0px_-6.404px_6.404px_0px_rgba(0,0,0,0.1)]" />
-        </button>
     );
 }
 
@@ -1187,85 +1166,209 @@ function GameRewardModal({ show, onClose, promo, onAddDirectReward, onOpenVarian
     );
 }
 
-// ─── Discount Modal ───────────────────────────────────────────────────────────
+// ─── Discount Modal (1:1 Figma Node 3420:18770) ──────────────────────────────
 function DiscountModal({ show, onClose, discounts = [], subtotal = 0, onSelect, eligiblePromos = [], onPickReward }) {
     const [search, setSearch] = useState("");
     const [manualAmount, setManualAmount] = useState("");
     const eligibleIds = useMemo(() => new Set((eligiblePromos || []).map(p => p.id)), [eligiblePromos]);
 
     const filtered = useMemo(() => {
-        if (!search) return discounts;
+        if (!search.trim()) return discounts;
+        const q = search.toLowerCase();
         return discounts.filter(d =>
-            d.name.toLowerCase().includes(search.toLowerCase()) ||
-            (d.code ?? "").toLowerCase().includes(search.toLowerCase())
+            d.name.toLowerCase().includes(q) ||
+            (d.code ?? "").toLowerCase().includes(q)
         );
     }, [discounts, search]);
 
+    const { availablePromos, unavailablePromos } = useMemo(() => {
+        const available = [];
+        const unavailable = [];
+        filtered.forEach(d => {
+            const isEligible = eligibleIds.has(d.id);
+            const isRewardType = d.type === 'game_reward' || d.type === 'buy_x_get_y';
+            const eligible = isRewardType ? isEligible : (!d.min_purchase_amount || subtotal >= d.min_purchase_amount);
+            if (eligible) {
+                available.push(d);
+            } else {
+                unavailable.push(d);
+            }
+        });
+        return { availablePromos: available, unavailablePromos: unavailable };
+    }, [filtered, eligibleIds, subtotal]);
+
     return (
-        <Modal show={show} onClose={onClose} maxW="max-w-md">
-            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
-                <h3 className="font-bold text-slate-800 dark:text-white text-lg flex items-center gap-2">
-                    <IconTag size={20} className="text-slate-700" /> Pilih Diskon
-                </h3>
-                <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-100 hover:text-slate-700 flex items-center justify-center transition-colors"><IconX size={16} /></button>
-            </div>
-            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
-                <div className="relative">
-                    <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input type="text" placeholder="Cari diskon atau voucher..." value={search} onChange={e => setSearch(e.target.value)} className="w-full h-9 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
-                </div>
-            </div>
-            <div className="overflow-y-auto p-4 flex-1 space-y-2">
-                <div className="p-4 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 mb-4">
-                    <label className="text-xs font-bold text-slate-600 dark:text-slate-400 block mb-2">Input Diskon Manual (Rp)</label>
-                    <div className="flex gap-2">
-                        <div className="relative flex-1">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</span>
-                            <input type="text" inputMode="numeric" value={toRupiahDisplay(manualAmount)} onChange={e => setManualAmount(parseRupiah(e.target.value).replace(/\D/g, ""))} placeholder="0" className="w-full h-10 pl-10 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
-                        </div>
-                        <button onClick={() => { const amt = Number(manualAmount) || 0; if (amt > 0) { onSelect({ id: "__manual__", name: "Diskon Manual", amount: amt }); onClose(); } }} disabled={!manualAmount || Number(manualAmount) <= 0} className="px-4 bg-slate-800 dark:bg-slate-700 text-white font-bold rounded-xl disabled:opacity-50 text-sm">Terapkan</button>
-                    </div>
+        <Modal show={show} onClose={onClose} maxW="max-w-lg">
+            <div className="bg-white dark:bg-slate-900 rounded-[12px] border border-[#e8e8e8] dark:border-slate-800 overflow-hidden flex flex-col w-full shadow-2xl">
+                {/* Header (1:1 Figma Node 3420:18771) */}
+                <div className="h-[60px] px-[20px] py-[16px] border-b border-[#e8e8e8] dark:border-slate-800 flex items-center justify-between shrink-0">
+                    <p className="font-semibold text-[16px] text-[#0f172a] dark:text-white leading-[1.4]">
+                        Pilih Diskon
+                    </p>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="size-[36px] bg-[#f1f5f9] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[#64748b] dark:text-slate-400 rounded-[16px] flex items-center justify-center transition-colors cursor-pointer"
+                    >
+                        <IconX size={16} />
+                    </button>
                 </div>
 
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Diskon & Promo Tersedia</p>
-                {filtered.length === 0 ? (
-                    <div className="py-8 text-center text-slate-400 text-sm">Tidak ada diskon</div>
-                ) : (
-                    filtered.map(d => {
-                        const isEligible = eligibleIds.has(d.id);
-                        const isRewardType = d.type === 'game_reward' || d.type === 'buy_x_get_y';
-                        let calcAmount = 0;
-                        if (!isRewardType) {
-                            if (d.type === 'percentage') {
-                                calcAmount = subtotal * (d.value / 100);
-                                if (d.max_discount_amount > 0 && calcAmount > d.max_discount_amount) calcAmount = d.max_discount_amount;
-                            } else { calcAmount = d.value; }
-                        }
-                        const eligible = isEligible || (!d.min_purchase_amount || subtotal >= d.min_purchase_amount);
-                        const eligiblePromo = (eligiblePromos || []).find(p => p.id === d.id);
-                        return (
-                            <button key={d.id} disabled={!eligible} onClick={() => {
-                                if (isRewardType && isEligible && eligiblePromo) { onClose(); onPickReward && onPickReward(eligiblePromo); }
-                                else if (!isRewardType) { onSelect({ ...d, amount: calcAmount }); onClose(); }
-                            }} className={`group relative flex items-start gap-3 p-3.5 rounded-xl border-2 text-left transition-all w-full ${
-                                isEligible ? 'border-slate-300 dark:border-amber-600 bg-slate-100/50 dark:bg-amber-950/20 hover:border-amber-500 shadow-sm'
-                                : eligible ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300'
-                                : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 opacity-60 cursor-not-allowed'
-                            }`}>
-                                {isEligible && <span className="absolute -top-2 right-3 px-2 py-0.5 bg-amber-500 text-white text-[9px] font-black rounded-full animate-pulse">✓ ELIGIBLE</span>}
-                                <div className={`w-10 h-10 rounded-xl ${isEligible ? 'bg-amber-100 text-slate-700 dark:bg-slate-800' : eligible ? 'bg-emerald-100 text-slate-700 dark:bg-slate-800' : 'bg-slate-200 text-slate-400 dark:bg-slate-700'} flex items-center justify-center flex-shrink-0`}><IconTag size={18} /></div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-bold text-slate-800 dark:text-white text-sm truncate">{d.name}</p>
-                                    <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-2">{d.description || (isRewardType ? 'Item Gratis' : d.type === 'percentage' ? `Diskon ${d.value}%` : `Potongan Rp ${d.value}`)}</p>
-                                    {!eligible && <p className="text-[10px] text-slate-700 mt-1 font-bold">Minimal belanja: {fmt(d.min_purchase_amount)}</p>}
-                                </div>
-                                {eligible && <div className="text-right flex-shrink-0">
-                                    <p className="text-xs font-black text-slate-700">-{fmt(calcAmount)}</p>
-                                </div>}
-                            </button>
-                        );
-                    })
-                )}
+                {/* Body Form (1:1 Figma Node 3420:18777) */}
+                <div className="p-[20px] flex flex-col gap-[16px] overflow-y-auto max-h-[80vh]">
+                    {/* Search Bar (1:1 Figma Node 3420:18870) */}
+                    <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-700 flex gap-[8px] h-[37px] items-center px-[10px] py-[8px] rounded-[8px] w-full">
+                        <IconSearch size={16} className="text-[#64748b] dark:text-slate-400 shrink-0" />
+                        <input
+                            type="text"
+                            placeholder="Cari diskon atau voucher..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full bg-transparent border-0 text-[12px] text-[#0f172a] dark:text-white placeholder-[#64748b] dark:placeholder-slate-400 focus:outline-none focus:ring-0 p-0 leading-[1.4]"
+                        />
+                    </div>
+
+                    {/* Input Diskon Manual (1:1 Figma Node 3420:18876) */}
+                    <div className="bg-[#fbfbfb] dark:bg-slate-800/40 border border-[#e8e8e8] dark:border-slate-800 flex gap-[10px] items-end px-[16px] py-[10px] rounded-[12px] w-full">
+                        <div className="flex-1 flex flex-col gap-[8px]">
+                            <p className="font-semibold text-[14px] text-[#0f172a] dark:text-white leading-[1.4]">
+                                Input Diskon Manual (Rp)
+                            </p>
+                            <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-700 flex h-[37px] items-center px-[12px] py-[8px] rounded-[8px] w-full">
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={toRupiahDisplay(manualAmount)}
+                                    onChange={(e) => setManualAmount(parseRupiah(e.target.value).replace(/\D/g, ""))}
+                                    placeholder="Masukkan diskon manual"
+                                    className="w-full bg-transparent border-0 text-[12px] text-[#0f172a] dark:text-white placeholder-[#64748b] dark:placeholder-slate-400 focus:outline-none focus:ring-0 p-0 leading-[1.4]"
+                                />
+                            </div>
+                        </div>
+
+                        <ButtonBayar
+                            type="button"
+                            label="Terapkan"
+                            payable={0}
+                            onClick={() => {
+                                const amt = Number(manualAmount) || 0;
+                                if (amt > 0) {
+                                    onSelect({ id: "__manual__", name: "Diskon Manual", amount: amt });
+                                    onClose();
+                                }
+                            }}
+                            disabled={!manualAmount || Number(manualAmount) <= 0}
+                            variant={manualAmount && Number(manualAmount) > 0 ? "teal" : "teal"}
+                            className="!w-auto shrink-0 h-[37px] px-5"
+                        />
+                    </div>
+
+                    {/* Diskon & Promo Tersedia (1:1 Figma Node 3442:18853) */}
+                    <div className="flex flex-col gap-[10px] w-full">
+                        <p className="font-semibold text-[14px] text-[#0f172a] dark:text-white leading-[1.4]">
+                            Diskon & Promo Tersedia
+                        </p>
+                        {availablePromos.length === 0 ? (
+                            <p className="py-4 text-center text-xs text-[#64748b] dark:text-slate-400">
+                                Tidak ada promo tersedia
+                            </p>
+                        ) : (
+                            <div className="flex flex-col gap-[8px] w-full">
+                                {availablePromos.map((d) => {
+                                    const isEligible = eligibleIds.has(d.id);
+                                    const isRewardType = d.type === 'game_reward' || d.type === 'buy_x_get_y';
+                                    let calcAmount = 0;
+                                    if (!isRewardType) {
+                                        if (d.type === 'percentage') {
+                                            calcAmount = subtotal * (d.value / 100);
+                                            if (d.max_discount_amount > 0 && calcAmount > d.max_discount_amount) calcAmount = d.max_discount_amount;
+                                        } else {
+                                            calcAmount = d.value;
+                                        }
+                                    }
+                                    const eligiblePromo = (eligiblePromos || []).find(p => p.id === d.id);
+
+                                    return (
+                                        <button
+                                            key={d.id}
+                                            type="button"
+                                            onClick={() => {
+                                                if (isRewardType && isEligible && eligiblePromo) {
+                                                    onClose();
+                                                    onPickReward && onPickReward(eligiblePromo);
+                                                } else if (!isRewardType) {
+                                                    onSelect({ ...d, amount: calcAmount });
+                                                    onClose();
+                                                }
+                                            }}
+                                            className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 rounded-[8px] p-[12px] flex gap-[14px] items-start w-full hover:border-[#54b8c3] dark:hover:border-teal-500 transition-all cursor-pointer text-left shadow-sm group"
+                                        >
+                                            <CategoryIcon
+                                                icon={<HugeiconsIcon icon={ShoppingBag02Icon} size={18} />}
+                                                variant="teal"
+                                                size="size-[30px]"
+                                                rounded="rounded-md"
+                                                className="shrink-0 mt-0.5"
+                                            />
+                                            <div className="flex-1 min-w-0 flex flex-col gap-[4px]">
+                                                <p className="font-semibold text-[14px] text-[#0f172a] dark:text-white leading-[1.2] truncate">
+                                                    {d.name}
+                                                </p>
+                                                <p className="font-medium text-[12px] text-[#64748b] dark:text-slate-400 leading-[1.4] line-clamp-2">
+                                                    {d.description || (isRewardType ? 'Item Gratis' : d.type === 'percentage' ? `Diskon ${d.value}%` : `Potongan Rp ${d.value}`)}
+                                                </p>
+                                            </div>
+                                            <p className="font-semibold text-[14px] text-[#0f172a] dark:text-white leading-[1.4] shrink-0 text-right">
+                                                -{fmt(calcAmount)}
+                                            </p>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Promo Belum Bisa Dipakai (1:1 Figma Node 3442:18880) */}
+                    {unavailablePromos.length > 0 && (
+                        <div className="flex flex-col gap-[10px] w-full">
+                            <p className="font-semibold text-[14px] text-[#0f172a] dark:text-white leading-[1.4]">
+                                Promo Belum Bisa Dipakai
+                            </p>
+                            <div className="flex flex-col gap-[8px] w-full">
+                                {unavailablePromos.map((d) => (
+                                    <div
+                                        key={d.id}
+                                        className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 rounded-[8px] p-[12px] flex gap-[14px] items-start w-full cursor-not-allowed text-left"
+                                    >
+                                        <CategoryIcon
+                                            icon={<HugeiconsIcon icon={ShoppingBag02Icon} size={18} />}
+                                            variant="gray"
+                                            size="size-[32px]"
+                                            rounded="rounded-md"
+                                            className="shrink-0 mt-0.5"
+                                        />
+                                        <div className="flex-1 min-w-0 flex flex-col gap-[4px]">
+                                            <p className="font-semibold text-[14px] text-[#64748b] dark:text-slate-400 leading-[1.2]">
+                                                {d.name}
+                                            </p>
+                                            <p className="font-medium text-[12px] text-[#94a3b8] dark:text-slate-500 leading-[1.4]">
+                                                {d.description || (d.type === 'game_reward' || d.type === 'buy_x_get_y' ? 'Syarat promo belum terpenuhi' : d.type === 'percentage' ? `Diskon ${d.value}%` : `Potongan Rp ${d.value}`)}
+                                            </p>
+                                            {d.min_purchase_amount > 0 && subtotal < d.min_purchase_amount && (
+                                                <p className="font-semibold text-[11px] text-amber-600 dark:text-amber-400">
+                                                    Minimal belanja: {fmt(d.min_purchase_amount)}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <p className="font-semibold text-[14px] text-[#64748b] dark:text-slate-400 leading-[1.4] shrink-0 text-right">
+                                            -Rp 0
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
         </Modal>
     );
@@ -1379,7 +1482,12 @@ export default function Index({
     const customerRef = useRef(null);
     const salesRef = useRef(null);
 
-    useEffect(() => { if (error) toast.error(error); }, [error]);
+    const { flash } = usePage().props;
+    useEffect(() => {
+        if (error) showAlert("Terjadi Kesalahan", error, "error");
+        if (flash?.success) showAlert("Berhasil", flash.success, "success");
+        if (flash?.error) showAlert("Terjadi Kesalahan", flash.error, "error");
+    }, [error, flash]);
 
     // Effect untuk trigger promo otomatis
     useEffect(() => {
@@ -1473,8 +1581,8 @@ export default function Index({
         try {
             const res = await axios.get(route("transactions.get-variants-pos"));
             if (res.data.success) setCatalogVariants(res.data.data);
-            else toast.error(res.data.message ?? "Gagal memuat varian");
-        } catch { toast.error("Gagal memuat varian"); } finally { setLoadingCatalog(false); }
+            else showAlert("Gagal", res.data.message ?? "Gagal memuat varian", "error");
+        } catch { showAlert("Gagal", "Gagal memuat varian", "error"); } finally { setLoadingCatalog(false); }
     };
 
     // Fetch intensitas untuk varian yang dipilih
@@ -1483,8 +1591,8 @@ export default function Index({
         try {
             const res = await axios.get(route("transactions.get-intensities"), { params: { variant_id: variantId } });
             if (res.data.success) setAvailableIntensities(res.data.data);
-            else toast.error(res.data.message ?? "Gagal memuat konsentrasi");
-        } catch { toast.error("Gagal memuat konsentrasi"); } finally { setLoadingIntensities(false); }
+            else showAlert("Gagal", res.data.message ?? "Gagal memuat konsentrasi", "error");
+        } catch { showAlert("Gagal", "Gagal memuat konsentrasi", "error"); } finally { setLoadingIntensities(false); }
     };
 
     const fetchSizes = async (intensityId, variantId) => {
@@ -1492,8 +1600,8 @@ export default function Index({
         try {
             const res = await axios.get(route("transactions.get-sizes"), { params: { intensity_id: intensityId, variant_id: variantId } });
             if (res.data.success) setAvailableSizes(res.data.data);
-            else toast.error(res.data.message ?? "Gagal memuat ukuran");
-        } catch { toast.error("Gagal memuat ukuran"); } finally { setLoadingSizes(false); }
+            else showAlert("Gagal", res.data.message ?? "Gagal memuat ukuran", "error");
+        } catch { showAlert("Gagal", "Gagal memuat ukuran", "error"); } finally { setLoadingSizes(false); }
     };
 
     // ── Fetch variants for custom order ────────────────────────────────────────
@@ -1505,7 +1613,7 @@ export default function Index({
             if (res.data.success) {
                 setCustomVariants(res.data.data ?? []);
             } else {
-                toast.error(res.data.message ?? "Gagal memuat varian");
+                showAlert("Gagal", res.data.message ?? "Gagal memuat varian", "error");
             }
         } catch (err) {
             const status = err?.response?.status;
@@ -1515,7 +1623,7 @@ export default function Index({
                 : status === 403 ? "Akses ditolak (403)."
                     : status === 500 ? (body?.message ?? "Server error (500). Cek log Laravel.")
                         : (body?.message ?? `Gagal memuat varian (${status ?? "network error"})`);
-            toast.error(msg);
+            showAlert("Gagal", msg, "error");
         } finally {
             setLoadingCustomVariants(false);
         }
@@ -1562,7 +1670,7 @@ export default function Index({
             try {
                 const res = await axios.get(route('transactions.get-variants-pos'));
                 if (res.data.success) setRewardVariants(res.data.data);
-            } catch { toast.error('Gagal memuat varian'); }
+            } catch { showAlert("Gagal", "Gagal memuat varian", "error"); }
             finally { setLoadingRewardVariants(false); }
         }
     };
@@ -1590,8 +1698,8 @@ export default function Index({
             standalone_packagings: standalonePkgPayload(),
         }, {
             preserveScroll: true,
-            onSuccess: () => toast.success(`✅ Reward "${label}" berhasil ditambahkan!`),
-            onError: (err) => toast.error(Object.values(err)[0] ?? 'Gagal menambahkan reward'),
+            onSuccess: () => showAlert("Berhasil", `Reward "${label}" berhasil ditambahkan!`, "success"),
+            onError: (err) => showAlert("Gagal", Object.values(err)[0] ?? 'Gagal menambahkan reward', "error"),
         });
     };
 
@@ -1614,12 +1722,12 @@ export default function Index({
         }, {
             preserveScroll: true,
             onSuccess: () => {
-                toast.success(qty > 1
-                    ? `✅ ${qty} item reward "${variant.name}" ditambahkan (GRATIS)!`
-                    : `✅ Item reward "${variant.name}" ditambahkan ke keranjang (GRATIS)!`);
+                showAlert("Berhasil", qty > 1
+                    ? `${qty} item reward "${variant.name}" ditambahkan (GRATIS)!`
+                    : `Item reward "${variant.name}" ditambahkan ke keranjang (GRATIS)!`, "success");
                 setChosenPoolRewardItem(null);
             },
-            onError: (err) => toast.error(Object.values(err)[0] ?? 'Gagal menambahkan reward'),
+            onError: (err) => showAlert("Gagal", Object.values(err)[0] ?? 'Gagal menambahkan reward', "error"),
         });
     };
 
@@ -1648,7 +1756,7 @@ export default function Index({
     };
 
     const selectSize = (size) => {
-        if (!selectedIntensity || !selectedVariant) { toast.error("Lengkapi pilihan"); return; }
+        if (!selectedIntensity || !selectedVariant) { showAlert("Perhatian", "Lengkapi pilihan terlebih dahulu", "warning"); return; }
 
         const payload = {
             intensity_id: selectedIntensity.id, variant_id: selectedVariant.id,
@@ -1674,28 +1782,25 @@ export default function Index({
 
         // 1. Jika reward mengandung "Spin Wheel", buka modal spin
         if (name.includes("spin wheel")) {
-            toast.success("Silakan lakukan Spin Wheel! 🎡");
+            showAlert("Spin Wheel", "Silakan lakukan Spin Wheel! 🎡", "info");
             // setOpenSpinModal(true); 
             return;
         }
 
         // 2. Jika reward adalah produk (misal: "P30 EDT" atau "P10 EDT")
         if (name.includes("p30") || name.includes("p10") || name.includes("parfum") || name.includes("item")) {
-            toast.loading(`Menyiapkan ${rewardName}...`);
-            // Beritahu user untuk memilih varian lewat katalog
             setSelectedCategory("parfum");
             setCatalogSearch("");
             setSelectedReward({ name: rewardName, is_free: true });
-            toast.dismiss();
-            toast.info(`Silakan pilih varian Parfum untuk hadiah: ${rewardName}. Harga akan menjadi Rp 0.`, { duration: 5000 });
+            showAlert("Pilih Varian Hadiah", `Silakan pilih varian Parfum untuk hadiah: ${rewardName}. Harga akan menjadi Rp 0.`, "info");
         } else {
-            toast.success(`Reward "${rewardName}" terpilih!`);
+            showAlert("Berhasil", `Reward "${rewardName}" terpilih!`, "success");
         }
     };
 
     const submitPendingOrder = (overrideOrder = null) => {
         if (!activeCashDrawer) {
-            toast.error("Silakan buka shift terlebih dahulu!");
+            showAlert("Shift Belum Dibuka", "Silakan buka shift terlebih dahulu!", "warning");
             return;
         }
         const order = overrideOrder || pendingOrder;
@@ -1717,7 +1822,7 @@ export default function Index({
         router.post(route(submitRoute), finalPayload, {
             preserveScroll: true, preserveState: true, only: ["carts", "carts_total", "discounts"],
             onSuccess: () => {
-                toast.success(successMsg);
+                showAlert("Berhasil", successMsg, "success");
                 if (!isCustom) {
                     setSelectedIntensity(null); setSelectedVariant(null);
                     setAvailableIntensities([]); setAvailableSizes([]);
@@ -1730,12 +1835,12 @@ export default function Index({
                 setMobileView("catalog");
                 setPendingOrder(null);
                 // Parfum reguler → buka modal pilih botol (standalone). Reward gratis
-                // sudah dapat botol otomatis dari server, jadi jangan buka modal.
+                // sudah dapat botol otomatis dari server, jangan buka modal.
                 setShowPackagingModal(order.openBottlePicker && !wasFree ? true : false);
             },
             onError: (errs) => {
                 const msg = typeof errs === "object" ? Object.values(errs)[0] : (errs?.message || "Gagal menambahkan");
-                toast.error(msg); stateSetter(false);
+                showAlert("Gagal", msg, "error"); stateSetter(false);
             },
         });
     };
@@ -1763,17 +1868,17 @@ export default function Index({
         setRemovingId(cartId);
         router.delete(route("transactions.destroy-cart", cartId), {
             preserveScroll: true, preserveState: true, only: ["carts", "carts_total", "discounts"],
-            onSuccess: () => { toast.success("Item dihapus"); setRemovingId(null); },
-            onError: () => { toast.error("Gagal menghapus"); setRemovingId(null); },
+            onSuccess: () => { showAlert("Berhasil", "Item dihapus dari keranjang", "success"); setRemovingId(null); },
+            onError: () => { showAlert("Gagal", "Gagal menghapus item", "error"); setRemovingId(null); },
         });
     };
 
     const handleHold = () => {
-        if (!carts.length) { toast.error("Keranjang kosong"); return; }
+        if (!carts.length) { showAlert("Keranjang Kosong", "Tidak ada item dalam keranjang", "warning"); return; }
         setIsHolding(true);
         router.post(route("transactions.hold"), { label: "Hold " + new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) }, {
             preserveScroll: true, preserveState: true, only: ["carts", "carts_total", "heldCarts", "discounts"],
-            onSuccess: () => { toast.success("Transaksi ditahan"); setIsHolding(false); setCartPackagings([]); },
+            onSuccess: () => { showAlert("Berhasil", "Transaksi ditahan", "success"); setIsHolding(false); setCartPackagings([]); },
             onFinish: () => setIsHolding(false),
         });
     };
@@ -1787,7 +1892,7 @@ export default function Index({
             if (idx >= 0) return prev.map((p, i) => i === idx ? { ...p, qty: p.qty + 1 } : p);
             return [...prev, { pkg, qty: 1 }];
         });
-        toast.success(`${pkg.name} ditambahkan`);
+        showAlert("Berhasil", `${pkg.name} ditambahkan`, "success");
         // Kembali ke halaman katalog (landing Parfume/Botol/Kemasan) setelah item masuk keranjang.
         setSelectedCategory(null);
         setMobileView("catalog");
@@ -1796,11 +1901,11 @@ export default function Index({
     const handleUpdatePkgQty = (pkgId, delta) =>
         setCartPackagings(prev => prev.map(p => p.pkg.id === pkgId ? { ...p, qty: Math.max(0, p.qty + delta) } : p).filter(p => p.qty > 0));
 
-    const handleCheckout = () => { if (!carts.length && !cartPackagings.length) { toast.error("Keranjang kosong"); return; } setShowPaymentModal(true); };
+    const handleCheckout = () => { if (!carts.length && !cartPackagings.length) { showAlert("Keranjang Kosong", "Tidak ada item dalam keranjang", "warning"); return; } setShowPaymentModal(true); };
 
     const handleSubmit = () => {
-        if (!selectedSalesPerson?.id) { toast.error("Sales wajib dipilih!"); return; }
-        if (isCash && cash < payable) { toast.error("Jumlah bayar kurang dari total"); return; }
+        if (!selectedSalesPerson?.id) { showAlert("Sales Belum Dipilih", "Sales wajib dipilih terlebih dahulu!", "warning"); return; }
+        if (isCash && cash < payable) { showAlert("Nominal Kurang", "Jumlah bayar kurang dari total transaksi!", "warning"); return; }
         setIsSubmitting(true);
         router.post(route("transactions.store"), {
             customer_id: selectedCustomer?.id ?? null,
@@ -1809,12 +1914,12 @@ export default function Index({
             discount_type_id: selectedDiscount?.id !== "__manual__" ? (selectedDiscount?.id ?? null) : null,
             discount_amount: discountAmount, cash_amount: isCash ? cash : null,
             standalone_packagings: cartPackagings.map(p => ({ packaging_material_id: p.pkg.id, qty: p.qty })),
-        }, { onError: (errs) => { setIsSubmitting(false); toast.error(errs?.message || "Gagal menyimpan transaksi"); } });
+        }, { onError: (errs) => { setIsSubmitting(false); showAlert("Gagal", errs?.message || "Gagal menyimpan transaksi", "error"); } });
     };
 
     const handleStoreCustomer = (e) => {
         e.preventDefault();
-        if (!custName) { toast.error("Nama pelanggan wajib diisi"); return; }
+        if (!custName) { showAlert("Form Inkomplit", "Nama pelanggan wajib diisi", "warning"); return; }
         setIsSubmitting(true);
         axios.post(route("customers.store-ajax"), {
             name: custName,
@@ -1828,7 +1933,7 @@ export default function Index({
             setCustPhone("");
             setCustBirthDate("");
             setCustGender("");
-            toast.success("Pelanggan berhasil ditambahkan");
+            showAlert("Berhasil", "Pelanggan baru berhasil ditambahkan", "success");
             
             const newCust = res.data.customer;
             setLocalCustomers(prev => [newCust, ...prev]);
@@ -1836,7 +1941,7 @@ export default function Index({
         }).catch((err) => {
             setIsSubmitting(false);
             const errs = err.response?.data?.errors;
-            toast.error(errs?.phone?.[0] || errs?.name?.[0] || "Gagal menambah pelanggan");
+            showAlert("Gagal", errs?.phone?.[0] || errs?.name?.[0] || "Gagal menambah pelanggan", "error");
         });
     };
 
@@ -2877,36 +2982,23 @@ export default function Index({
                                     <span className="font-bold">{fmt(payable)}</span>
                                 </div>
 
-                                {/* Button / Bayar Component */}
+                                {/* Button / Bayar Component (Figma Node 3298:33440) */}
                                 {showPaymentModal ? (
-                                    <button
-                                        type="button"
+                                    <ButtonBayar
                                         onClick={handleSubmit}
                                         disabled={(isCash && cash < payable) || isSubmitting || !selectedPaymentId}
-                                        className={`w-full py-[10px] rounded-[8px] font-bold text-[14px] leading-[1.4] flex items-center justify-center gap-[8px] transition-all cursor-pointer ${
-                                            (!isCash || cash >= payable) && !isSubmitting && selectedPaymentId
-                                                ? "bg-[#54b8c3] hover:bg-[#36adba] text-white shadow-sm"
-                                                : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
-                                        }`}
-                                    >
-                                        {isSubmitting ? (
-                                            <>
-                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                <span>Memproses...</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <IconReceipt size={16} />
-                                                <span>Selesaikan · {fmt(payable)}</span>
-                                            </>
-                                        )}
-                                    </button>
+                                        loading={isSubmitting}
+                                        payable={payable}
+                                        fmt={fmt}
+                                        label="Selesaikan"
+                                    />
                                 ) : (
                                     <ButtonBayar
                                         onClick={handleCheckout}
                                         disabled={!totalCartCount}
                                         payable={payable}
                                         fmt={fmt}
+                                        label="Bayar"
                                     />
                                 )}
                             </div>

@@ -31,19 +31,26 @@ const VARIANTS = {
         glow: 'from-violet-200 to-violet-200/0',
         shadow: '0px 0px 0px 0.5px rgba(124, 58, 237, 1.00), 0px 0px 0.224852px 0.224852px rgba(0,0,0,0.07), inset 0px 2px 3px 0px rgba(221, 214, 254, 0.50)',
     },
+    gray: {
+        bg: 'from-[#8B8B8B] to-[#737373]',
+        outline: 'outline-slate-300/60',
+        glow: 'from-slate-200 to-slate-200/0',
+        shadow: '0px 0px 0px 0.5px rgba(115, 115, 115, 1.00), 0px 0px 0.224852px 0.224852px rgba(0,0,0,0.07), inset 0px 2px 3px 0px rgba(200, 200, 200, 0.50)',
+    },
 };
 
 export default function CategoryIcon({
     icon,
     variant = 'teal',
     size = 'size-9',
+    rounded = 'rounded-lg',
     className = '',
 }) {
     const v = VARIANTS[variant] || VARIANTS.teal;
 
     return (
         <div
-            className={`${size} p-2 relative bg-gradient-to-b ${v.bg} rounded-lg outline outline-[0.50px] outline-offset-[-0.50px] ${v.outline} inline-flex justify-center items-center gap-2.5 overflow-hidden flex-shrink-0 ${className}`}
+            className={`${size} p-2 relative bg-gradient-to-b ${v.bg} ${rounded} outline outline-[0.50px] outline-offset-[-0.50px] ${v.outline} inline-flex justify-center items-center gap-2.5 overflow-hidden flex-shrink-0 ${className}`}
             style={{ boxShadow: v.shadow }}
         >
             <div className={`w-20 h-9 left-[-22px] top-[33px] absolute bg-gradient-to-r ${v.glow} rounded-full blur-[5px] pointer-events-none`} />
