@@ -79,6 +79,12 @@ export default function Show({ purchase, movements = [] }) {
         setShowReceiveModal(true);
     };
 
+    const receiveAllOrdered = () => {
+        const all = {};
+        purchase.items?.forEach(i => { all[i.id] = i.quantity; });
+        setReceivedQuantities(all);
+    };
+
     const poDate = (purchase.purchase_date ?? "").split("T")[0];
 
     const openReceiptModal = () => {
@@ -180,7 +186,7 @@ export default function Show({ purchase, movements = [] }) {
                             <p className="text-[11px] text-slate-400 mt-1">Tidak boleh sebelum tanggal PO ({fmtDate(poDate)}).</p>
                         </div>
                         {purchase.status === "received" && (
-                            <div className="overflow-y-auto mb-4 border border-slate-200 rounded-xl">
+                            <div className="flex-1 overflow-y-auto mb-4 border border-slate-200 rounded-xl min-h-[10rem] max-h-[45vh]">
                                 <table className="w-full text-left text-sm text-slate-600">
                                     <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
                                         <tr>
@@ -227,7 +233,15 @@ export default function Show({ purchase, movements = [] }) {
                         <p className="text-sm text-slate-500 mb-4 shrink-0">
                             Konfirmasi jumlah barang yang benar-benar diterima. Stok belum berubah — perbarui stok dengan klik <strong>Selesaikan</strong>.
                         </p>
-                        <div className="overflow-y-auto mb-4 border border-slate-200 rounded-xl">
+                        {(purchase.items?.length ?? 0) > 1 && (
+                            <div className="flex justify-end mb-2 shrink-0">
+                                <button type="button" onClick={receiveAllOrdered}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 text-violet-700 border border-violet-200 rounded-lg text-xs font-bold hover:bg-violet-100 transition-colors">
+                                    <IconCheck size={14} /> Terima Semua
+                                </button>
+                            </div>
+                        )}
+                        <div className="flex-1 overflow-y-auto mb-4 border border-slate-200 rounded-xl min-h-[10rem] max-h-[45vh]">
                             <table className="w-full text-left text-sm text-slate-600">
                                 <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
                                     <tr>

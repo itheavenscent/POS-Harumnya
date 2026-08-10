@@ -96,9 +96,16 @@ export default function Edit({ packaging, categories, sizes }) {
         sort_order:             packaging.sort_order        ?? 0,
     });
 
+    const MAX_IMG_BYTES = 2 * 1024 * 1024; // 2MB
+
     const handleImage = (e) => {
         const file = e.target.files[0];
         if (!file) return;
+        if (file.size > MAX_IMG_BYTES) {
+            toast.error(`Ukuran gambar maksimal 2MB (file Anda ${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+            e.target.value = "";
+            return;
+        }
         setData("image", file);
         setPreview(URL.createObjectURL(file));
     };
