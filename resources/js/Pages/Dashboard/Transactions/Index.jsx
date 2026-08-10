@@ -1377,6 +1377,7 @@ export default function Index({
     const [chosenPoolRewardItem, setChosenPoolRewardItem] = useState(null);
 
     const customerRef = useRef(null);
+    const salesRef = useRef(null);
 
     useEffect(() => { if (error) toast.error(error); }, [error]);
 
@@ -1399,6 +1400,7 @@ export default function Index({
     useEffect(() => {
         const handler = (e) => {
             if (customerRef.current && !customerRef.current.contains(e.target)) setShowCustomerDropdown(false);
+            if (salesRef.current && !salesRef.current.contains(e.target)) setShowSalesDropdown(false);
         };
         document.addEventListener("mousedown", handler);
         return () => document.removeEventListener("mousedown", handler);
@@ -1958,19 +1960,20 @@ export default function Index({
                                 {/* Content Pane: Sales, Metode Pembayaran, Nominal (1:1 Figma Node 3307:33585) */}
                                 <div className="flex-1 overflow-y-auto flex flex-col bg-slate-50 dark:bg-slate-950 p-4 gap-3">
                                     {/* Card 1: Sales */}
-                                    <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 rounded-[8px] flex flex-col overflow-hidden shadow-sm">
-                                        <div className="bg-[#fbfbfb] dark:bg-slate-800/80 px-[16px] py-[12px] border-b border-[#e8e8e8] dark:border-slate-800 flex items-center">
+                                    <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 rounded-[8px] flex flex-col shadow-sm">
+                                        <div className="bg-[#fbfbfb] dark:bg-slate-800/80 px-[16px] py-[12px] border-b border-[#e8e8e8] dark:border-slate-800 flex items-center rounded-t-[8px]">
                                             <p className="font-semibold text-[14px] text-[#0f172a] dark:text-white leading-[1.4]">
                                                 Sales
                                             </p>
                                         </div>
-                                        <div className="p-[14px] flex flex-col relative">
+                                        <div ref={salesRef} className="p-[14px] flex flex-col relative">
                                             <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-800 flex gap-[8px] h-[37px] items-center px-[8px] py-[8px] rounded-[8px] w-full relative">
                                                 <IconSearch size={16} className="text-[#64748b] dark:text-slate-400 shrink-0" />
                                                 <input
                                                     type="text"
                                                     placeholder="Cari nama sales"
                                                     value={selectedSalesPerson ? selectedSalesPerson.name : salesSearch}
+                                                    onFocus={() => setShowSalesDropdown(true)}
                                                     onClick={() => {
                                                         if (selectedSalesPerson) {
                                                             setSelectedSalesPerson(null);
@@ -1985,21 +1988,29 @@ export default function Index({
                                                     }}
                                                     className="w-full bg-transparent border-0 text-[12px] text-[#0f172a] dark:text-white placeholder-[#64748b] dark:placeholder-slate-400 focus:outline-none focus:ring-0 p-0 leading-[1.4]"
                                                 />
-                                                {selectedSalesPerson && (
+                                                {selectedSalesPerson ? (
                                                     <button
                                                         type="button"
-                                                        onClick={() => { setSelectedSalesPerson(null); setSalesSearch(""); }}
-                                                        className="text-slate-400 hover:text-slate-600 p-1"
+                                                        onClick={() => { setSelectedSalesPerson(null); setSalesSearch(""); setShowSalesDropdown(true); }}
+                                                        className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
                                                     >
                                                         <IconX size={14} />
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowSalesDropdown(!showSalesDropdown)}
+                                                        className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                                                    >
+                                                        <IconChevronDown size={14} />
                                                     </button>
                                                 )}
                                             </div>
 
                                             {/* Dropdown list sales */}
-                                            {showSalesDropdown && !selectedSalesPerson && (
-                                                <div className="absolute top-full left-[14px] right-[14px] mt-1 bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-700 rounded-[8px] shadow-xl z-30 overflow-hidden max-h-44 overflow-y-auto">
-                                                    {salesPeople.filter(s => s.name.toLowerCase().includes(salesSearch.toLowerCase())).map(s => (
+                                            {showSalesDropdown && (
+                                                <div className="absolute top-full left-[14px] right-[14px] mt-1 bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-700 rounded-[8px] shadow-xl z-50 overflow-hidden max-h-48 overflow-y-auto">
+                                                    {(salesPeople || []).filter(s => s.name.toLowerCase().includes(salesSearch.toLowerCase())).map(s => (
                                                         <button
                                                             key={s.id}
                                                             type="button"
@@ -2008,13 +2019,22 @@ export default function Index({
                                                                 setShowSalesDropdown(false);
                                                                 setSalesSearch("");
                                                             }}
-                                                            className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-[#e8e8e8] dark:border-slate-800 last:border-0 cursor-pointer"
+                                                            className="w-full text-left px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-[#e8e8e8] dark:border-slate-800 last:border-0 cursor-pointer flex items-center justify-between"
                                                         >
-                                                            <p className="font-semibold text-xs text-[#0f172a] dark:text-white">{s.name}</p>
-                                                            <p className="text-[10px] text-[#64748b] dark:text-slate-400">{s.code}</p>
+                                                            <div>
+                                                                <p className="font-semibold text-xs text-[#0f172a] dark:text-white">{s.name}</p>
+                                                                {s.code && <p className="text-[10px] text-[#64748b] dark:text-slate-400">{s.code}</p>}
+                                                            </div>
+                                                            {selectedSalesPerson?.id === s.id && (
+                                                                <IconCheck size={14} className="text-[#54b8c3]" />
+                                                            )}
                                                         </button>
                                                     ))}
-                                                    {salesPeople.length === 0 && <p className="p-3 text-center text-xs text-slate-400">Belum ada sales</p>}
+                                                    {(salesPeople || []).filter(s => s.name.toLowerCase().includes(salesSearch.toLowerCase())).length === 0 && (
+                                                        <p className="p-3 text-center text-xs text-slate-400">
+                                                            {salesPeople?.length === 0 ? "Belum ada data sales" : "Sales tidak ditemukan"}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -2129,9 +2149,9 @@ export default function Index({
                                         <button
                                             type="button"
                                             onClick={() => setSelectedCategory('parfum')}
-                                            className={`p-2.5 rounded-lg border inline-flex items-center gap-3 text-left transition-all group cursor-pointer w-full ${
+                                            className={`p-2.5 rounded-lg border-[1.5px] inline-flex items-center gap-3 text-left transition-all group cursor-pointer w-full ${
                                                 (selectedCategory === 'parfum' || !selectedCategory)
-                                                    ? "bg-white dark:bg-slate-900 border-[#54b8c3] dark:border-teal-500 shadow-sm ring-1 ring-[#54b8c3]/30"
+                                                    ? "bg-white dark:bg-slate-900 border-[#54b8c3] dark:border-teal-500 "
                                                     : "bg-white/60 dark:bg-slate-900/40 border-[#e8e8e8] dark:border-slate-800 hover:bg-white dark:hover:bg-slate-900 hover:border-slate-300"
                                             }`}
                                         >
