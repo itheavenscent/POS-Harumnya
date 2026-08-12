@@ -543,8 +543,9 @@ class TransactionController extends Controller
                 ->filter()->unique()->implode(', ');
             $phone    = optional($sale->customer)->phone ?? $sale->customer_name ?? '-';
             $custName = optional($sale->customer)->name ?? $sale->customer_name ?? 'Umum';
-            $date     = \Illuminate\Support\Carbon::parse($sale->sold_at)->format('Y-m-d');
-            $time     = \Illuminate\Support\Carbon::parse($sale->sold_at)->format('H:i:s');
+            $soldAt   = \Illuminate\Support\Carbon::parse($sale->sold_at)->setTimezone('Asia/Jakarta');
+            $date     = $soldAt->format('Y-m-d');
+            $time     = $soldAt->format('H:i:s');
             $cashier  = optional($sale->cashier)->name ?? $sale->cashier_name ?? '-';
             $sp       = optional($sale->salesPerson)->name ?? $sale->sales_person_name ?? '-';
             $store    = optional($sale->store)->name ?? '-';

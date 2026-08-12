@@ -706,8 +706,8 @@ class LaporanPenjualanController extends Controller
 
         $recentTransactions = $recentTransactions->map(fn ($r) => [
             'invoice'        => $r->sale_number,
-            'date'           => Carbon::parse($r->sold_at)->format('d M Y'),
-            'time'           => Carbon::parse($r->sold_at)->format('H:i'),
+            'date'           => Carbon::parse($r->sold_at)->setTimezone('Asia/Jakarta')->format('d M Y'),
+            'time'           => Carbon::parse($r->sold_at)->setTimezone('Asia/Jakarta')->format('H:i'),
             'status'         => $r->status,
             'store'          => $r->store_name,
             'customer'       => $r->customer_name ?? 'Walk-in',
@@ -815,8 +815,8 @@ class LaporanPenjualanController extends Controller
             // Data transaksi yang diulang penuh di tiap baris item (tidak dikosongkan).
             $base = [
                 $sale->sale_number,
-                Carbon::parse($sale->sold_at)->format('Y-m-d'),
-                Carbon::parse($sale->sold_at)->format('H:i:s'),
+                Carbon::parse($sale->sold_at)->setTimezone('Asia/Jakarta')->format('Y-m-d'),
+                Carbon::parse($sale->sold_at)->setTimezone('Asia/Jakarta')->format('H:i:s'),
                 $sale->status,
                 $sale->store_name,
                 $sale->customer_phone ?? '-',
