@@ -681,6 +681,15 @@ function IntensityModal({ show, onClose, variant, intensities, loading, onSelect
 
 // ─── Size Modal ───────────────────────────────────────────────────────────────
 function SizeModal({ show, onClose, onBack, variant, intensity, sizes, loading, onSelect }) {
+    // Sembunyikan ukuran 10 ml agar tidak menjadi pilihan size transaksi
+    const visibleSizes = useMemo(() => {
+        return (sizes || []).filter((size) => {
+            const vol = Number(size.volume_ml);
+            const name = (size.name || "").toLowerCase().trim();
+            return vol !== 10 && name !== "10 ml" && name !== "10ml";
+        });
+    }, [sizes]);
+
     return (
         <Modal show={show} onClose={onClose} maxW="max-w-md">
             {/* Header */}
@@ -721,14 +730,14 @@ function SizeModal({ show, onClose, onBack, variant, intensity, sizes, loading, 
                         <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
                         <span className="text-sm">Mengecek stok...</span>
                     </div>
-                ) : sizes.length === 0 ? (
+                ) : visibleSizes.length === 0 ? (
                     <div className="py-12 text-center">
                         <IconAlertTriangle size={32} className="mx-auto mb-2 text-amber-400" />
                         <p className="text-sm text-slate-500">Tidak ada ukuran tersedia</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-[10px]">
-                        {sizes.map((size) => (
+                        {visibleSizes.map((size) => (
                             <button
                                 key={size.id}
                                 type="button"
