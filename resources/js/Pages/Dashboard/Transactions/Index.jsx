@@ -681,14 +681,16 @@ function IntensityModal({ show, onClose, variant, intensities, loading, onSelect
 
 // ─── Size Modal ───────────────────────────────────────────────────────────────
 function SizeModal({ show, onClose, onBack, variant, intensity, sizes, loading, onSelect }) {
-    // Sembunyikan ukuran 10 ml agar tidak menjadi pilihan size transaksi
+    // Sembunyikan ukuran 10 ml untuk EDT/EDP/EXT, tapi tetap tampil untuk PURE
     const visibleSizes = useMemo(() => {
+        const isPure = (intensity?.code || "").toUpperCase() === "PURE";
+        if (isPure) return sizes || [];
         return (sizes || []).filter((size) => {
             const vol = Number(size.volume_ml);
             const name = (size.name || "").toLowerCase().trim();
             return vol !== 10 && name !== "10 ml" && name !== "10ml";
         });
-    }, [sizes]);
+    }, [sizes, intensity]);
 
     return (
         <Modal show={show} onClose={onClose} maxW="max-w-md">
