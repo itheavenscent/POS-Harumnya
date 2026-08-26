@@ -23,7 +23,7 @@ import {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (v = 0) =>
     Number(v || 0).toLocaleString("id-ID", {
-        style: "currency", currency: "IDR", minimumFractionDigits: 0,
+        style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2,
     });
 
 const toRupiahDisplay = (val) => {
@@ -435,9 +435,9 @@ function CustomOrderModal({ show, onClose, variants = [], loading = false, onCon
                             <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</span>
                                 <input
-                                    type="text" inputMode="numeric"
+                                    type="text" inputMode="decimal"
                                     value={toRupiahDisplay(customPrice)}
-                                    onChange={e => { setCustomPrice(e.target.value.replace(/\D/g, "")); setPriceOverride(true); }}
+                                    onChange={e => { setCustomPrice(parseRupiah(e.target.value.replace(/[^\d.,]/g, ""))); setPriceOverride(true); }}
                                     placeholder="0"
                                     className={`w-full h-12 pl-10 pr-16 rounded-xl border text-xl font-black focus:outline-none focus:ring-2 dark:bg-slate-900 dark:text-white ${errors.price
                                         ? "border-slate-300 bg-slate-100 focus:ring-red-400/30"
@@ -1248,9 +1248,9 @@ function DiscountModal({ show, onClose, discounts = [], subtotal = 0, onSelect, 
                             <div className="bg-white dark:bg-slate-900 border border-[#e8e8e8] dark:border-slate-700 flex h-[37px] items-center px-[12px] py-[8px] rounded-[8px] w-full">
                                 <input
                                     type="text"
-                                    inputMode="numeric"
+                                    inputMode="decimal"
                                     value={toRupiahDisplay(manualAmount)}
-                                    onChange={(e) => setManualAmount(parseRupiah(e.target.value).replace(/\D/g, ""))}
+                                    onChange={(e) => setManualAmount(parseRupiah(e.target.value.replace(/[^\d.,]/g, "")))}
                                     placeholder="Masukkan diskon manual"
                                     className="w-full bg-transparent border-0 text-[12px] text-[#0f172a] dark:text-white placeholder-[#64748b] dark:placeholder-slate-400 focus:outline-none focus:ring-0 p-0 leading-[1.4]"
                                 />

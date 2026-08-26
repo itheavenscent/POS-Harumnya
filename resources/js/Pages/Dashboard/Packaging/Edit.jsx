@@ -7,6 +7,7 @@ import {
     IconCoin, IconInfoCircle, IconLock, IconPackage, IconGift,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
+import { displayDecimal, parseDecimal } from "@/Utils/currency";
 
 const fmt = (v = 0) => Number(v || 0).toLocaleString("id-ID");
 
@@ -42,6 +43,21 @@ function Select({ label, required, value, onChange, errors, children }) {
 
 function PriceInput({ label, value, onChange, hint, errors, readOnly = false, disabled = false }) {
     const isLocked = readOnly || disabled;
+    const [display, setDisplay] = React.useState(displayDecimal(value));
+
+    React.useEffect(() => {
+        setDisplay(displayDecimal(value));
+    }, [value]);
+
+    const handleChange = (e) => {
+        setDisplay(e.target.value.replace(/[^\d.,]/g, ""));
+    };
+
+    const handleBlur = () => {
+        const parsed = parseDecimal(display);
+        onChange(Number(parsed));
+    };
+
     return (
         <div>
             {label && (
@@ -54,11 +70,12 @@ function PriceInput({ label, value, onChange, hint, errors, readOnly = false, di
                 <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-sm ${isLocked ? "text-slate-300 dark:text-slate-700" : "text-slate-400"}`}>Rp</span>
                 <input
                     type="text"
-                    inputMode="numeric"
+                    inputMode="decimal"
                     readOnly={readOnly}
                     disabled={disabled}
-                    value={disabled ? "0" : readOnly ? fmt(Math.round(value)) : (value ? fmt(value) : "")}
-                    onChange={isLocked ? undefined : e => onChange(Number(e.target.value.replace(/\D/g, "")))}
+                    value={disabled ? "0" : readOnly ? fmt(value) : display}
+                    onChange={isLocked ? undefined : handleChange}
+                    onBlur={isLocked ? undefined : handleBlur}
                     placeholder={isLocked ? undefined : "0"}
                     className={`w-full h-10 pl-10 pr-3 rounded-xl border text-sm transition-all
                         ${isLocked
@@ -92,6 +109,7 @@ export default function Edit({ packaging, categories, sizes }) {
         is_free:                !!packaging.is_free,
         free_condition_note:    packaging.free_condition_note || "",
         is_available_as_addon:  !!packaging.is_available_as_addon,
+        is_assembly:            !!packaging.is_assembly,
         is_active:              !!packaging.is_active,
         sort_order:             packaging.sort_order        ?? 0,
     });
@@ -318,7 +336,7 @@ export default function Edit({ packaging, categories, sizes }) {
                                         <div>
                                             <span className="text-slate-600 dark:text-slate-400 font-medium">Margin Add-on (vs HPP aktual)</span>
                                             <p className="text-xs text-slate-400 mt-0.5">
-                                                Jual {fmt(effectivePrice)} − HPP {fmt(Math.round(avgCost))}
+                                                Jual {fmt(effectivePrice)} − HPP {fmt(avgCost)}
                                             </p>
                                         </div>
                                         <div className="text-right">
@@ -326,7 +344,7 @@ export default function Edit({ packaging, categories, sizes }) {
                                                 {margin}%
                                             </span>
                                             <span className={`block text-xs ${parseFloat(margin) >= 0 ? "text-teal-500" : "text-red-400"}`}>
-                                                Rp {fmt(effectivePrice - Math.round(avgCost))} / unit
+                                                Rp {fmt(effectivePrice - avgCost)} / unit
                                             </span>
                                         </div>
                                     </div>
@@ -335,7 +353,7 @@ export default function Edit({ packaging, categories, sizes }) {
                                 {/* Peringatan harga jual < HPP */}
                                 {!data.is_free && avgCost > 0 && data.selling_price > 0 && avgCost > data.selling_price && (
                                     <div className="mt-3 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-xl text-xs text-red-600 flex items-center gap-2">
-                                        ⚠️ <strong>Harga jual lebih rendah dari HPP!</strong> Rugi Rp {fmt(Math.round(avgCost) - data.selling_price)} per unit.
+                                        ⚠️ <strong>Harga jual lebih rendah dari HPP!</strong> Rugi Rp {fmt(avgCost - data.selling_price)} per unit.
                                     </div>
                                 )}
 
@@ -352,7 +370,7 @@ export default function Edit({ packaging, categories, sizes }) {
                                         </div>
                                         <div className="text-right">
                                             <span className="font-bold text-base text-amber-700 dark:text-amber-400">
-                                                Rp {fmt(Math.round(subsidyPerUnit))}
+                                                Rp {fmt(subsidyPerUnit)}
                                             </span>
                                             <span className="block text-xs text-amber-500">per unit</span>
                                         </div>
@@ -410,6 +428,7 @@ export default function Edit({ packaging, categories, sizes }) {
                             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
                                 {[
                                     { key: "is_available_as_addon", label: "Addon POS",    desc: "Tampil di kasir sebagai add-on" },
+                                    { key: "is_assembly",           label: "Kemasan Rakitan", desc: "Terdiri dari komponen (ring, tutup, botol)" },
                                     { key: "is_active",             label: "Status Aktif", desc: "Material muncul di semua menu" },
                                 ].map(({ key, label, desc }) => (
                                     <div key={key} className="flex items-center justify-between">
@@ -429,6 +448,16 @@ export default function Edit({ packaging, categories, sizes }) {
                                     </div>
                                 ))}
                             </div>
+
+                            {/* Kelola Komponen (BOM) — tampil jika rakitan */}
+                            {data.is_assembly && (
+                                <Link
+                                    href={route("packaging.components.edit", packaging.id)}
+                                    className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-900 text-indigo-700 dark:text-indigo-300 font-semibold rounded-2xl flex items-center justify-center gap-2 text-sm transition-colors"
+                                >
+                                    <IconPackage size={18} /> Kelola Komponen Rakitan
+                                </Link>
+                            )}
 
                             <button
                                 type="submit"

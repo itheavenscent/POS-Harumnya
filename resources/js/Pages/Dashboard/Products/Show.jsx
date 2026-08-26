@@ -9,7 +9,7 @@ import {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n) => new Intl.NumberFormat('id-ID', {
-    style: 'currency', currency: 'IDR', minimumFractionDigits: 0
+    style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 2
 }).format(n ?? 0);
 
 const fmtNum = (n) => new Intl.NumberFormat('id-ID').format(n ?? 0);

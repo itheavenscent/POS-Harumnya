@@ -59,16 +59,16 @@ export default function Menu() {
             ],
         },
 
-        // ─── Master Data ──────────────────────────────────────────────────────
+        // ─── Master Data — Parfum ───────────────────────────────────────────────
         {
-            title: "Master Data",
+            title: "Master Data — Parfum",
             details: [
                 {
-                    title: "Varian",
-                    href: route("variants.index"),
-                    active: url.startsWith("/dashboard/variants"),
-                    icon: <IconCategory size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["variants-access"]),
+                    title: "Ukuran (Size)",
+                    href: route("sizes.index"),
+                    active: url.startsWith("/dashboard/sizes"),
+                    icon: <IconRuler2 size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["sizes-access"]),
                 },
                 {
                     title: "Intensitas",
@@ -78,15 +78,15 @@ export default function Menu() {
                     permissions: hasAnyPermission(["intensities-access"]),
                 },
                 {
-                    title: "Size",
-                    href: route("sizes.index"),
-                    active: url.startsWith("/dashboard/sizes"),
-                    icon: <IconRuler2 size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["sizes-access"]),
+                    title: "Varian",
+                    href: route("variants.index"),
+                    active: url.startsWith("/dashboard/variants"),
+                    icon: <IconCategory size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["variants-access"]),
                 },
                 {
-                    title: "Harga Intensitas",
-                    href: route("intensity-size-prices.index"),
+                    title: "Ukuran Jual & Harga",
+                    href: route("intensity-size-prices.matrix"),
                     active: url.startsWith("/dashboard/intensity-size-prices"),
                     icon: <IconCash size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["intensity-size-prices-access"]),
@@ -94,9 +94,9 @@ export default function Menu() {
             ],
         },
 
-        // ─── Bahan Baku & Produk ──────────────────────────────────────────────
+        // ─── Material & BOM ─────────────────────────────────────────────────────
         {
-            title: "Bahan Baku & Produk",
+            title: "Material & BOM",
             details: [
                 {
                     title: "Bahan Baku",
@@ -106,19 +106,33 @@ export default function Menu() {
                     permissions: hasAnyPermission(["ingredients-access"]),
                 },
                 {
-                    title: "Kemasan",
-                    href: route("packaging.index"),
-                    active: url.startsWith("/dashboard/packaging"),
-                    icon: <IconPackage size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["packaging-access"]),
-                },
-                {
                     title: "Formula & Resep",
                     href: route("recipes.index"),
                     active: url.startsWith("/dashboard/recipes"),
                     icon: <IconBooks size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["recipes-access"]),
                 },
+                {
+                    title: "Kemasan",
+                    href: route("packaging.index"),
+                    active: url.startsWith("/dashboard/packaging") && !url.includes("is_assembly=1"),
+                    icon: <IconPackage size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["packaging-access"]),
+                },
+                {
+                    title: "Rakitan Kemasan (BOM)",
+                    href: route("packaging.index", { is_assembly: 1 }),
+                    active: url.startsWith("/dashboard/packaging") && url.includes("is_assembly=1"),
+                    icon: <IconBoxPadding size={20} strokeWidth={1.5} />,
+                    permissions: hasAnyPermission(["packaging-access"]),
+                },
+            ],
+        },
+
+        // ─── Produk ──────────────────────────────────────────────────────────────
+        {
+            title: "Produk",
+            details: [
                 {
                     title: "Produk & Harga",
                     href: route("products.index"),

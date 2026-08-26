@@ -44,7 +44,11 @@ class LaporanKeuanganController extends Controller
         $isSuperAdmin = method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : false;
 
         // ── Filter params ─────────────────────────────────────────────────────
-        $storeId  = $request->input('store_id', $isSuperAdmin ? null : ($user->default_store_id ?? null));
+        // Non-super-admin TIDAK BOLEH override store_id dari request (IDOR) —
+        // selalu dikunci ke toko default mereka sendiri.
+        $storeId  = $isSuperAdmin
+            ? $request->input('store_id')
+            : ($user->default_store_id ?? null);
         $dateFrom = $request->input('date_from', Carbon::now()->startOfMonth()->toDateString());
         $dateTo   = $request->input('date_to', Carbon::now()->toDateString());
         $groupBy  = $request->input('group_by', 'day'); // day | week | month

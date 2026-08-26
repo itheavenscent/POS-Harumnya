@@ -58,6 +58,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Perangkat yang dipercaya (lolos OTP + "trust this device").
+     */
+    public function trustedDevices()
+    {
+        return $this->hasMany(TrustedDevice::class);
+    }
+
+    /**
      * Cek apakah user adalah super admin
      */
     public function isSuperAdmin(): bool

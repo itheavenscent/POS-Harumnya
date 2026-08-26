@@ -18,7 +18,7 @@ export default function Show({ stock, movements, summary, itemType }) {
         new Intl.NumberFormat("id-ID", {
             style: "currency",
             currency: "IDR",
-            minimumFractionDigits: 0,
+            minimumFractionDigits: 0, maximumFractionDigits: 2,
         }).format(n || 0);
 
     // quantity adalah bigInteger — tampilkan sebagai integer

@@ -382,6 +382,19 @@ export default function Index({ materials, categories, filters }) {
                                     <option key={c.id} value={c.id}>{c.name}</option>
                                 ))}
                             </Select>
+                            <Select
+                                value={filters.is_assembly ?? ""}
+                                onChange={e => router.get(
+                                    route("packaging.index"),
+                                    { is_assembly: e.target.value || undefined, search: filters.search, category_id: filters.category_id },
+                                    { preserveState: true }
+                                )}
+                                className="w-44"
+                            >
+                                <option value="">Semua Jenis</option>
+                                <option value="1">Rakitan (BOM)</option>
+                                <option value="0">Tunggal</option>
+                            </Select>
                         </div>
                     </div>
 
@@ -430,7 +443,12 @@ export default function Index({ materials, categories, filters }) {
                                                         }
                                                     </div>
                                                     <div>
-                                                        <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{item.name}</div>
+                                                        <div className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                                            {item.name}
+                                                            {item.is_assembly && (
+                                                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 font-bold uppercase tracking-wide">Rakitan</span>
+                                                            )}
+                                                        </div>
                                                         <div className="text-[10px] font-mono text-slate-400">{item.code}</div>
                                                         {item.size && (
                                                             <div className="text-[10px] text-slate-700 font-medium">{item.size.name}</div>

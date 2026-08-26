@@ -31,9 +31,9 @@ class Product extends Model
     ];
 
     protected $casts = [
-        'selling_price'           => 'integer',
-        'production_cost'         => 'integer',
-        'gross_profit'            => 'integer',
+        'selling_price'           => 'decimal:2',
+        'production_cost'         => 'decimal:2',
+        'gross_profit'            => 'decimal:2',
         // FIX: gunakan 'float' agar nilai hasil kalkulasi PHP tidak ditruncate
         // sebelum di-clamp. Kolom DB sudah diperlebar ke DECIMAL(10,2) via migrasi.
         'gross_margin_percentage' => 'float',
@@ -193,17 +193,17 @@ class Product extends Model
 
     public function getFormattedSellingPriceAttribute(): string
     {
-        return 'Rp ' . number_format($this->selling_price, 0, ',', '.');
+        return 'Rp ' . number_format($this->selling_price, 2, ',', '.');
     }
 
     public function getFormattedProductionCostAttribute(): string
     {
-        return 'Rp ' . number_format($this->production_cost, 0, ',', '.');
+        return 'Rp ' . number_format($this->production_cost, 2, ',', '.');
     }
 
     public function getFormattedGrossProfitAttribute(): string
     {
-        return 'Rp ' . number_format($this->gross_profit, 0, ',', '.');
+        return 'Rp ' . number_format($this->gross_profit, 2, ',', '.');
     }
 
     // ── Private Helpers ────────────────────────────────────────────────────────

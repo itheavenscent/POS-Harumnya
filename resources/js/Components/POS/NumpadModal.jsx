@@ -99,7 +99,7 @@ export default function NumpadModal({
             return new Intl.NumberFormat("id-ID", {
                 style: "currency",
                 currency: "IDR",
-                minimumFractionDigits: 0,
+                minimumFractionDigits: 0, maximumFractionDigits: 2,
             }).format(num);
         }
         return num.toLocaleString("id-ID");

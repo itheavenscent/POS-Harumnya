@@ -25,7 +25,7 @@ export default function Show({ repack, movements = [] }) {
     // Nilai rupiah — parseFloat karena bisa decimal(15,2) atau decimal(15,4)
     const fmt = (n) =>
         new Intl.NumberFormat("id-ID", {
-            style: "currency", currency: "IDR", minimumFractionDigits: 0,
+            style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2,
         }).format(parseFloat(n) || 0);
 
     // qty stok — bigInteger SIGNED → parseInt

@@ -208,7 +208,11 @@ class SalesPersonController extends Controller
         $isSuperAdmin = method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : ($user->hasRole('super-admin') || $user->hasRole('admin'));
 
         // ── Filter params ─────────────────────────────────────────────────────
-        $storeId   = $request->input('store_id', $isSuperAdmin ? null : ($user->default_store_id ?? null));
+        // Non-super-admin TIDAK BOLEH override store_id dari request (IDOR) —
+        // selalu dikunci ke toko default mereka sendiri.
+        $storeId   = $isSuperAdmin
+            ? $request->input('store_id')
+            : ($user->default_store_id ?? null);
         $dateFrom  = $request->input('date_from', \Illuminate\Support\Carbon::now()->startOfMonth()->toDateString());
         $dateTo    = $request->input('date_to', \Illuminate\Support\Carbon::now()->toDateString());
         $salesPersonId = $request->input('sales_person_id');

@@ -35,7 +35,7 @@ export default function Show({ transfer, movements = [] }) {
     // Rupiah — parseFloat karena unit_cost/avg_cost adalah decimal
     const fmt = (n) =>
         new Intl.NumberFormat("id-ID", {
-            style: "currency", currency: "IDR", minimumFractionDigits: 0,
+            style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2,
         }).format(parseFloat(n) || 0);
 
     // Qty — bigInteger → parseInt

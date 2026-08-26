@@ -13,6 +13,7 @@ const formatPrice = (value = 0) =>
         style: "currency",
         currency: "IDR",
         minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
     });
 
 // Quick Amount Button
@@ -185,11 +186,11 @@ export default function PaymentPanel({
                     </label>
                     <input
                         type="text"
-                        inputMode="numeric"
+                        inputMode="decimal"
                         value={discountInput}
                         onChange={(e) =>
                             onDiscountChange(
-                                e.target.value.replace(/[^\d]/g, "")
+                                e.target.value.replace(/[^\d.,]/g, "")
                             )
                         }
                         placeholder="0"

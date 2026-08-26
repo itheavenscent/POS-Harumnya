@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Auth\OtpService;
+use App\Services\Auth\TrustedDeviceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,7 +21,10 @@ class OtpController extends Controller
     private const SESSION_USER = 'otp:user_id';
     private const SESSION_REMEMBER = 'otp:remember';
 
-    public function __construct(private OtpService $otp) {}
+    public function __construct(
+        private OtpService $otp,
+        private TrustedDeviceService $trustedDevices,
+    ) {}
 
     /**
      * Halaman input OTP.
@@ -50,7 +54,10 @@ class OtpController extends Controller
             return redirect()->route('login');
         }
 
-        $request->validate(['code' => ['required', 'string']]);
+        $request->validate([
+            'code'         => ['required', 'string'],
+            'trust_device' => ['nullable', 'boolean'],
+        ]);
 
         $this->ensureNotRateLimited($request, $user);
 
@@ -70,6 +77,11 @@ class OtpController extends Controller
         Auth::guard('web')->login($user, $remember);
         $request->session()->regenerate();
         $request->session()->forget([self::SESSION_USER, self::SESSION_REMEMBER]);
+
+        // "Percayai perangkat ini" → simpan token, lain kali skip OTP.
+        if ($request->boolean('trust_device')) {
+            $this->trustedDevices->trust($user, $request);
+        }
 
         if ($user->hasRole('cashier')) {
             return redirect()->intended(route('transactions.index', absolute: false));

@@ -11,7 +11,7 @@ const formatPrice = (value = 0) =>
     value.toLocaleString("id-ID", {
         style: "currency",
         currency: "IDR",
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 0, maximumFractionDigits: 2,
     });
 
 // Single Product Card

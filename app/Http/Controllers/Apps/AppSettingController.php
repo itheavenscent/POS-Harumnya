@@ -41,7 +41,7 @@ class AppSettingController extends Controller
         $dt = \App\Models\DiscountType::where('code', 'POIN-MEMBER')->first();
         if ($dt) {
             $dt->min_purchase_amount = $request->loyalty_point_rate;
-            $dt->description = "Program loyalitas: setiap transaksi Rp " . number_format($request->loyalty_point_rate, 0, ',', '.') . " = 1 Poin. Kumpulkan {$request->loyalty_reward_threshold} Poin, tukarkan dengan {$request->loyalty_reward_description}.";
+            $dt->description = "Program loyalitas: setiap transaksi Rp " . number_format($request->loyalty_point_rate, 2, ',', '.') . " = 1 Poin. Kumpulkan {$request->loyalty_reward_threshold} Poin, tukarkan dengan {$request->loyalty_reward_description}.";
             $dt->save();
         }
 

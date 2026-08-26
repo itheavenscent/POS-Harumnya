@@ -39,7 +39,7 @@ export default function Edit({ stock, itemType }) {
 
     const fmtCur = (n) =>
         new Intl.NumberFormat("id-ID", {
-            style: "currency", currency: "IDR", minimumFractionDigits: 0,
+            style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2,
         }).format(n || 0);
 
     // ─── Item helpers ─────────────────────────────────────────────────────────

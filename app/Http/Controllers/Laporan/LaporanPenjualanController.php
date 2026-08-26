@@ -45,7 +45,11 @@ class LaporanPenjualanController extends Controller
         $isSuperAdmin = (method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : false) || $user->can('view-all-stores');
 
         // ── Filter params ─────────────────────────────────────────────────────
-        $storeId  = $request->input('store_id', $isSuperAdmin ? null : ($user->default_store_id ?? null));
+        // Non-super-admin TIDAK BOLEH override store_id dari request (IDOR) —
+        // selalu dikunci ke toko default mereka sendiri.
+        $storeId  = $isSuperAdmin
+            ? $request->input('store_id')
+            : ($user->default_store_id ?? null);
         $dateFrom = $request->input('date_from', Carbon::now()->startOfMonth()->toDateString());
         $dateTo   = $request->input('date_to', Carbon::now()->toDateString());
         $groupBy  = $request->input('group_by', 'day');       // day | week | month
@@ -258,7 +262,12 @@ class LaporanPenjualanController extends Controller
             'refundedCount'     => (int)   $summary->refunded_count,
             'memberTx'          => (int)   $summary->member_tx,
             'walkinTx'          => (int)   $summary->walkin_tx,
-            'completionRate'    => $summary->total_transactions > 0 ? round(($summary->completed_count / $summary->total_transactions) * 100, 2) : 0,
+            // Pakai statusCounts (unfiltered by dropdown status) — bukan $summary,
+            // yang sudah ke-filter status sehingga completed_count == total_transactions
+            // (selalu ~100%) saat filter default 'completed' dipakai.
+            'completionRate'    => $statusCounts->total_all > 0
+                ? round((($statusCounts->total_all - $statusCounts->cancelled_all) / $statusCounts->total_all) * 100, 2)
+                : 0,
             'memberRate'        => $summary->total_transactions > 0 ? round(($summary->member_tx / $summary->total_transactions) * 100, 2) : 0,
         ];
     }
@@ -732,7 +741,11 @@ class LaporanPenjualanController extends Controller
         $user         = auth()->user();
         $isSuperAdmin = (method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : false) || $user->can('view-all-stores');
 
-        $storeId  = $request->input('store_id', $isSuperAdmin ? null : ($user->default_store_id ?? null));
+        // Non-super-admin TIDAK BOLEH override store_id dari request (IDOR) —
+        // selalu dikunci ke toko default mereka sendiri.
+        $storeId  = $isSuperAdmin
+            ? $request->input('store_id')
+            : ($user->default_store_id ?? null);
         $dateFrom = $request->input('date_from', Carbon::now()->startOfMonth()->toDateString());
         $dateTo   = $request->input('date_to', Carbon::now()->toDateString());
         $status   = $request->input('status', 'completed');
@@ -806,7 +819,7 @@ class LaporanPenjualanController extends Controller
         foreach ($sales as $sale) {
             $items = $saleItems[$sale->id] ?? collect();
             $discApplied = ($saleDiscounts[$sale->id] ?? collect())
-                ->map(fn ($d) => $d->discount_name . ' (-' . number_format($d->applied_amount, 0, ',', '.') . ')')
+                ->map(fn ($d) => $d->discount_name . ' (-' . number_format($d->applied_amount, 2, ',', '.') . ')')
                 ->implode('; ');
             $payMethods = ($salePayments[$sale->id] ?? collect())
                 ->map(fn ($p) => $p->payment_method_name)

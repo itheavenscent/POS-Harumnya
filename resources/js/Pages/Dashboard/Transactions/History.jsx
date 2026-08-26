@@ -12,7 +12,7 @@ import {
 const defaultFilters = { q: "", date_from: "", date_to: "", status: "", store_id: "" };
 
 const fmt = (v = 0) =>
-    Number(v || 0).toLocaleString("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 });
+    Number(v || 0).toLocaleString("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
 // Cek apakah transaksi terjadi pada hari yang sama (hari H).
 // Pembatalan hanya boleh di hari H — selaras dengan rule HPP di backend.

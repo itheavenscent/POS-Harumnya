@@ -89,6 +89,67 @@ class IntensitySizePriceController extends Controller
     }
 
     // -------------------------------------------------------------------------
+    // Matrix — atur ukuran mana yang dijual per Intensitas dalam satu layar
+    // -------------------------------------------------------------------------
+
+    public function matrix(): Response
+    {
+        $intensities = $this->getIntensities();
+        $sizes       = $this->getSizes();
+
+        $cells = IntensitySizePrice::query()
+            ->select(['id', 'intensity_id', 'size_id', 'price', 'is_active'])
+            ->get()
+            ->map(fn ($p) => [
+                'id'           => $p->id,
+                'intensity_id' => $p->intensity_id,
+                'size_id'      => $p->size_id,
+                'price'        => (float) $p->price,
+                'is_active'    => $p->is_active,
+            ]);
+
+        return Inertia::render('Dashboard/IntensitySizePrices/Matrix', [
+            'intensities' => $intensities,
+            'sizes'       => $sizes,
+            'cells'       => $cells,
+        ]);
+    }
+
+    public function matrixUpdate(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'cells'                    => 'present|array',
+            'cells.*.intensity_id'     => 'required|uuid|exists:intensities,id',
+            'cells.*.size_id'          => 'required|uuid|exists:sizes,id',
+            'cells.*.price'            => 'nullable|numeric|min:0',
+            'cells.*.is_active'        => 'boolean',
+        ]);
+
+        DB::transaction(function () use ($data) {
+            foreach ($data['cells'] as $cell) {
+                $isSellable = ! empty($cell['is_active']) && ($cell['price'] ?? null) !== null;
+
+                if (! $isSellable) {
+                    // Tidak dijual — nonaktifkan saja kalau sudah pernah ada (riwayat harga tetap tersimpan)
+                    IntensitySizePrice::where('intensity_id', $cell['intensity_id'])
+                        ->where('size_id', $cell['size_id'])
+                        ->update(['is_active' => false]);
+                    continue;
+                }
+
+                IntensitySizePrice::updateOrCreate(
+                    ['intensity_id' => $cell['intensity_id'], 'size_id' => $cell['size_id']],
+                    ['price' => $cell['price'], 'is_active' => true]
+                );
+            }
+        });
+
+        return redirect()
+            ->route('intensity-size-prices.matrix')
+            ->with('success', 'Ukuran jual & harga berhasil disimpan!');
+    }
+
+    // -------------------------------------------------------------------------
     // Create
     // -------------------------------------------------------------------------
 

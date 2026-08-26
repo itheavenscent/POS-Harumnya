@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use App\Services\Auth\OtpService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -15,6 +16,13 @@ class PasswordUpdateTest extends TestCase
     {
         $user = User::factory()->create();
 
+        // Password changes require a verified OTP; generate one directly
+        // (the DB only stores a hash, so we can't read a code back from it).
+        // Reassign $user to the fresh instance so actingAs() authenticates
+        // with the row that actually carries the newly generated otp fields.
+        $code = app(OtpService::class)->generate($user);
+        $user = $user->fresh();
+
         $response = $this
             ->actingAs($user)
             ->from('/profile')
@@ -22,6 +30,7 @@ class PasswordUpdateTest extends TestCase
                 'current_password' => 'password',
                 'password' => 'new-password',
                 'password_confirmation' => 'new-password',
+                'otp_code' => $code,
             ]);
 
         $response

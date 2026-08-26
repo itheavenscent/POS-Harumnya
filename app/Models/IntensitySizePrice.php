@@ -52,7 +52,7 @@ class IntensitySizePrice extends Model
      */
     public function getPriceFormattedAttribute(): string
     {
-        return 'Rp ' . number_format((float) $this->price, 0, ',', '.');
+        return 'Rp ' . number_format((float) $this->price, 2, ',', '.');
     }
 
     public function getStatusLabelAttribute(): string

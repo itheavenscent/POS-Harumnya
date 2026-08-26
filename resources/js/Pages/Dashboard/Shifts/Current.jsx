@@ -25,7 +25,7 @@ export default function Current({ drawer, summary }) {
         Number(v || 0).toLocaleString("id-ID", {
             style: "currency",
             currency: "IDR",
-            minimumFractionDigits: 0,
+            minimumFractionDigits: 0, maximumFractionDigits: 2,
         });
 
     const formatDate = (date) =>

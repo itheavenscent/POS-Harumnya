@@ -30,7 +30,7 @@ const PALETTE = [
 
 // ── Format helpers ────────────────────────────────────────────────────────────
 const idr = (v) =>
-    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v ?? 0);
+    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(v ?? 0);
 
 const compact = (v) => {
     v = v ?? 0;

@@ -14,7 +14,7 @@ import Pagination from "@/Components/Dashboard/Pagination";
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
 const fmt = (n) =>
-    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n || 0);
+    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n || 0);
 
 const fmtNum = (n, d = 4) =>
     parseFloat(n || 0).toLocaleString("id-ID", { minimumFractionDigits: d > 2 ? 2 : d });

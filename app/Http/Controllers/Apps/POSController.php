@@ -469,7 +469,7 @@ class POSController extends Controller
         $storeId = $user->default_store_id;
 
         $carts = Cart::with([
-            'packagings.packagingMaterial',
+            'packagings.packagingMaterial.components.component',
             'product',
             'variant:id,name,code',
             'intensity:id,name,code',
@@ -489,7 +489,7 @@ class POSController extends Controller
         $standalonePkgs = [];
         if ($request->filled('standalone_packagings')) {
             foreach ($request->standalone_packagings as $sp) {
-                $pkg = PackagingMaterial::find($sp['packaging_material_id'] ?? null);
+                $pkg = PackagingMaterial::with('components.component')->find($sp['packaging_material_id'] ?? null);
                 if ($pkg) {
                     $standalonePkgs[] = ['pkg' => $pkg, 'qty' => (int) ($sp['qty'] ?? 1)];
                 }
@@ -602,7 +602,7 @@ class POSController extends Controller
                 $pkg = $sp['pkg'];
                 $qty = $sp['qty'];
                 $pkgSub = ($pkg->selling_price ?? 0) * $qty;
-                $pkgCogs = ($pkg->average_cost ?? 0) * $qty;
+                $pkgCogs = $this->packagingUnitCost($pkg) * $qty;
 
                 SaleItem::create([
                     'sale_id' => $sale->id,
@@ -616,7 +616,7 @@ class POSController extends Controller
                     'unit_price' => $pkg->selling_price ?? 0,
                     'item_discount' => 0,
                     'subtotal' => $pkgSub,
-                    'cogs_per_unit' => $pkg->average_cost ?? 0,
+                    'cogs_per_unit' => $this->packagingUnitCost($pkg),
                     'cogs_total' => $pkgCogs,
                     'line_gross_profit' => $pkgSub - $pkgCogs,
                     'line_gross_margin_pct' => $pkgSub > 0
@@ -982,21 +982,37 @@ class POSController extends Controller
             $cp += ($cart->product?->production_cost ?? 0) * $cart->qty;
             foreach ($cart->packagings as $pkg) {
                 $sc += $pkg->unit_price * $pkg->qty;
-                $cc += ($pkg->packagingMaterial?->average_cost ?? 0) * $pkg->qty;
+                $cc += $this->packagingUnitCost($pkg->packagingMaterial) * $pkg->qty;
             }
         }
         foreach ($standalonePkgs as $s) {
             $sc += ($s['pkg']->selling_price ?? 0) * $s['qty'];
-            $cc += ($s['pkg']->average_cost ?? 0) * $s['qty'];
+            $cc += $this->packagingUnitCost($s['pkg']) * $s['qty'];
         }
 
         return [(int) $sp, (int) $sc, (int) $cp, (int) $cc];
     }
 
+    /**
+     * HPP per unit satu kemasan: rakitan = Σ komponen, non-rakitan = average_cost.
+     */
+    private function packagingUnitCost($pm): float
+    {
+        if (! $pm) return 0;
+
+        return $pm->is_assembly
+            ? (float) $pm->loadMissing('components.component')->assembled_cost
+            : (float) $pm->average_cost;
+    }
+
     private function createSaleItemPackaging(string $saleItemId, $cartPkg): void
     {
-        $sub = $cartPkg->unit_price * $cartPkg->qty;
-        $cogs = ($cartPkg->packagingMaterial?->average_cost ?? 0) * $cartPkg->qty;
+        $pm = $cartPkg->packagingMaterial;
+
+        $unitCost = $this->packagingUnitCost($pm);
+
+        $sub  = $cartPkg->unit_price * $cartPkg->qty;
+        $cogs = $unitCost * $cartPkg->qty;
 
         SaleItemPackaging::create([
             'sale_item_id' => $saleItemId,
@@ -1006,7 +1022,7 @@ class POSController extends Controller
             'qty' => $cartPkg->qty,
             'unit_price' => $cartPkg->unit_price,
             'subtotal' => $sub,
-            'unit_cost' => $cartPkg->packagingMaterial?->average_cost ?? 0,
+            'unit_cost' => $unitCost,
             'cogs_total' => $cogs,
             'line_gross_profit' => $sub - $cogs,
             'line_gross_margin_pct' => $sub > 0 ? round(($sub - $cogs) / $sub * 100, 2) : 0,
@@ -1158,7 +1174,7 @@ class POSController extends Controller
                         } elseif ($reward->discount_percentage > 0) {
                             $dbRewards[] = 'Diskon ' . $reward->discount_percentage . '%';
                         } elseif ($reward->fixed_price > 0) {
-                            $dbRewards[] = 'Harga Khusus ' . number_format($reward->fixed_price, 0, ',', '.');
+                            $dbRewards[] = 'Harga Khusus ' . number_format($reward->fixed_price, 2, ',', '.');
                         } else {
                             $dbRewards[] = 'Reward #' . substr($reward->id, 0, 8);
                         }

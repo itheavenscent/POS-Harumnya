@@ -34,7 +34,7 @@ export default function Index({ drawers, filters, isAdmin }) {
         Number(v || 0).toLocaleString("id-ID", {
             style: "currency",
             currency: "IDR",
-            minimumFractionDigits: 0,
+            minimumFractionDigits: 0, maximumFractionDigits: 2,
         });
 
     return (

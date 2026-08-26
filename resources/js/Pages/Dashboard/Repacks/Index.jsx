@@ -79,7 +79,7 @@ export default function Index({ repacks, filters = {}, summary = {} }) {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     const fmt = (n) =>
-        new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(parseFloat(n) || 0);
+        new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(parseFloat(n) || 0);
     const fmtQty  = (n) => parseInt(n || 0).toLocaleString("id-ID");
     const fmtDate = (d) =>
         d ? new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "—";

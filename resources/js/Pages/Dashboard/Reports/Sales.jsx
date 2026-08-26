@@ -55,7 +55,7 @@ const formatCurrency = (value = 0) =>
     new Intl.NumberFormat("id-ID", {
         style: "currency",
         currency: "IDR",
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 0, maximumFractionDigits: 2,
     }).format(value);
 
 const castFilterString = (value) =>

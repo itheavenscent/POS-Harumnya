@@ -12,7 +12,7 @@ import {
 const LEN = 6;
 
 export default function VerifyOtp({ email, expiresAt, ttlSeconds = 60, status }) {
-    const { data, setData, post, processing, errors, reset } = useForm({ code: "" });
+    const { data, setData, post, processing, errors, reset } = useForm({ code: "", trust_device: false });
     const [resending, setResending] = useState(false);
     const inputsRef = useRef([]);
 
@@ -119,6 +119,9 @@ export default function VerifyOtp({ email, expiresAt, ttlSeconds = 60, status })
                 .otp-box:focus { background:var(--white); border-color:var(--teal); box-shadow:0 0 0 3px rgba(86,184,195,0.12); }
                 .otp-box.err { border-color:#F87171; background:#FFF8F8; }
                 .lg-error { font-size:11.5px; color:#EF4444; margin-top:8px; display:flex; align-items:center; gap:4px; }
+                .lg-trust { display:flex; align-items:flex-start; gap:8px; margin:0 0 16px;
+                    font-size:12.5px; color:var(--muted); line-height:1.4; cursor:pointer; user-select:none; }
+                .lg-trust input { margin-top:2px; width:15px; height:15px; accent-color:var(--teal-deep); cursor:pointer; flex-shrink:0; }
                 .lg-timer { display:flex; align-items:center; justify-content:center; gap:6px; margin:18px 0;
                     font-size:13px; font-weight:600; color:var(--teal-deep); }
                 .lg-timer.expired { color:#EF4444; }
@@ -164,6 +167,16 @@ export default function VerifyOtp({ email, expiresAt, ttlSeconds = 60, status })
                         )}
 
                         <form onSubmit={submit}>
+                            <label className="lg-trust">
+                                <input
+                                    type="checkbox"
+                                    checked={data.trust_device}
+                                    onChange={(e) => setData("trust_device", e.target.checked)}
+                                    disabled={processing}
+                                />
+                                <span>Percayai perangkat ini — tidak perlu OTP lagi selama 30 hari</span>
+                            </label>
+
                             <div className="otp-row" onPaste={onPaste}>
                                 {Array.from({ length: LEN }).map((_, i) => (
                                     <input

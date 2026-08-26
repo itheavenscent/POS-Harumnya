@@ -60,7 +60,7 @@ class Supplier extends Model
 
     public function getFormattedCreditLimitAttribute(): string
     {
-        return 'Rp ' . number_format((float) $this->credit_limit, 0, ',', '.');
+        return 'Rp ' . number_format((float) $this->credit_limit, 2, ',', '.');
     }
 
     public function getStatusLabelAttribute(): string

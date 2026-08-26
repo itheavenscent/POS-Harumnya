@@ -12,7 +12,7 @@ import toast from "react-hot-toast";
 
 const fmt = (n) =>
     new Intl.NumberFormat("id-ID", {
-        style: "currency", currency: "IDR", minimumFractionDigits: 0,
+        style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2,
     }).format(parseFloat(n) || 0);
 
 function Badge({ color, children }) {

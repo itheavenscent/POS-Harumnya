@@ -65,6 +65,6 @@ class ProductRecipe extends Model
 
     public function getFormattedTotalCostAttribute(): string
     {
-        return 'Rp ' . number_format($this->total_cost, 0, ',', '.');
+        return 'Rp ' . number_format($this->total_cost, 2, ',', '.');
     }
 }

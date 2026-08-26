@@ -7,6 +7,7 @@ import {
     IconPhoto, IconCoin, IconInfoCircle, IconX, IconGift,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
+import { displayDecimal, parseDecimal } from "@/Utils/currency";
 
 const fmt = (v = 0) => Number(v || 0).toLocaleString("id-ID");
 
@@ -41,6 +42,21 @@ function Select({ label, required, value, onChange, errors, children }) {
 }
 
 function PriceInput({ label, value, onChange, hint, errors, disabled = false }) {
+    const [display, setDisplay] = React.useState(displayDecimal(value));
+
+    React.useEffect(() => {
+        setDisplay(displayDecimal(value));
+    }, [value]);
+
+    const handleChange = (e) => {
+        setDisplay(e.target.value.replace(/[^\d.,]/g, ""));
+    };
+
+    const handleBlur = () => {
+        const parsed = parseDecimal(display);
+        onChange(Number(parsed));
+    };
+
     return (
         <div>
             {label && <label className={`block text-sm font-medium mb-1 ${disabled ? "text-slate-400 dark:text-slate-600" : "dark:text-slate-300"}`}>{label}</label>}
@@ -48,10 +64,11 @@ function PriceInput({ label, value, onChange, hint, errors, disabled = false }) 
                 <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-sm ${disabled ? "text-slate-300 dark:text-slate-700" : "text-slate-400"}`}>Rp</span>
                 <input
                     type="text"
-                    inputMode="numeric"
+                    inputMode="decimal"
                     disabled={disabled}
-                    value={disabled ? "0" : (value ? fmt(value) : "")}
-                    onChange={disabled ? undefined : e => onChange(Number(e.target.value.replace(/\D/g, "")))}
+                    value={disabled ? "0" : display}
+                    onChange={disabled ? undefined : handleChange}
+                    onBlur={disabled ? undefined : handleBlur}
                     placeholder="0"
                     className={`w-full h-10 pl-10 pr-3 rounded-xl border text-sm transition-all
                         ${disabled
@@ -83,6 +100,7 @@ export default function Create({ categories, sizes }) {
         is_free:               false,
         free_condition_note:   "",
         is_available_as_addon: true,
+        is_assembly:           false,
         is_active:             true,
         sort_order:            0,
     });
@@ -386,6 +404,7 @@ export default function Create({ categories, sizes }) {
                             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
                                 {[
                                     { key: "is_available_as_addon", label: "Addon POS",    desc: "Tampil sebagai pilihan add-on di kasir" },
+                                    { key: "is_assembly",           label: "Kemasan Rakitan", desc: "Terdiri dari komponen — atur setelah simpan" },
                                     { key: "is_active",             label: "Status Aktif", desc: "Material muncul di semua menu" },
                                 ].map(({ key, label, desc }) => (
                                     <div key={key} className="flex items-center justify-between">

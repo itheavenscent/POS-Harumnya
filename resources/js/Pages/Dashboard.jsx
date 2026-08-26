@@ -198,7 +198,7 @@ const getPaymentStyle = (name) => {
 // ─── FORMAT ───────────────────────────────────────────────────────────────────
 const idr = (v) =>
     new Intl.NumberFormat('id-ID', {
-        style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
+        style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 2,
     }).format(v ?? 0);
 
 const compact = (v) => {

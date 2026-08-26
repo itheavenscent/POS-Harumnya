@@ -175,7 +175,7 @@ export default function Edit({ repack, warehouses, stores, ingredients }) {
 
     const fmt = (n) =>
         new Intl.NumberFormat("id-ID", {
-            style: "currency", currency: "IDR", minimumFractionDigits: 0,
+            style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2,
         }).format(parseFloat(n) || 0);
 
     const addItem = () => setData("items", [...data.items, { ingredient_id: "", quantity: "" }]);

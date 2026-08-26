@@ -21,11 +21,11 @@ class SaleItemPackaging extends Model
 
     protected $casts = [
         'qty'                   => 'integer',
-        'unit_price'            => 'integer',
-        'subtotal'              => 'integer',
-        'unit_cost'             => 'integer',
-        'cogs_total'            => 'integer',
-        'line_gross_profit'     => 'integer',
+        'unit_price'            => 'decimal:2',
+        'subtotal'              => 'decimal:2',
+        'unit_cost'             => 'decimal:2',
+        'cogs_total'            => 'decimal:2',
+        'line_gross_profit'     => 'decimal:2',
         'line_gross_margin_pct' => 'decimal:2',
     ];
 

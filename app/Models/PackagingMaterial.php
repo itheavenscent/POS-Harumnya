@@ -22,6 +22,7 @@ class PackagingMaterial extends Model
         'image',
         'description',
         'is_available_as_addon',
+        'is_assembly',
         // Pricing
         'purchase_price',
         'selling_price',
@@ -36,10 +37,11 @@ class PackagingMaterial extends Model
     protected $casts = [
         'is_active'             => 'boolean',
         'is_available_as_addon' => 'boolean',
+        'is_assembly'           => 'boolean',
         'is_free'               => 'boolean',
         'sort_order'            => 'integer',
-        'purchase_price'        => 'integer',
-        'selling_price'         => 'integer',
+        'purchase_price'        => 'decimal:2',
+        'selling_price'         => 'decimal:2',
         'average_cost'          => 'decimal:4',
     ];
 
@@ -111,6 +113,48 @@ class PackagingMaterial extends Model
     public function storeStocks(): HasMany
     {
         return $this->hasMany(StorePackagingStock::class, 'packaging_material_id');
+    }
+
+    /**
+     * Baris BOM: komponen-komponen penyusun kemasan rakitan ini.
+     */
+    public function components(): HasMany
+    {
+        return $this->hasMany(PackagingRecipe::class, 'parent_packaging_id');
+    }
+
+    /**
+     * Baris BOM di mana material ini dipakai sebagai komponen rakitan lain.
+     */
+    public function usedInAssemblies(): HasMany
+    {
+        return $this->hasMany(PackagingRecipe::class, 'component_packaging_id');
+    }
+
+    // ─── Assembly Helpers ───────────────────────────────────────────────
+
+    /**
+     * Apakah kemasan ini rakitan (punya BOM komponen).
+     */
+    public function isAssembly(): bool
+    {
+        return (bool) $this->is_assembly;
+    }
+
+    /**
+     * HPP rakitan = Σ (average_cost komponen × quantity).
+     * Untuk material non-rakitan → average_cost sendiri.
+     * Komponen WAJIB sudah di-load via components.component agar tidak N+1.
+     */
+    public function getAssembledCostAttribute(): float
+    {
+        if (! $this->is_assembly) {
+            return (float) $this->average_cost;
+        }
+
+        return (float) $this->components->sum(
+            fn ($line) => (float) ($line->component?->average_cost ?? 0) * (int) $line->quantity
+        );
     }
 
     // ─── Scopes ─────────────────────────────────────────────────────────

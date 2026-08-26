@@ -10,7 +10,7 @@ import {
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 
-const fmt    = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(parseInt(n) || 0);
+const fmt    = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(parseFloat(n) || 0);
 const fmtQty = (n) => parseInt(n || 0).toLocaleString("id-ID");
 
 // ─── SearchSelect ─────────────────────────────────────────────────────────────

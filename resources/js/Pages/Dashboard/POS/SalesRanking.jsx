@@ -4,7 +4,7 @@ import POSLayout from "@/Layouts/POSLayout";
 import { IconUserBolt, IconTrophy, IconReceipt, IconBox, IconCash } from "@tabler/icons-react";
 
 const fmt = (v = 0) =>
-    Number(v || 0).toLocaleString("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 });
+    Number(v || 0).toLocaleString("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const fmtNum = (v = 0) => Number(v || 0).toLocaleString("id-ID");
 
 const MEDAL = ["from-amber-400 to-amber-600", "from-slate-300 to-slate-500", "from-orange-400 to-orange-600"];

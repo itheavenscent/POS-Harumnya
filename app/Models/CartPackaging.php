@@ -24,7 +24,7 @@ class CartPackaging extends Model
 
     protected $casts = [
         'qty'        => 'integer',
-        'unit_price' => 'integer',
+        'unit_price' => 'decimal:2',
     ];
 
     // ── Relations ──────────────────────────────────────────────────────────────

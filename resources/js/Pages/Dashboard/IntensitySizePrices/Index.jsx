@@ -6,6 +6,7 @@ import {
     IconCirclePlus, IconDatabaseOff, IconPencilCog, IconTrash,
     IconCurrencyDollar, IconCircleCheck, IconCircleX, IconFilter,
     IconRefresh, IconX, IconCheck, IconAlertTriangle, IconDropletFilled, IconScale,
+    IconTable,
 } from "@tabler/icons-react";
 import Search from "@/Components/Dashboard/Search";
 import Pagination from "@/Components/Dashboard/Pagination";
@@ -17,7 +18,7 @@ import toast from "react-hot-toast";
 // =============================================================================
 
 const formatRupiah = (number) =>
-    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(number);
+    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(number);
 
 function StatusBadge({ isActive }) {
     return isActive ? (
@@ -311,6 +312,13 @@ export default function Index({ intensitySizePrices, filters, intensities, sizes
                                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#02a9b1] rounded-full border-2 border-white dark:border-slate-900" />
                             )}
                         </button>
+                        <Link
+                            href={route("intensity-size-prices.matrix")}
+                            className="w-11 h-11 rounded-[9px] border border-[#e8e8e8] dark:border-slate-700 bg-white dark:bg-slate-900 text-[#0f172a] dark:text-white hover:bg-slate-50 dark:hover:bg-slate-750 flex items-center justify-center transition-colors cursor-pointer"
+                            title="Lihat sebagai Matrix (atur ukuran jual per intensitas)"
+                        >
+                            <IconTable size={16} />
+                        </Link>
                         <Button
                             type="add"
                             href={route("intensity-size-prices.create")}

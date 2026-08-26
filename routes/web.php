@@ -105,16 +105,12 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     // Master Data
     // ─────────────────────────────────────────────────────────────────────────
 
-    Route::resource('categories', CategoryController::class)
-        ->middleware([
-            'index' => 'permission:categories-access',
-            'show' => 'permission:categories-access',
-            'create' => 'permission:categories-create',
-            'store' => 'permission:categories-create',
-            'edit' => 'permission:categories-edit',
-            'update' => 'permission:categories-edit',
-            'destroy' => 'permission:categories-delete',
-        ]);
+    // NOTE: rute 'categories' (CategoryController + tabel `categories`) sudah
+    // digantikan oleh fitur Store Categories (lihat store-categories.* di bawah).
+    // Tabel `categories` & halaman frontend-nya sudah dihapus, tapi rute ini
+    // masih terdaftar dan akan 500 ("no such table: categories") jika diakses —
+    // dinonaktifkan di sini. CategoryController & model Category masih ada di
+    // app/, silakan hapus juga jika sudah dikonfirmasi tidak dipakai.
 
     Route::resource('sizes', SizeController::class)
         ->middleware([
@@ -125,6 +121,12 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
             'update' => 'permission:sizes-edit',
             'destroy' => 'permission:sizes-delete',
         ]);
+
+    // Matrix (statis) HARUS sebelum resource agar tidak ketangkap wildcard {intensity_size_price}
+    Route::get('intensity-size-prices/matrix', [IntensitySizePriceController::class, 'matrix'])
+        ->name('intensity-size-prices.matrix')->middleware('permission:intensity-size-prices-access');
+    Route::post('intensity-size-prices/matrix', [IntensitySizePriceController::class, 'matrixUpdate'])
+        ->name('intensity-size-prices.matrix.update')->middleware('permission:intensity-size-prices-access');
 
     Route::resource('intensity-size-prices', IntensitySizePriceController::class)
         ->middleware('permission:intensity-size-prices-access');
@@ -252,6 +254,10 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::get('/{packaging}/edit', [PackagingController::class, 'edit'])->name('edit')->middleware('permission:packaging-edit');
         Route::put('/{packaging}', [PackagingController::class, 'update'])->name('update')->middleware('permission:packaging-edit');
         Route::delete('/{packaging}', [PackagingController::class, 'destroy'])->name('destroy')->middleware('permission:packaging-delete');
+
+        // Komponen rakitan (BOM)
+        Route::get('/{packaging}/components', [PackagingController::class, 'editComponents'])->name('components.edit')->middleware('permission:packaging-edit');
+        Route::put('/{packaging}/components', [PackagingController::class, 'syncComponents'])->name('components.sync')->middleware('permission:packaging-edit');
     });
 
     // ── Recipes (Formula & Resep) ─────────────────────────────────────────────

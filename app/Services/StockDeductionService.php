@@ -7,6 +7,7 @@ use App\Models\ProductRecipe;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockMovement;
+use App\Models\PackagingMaterial;
 use App\Models\StoreIngredientStock;
 use App\Models\StorePackagingStock;
 use App\Models\VariantRecipe;
@@ -366,10 +367,16 @@ class StockDeductionService
         float  $qty,
         string $unitLabel = 'ml',
     ): void {
-        $stock = StoreIngredientStock::firstOrCreate(
-            ['store_id' => $storeId, 'ingredient_id' => $ingredientId],
-            ['quantity' => 0, 'average_cost' => 0, 'total_value' => 0],
-        );
+        // lockForUpdate agar dua checkout bersamaan (2 kasir/toko) tidak
+        // sama-sama baca qty lama lalu saling menimpa hasil deduct.
+        $stock = StoreIngredientStock::where('store_id', $storeId)
+            ->where('ingredient_id', $ingredientId)
+            ->lockForUpdate()
+            ->first()
+            ?? StoreIngredientStock::firstOrCreate(
+                ['store_id' => $storeId, 'ingredient_id' => $ingredientId],
+                ['quantity' => 0, 'average_cost' => 0, 'total_value' => 0],
+            );
 
         $qtyBefore = (int)   $stock->quantity;
         $avgCost   = (float) $stock->average_cost;
@@ -387,7 +394,9 @@ class StockDeductionService
 
         $stock->update([
             'quantity'     => $qtyAfter,
-            'total_value'  => round(max(0, $qtyAfter) * $avgCost, 2),
+            // total_value harus konsisten dengan quantity (boleh negatif) —
+            // di-floor 0 di sini akan membuat qty & total_value tidak sinkron.
+            'total_value'  => round($qtyAfter * $avgCost, 2),
             'last_out_at'  => now(),
             'last_out_by'  => Auth::id(),
             'last_out_qty' => $qtyDeduct,
@@ -430,6 +439,13 @@ class StockDeductionService
     // PRIVATE — PACKAGING
     // =========================================================================
 
+    /**
+     * Deduksi satu kemasan pada penjualan.
+     *
+     * Jika kemasan adalah RAKITAN (is_assembly), stok rakitan tidak dikurangi;
+     * yang dikurangi adalah tiap KOMPONEN penyusunnya (qty × quantity BOM).
+     * Kemasan non-rakitan dikurangi langsung.
+     */
     private function deductOnePackaging(
         Sale    $sale,
         string  $storeId,
@@ -437,7 +453,63 @@ class StockDeductionService
         ?string $pkgName,
         int     $qty,
     ): void {
-        $stock = StorePackagingStock::firstOrCreate(
+        $material = PackagingMaterial::with('components.component')->find($pkgId);
+
+        if ($material && $material->is_assembly) {
+            if ($material->components->isEmpty()) {
+                Log::warning('[StockDeduction] Kemasan rakitan tanpa komponen BOM — tidak ada yang dikurangi', [
+                    'packaging_material_id' => $pkgId,
+                    'pkg_name'              => $pkgName,
+                    'sale_number'           => $sale->sale_number,
+                ]);
+                return;
+            }
+
+            foreach ($material->components as $line) {
+                if (! $line->component_packaging_id) continue;
+
+                $componentQty = $qty * max(1, (int) $line->quantity);
+
+                $this->deductOnePackagingRaw(
+                    sale:    $sale,
+                    storeId: $storeId,
+                    pkgId:   $line->component_packaging_id,
+                    pkgName: $line->component?->name,
+                    qty:     $componentQty,
+                    note:    " [{$pkgName} → {$line->component?->name}]",
+                );
+            }
+
+            return;
+        }
+
+        $this->deductOnePackagingRaw(
+            sale:    $sale,
+            storeId: $storeId,
+            pkgId:   $pkgId,
+            pkgName: $pkgName,
+            qty:     $qty,
+        );
+    }
+
+    /**
+     * Kurangi stok satu packaging material secara langsung (tanpa cek BOM).
+     */
+    private function deductOnePackagingRaw(
+        Sale    $sale,
+        string  $storeId,
+        string  $pkgId,
+        ?string $pkgName,
+        int     $qty,
+        string  $note = '',
+    ): void {
+        // lockForUpdate agar dua checkout bersamaan (2 kasir/toko) tidak
+        // sama-sama baca qty lama lalu saling menimpa hasil deduct.
+        $stock = StorePackagingStock::where('store_id', $storeId)
+            ->where('packaging_material_id', $pkgId)
+            ->lockForUpdate()
+            ->first()
+            ?? StorePackagingStock::firstOrCreate(
             ['store_id' => $storeId, 'packaging_material_id' => $pkgId],
             ['quantity' => 0, 'average_cost' => 0, 'total_value' => 0],
         );
@@ -448,7 +520,9 @@ class StockDeductionService
 
         $stock->update([
             'quantity'     => $qtyAfter,
-            'total_value'  => round(max(0, $qtyAfter) * $avgCost, 2),
+            // total_value harus konsisten dengan quantity (boleh negatif) —
+            // di-floor 0 di sini akan membuat qty & total_value tidak sinkron.
+            'total_value'  => round($qtyAfter * $avgCost, 2),
             'last_out_at'  => now(),
             'last_out_by'  => Auth::id(),
             'last_out_qty' => $qty,
@@ -484,7 +558,7 @@ class StockDeductionService
             'reference_number' => $sale->sale_number,
             'movement_date'    => $sale->sold_at->toDateString(),
             'created_by'       => Auth::id(),
-            'notes'            => "Penjualan {$sale->sale_number}" . ($pkgName ? " [{$pkgName}]" : ''),
+            'notes'            => "Penjualan {$sale->sale_number}" . ($note !== '' ? $note : ($pkgName ? " [{$pkgName}]" : '')),
         ]);
     }
 }

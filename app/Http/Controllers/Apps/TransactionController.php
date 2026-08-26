@@ -536,7 +536,7 @@ class TransactionController extends Controller
         $row = 2;
         foreach ($sales as $sale) {
             $discApplied = $sale->discounts
-                ->map(fn ($d) => $d->discount_name . ' (-' . number_format((float) $d->applied_amount, 0, ',', '.') . ')')
+                ->map(fn ($d) => $d->discount_name . ' (-' . number_format((float) $d->applied_amount, 2, ',', '.') . ')')
                 ->implode('; ');
             $payMethods = $sale->payments
                 ->map(fn ($p) => $p->payment_method_name ?? optional($p->paymentMethod)->name)
@@ -1164,7 +1164,7 @@ class TransactionController extends Controller
         }
 
         $carts = Cart::with([
-            'packagings.packagingMaterial',
+            'packagings.packagingMaterial.components.component',
             'product',
             'variant:id,name,code',
             'intensity:id,name,code',
@@ -1198,7 +1198,7 @@ class TransactionController extends Controller
 
         $standalonePkgs = [];
         foreach ((array) $request->standalone_packagings as $sp) {
-            $pkg = PackagingMaterial::find($sp['packaging_material_id'] ?? null);
+            $pkg = PackagingMaterial::with('components.component')->find($sp['packaging_material_id'] ?? null);
             if ($pkg) {
                 $standalonePkgs[] = ['pkg' => $pkg, 'qty' => (int) ($sp['qty'] ?? 1)];
             }
@@ -1380,7 +1380,8 @@ class TransactionController extends Controller
                 $qty = $sp['qty'];
                 $unitEffective = $pkg->is_free ? 0 : (int) ($pkg->selling_price ?? 0);
                 $pkgSub = $unitEffective * $qty;
-                $pkgCogs = (int) (($pkg->average_cost ?? 0) * $qty);
+                $pkgUnitCost = $this->packagingUnitCost($pkg);
+                $pkgCogs = (int) ($pkgUnitCost * $qty);
                 $nameSuffix = $pkg->is_free ? ' [GRATIS]' : '';
 
                 SaleItem::create([
@@ -1398,7 +1399,7 @@ class TransactionController extends Controller
                     'unit_price' => $unitEffective,
                     'item_discount' => 0,
                     'subtotal' => $pkgSub,
-                    'cogs_per_unit' => $pkg->average_cost ?? 0,
+                    'cogs_per_unit' => $pkgUnitCost,
                     'cogs_total' => $pkgCogs,
                     'line_gross_profit' => $pkgSub - $pkgCogs,
                     'line_gross_margin_pct' => $pkgSub > 0
@@ -2307,17 +2308,31 @@ class TransactionController extends Controller
 
             foreach ($cart->packagings as $pkg) {
                 $sc += $pkg->unit_price * $pkg->qty;
-                $cc += ($pkg->packagingMaterial?->average_cost ?? 0) * $pkg->qty;
+                $cc += $this->packagingUnitCost($pkg->packagingMaterial) * $pkg->qty;
             }
         }
 
         foreach ($standalonePkgs as $s) {
             $effectivePrice = $s['pkg']->is_free ? 0 : ($s['pkg']->selling_price ?? 0);
             $sc += $effectivePrice * $s['qty'];
-            $cc += ($s['pkg']->average_cost ?? 0) * $s['qty'];
+            $cc += $this->packagingUnitCost($s['pkg']) * $s['qty'];
         }
 
         return [(int) $sp, (int) $sc, (int) $cp, (int) $cc, (int) $ca];
+    }
+
+    /**
+     * HPP per unit satu kemasan: rakitan (is_assembly) = Σ HPP komponen BOM,
+     * non-rakitan = average_cost sendiri. Komponen harus sudah di-load via
+     * components.component agar tidak N+1 (lihat eager-load di store()/index()).
+     */
+    private function packagingUnitCost($pm): float
+    {
+        if (! $pm) return 0;
+
+        return $pm->is_assembly
+            ? (float) $pm->loadMissing('components.component')->assembled_cost
+            : (float) $pm->average_cost;
     }
 
     private function createSaleItemPackaging(string $saleItemId, $cartPkg): void
@@ -2326,7 +2341,7 @@ class TransactionController extends Controller
         $isFree = $pkg?->is_free ?? false;
         $unitPrice = $cartPkg->unit_price;
         $sub = $unitPrice * $cartPkg->qty;
-        $unitCost = $pkg?->average_cost ?? 0;
+        $unitCost = $this->packagingUnitCost($pkg);
         $cogs = $unitCost * $cartPkg->qty;
         $name = ($pkg?->name ?? 'Packaging') . ($isFree ? ' [GRATIS]' : '');
 

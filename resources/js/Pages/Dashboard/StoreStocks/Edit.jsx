@@ -32,7 +32,7 @@ export default function Edit({ stock, itemType }) {
         new Intl.NumberFormat("id-ID", {
             style: "currency",
             currency: "IDR",
-            minimumFractionDigits: 0,
+            minimumFractionDigits: 0, maximumFractionDigits: 2,
         }).format(n || 0);
 
     const getItemName = () => isIngredient ? stock.ingredient?.name             : stock.packaging_material?.name;

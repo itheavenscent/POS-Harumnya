@@ -16,7 +16,7 @@ import {
 
 // Format Helpers
 const formatRp = (n) => 
-    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n || 0);
+    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n || 0);
 
 const formatNum = (n) => 
     new Intl.NumberFormat("id-ID").format(n || 0);

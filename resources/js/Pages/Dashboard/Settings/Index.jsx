@@ -21,7 +21,7 @@ export default function Index({ settings, loyalty_point_rate, loyalty_reward_thr
     };
 
     const formatCurrency = (value) => 
-        new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
+        new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(value);
 
     return (
         <>

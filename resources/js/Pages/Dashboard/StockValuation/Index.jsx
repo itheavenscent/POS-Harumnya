@@ -10,7 +10,7 @@ import {
 } from "@tabler/icons-react";
 
 const fmt = (n) =>
-    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n || 0);
+    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n || 0);
 
 const fmtNum = (n, d = 2) => parseFloat(n || 0).toLocaleString("id-ID", { minimumFractionDigits: d });
 

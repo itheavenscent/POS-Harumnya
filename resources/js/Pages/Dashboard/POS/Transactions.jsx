@@ -8,7 +8,7 @@ const fmt = (v = 0) =>
     Number(v || 0).toLocaleString("id-ID", {
         style: "currency",
         currency: "IDR",
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 0, maximumFractionDigits: 2,
     });
 
 const fmtSoldAt = (soldAt) => {

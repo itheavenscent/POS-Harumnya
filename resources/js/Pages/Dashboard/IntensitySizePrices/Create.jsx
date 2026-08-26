@@ -11,14 +11,7 @@ import {
     IconTag,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-const formatRupiah = (value) => {
-    const num = parseFloat(String(value).replace(/\D/g, "")) || 0;
-    return new Intl.NumberFormat("id-ID").format(num);
-};
+import { displayDecimal, parseDecimal } from "@/Utils/currency";
 
 function SelectField({ label, value, onChange, error, options, placeholder, icon: Icon }) {
     return (
@@ -65,9 +58,13 @@ export default function Create({ intensities, sizes }) {
     });
 
     const handlePriceChange = (e) => {
-        const raw = e.target.value.replace(/\D/g, "");
-        setDisplayPrice(raw ? formatRupiah(raw) : "");
-        setData("price", raw ? parseFloat(raw) : "");
+        setDisplayPrice(e.target.value.replace(/[^\d.,]/g, ""));
+    };
+
+    const handlePriceBlur = () => {
+        const parsed = parseDecimal(displayPrice);
+        setData("price", parsed === "0" ? "" : parsed);
+        setDisplayPrice(displayDecimal(parsed));
     };
 
     const submit = (e) => {
@@ -168,9 +165,10 @@ export default function Create({ intensities, sizes }) {
                                 </div>
                                 <input
                                     type="text"
-                                    inputMode="numeric"
+                                    inputMode="decimal"
                                     value={displayPrice}
                                     onChange={handlePriceChange}
+                                    onBlur={handlePriceBlur}
                                     placeholder="0"
                                     className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all ${
                                         errors.price ? "border-red-400 dark:border-red-600" : "border-slate-200 dark:border-slate-700"
@@ -179,7 +177,7 @@ export default function Create({ intensities, sizes }) {
                             </div>
                             {errors.price && <p className="text-xs text-red-600 dark:text-red-400 mt-1 font-medium">{errors.price}</p>}
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                {data.price ? `= Rp ${formatRupiah(data.price)}` : "Masukkan harga dalam Rupiah"}
+                                {data.price ? `= Rp ${displayDecimal(data.price)}` : "Masukkan harga dalam Rupiah"}
                             </p>
                         </div>
 

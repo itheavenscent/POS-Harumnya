@@ -21,7 +21,7 @@ const STEPS = ["Draft", "Menunggu", "Disetujui", "Selesai"];
 // Rupiah — value_difference adalah decimal(15,2) → parseFloat
 const fmt = (n) =>
     new Intl.NumberFormat("id-ID", {
-        style: "currency", currency: "IDR", minimumFractionDigits: 0,
+        style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2,
     }).format(parseFloat(n) || 0);
 
 // Qty — bigInteger SIGNED → parseInt

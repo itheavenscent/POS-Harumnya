@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use App\Services\Auth\OtpService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -26,8 +27,22 @@ class AuthenticationTest extends TestCase
             'password' => 'password',
         ]);
 
+        // New device / no trusted-device token yet -> credentials alone are not
+        // enough, the app logs the guard back out and routes to the OTP step.
+        $this->assertGuest();
+        $response->assertRedirect(route('otp.notice'));
+
+        // Generate a fresh plaintext OTP for the pending user (the stored value
+        // is hashed, so we can't read back what AuthenticatedSessionController
+        // sent) and complete the second factor.
+        $code = app(OtpService::class)->generate($user->fresh());
+
+        $otpResponse = $this->post(route('otp.verify'), [
+            'code' => $code,
+        ]);
+
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $otpResponse->assertRedirect(route('dashboard', absolute: false));
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
