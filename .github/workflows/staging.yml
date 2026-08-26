@@ -119,6 +119,12 @@ jobs:
             docker compose -p pos-staging -f docker-compose.staging.yml exec -T staging-app php artisan optimize:clear
             docker compose -p pos-staging -f docker-compose.staging.yml exec -T staging-app php artisan optimize
 
+            # Restart paksa staging-app agar OPcache (validate_timestamps=0) tidak
+            # menyajikan bytecode basi dari sebelum route:cache di-refresh di atas —
+            # kode/route di-mount dari host, jadi container kadang tidak otomatis
+            # di-recreate meski route/app/resources/config berubah.
+            docker compose -p pos-staging -f docker-compose.staging.yml restart staging-app
+
             echo "Staging deploy selesai untuk commit $GIT_SHA"
             docker compose -p pos-staging -f docker-compose.staging.yml ps
 
