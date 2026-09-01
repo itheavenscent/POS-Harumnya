@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Laporan;
 
 use App\Http\Controllers\Controller;
+use App\Support\PhoneFormatter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
@@ -313,42 +314,8 @@ class LaporanPenjualanController extends Controller
      */
     private function getProductBreakdowns($storeId, $status, $dateFromDt, $dateToDt): array
     {
-        // By Variant
-        $byVariant = DB::table('sale_items')
-            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->leftJoin('variants', 'sale_items.variant_id_snapshot', '=', 'variants.id')
-            ->when($storeId, fn ($q) => $q->where('sales.store_id', $storeId))
-            ->when($status !== 'all', fn ($q) => $q->where('sales.status', $status))
-            ->whereBetween('sales.sold_at', [$dateFromDt, $dateToDt])
-            ->whereNotNull('sale_items.variant_id_snapshot')
-            ->selectRaw('
-                sale_items.variant_id_snapshot                                      AS variant_id,
-                COALESCE(variants.name, sale_items.variant_name, \'Unknown\')       AS name,
-                COALESCE(variants.gender, \'unisex\')                               AS gender,
-                SUM(sale_items.qty)                                                 AS qty,
-                COALESCE(SUM(sale_items.subtotal), 0)                               AS revenue,
-                COALESCE(AVG(sale_items.unit_price), 0)                             AS avg_price,
-                COUNT(DISTINCT sales.id)                                            AS tx_count
-            ')
-            ->groupBy(
-                'sale_items.variant_id_snapshot',
-                'variants.name',
-                'variants.gender',
-                'sale_items.variant_name'
-            )
-            ->orderByDesc('qty')
-            ->limit(15)
-            ->get()
-            ->map(fn ($r) => [
-                'id'        => $r->variant_id,
-                'name'      => $r->name,
-                'gender'    => $r->gender,
-                'qty'       => (int)   $r->qty,
-                'revenue'   => (float) $r->revenue,
-                'avg_price' => (float) $r->avg_price,
-                'tx_count'  => (int)   $r->tx_count,
-            ])
-            ->toArray();
+        // By Variant (halaman: batasi 15 teratas; export: seluruh data)
+        $byVariant = $this->getVariantBreakdown($storeId, $status, $dateFromDt, $dateToDt, 15);
 
         // By Intensity
         $byIntensityRaw = DB::table('sale_items')
@@ -446,6 +413,49 @@ class LaporanPenjualanController extends Controller
             'bySize'      => $bySize,
             'byGender'    => $byGender,
         ];
+    }
+
+    /**
+     * Breakdown penjualan per varian.
+     * $limit = null → seluruh data (dipakai export "keseluruhan data").
+     */
+    private function getVariantBreakdown($storeId, $status, $dateFromDt, $dateToDt, ?int $limit = null): array
+    {
+        return DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->leftJoin('variants', 'sale_items.variant_id_snapshot', '=', 'variants.id')
+            ->when($storeId, fn ($q) => $q->where('sales.store_id', $storeId))
+            ->when($status !== 'all', fn ($q) => $q->where('sales.status', $status))
+            ->whereBetween('sales.sold_at', [$dateFromDt, $dateToDt])
+            ->whereNotNull('sale_items.variant_id_snapshot')
+            ->selectRaw('
+                sale_items.variant_id_snapshot                                      AS variant_id,
+                COALESCE(variants.name, sale_items.variant_name, \'Unknown\')       AS name,
+                COALESCE(variants.gender, \'unisex\')                               AS gender,
+                SUM(sale_items.qty)                                                 AS qty,
+                COALESCE(SUM(sale_items.subtotal), 0)                               AS revenue,
+                COALESCE(AVG(sale_items.unit_price), 0)                             AS avg_price,
+                COUNT(DISTINCT sales.id)                                            AS tx_count
+            ')
+            ->groupBy(
+                'sale_items.variant_id_snapshot',
+                'variants.name',
+                'variants.gender',
+                'sale_items.variant_name'
+            )
+            ->orderByDesc('qty')
+            ->when($limit, fn ($q, $l) => $q->limit($l))
+            ->get()
+            ->map(fn ($r) => [
+                'id'        => $r->variant_id,
+                'name'      => $r->name,
+                'gender'    => $r->gender,
+                'qty'       => (int)   $r->qty,
+                'revenue'   => (float) $r->revenue,
+                'avg_price' => (float) $r->avg_price,
+                'tx_count'  => (int)   $r->tx_count,
+            ])
+            ->toArray();
     }
 
     /**
@@ -832,7 +842,7 @@ class LaporanPenjualanController extends Controller
                 Carbon::parse($sale->sold_at)->setTimezone('Asia/Jakarta')->format('H:i:s'),
                 $sale->status,
                 $sale->store_name,
-                $sale->customer_phone ?? '-',
+                $sale->customer_phone ? PhoneFormatter::toInternational($sale->customer_phone) : '-',
                 $sale->cashier_name ?? '-',
                 $sale->sales_person_name ?? '-',
             ];
@@ -897,6 +907,75 @@ class LaporanPenjualanController extends Controller
 
         foreach (range('A', 'E') as $col) {
             $paySheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    /**
+     * Export seluruh data Top Varian (tanpa batas 15) sesuai filter aktif.
+     */
+    public function exportVariants(Request $request)
+    {
+        $user         = auth()->user();
+        $isSuperAdmin = (method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : false) || $user->can('view-all-stores');
+
+        $storeId  = $isSuperAdmin
+            ? $request->input('store_id')
+            : ($user->default_store_id ?? null);
+        $dateFrom = $request->input('date_from', Carbon::now()->startOfMonth()->toDateString());
+        $dateTo   = $request->input('date_to', Carbon::now()->toDateString());
+        $status   = $request->input('status', 'completed');
+
+        $dateFromDt = Carbon::parse($dateFrom)->startOfDay();
+        $dateToDt   = Carbon::parse($dateTo)->endOfDay();
+
+        if ($dateFromDt->diffInDays($dateToDt) > 90) {
+            $dateFromDt = $dateToDt->copy()->subDays(90)->startOfDay();
+        }
+
+        // Tanpa limit → keseluruhan data varian
+        $variants = $this->getVariantBreakdown($storeId, $status, $dateFromDt, $dateToDt, null);
+
+        $filename = "Top_Varian_{$dateFromDt->format('Ymd')}_{$dateToDt->format('Ymd')}.xlsx";
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Top Varian');
+
+        $sheet->fromArray(
+            ['#', 'Varian', 'Gender', 'Qty', 'Revenue', 'Avg Harga', 'Transaksi'],
+            null,
+            'A1'
+        );
+        $sheet->getStyle('A1:G1')->getFont()->setBold(true);
+
+        $row = 2;
+        foreach ($variants as $i => $v) {
+            $sheet->fromArray([
+                $i + 1,
+                $v['name'],
+                $v['gender'],
+                (int)   $v['qty'],
+                (float) $v['revenue'],
+                (float) $v['avg_price'],
+                (int)   $v['tx_count'],
+            ], null, 'A' . $row);
+            $row++;
+        }
+
+        $sheet->setCellValue('A' . $row, 'TOTAL');
+        $sheet->getStyle('A' . $row . ':G' . $row)->getFont()->setBold(true);
+        $sheet->setCellValue('D' . $row, array_sum(array_column($variants, 'qty')));
+        $sheet->setCellValue('E' . $row, array_sum(array_column($variants, 'revenue')));
+        $sheet->setCellValue('G' . $row, array_sum(array_column($variants, 'tx_count')));
+
+        foreach (range('A', 'G') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
         return response()->streamDownload(function () use ($spreadsheet) {

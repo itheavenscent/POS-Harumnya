@@ -633,6 +633,9 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::get('penjualan/export', [LaporanPenjualanController::class, 'exportExcel'])
             ->middleware('permission:reports-sales')
             ->name('penjualan.export');
+        Route::get('penjualan/export-variants', [LaporanPenjualanController::class, 'exportVariants'])
+            ->middleware('permission:reports-sales')
+            ->name('penjualan.export-variants');
 
         Route::get('keuangan', [LaporanKeuanganController::class, 'index'])
             ->middleware('permission:reports-finance')

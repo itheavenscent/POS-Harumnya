@@ -639,7 +639,15 @@ export default function LaporanPenjualan({
                     <div className="space-y-5">
                         {/* Top Variants */}
                         <Card>
-                            <SectionTitle icon={IconChartBar} sub="15 varian terlaris — dari snapshot variant_id">Top Varian by Qty</SectionTitle>
+                            <div className="flex items-start justify-between gap-3">
+                                <SectionTitle icon={IconChartBar} sub="15 varian terlaris di layar — Export untuk keseluruhan data">Top Varian by Qty</SectionTitle>
+                                <a
+                                    href={route('laporan.penjualan.export-variants', filters)}
+                                    className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0 whitespace-nowrap"
+                                >
+                                    <IconDownload size={13} /> Export Semua
+                                </a>
+                            </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-xs">
                                     <thead>

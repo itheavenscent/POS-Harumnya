@@ -238,7 +238,7 @@ const ChartTip = ({ active, payload, label }) => {
                     </div>
                     <span className="font-bold tabular-nums" style={{ color: p.color }}>
                         {typeof p.value === 'number' && p.value > 10000
-                            ? compact(p.value)
+                            ? idr(p.value)
                             : num(p.value)}
                     </span>
                 </div>
@@ -287,7 +287,7 @@ function KpiCard({ label, value, sub, icon: Icon, accent = C.primary }) {
             </div>
             {/* Value row */}
             <div className="flex flex-col gap-[14px] items-start leading-[1.4] overflow-hidden w-full">
-                <p className="font-bold text-[26px] text-slate-900 dark:text-white leading-none truncate w-full">{value}</p>
+                <p className="font-bold text-[20px] sm:text-[22px] text-slate-900 dark:text-white leading-none truncate w-full tabular-nums">{value}</p>
                 {sub && <div className="font-medium text-[14px] text-slate-500 dark:text-slate-400 leading-tight w-full">{sub}</div>}
             </div>
         </div>
@@ -476,7 +476,7 @@ const TABS = [
 
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function Dashboard({
-    startDate, endDate, diffDays = 30, isSuperAdmin = false, isAdmin = false,
+    startDate, endDate, trendStart = '', trendEnd = '', diffDays = 30, isSuperAdmin = false, isAdmin = false,
     canFilterStore = false, selectedStoreId = null, stores = [],
     currentStore = null, error = null,
     kpi = {}, counts = {},
@@ -571,6 +571,38 @@ export default function Dashboard({
         setSelectedStore(storeId);
         changeFilter(sd, ed, storeId || null);
     }, [sd, ed, changeFilter]);
+
+    // ── Trend Keuangan: filter tanggal sendiri, dibatasi maksimal 30 hari ──
+    const [tsd, setTsd] = useState(trendStart || '');
+    const [ted, setTed] = useState(trendEnd || '');
+
+    useEffect(() => { setTsd(trendStart || ''); setTed(trendEnd || ''); }, [trendStart, trendEnd]);
+
+    const trendSpanDays = useMemo(() => {
+        if (!tsd || !ted) return 0;
+        const a = new Date(tsd), b = new Date(ted);
+        if (isNaN(a) || isNaN(b)) return 0;
+        return Math.floor((b - a) / 86400000) + 1; // inklusif
+    }, [tsd, ted]);
+
+    const trendRangeError = useMemo(() => {
+        if (!tsd || !ted) return 'Pilih tanggal mulai & selesai';
+        if (new Date(tsd) > new Date(ted)) return 'Tanggal mulai melebihi tanggal selesai';
+        if (trendSpanDays > 30) return 'Rentang maksimal 30 hari';
+        return null;
+    }, [tsd, ted, trendSpanDays]);
+
+    const applyTrendFilter = useCallback(() => {
+        if (trendRangeError) return;
+        const params = { trend_start: tsd, trend_end: ted };
+        if (sd && ed) { params.start_date = sd; params.end_date = ed; }
+        if (selectedStore) params.store_id = selectedStore;
+        router.get(route('dashboard'), params, {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['revenueTrend', 'trendStart', 'trendEnd'],
+        });
+    }, [tsd, ted, sd, ed, selectedStore, trendRangeError]);
 
     const profitMargin = useMemo(() => {
         if (!kpi.totalRevenue) return 0;
@@ -770,15 +802,14 @@ export default function Dashboard({
                         
                         {/* Financial KPI */}
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                            <KpiCard label="Total Pendapatan" value={compact(kpi.totalRevenue)}
+                            <KpiCard label="Total Pendapatan" value={idr(kpi.totalRevenue)}
                                 sub={
                                     <div className="space-y-1">
-                                        <div className="truncate">{idr(kpi.totalRevenue)}</div>
                                         <TrendBadge value={kpi.trendRevenue} />
                                     </div>
                                 }
                                 icon={IconMoneybag} accent={C.primary} />
-                            <KpiCard label="Total Profit" value={compact(kpi.totalProfit)}
+                            <KpiCard label="Total Profit" value={idr(kpi.totalProfit)}
                                 sub={
                                     <div className="space-y-1">
                                         <div>Margin {profitMargin}%</div>
@@ -786,7 +817,7 @@ export default function Dashboard({
                                     </div>
                                 }
                                 icon={IconTrendingUp} accent={C.success} />
-                            <KpiCard label="Rata-rata Order" value={compact(kpi.avgOrder)}
+                            <KpiCard label="Rata-rata Order" value={idr(kpi.avgOrder)}
                                 sub={
                                     <div>
                                         <div>Per transaksi</div>
@@ -795,7 +826,7 @@ export default function Dashboard({
                                 }
                                 icon={IconChartBar} accent={C.info} />
                             <KpiCard label="Hari ini" value={num(kpi.todayTransactions)}
-                                sub={<div>{compact(kpi.todayRevenue)}</div>}
+                                sub={<div>{idr(kpi.todayRevenue)}</div>}
                                 icon={IconCash} accent={C.warning} />
                         </div>
 
@@ -805,7 +836,7 @@ export default function Dashboard({
                             <div className="flex gap-[10px] items-center w-full">
                                 <div className="flex flex-1 flex-col gap-[2px] items-start min-w-0 overflow-hidden">
                                     <p className="font-semibold text-[16px] text-slate-900 dark:text-white leading-[1.4] whitespace-nowrap">Tren Keuangan</p>
-                                    <p className="font-medium text-[14px] text-slate-500 dark:text-slate-400 leading-[1.4] whitespace-nowrap">Revenue · Profit · COGS per hari</p>
+                                    <p className="font-medium text-[14px] text-slate-500 dark:text-slate-400 leading-[1.4] whitespace-nowrap">Revenue · Profit · COGS per hari · maks 30 hari</p>
                                 </div>
                                 <div className="flex gap-[14px] items-center flex-shrink-0">
                                     {[
@@ -819,6 +850,40 @@ export default function Dashboard({
                                         </div>
                                     ))}
                                 </div>
+                            </div>
+                            {/* Filter tanggal khusus tren (maks 30 hari) */}
+                            <div className="flex flex-wrap items-end gap-2 w-full">
+                                <div className="flex flex-col gap-[3px]">
+                                    <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500">Dari</label>
+                                    <input
+                                        type="date"
+                                        value={tsd}
+                                        max={ted || undefined}
+                                        onChange={(e) => setTsd(e.target.value)}
+                                        className="text-xs px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-[3px]">
+                                    <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500">Sampai</label>
+                                    <input
+                                        type="date"
+                                        value={ted}
+                                        min={tsd || undefined}
+                                        onChange={(e) => setTed(e.target.value)}
+                                        className="text-xs px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={applyTrendFilter}
+                                    disabled={!!trendRangeError}
+                                    className="text-xs px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-white shadow-sm transition-colors"
+                                >
+                                    Terapkan
+                                </button>
+                                <span className={`text-[11px] font-medium ${trendRangeError ? 'text-red-500' : 'text-slate-400'}`}>
+                                    {trendRangeError ?? `${trendSpanDays} hari dipilih`}
+                                </span>
                             </div>
                             {/* Chart */}
                             {revenueTrend.length > 0 ? (
@@ -847,7 +912,7 @@ export default function Dashboard({
                                                                 <div key={p.name} className="flex gap-[10px] items-center w-full">
                                                                     <span className="size-[8px] rounded-full flex-shrink-0" style={{ background: colors[p.name] ?? p.color }} />
                                                                     <span className="flex-1 font-medium text-[12px] text-slate-500 dark:text-slate-400 min-w-0">{p.name}</span>
-                                                                    <span className="font-semibold text-[12px] whitespace-nowrap" style={{ color: colors[p.name] ?? p.color }}>{compact(p.value)}</span>
+                                                                    <span className="font-semibold text-[12px] whitespace-nowrap" style={{ color: colors[p.name] ?? p.color }}>{idr(p.value)}</span>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -1029,7 +1094,7 @@ export default function Dashboard({
                                                         {/* Bottom: amount right */}
                                                         <div className="flex items-center w-full">
                                                             <div className="flex-1" />
-                                                            <span className="font-medium text-[12px] text-slate-500 dark:text-slate-400 leading-[16px] whitespace-nowrap">{compact(p.total_amount)}</span>
+                                                            <span className="font-medium text-[12px] text-slate-500 dark:text-slate-400 leading-[16px] whitespace-nowrap">{idr(p.total_amount)}</span>
                                                         </div>
                                                     </div>
                                                 );
@@ -1078,8 +1143,8 @@ export default function Dashboard({
                                                         {num(v.qty)} unit · margin {v.margin}%
                                                     </p>
                                                 </div>
-                                                <p className="font-semibold text-[12.5px] text-slate-900 dark:text-white text-right w-[84px] leading-[20px] flex-shrink-0 tabular-nums">
-                                                    {compact(v.revenue)}
+                                                <p className="font-semibold text-[12.5px] text-slate-900 dark:text-white text-right min-w-[84px] leading-[20px] flex-shrink-0 tabular-nums whitespace-nowrap">
+                                                    {idr(v.revenue)}
                                                 </p>
                                             </div>
                                         ))}
@@ -1122,8 +1187,8 @@ export default function Dashboard({
                                                             {c.total_orders} transaksi · {num(c.current_points)} pts
                                                         </p>
                                                     </div>
-                                                    <p className="font-semibold text-[12.5px] text-slate-900 dark:text-white text-right w-[84px] leading-[20px] flex-shrink-0 tabular-nums">
-                                                        {compact(c.total_spending)}
+                                                    <p className="font-semibold text-[12.5px] text-slate-900 dark:text-white text-right min-w-[84px] leading-[20px] flex-shrink-0 tabular-nums whitespace-nowrap">
+                                                        {idr(c.total_spending)}
                                                     </p>
                                                 </div>
                                             ))}
@@ -1258,10 +1323,10 @@ export default function Dashboard({
                         {/* Financial KPI mini-row */}
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             {[
-                                { label: 'Total Revenue',    value: compact(kpi.totalRevenue),  accent: C.primary,  icon: IconMoneybag     },
-                                { label: 'Total Profit',     value: compact(kpi.totalProfit),   accent: C.success,  icon: IconTrendingUp   },
-                                { label: 'Total COGS',       value: compact(kpi.totalCogs),     accent: C.danger,   icon: IconCurrencyDollar },
-                                { label: 'Total Diskon',     value: compact(kpi.totalDiscount), accent: C.warning,  icon: IconDiscount2    },
+                                { label: 'Total Revenue',    value: idr(kpi.totalRevenue),  accent: C.primary,  icon: IconMoneybag     },
+                                { label: 'Total Profit',     value: idr(kpi.totalProfit),   accent: C.success,  icon: IconTrendingUp   },
+                                { label: 'Total COGS',       value: idr(kpi.totalCogs),     accent: C.danger,   icon: IconCurrencyDollar },
+                                { label: 'Total Diskon',     value: idr(kpi.totalDiscount), accent: C.warning,  icon: IconDiscount2    },
                             ].map((k) => (
                                 <KpiCard key={k.label} label={k.label} value={k.value}
                                     icon={k.icon} accent={k.accent} />
@@ -1321,8 +1386,8 @@ export default function Dashboard({
                                                 className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700"
                                             >
                                                 <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 truncate">{d.category}</p>
-                                                <p className="text-xl font-bold tabular-nums" style={{ color: COLORS[i % COLORS.length] }}>
-                                                    {compact(d.total_discount_given)}
+                                                <p className="text-base font-bold tabular-nums" style={{ color: COLORS[i % COLORS.length] }}>
+                                                    {idr(d.total_discount_given)}
                                                 </p>
                                                 <p className="text-xs text-slate-500 mt-0.5 tabular-nums">{num(d.usage_count)} kali digunakan</p>
                                             </div>
@@ -1364,8 +1429,8 @@ export default function Dashboard({
                                                                 </p>
                                                             </div>
                                                         </div>
-                                                        <span className="text-sm font-bold text-primary-600 dark:text-primary-400 flex-shrink-0 ml-2 tabular-nums">
-                                                            {compact(v.revenue)}
+                                                        <span className="text-sm font-bold text-primary-600 dark:text-primary-400 flex-shrink-0 ml-2 tabular-nums whitespace-nowrap">
+                                                            {idr(v.revenue)}
                                                         </span>
                                                     </div>
                                                     <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
@@ -1433,8 +1498,8 @@ export default function Dashboard({
                                                     <td className="py-2.5 px-3 font-bold tabular-nums" style={{ color: COLORS[i % COLORS.length] }}>
                                                         {num(p.qty)}
                                                     </td>
-                                                    <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-white tabular-nums">
-                                                        {compact(p.revenue)}
+                                                    <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-white tabular-nums whitespace-nowrap">
+                                                        {idr(p.revenue)}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -1469,7 +1534,7 @@ export default function Dashboard({
                                         { label: 'Modal Awal',      v: idr(activeCashDrawer.opening_cash) },
                                         { label: 'Total Penjualan', v: idr(activeCashDrawer.total_sales) },
                                         { label: 'Transaksi',       v: `${num(activeCashDrawer.transaction_count)} tx` },
-                                        { label: 'Gross Profit',    v: compact(activeCashDrawer.gross_profit) },
+                                        { label: 'Gross Profit',    v: idr(activeCashDrawer.gross_profit) },
                                     ].map(({ label, v }) => (
                                         <div key={label} className="bg-emerald-100 dark:bg-emerald-900/30 rounded-xl p-2.5">
                                             <p className="text-[10px] text-emerald-600 dark:text-emerald-500 uppercase tracking-wider font-semibold">{label}</p>
@@ -1550,8 +1615,8 @@ export default function Dashboard({
                                                 </div>
                                             </div>
                                             <div className="text-right flex-shrink-0 ml-3">
-                                                <p className="text-sm font-bold text-slate-900 dark:text-white tabular-nums">{compact(sp.total_revenue)}</p>
-                                                <p className="text-xs text-slate-400 tabular-nums">AOV {compact(sp.avg_order)}</p>
+                                                <p className="text-sm font-bold text-slate-900 dark:text-white tabular-nums whitespace-nowrap">{idr(sp.total_revenue)}</p>
+                                                <p className="text-xs text-slate-400 tabular-nums whitespace-nowrap">AOV {idr(sp.avg_order)}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -1581,8 +1646,8 @@ export default function Dashboard({
                                         }`}>#{i + 1}</span>
                                     </div>
                                     <p className="text-sm font-bold text-slate-900 dark:text-white mb-1 truncate">{s.store_name}</p>
-                                    <p className="text-lg font-bold tabular-nums truncate" style={{ color: COLORS[i % COLORS.length] }}>
-                                        {compact(s.total_revenue)}
+                                    <p className="text-sm font-bold tabular-nums truncate" style={{ color: COLORS[i % COLORS.length] }}>
+                                        {idr(s.total_revenue)}
                                     </p>
                                     <p className="text-xs text-slate-400 mt-0.5 tabular-nums">
                                         {num(s.total_transactions)} tx · {s.margin}%
@@ -1648,16 +1713,16 @@ export default function Dashboard({
                                                             </td>
                                                             <td className="py-2.5 px-3 font-mono text-xs text-slate-400">{s.store_code}</td>
                                                             <td className="py-2.5 px-3 font-bold text-primary-600 dark:text-primary-400 whitespace-nowrap tabular-nums">
-                                                                {compact(s.total_revenue)}
+                                                                {idr(s.total_revenue)}
                                                             </td>
                                                             <td className="py-2.5 px-3 font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap tabular-nums">
-                                                                {compact(s.total_profit)}
+                                                                {idr(s.total_profit)}
                                                             </td>
                                                             <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400 tabular-nums">
                                                                 {num(s.total_transactions)}
                                                             </td>
                                                             <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400 whitespace-nowrap tabular-nums">
-                                                                {compact(s.avg_order)}
+                                                                {idr(s.avg_order)}
                                                             </td>
                                                             <td className={`py-2.5 px-3 font-bold tabular-nums ${
                                                                 s.margin >= 50 ? 'text-emerald-600 dark:text-emerald-400'

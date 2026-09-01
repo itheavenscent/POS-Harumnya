@@ -3,7 +3,8 @@ import DashboardLayout from "@/Layouts/DashboardLayout";
 import { Head, Link, router } from "@inertiajs/react";
 import {
     IconCirclePlus, IconUser, IconDownload,
-    IconSearch, IconTrash,
+    IconSearch, IconTrash, IconUsers, IconRepeat,
+    IconChartPie, IconClockHour4,
 } from "@tabler/icons-react";
 import Pagination from "@/Components/Dashboard/Pagination";
 
@@ -15,8 +16,24 @@ const SEGMENTS = [
     { key: "loyal",  label: "Loyal" },
 ];
 
-export default function Index({ customers, filters }) {
+function StatCard({ icon: Icon, label, value, sub, accent }) {
+    return (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: accent + "1a", color: accent }}>
+                <Icon size={20} />
+            </div>
+            <div className="min-w-0">
+                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
+                <p className="text-xl font-bold text-slate-900 dark:text-white leading-tight tabular-nums truncate">{value}</p>
+                {sub && <p className="text-[11px] text-slate-400 mt-0.5 truncate">{sub}</p>}
+            </div>
+        </div>
+    );
+}
+
+export default function Index({ customers, filters, stats = {} }) {
     const [search, setSearch] = useState(filters.search || "");
+    const nf = (v) => (v ?? 0).toLocaleString("id-ID");
 
     useEffect(() => {
         if ((search || "") !== (filters.search || "")) {
@@ -71,6 +88,38 @@ export default function Index({ customers, filters }) {
                         <IconCirclePlus size={18} /> Tambah
                     </Link>
                 </div>
+            </div>
+
+            {/* Dashboard ringkasan member */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                <StatCard
+                    icon={IconUsers}
+                    label="Total Member"
+                    value={nf(stats.total_members)}
+                    sub={`${nf(stats.active_members)} aktif`}
+                    accent="#7c3aed"
+                />
+                <StatCard
+                    icon={IconRepeat}
+                    label="Repeat Order"
+                    value={nf(stats.repeat_orders)}
+                    sub={`dari ${nf(stats.buyers)} pelanggan pernah order`}
+                    accent="#16a34a"
+                />
+                <StatCard
+                    icon={IconChartPie}
+                    label="Retensi"
+                    value={`${stats.retention_pct ?? 0}%`}
+                    sub="pelanggan yang beli ulang"
+                    accent="#2563eb"
+                />
+                <StatCard
+                    icon={IconClockHour4}
+                    label="Rata-rata Kembali"
+                    value={`${stats.avg_return_days ?? 0} hari`}
+                    sub="jarak antar kunjungan"
+                    accent="#d97706"
+                />
             </div>
 
             {/* Filters */}

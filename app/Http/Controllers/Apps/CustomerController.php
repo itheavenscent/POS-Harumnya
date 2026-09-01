@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Apps;
 
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
+use App\Support\PhoneFormatter;
 use App\Http\Requests\CustomerRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +35,48 @@ class CustomerController extends Controller
         return Inertia::render('Dashboard/Customers/Index', [
             'customers' => $customers,
             'filters'   => $request->only(['search', 'segment', 'is_active']),
+            'stats'     => $this->memberStats(),
         ]);
+    }
+
+    /**
+     * Ringkasan member: total, repeat order, retensi, & rata-rata waktu kembali.
+     */
+    private function memberStats(): array
+    {
+        $totalMembers  = Customer::count();
+        $activeMembers = Customer::where('is_active', true)->count();
+
+        // Agregasi order per pelanggan (transaksi selesai saja)
+        $agg = DB::table('sales')
+            ->where('status', 'completed')
+            ->whereNull('deleted_at')
+            ->whereNotNull('customer_id')
+            ->groupBy('customer_id')
+            ->selectRaw('customer_id, COUNT(*) AS order_count, MIN(sold_at) AS first_at, MAX(sold_at) AS last_at')
+            ->get();
+
+        $buyers  = $agg->count();                              // pernah transaksi
+        $repeat  = $agg->where('order_count', '>=', 2)->count(); // repeat order
+
+        // Rata-rata jarak antar kunjungan (hari) untuk pelanggan repeat
+        $gaps = $agg
+            ->filter(fn ($r) => $r->order_count >= 2)
+            ->map(fn ($r) => \Carbon\Carbon::parse($r->first_at)->diffInDays(\Carbon\Carbon::parse($r->last_at)) / ($r->order_count - 1));
+
+        $avgReturnDays = $gaps->count() ? round($gaps->avg(), 1) : 0;
+
+        // Retensi = pelanggan repeat / pelanggan yang pernah transaksi
+        $retentionPct = $buyers > 0 ? round(($repeat / $buyers) * 100, 1) : 0;
+
+        return [
+            'total_members'   => $totalMembers,
+            'active_members'  => $activeMembers,
+            'buyers'          => $buyers,
+            'repeat_orders'   => $repeat,
+            'retention_pct'   => $retentionPct,
+            'avg_return_days' => $avgReturnDays,
+        ];
     }
 
     public function create(): Response
@@ -116,7 +158,7 @@ class CustomerController extends Controller
                         $c->code,
                         $c->name,
                         $c->email,
-                        $c->phone,
+                        PhoneFormatter::toInternational($c->phone),
                         $c->gender,
                         $c->points,
                         $c->lifetime_points_earned,

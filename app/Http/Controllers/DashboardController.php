@@ -76,13 +76,35 @@ class DashboardController extends Controller
         $prevStart = $startDate->copy()->subDays($diffInDays)->startOfDay();
         $prevEnd   = $startDate->copy()->subSeconds(1);
 
+        // ── Trend filter (independent range, dibatasi maksimal 30 hari) ────
+        $trendStartStr = $request->input('trend_start');
+        $trendEndStr   = $request->input('trend_end');
+
+        if ($trendStartStr && $trendEndStr) {
+            $trendStart = Carbon::parse($trendStartStr)->startOfDay();
+            $trendEnd   = Carbon::parse($trendEndStr)->endOfDay();
+        } else {
+            // Default: 30 hari terakhir
+            $trendEnd   = Carbon::now()->endOfDay();
+            $trendStart = Carbon::now()->subDays(29)->startOfDay();
+        }
+
+        // Guard urutan tanggal
+        if ($trendStart->gt($trendEnd)) {
+            $trendStart = $trendEnd->copy()->subDays(29)->startOfDay();
+        }
+        // Batasi rentang maksimal 30 hari (inklusif → selisih maks 29 hari)
+        if ($trendStart->diffInDays($trendEnd) > 29) {
+            $trendStart = $trendEnd->copy()->subDays(29)->startOfDay();
+        }
+
 
         // ══════════════════════════════════════════════════════════════════
         //  DATA RETRIEVAL
         // ══════════════════════════════════════════════════════════════════
 
         $kpiData         = $this->getKpiData($storeId, $startDate, $endDate, $prevStart, $prevEnd);
-        $revenueTrend    = $this->getRevenueTrend($storeId, $startDate, $endDate);
+        $revenueTrend    = $this->getRevenueTrend($storeId, $trendStart, $trendEnd);
         $rankings        = $this->getRankings($storeId, $startDate, $endDate);
         $operationalData = $this->getOperationalData($storeId, $startDate, $endDate, $user, $canFilterStore);
 
@@ -108,6 +130,8 @@ class DashboardController extends Controller
             // Meta
             'startDate'       => $startDate->format('Y-m-d'),
             'endDate'         => $endDate->format('Y-m-d'),
+            'trendStart'      => $trendStart->format('Y-m-d'),
+            'trendEnd'        => $trendEnd->format('Y-m-d'),
             'diffDays'        => (int) $diffInDays,
             'isSuperAdmin'    => $isSuperAdmin,
             'isAdmin'         => $isAdmin,
