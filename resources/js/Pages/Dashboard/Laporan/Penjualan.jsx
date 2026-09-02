@@ -5,6 +5,7 @@ import {
     IconTrendingUp, IconFilter, IconDownload, IconPackage, IconClock, IconReceipt,
     IconAlertTriangle, IconStar, IconUserCheck, IconCash, IconDiscount2,
     IconCalendar, IconArrowDownRight, IconMoodSmile, IconWalk,
+    IconArrowsMaximize, IconX, IconLoader2, IconSearch,
 } from '@tabler/icons-react';
 import { useState, useCallback, useMemo } from 'react';
 import {
@@ -216,6 +217,34 @@ export default function LaporanPenjualan({
         type === 'month' ? from.setDate(1) : from.setDate(from.getDate() - days);
         setLf(p => ({ ...p, date_from: from.toISOString().slice(0, 10), date_to: to.toISOString().slice(0, 10) }));
     };
+
+    // ── Modal ranking semua varian ──────────────────────────────────────────
+    const [showAllVariants, setShowAllVariants] = useState(false);
+    const [allVariants, setAllVariants] = useState(null);
+    const [loadingAllVariants, setLoadingAllVariants] = useState(false);
+    const [variantSearch, setVariantSearch] = useState('');
+
+    const openAllVariants = useCallback(async () => {
+        setShowAllVariants(true);
+        if (allVariants !== null) return;
+        setLoadingAllVariants(true);
+        try {
+            const res = await fetch(route('laporan.penjualan.variants-all', filters));
+            const json = await res.json();
+            setAllVariants(json.variants ?? []);
+        } catch (e) {
+            setAllVariants([]);
+        } finally {
+            setLoadingAllVariants(false);
+        }
+    }, [allVariants, filters]);
+
+    const filteredAllVariants = useMemo(() => {
+        const list = allVariants ?? [];
+        if (!variantSearch.trim()) return list;
+        const q = variantSearch.trim().toLowerCase();
+        return list.filter(v => v.name?.toLowerCase().includes(q));
+    }, [allVariants, variantSearch]);
 
     const TABS = [
         { key: 'ringkasan', label: 'Ringkasan' },
@@ -640,13 +669,22 @@ export default function LaporanPenjualan({
                         {/* Top Variants */}
                         <Card>
                             <div className="flex items-start justify-between gap-3">
-                                <SectionTitle icon={IconChartBar} sub="15 varian terlaris di layar — Export untuk keseluruhan data">Top Varian by Qty</SectionTitle>
-                                <a
-                                    href={route('laporan.penjualan.export-variants', filters)}
-                                    className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0 whitespace-nowrap"
-                                >
-                                    <IconDownload size={13} /> Export Semua
-                                </a>
+                                <SectionTitle icon={IconChartBar} sub="15 varian terlaris di layar — lihat atau export seluruh ranking">Top Varian by Qty</SectionTitle>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={openAllVariants}
+                                        className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap"
+                                    >
+                                        <IconArrowsMaximize size={13} /> Lihat Semua Ranking
+                                    </button>
+                                    <a
+                                        href={route('laporan.penjualan.export-variants', filters)}
+                                        className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap"
+                                    >
+                                        <IconDownload size={13} /> Export Semua
+                                    </a>
+                                </div>
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-xs">
@@ -1084,6 +1122,80 @@ export default function LaporanPenjualan({
                 )}
 
             </div>
+
+            {/* ── MODAL: Ranking Semua Varian ─────────────────────────────── */}
+            {showAllVariants && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setShowAllVariants(false)} />
+                    <div className="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col">
+                        <div className="flex items-start justify-between gap-3 p-5 border-b border-slate-100 dark:border-slate-800">
+                            <SectionTitle icon={IconChartBar} sub={`${filteredAllVariants.length} varian — ranking lengkap sesuai filter aktif`}>
+                                Ranking Semua Varian
+                            </SectionTitle>
+                            <div className="flex items-center gap-2 shrink-0">
+                                <a
+                                    href={route('laporan.penjualan.export-variants', filters)}
+                                    className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap"
+                                >
+                                    <IconDownload size={13} /> Export Semua
+                                </a>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAllVariants(false)}
+                                    className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                >
+                                    <IconX size={16} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="px-5 pt-4">
+                            <div className="relative">
+                                <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    value={variantSearch}
+                                    onChange={e => setVariantSearch(e.target.value)}
+                                    placeholder="Cari nama varian..."
+                                    className="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto px-5 py-4">
+                            {loadingAllVariants ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                                    <IconLoader2 size={24} className="animate-spin mb-2" />
+                                    <p className="text-xs">Memuat seluruh ranking varian…</p>
+                                </div>
+                            ) : filteredAllVariants.length > 0 ? (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-xs">
+                                        <thead className="sticky top-0 bg-white dark:bg-slate-900">
+                                            <tr>{['#', 'Varian', 'Gender', 'Qty', 'Revenue', 'Avg Harga', 'Transaksi'].map(h => <TH key={h}>{h}</TH>)}</tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredAllVariants.map((r, i) => (
+                                                <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                    <TD className="text-slate-400 font-mono">{i + 1}</TD>
+                                                    <TD><span className="font-bold text-slate-900 dark:text-white">{r.name}</span></TD>
+                                                    <TD><GenderBadge gender={r.gender} /></TD>
+                                                    <TD><span className="font-black" style={{ color: PALETTE[i % PALETTE.length] }}>{num(r.qty)}</span></TD>
+                                                    <TD><span className="font-semibold text-slate-900 dark:text-white">{compact(r.revenue)}</span></TD>
+                                                    <TD className="text-slate-500">{compact(r.avg_price)}</TD>
+                                                    <TD className="text-slate-500">{num(r.tx_count)}</TD>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <EmptyState icon={IconChartBar} text={variantSearch ? 'Tidak ada varian yang cocok' : 'Belum ada data'} />
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

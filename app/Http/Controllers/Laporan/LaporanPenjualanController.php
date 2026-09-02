@@ -984,5 +984,35 @@ class LaporanPenjualanController extends Controller
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
     }
+
+    /**
+     * Ranking seluruh varian (tanpa batas 15) sesuai filter aktif, untuk modal
+     * "Lihat Semua Ranking" di halaman — dipakai bareng dengan exportVariants().
+     */
+    public function allVariants(Request $request)
+    {
+        $user         = auth()->user();
+        $isSuperAdmin = (method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : false) || $user->can('view-all-stores');
+
+        $storeId  = $isSuperAdmin
+            ? $request->input('store_id')
+            : ($user->default_store_id ?? null);
+        $dateFrom = $request->input('date_from', Carbon::now()->startOfMonth()->toDateString());
+        $dateTo   = $request->input('date_to', Carbon::now()->toDateString());
+        $status   = $request->input('status', 'completed');
+
+        $dateFromDt = Carbon::parse($dateFrom)->startOfDay();
+        $dateToDt   = Carbon::parse($dateTo)->endOfDay();
+
+        if ($dateFromDt->diffInDays($dateToDt) > 90) {
+            $dateFromDt = $dateToDt->copy()->subDays(90)->startOfDay();
+        }
+
+        $variants = $this->getVariantBreakdown($storeId, $status, $dateFromDt, $dateToDt, null);
+
+        return response()->json([
+            'variants' => $variants,
+        ]);
+    }
 }
 
