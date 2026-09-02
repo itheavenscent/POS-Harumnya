@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
-import { Head, Link, router } from "@inertiajs/react";
+import { Head, Link, router, usePage } from "@inertiajs/react";
 import Table from "@/Components/Dashboard/Table";
 import Pagination from "@/Components/Dashboard/Pagination";
 import Button from "@/Components/Dashboard/Button";
@@ -39,6 +39,8 @@ const fmtDate = (d) =>
     }) : "-";
 
 export default function Index({ adjustments, filters = {}, summary = {}, typeOptions = [] }) {
+    const { auth } = usePage().props;
+    const canManage = auth?.super || (auth?.roles || []).includes("admin");
     const [search, setSearch] = useState(filters.search || "");
     const [status, setStatus] = useState(filters.status || "");
     const [type,   setType]   = useState(filters.type   || "");
@@ -224,7 +226,7 @@ export default function Index({ adjustments, filters = {}, summary = {}, typeOpt
                                                 >
                                                     <IconEye size={14} />
                                                 </Link>
-                                                {["draft", "pending"].includes(adj.status) && (
+                                                {canManage && ["draft", "pending"].includes(adj.status) && (
                                                     <Link
                                                         href={route("stock-adjustments.edit", adj.id)}
                                                         className="p-1.5 bg-slate-100 text-slate-700 hover:bg-amber-100 border border-slate-300 rounded-lg"

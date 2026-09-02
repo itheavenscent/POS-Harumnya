@@ -108,7 +108,7 @@ class StockAdjustmentController extends Controller
         $v = $request->validate([
             'location_type'             => 'required|in:warehouse,store',
             'location_id'               => 'required|uuid',
-            'adjustment_date'           => 'required|date',
+            'adjustment_date'           => 'required|date|before_or_equal:today',
             'type'                      => 'required|in:stock_opname,damage,loss,found,expired,daily_mutation,other',
             'notes'                     => 'nullable|string|max:2000',
             'is_delta'                  => 'nullable|boolean',
@@ -118,6 +118,8 @@ class StockAdjustmentController extends Controller
             'items.*.physical_quantity' => 'nullable|integer|min:0',
             'items.*.delta_quantity'    => 'nullable|integer',
             'items.*.notes'             => 'nullable|string|max:500',
+        ], [
+            'adjustment_date.before_or_equal' => 'Tanggal adjustment tidak boleh melebihi hari ini.',
         ]);
 
         DB::transaction(function () use ($v) {
@@ -238,7 +240,7 @@ class StockAdjustmentController extends Controller
         }
 
         $v = $request->validate([
-            'adjustment_date'           => 'required|date',
+            'adjustment_date'           => 'required|date|before_or_equal:today',
             'type'                      => 'required|in:stock_opname,damage,loss,found,expired,other',
             'notes'                     => 'nullable|string|max:2000',
             'items'                     => 'required|array|min:1',
@@ -246,6 +248,8 @@ class StockAdjustmentController extends Controller
             'items.*.item_id'           => 'required|uuid',
             'items.*.physical_quantity' => 'required|integer|min:0',
             'items.*.notes'             => 'nullable|string|max:500',
+        ], [
+            'adjustment_date.before_or_equal' => 'Tanggal adjustment tidak boleh melebihi hari ini.',
         ]);
 
         DB::transaction(function () use ($adj, $v) {

@@ -221,6 +221,7 @@ export default function Edit({ adjustment, warehouses, stores, ingredients, pack
                                 {errors.type && <p className="text-red-500 text-xs mt-1">{errors.type}</p>}
                             </div>
                             <Input label="Tanggal Adjustment *" type="date"
+                                max={new Date().toISOString().split("T")[0]}
                                 value={data.adjustment_date}
                                 onChange={(e) => setData("adjustment_date", e.target.value)}
                                 errors={errors.adjustment_date} />

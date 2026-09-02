@@ -395,8 +395,8 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::post('/', [StockAdjustmentController::class, 'store'])->name('store')->middleware('permission:stock-adjustment');
         Route::post('/current-stock', [StockAdjustmentController::class, 'getCurrentStock'])->name('current-stock')->middleware('permission:stock-adjustment');
         Route::get('/{id}', [StockAdjustmentController::class, 'show'])->name('show')->middleware('permission:stock-adjustment');
-        Route::get('/{id}/edit', [StockAdjustmentController::class, 'edit'])->name('edit')->middleware('permission:stock-adjustment');
-        Route::put('/{id}', [StockAdjustmentController::class, 'update'])->name('update')->middleware('permission:stock-adjustment');
+        Route::get('/{id}/edit', [StockAdjustmentController::class, 'edit'])->name('edit')->middleware(['permission:stock-adjustment', 'role:super-admin|admin']);
+        Route::put('/{id}', [StockAdjustmentController::class, 'update'])->name('update')->middleware(['permission:stock-adjustment', 'role:super-admin|admin']);
         Route::delete('/{id}', [StockAdjustmentController::class, 'destroy'])->name('destroy')->middleware('permission:stock-adjustment');
         Route::post('/{id}/submit', [StockAdjustmentController::class, 'submit'])->name('submit')->middleware('permission:stock-adjustment');
         Route::post('/{id}/approve', [StockAdjustmentController::class, 'approve'])->name('approve')->middleware('permission:stock-adjustment');

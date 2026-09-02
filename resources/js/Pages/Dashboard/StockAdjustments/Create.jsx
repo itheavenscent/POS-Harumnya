@@ -414,6 +414,7 @@ export default function Create({ warehouses, stores, ingredients, packagingMater
                             <Input
                                 label="Tanggal *"
                                 type="date"
+                                max={new Date().toISOString().split("T")[0]}
                                 value={data.adjustment_date}
                                 onChange={(e) => setData("adjustment_date", e.target.value)}
                                 errors={errors.adjustment_date}
