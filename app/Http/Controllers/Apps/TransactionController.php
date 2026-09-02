@@ -1170,6 +1170,7 @@ class TransactionController extends Controller
             'intensity:id,name,code',
             'size:id,name,volume_ml',
             'rewardItem',
+            'discountType:id,name,code',
         ])
             ->where('cashier_id', $user->id)
             ->where('store_id', $storeId)
@@ -1294,6 +1295,27 @@ class TransactionController extends Controller
             foreach ($carts as $cart) {
                 if ($cart->points_amount) {
                     $rewardPoints += $cart->points_amount;
+
+                    // Hadiah poin (mis. dari Spin Wheel) tidak punya produk fisik,
+                    // tapi tetap dicatat sebagai baris item agar terlihat di riwayat/
+                    // export transaksi — bukan bagian dari stock deduction.
+                    $dtLabel = strtoupper($cart->discountType?->name ?? 'PROMO') . '-POIN MEMBER';
+                    SaleItem::create([
+                        'sale_id' => $sale->id,
+                        'product_id' => null,
+                        'product_name' => '[' . $dtLabel . ']',
+                        'qty' => $cart->qty,
+                        'unit_price' => 0,
+                        'is_free' => true,
+                        'item_discount' => 0,
+                        'subtotal' => 0,
+                        'cogs_per_unit' => 0,
+                        'cogs_total' => 0,
+                        'line_gross_profit' => 0,
+                        'line_gross_margin_pct' => 0,
+                        'notes' => $cart->notes,
+                    ]);
+
                     continue;
                 }
 
@@ -1326,13 +1348,23 @@ class TransactionController extends Controller
                 $totalCogsThisItem = $itemCogs + $alcoholCogsTotal;
                 $itemProfit = $itemSub - $totalCogsThisItem;
 
+                $productName = $this->buildProductName($cart);
+                if ($cart->reward_item_id && $cart->rewardItem) {
+                    $productName = '[Hadiah] ' . $cart->rewardItem->name;
+                } elseif ($isFree && $cart->discount_type_id) {
+                    // Tandai item gratis dari promo/reward (Spin Wheel, Poin Member,
+                    // Buy 1 Get 1, dll) dengan tag "[NAMA PROMO - Parfum P<ukuran>]"
+                    // agar sumber hadiahnya terlihat langsung di riwayat/export.
+                    $dtName = strtoupper($cart->discountType?->name ?? 'PROMO');
+                    $sizeTag = $cart->size?->volume_ml ? ' - Parfum P' . (int) $cart->size->volume_ml : '';
+                    $productName = trim('[' . $dtName . $sizeTag . '] ' . $productName);
+                }
+
                 $saleItem = SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $cart->product_id,
                     'reward_item_id' => $cart->reward_item_id,
-                    'product_name' => $cart->reward_item_id && $cart->rewardItem 
-                        ? '[Hadiah] ' . $cart->rewardItem->name 
-                        : $this->buildProductName($cart),
+                    'product_name' => $productName,
                     'product_sku' => $cart->product?->sku ?? ($cart->rewardItem?->name ? 'RWD-'.strtoupper(substr($cart->rewardItem->name, 0, 3)) : null),
                     'variant_name' => $cart->variant?->name,
                     'intensity_code' => $cart->intensity?->code,
