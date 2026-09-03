@@ -32,16 +32,14 @@ const PALETTE = [
 const idr = (v) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(v ?? 0);
 
+const num  = (v) => new Intl.NumberFormat('id-ID').format(v ?? 0);
+
+// Nominal penuh, tanpa disingkat (Jt/Rb) — pertahankan prefix "Rp " persis
+// supaya tickFormatter yang masih memanggil compact(v).replace('Rp ', '') tetap benar.
 const compact = (v) => {
     v = v ?? 0;
-    if (v < 0) return `-${compact(-v)}`;
-    if (v >= 1_000_000_000) return `Rp ${(v / 1_000_000_000).toFixed(1)}M`;
-    if (v >= 1_000_000)     return `Rp ${(v / 1_000_000).toFixed(1)}Jt`;
-    if (v >= 1_000)         return `Rp ${(v / 1_000).toFixed(0)}Rb`;
-    return `Rp ${v}`;
+    return v < 0 ? `-Rp ${num(-v)}` : `Rp ${num(v)}`;
 };
-
-const num  = (v) => new Intl.NumberFormat('id-ID').format(v ?? 0);
 const pct  = (v) => `${(v ?? 0).toFixed(2)}%`;
 
 const marginColor = (m) =>
