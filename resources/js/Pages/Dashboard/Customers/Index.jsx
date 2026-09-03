@@ -7,6 +7,7 @@ import {
     IconChartPie, IconClockHour4,
 } from "@tabler/icons-react";
 import Pagination from "@/Components/Dashboard/Pagination";
+import ConfirmDialog from "@/Components/Dashboard/ConfirmDialog";
 
 
 const SEGMENTS = [
@@ -33,6 +34,8 @@ function StatCard({ icon: Icon, label, value, sub, accent }) {
 
 export default function Index({ customers, filters, stats = {} }) {
     const [search, setSearch] = useState(filters.search || "");
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deleting, setDeleting] = useState(false);
     const nf = (v) => (v ?? 0).toLocaleString("id-ID");
 
     useEffect(() => {
@@ -58,10 +61,16 @@ export default function Index({ customers, filters, stats = {} }) {
         });
     };
 
-    const deleteCustomer = (id, name) => {
-        if (confirm(`Hapus pelanggan "${name}"? Tindakan ini tidak dapat dibatalkan.`)) {
-            router.delete(route("customers.destroy", id), { preserveScroll: true });
-        }
+    const confirmDeleteCustomer = () => {
+        if (!deleteTarget) return;
+        setDeleting(true);
+        router.delete(route("customers.destroy", deleteTarget.id), {
+            preserveScroll: true,
+            onFinish: () => {
+                setDeleting(false);
+                setDeleteTarget(null);
+            },
+        });
     };
 
     return (
@@ -212,7 +221,7 @@ export default function Index({ customers, filters, stats = {} }) {
                                                     <IconUser size={18} />
                                                 </Link>
                                                 <button
-                                                    onClick={() => deleteCustomer(c.id, c.name)}
+                                                    onClick={() => setDeleteTarget({ id: c.id, name: c.name })}
                                                     className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-red-900/20 rounded-xl transition-all"
                                                     title="Hapus"
                                                 >
@@ -231,6 +240,19 @@ export default function Index({ customers, filters, stats = {} }) {
             <div className="mt-6">
                 <Pagination links={customers.links} />
             </div>
+
+            <ConfirmDialog
+                open={!!deleteTarget}
+                onClose={() => setDeleteTarget(null)}
+                onConfirm={confirmDeleteCustomer}
+                loading={deleting}
+                variant="danger"
+                title="Hapus Pelanggan?"
+                description={
+                    <>Pelanggan <strong className="text-slate-700 dark:text-slate-200">{deleteTarget?.name}</strong> akan dihapus permanen beserta seluruh riwayat poinnya. Tindakan ini tidak dapat dibatalkan.</>
+                }
+                confirmLabel="Ya, Hapus"
+            />
         </>
     );
 }

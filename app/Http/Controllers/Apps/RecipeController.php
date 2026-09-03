@@ -67,6 +67,9 @@ class RecipeController extends Controller
                     'recipes'          => $recipes,
                     'generated_sizes'  => $generatedSizes,
                     'is_generated'     => count($generatedSizes) > 0,
+                    // Semua baris satu formula (variant+intensity) di-flag bersamaan,
+                    // jadi cukup ambil dari baris pertama.
+                    'is_active'        => (bool) ($recipes->first()->is_active ?? true),
                     'size_scaling'     => $sizeQuantities->map(fn($q) => [
                         'size_id'          => $q->size->id,
                         'size_name'        => $q->size->name,
@@ -333,6 +336,11 @@ class RecipeController extends Controller
         ]);
 
         DB::transaction(function () use ($validated) {
+            // Pertahankan status aktif/nonaktif kalau formula ini sudah ada sebelumnya.
+            $wasActive = VariantRecipe::where('variant_id', $validated['variant_id'])
+                ->where('intensity_id', $validated['intensity_id'])
+                ->value('is_active') ?? true;
+
             VariantRecipe::where('variant_id', $validated['variant_id'])
                 ->where('intensity_id', $validated['intensity_id'])
                 ->delete();
@@ -345,6 +353,7 @@ class RecipeController extends Controller
                     'base_quantity' => $item['base_quantity'],
                     'unit'          => $item['unit'] ?? 'ml',
                     'notes'         => $item['notes'] ?? null,
+                    'is_active'     => $wasActive,
                 ]);
             }
         });
@@ -448,6 +457,12 @@ class RecipeController extends Controller
         Intensity::findOrFail($intensity_id);
 
         DB::transaction(function () use ($validated, $variant_id, $intensity_id) {
+            // Pertahankan status aktif/nonaktif — delete+recreate tidak boleh
+            // diam-diam mengaktifkan kembali formula yang sengaja dinonaktifkan.
+            $wasActive = VariantRecipe::where('variant_id', $variant_id)
+                ->where('intensity_id', $intensity_id)
+                ->value('is_active') ?? true;
+
             VariantRecipe::where('variant_id', $variant_id)
                 ->where('intensity_id', $intensity_id)
                 ->delete();
@@ -460,12 +475,35 @@ class RecipeController extends Controller
                     'base_quantity' => $item['base_quantity'],
                     'unit'          => $item['unit'] ?? 'ml',
                     'notes'         => $item['notes'] ?? null,
+                    'is_active'     => $wasActive,
                 ]);
             }
         });
 
         return to_route('recipes.index')
             ->with('success', 'Formula variant berhasil diupdate');
+    }
+
+    // =========================================================================
+    // TOGGLE ACTIVE — nonaktifkan/aktifkan formula (variant+intensity) tanpa hapus
+    // =========================================================================
+
+    public function toggleActive($variant_id, $intensity_id)
+    {
+        $rows = VariantRecipe::forVariantIntensity($variant_id, $intensity_id)->get();
+
+        if ($rows->isEmpty()) {
+            return back()->with('error', 'Formula tidak ditemukan.');
+        }
+
+        $newStatus = ! (bool) ($rows->first()->is_active ?? true);
+
+        VariantRecipe::forVariantIntensity($variant_id, $intensity_id)
+            ->update(['is_active' => $newStatus]);
+
+        return back()->with('success', $newStatus
+            ? 'Formula diaktifkan kembali.'
+            : 'Formula dinonaktifkan. Formula ini tidak bisa dipakai untuk generate product baru selama nonaktif.');
     }
 
     // =========================================================================
@@ -513,6 +551,10 @@ class RecipeController extends Controller
 
         if ($recipes->isEmpty()) {
             return back()->with('error', 'Formula belum ada — buat formula terlebih dahulu.');
+        }
+
+        if (! (bool) ($recipes->first()->is_active ?? true)) {
+            return back()->with('error', 'Formula ini nonaktif — aktifkan kembali sebelum generate product.');
         }
 
         if (!$regenerate) {

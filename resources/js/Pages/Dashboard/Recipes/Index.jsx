@@ -7,6 +7,7 @@ import {
     IconFileImport, IconDownload, IconSparkles, IconSearch, IconFileSpreadsheet,
     IconX, IconDroplet, IconLock, IconPackage, IconRefresh,
     IconChevronRight, IconUsers, IconAdjustments,
+    IconToggleLeft, IconToggleRight,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 import PageHeader from "@/Components/Dashboard/PageHeader";
@@ -100,12 +101,14 @@ function DeleteModal({ show, title, message, onConfirm, onClose, loading }) {
 }
 
 // ─── Intensity Detail Row ─────────────────────────────────────────────────────
-function IntensityDetailRow({ intensity, variantId, onDelete }) {
+function IntensityDetailRow({ intensity, variantId, onDelete, onToggleActive }) {
     const [generating, setGenerating] = useState(false);
     const hasScaling = intensity.size_scaling && intensity.size_scaling.length > 0;
     const isGenerated = intensity.is_generated === true;
+    const isActive = intensity.is_active !== false;
 
     const handleGenerate = () => {
+        if (!isActive) { toast.error("Formula nonaktif — aktifkan kembali dulu sebelum generate"); return; }
         if (!hasScaling) { toast.error("Kalibrasi IntensitySizeQuantity belum diset"); return; }
         if (isGenerated) { toast("Products sudah di-generate. Gunakan Regenerate di halaman Detail.", { icon: "🔒" }); return; }
         setGenerating(true);
@@ -126,7 +129,7 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
     };
 
     return (
-        <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className={`bg-slate-50 dark:bg-slate-800/60 rounded-xl border overflow-hidden ${isActive ? "border-slate-200 dark:border-slate-700" : "border-dashed border-slate-300 dark:border-slate-700 opacity-70"}`}>
 
             {/* ── Header ── */}
             <div className="px-4 py-3 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex flex-col gap-2">
@@ -156,6 +159,15 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
                             <IconEdit size={14} />
                         </Link>
                         <button
+                            onClick={() => onToggleActive(intensity, variantId)}
+                            className={`p-1.5 rounded-lg transition ${isActive
+                                ? "text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                : "text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"}`}
+                            title={isActive ? "Nonaktifkan formula" : "Aktifkan formula"}
+                        >
+                            {isActive ? <IconToggleRight size={14} /> : <IconToggleLeft size={14} />}
+                        </button>
+                        <button
                             onClick={() => onDelete(intensity, variantId)}
                             className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-red-900/30 rounded-lg transition"
                             title="Hapus"
@@ -175,7 +187,8 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
                         ) : (
                             <button
                                 onClick={handleGenerate}
-                                disabled={generating || !hasScaling}
+                                disabled={generating || !hasScaling || !isActive}
+                                title={!isActive ? "Formula nonaktif" : undefined}
                                 className="flex items-center gap-1 px-2.5 py-1.5 bg-teal-600 text-white rounded-lg text-[11px] font-bold hover:bg-teal-700 transition shadow-sm disabled:opacity-30 disabled:cursor-not-allowed"
                             >
                                 {generating
@@ -192,6 +205,9 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
                     <span className="text-[11px] text-slate-400">
                         {intensity.ingredient_count} bahan · {parseFloat(intensity.total_volume).toFixed(0)}ml
                     </span>
+                    {!isActive && (
+                        <Badge color="red" size="sm"><IconToggleLeft size={9} /> Nonaktif</Badge>
+                    )}
                     {isGenerated && (
                         <Badge color="green" size="sm"><IconCircleCheck size={9} /> Generated</Badge>
                     )}
@@ -301,7 +317,7 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
 }
 
 // ─── Variant Card ─────────────────────────────────────────────────────────────
-function VariantCard({ variantGroup, onDelete }) {
+function VariantCard({ variantGroup, onDelete, onToggleActive }) {
     const [expanded, setExpanded] = useState(false);
     const { variant, intensities, intensity_count, total_ingredients, is_any_generated, is_all_generated } = variantGroup;
 
@@ -379,7 +395,11 @@ function VariantCard({ variantGroup, onDelete }) {
                         {intensities.map((it, i) => (
                             <span
                                 key={i}
-                                className="inline-flex items-center px-2.5 py-0.5 rounded-[5px] text-[11px] font-bold bg-[#f8fafc] dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-[5px] text-[11px] font-bold border ${
+                                    it.is_active === false
+                                        ? "bg-slate-50 dark:bg-slate-800/40 border-dashed border-slate-300 dark:border-slate-700 text-slate-400 line-through"
+                                        : "bg-[#f8fafc] dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+                                }`}
                             >
                                 {it.intensity.code}
                             </span>
@@ -412,6 +432,7 @@ function VariantCard({ variantGroup, onDelete }) {
                                     intensity={intensity}
                                     variantId={variant.id}
                                     onDelete={onDelete}
+                                    onToggleActive={onToggleActive}
                                 />
                             ))}
                         </div>
@@ -489,7 +510,8 @@ export default function Index({ variantRecipes }) {
             filterStatus === "all" ||
             (filterStatus === "generated" && group.is_any_generated && !group.is_all_generated) ||
             (filterStatus === "all_generated" && group.is_all_generated) ||
-            (filterStatus === "pending" && !group.is_any_generated);
+            (filterStatus === "pending" && !group.is_any_generated) ||
+            (filterStatus === "inactive" && group.intensities.some(i => i.is_active === false));
         return matchSearch && matchFilter;
     }), [variantRecipes, search, filterStatus]);
 
@@ -504,6 +526,18 @@ export default function Index({ variantRecipes }) {
         router.delete(route("recipes.destroy", [variantId, item.intensity_id]), {
             onSuccess: () => { closeDelete(); toast.success("Formula berhasil dihapus"); },
             onError: () => { closeDelete(); toast.error("Gagal menghapus formula"); },
+        });
+    };
+
+    const handleToggleActive = (intensity, variantId) => {
+        router.patch(route("recipes.toggle-active", [variantId, intensity.intensity_id]), {}, {
+            preserveScroll: true,
+            onSuccess: (page) => {
+                const flash = page.props?.flash ?? {};
+                if (flash.success) toast.success(flash.success);
+                else if (flash.error) toast.error(flash.error);
+            },
+            onError: () => toast.error("Gagal mengubah status formula"),
         });
     };
 
@@ -550,6 +584,7 @@ export default function Index({ variantRecipes }) {
                                 { key: "all_generated", label: "Semua Generated", dot: "bg-[#09a374]" },
                                 { key: "generated", label: "Sebagian", dot: "bg-[#e67e22]" },
                                 { key: "pending", label: "Belum", dot: "bg-[#e74c3c]" },
+                                { key: "inactive", label: "Nonaktif", dot: "bg-slate-400" },
                             ].map(({ key, label, dot }) => (
                                 <button
                                     key={key}
@@ -639,6 +674,7 @@ export default function Index({ variantRecipes }) {
                         key={group.variant_id}
                         variantGroup={group}
                         onDelete={confirmDelete}
+                        onToggleActive={handleToggleActive}
                     />
                 ))}
             </div>

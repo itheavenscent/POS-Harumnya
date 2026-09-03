@@ -201,14 +201,6 @@ const idr = (v) =>
         style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 2,
     }).format(v ?? 0);
 
-const compact = (v) => {
-    v = v ?? 0;
-    if (v >= 1_000_000_000) return `Rp${(v / 1_000_000_000).toFixed(1)}M`;
-    if (v >= 1_000_000)     return `Rp${(v / 1_000_000).toFixed(1)}Jt`;
-    if (v >= 1_000)         return `Rp${(v / 1_000).toFixed(0)}Rb`;
-    return `Rp${v}`;
-};
-
 const num = (v) => new Intl.NumberFormat('id-ID').format(v ?? 0);
 
 const splitDateTime = (dateStr) => {
@@ -896,9 +888,9 @@ export default function Dashboard({
                                             axisLine={false} tickLine={false}
                                         />
                                         <YAxis
-                                            tickFormatter={(v) => compact(v).replace('Rp', '')}
+                                            tickFormatter={(v) => num(v)}
                                             tick={{ fill: '#94a3b8', fontSize: 9.5, fontWeight: 500 }}
-                                            axisLine={false} tickLine={false} width={48}
+                                            axisLine={false} tickLine={false} width={72}
                                         />
                                         <Tooltip
                                             content={({ active, payload, label }) => {
@@ -1341,7 +1333,7 @@ export default function Dashboard({
                                     <BarChart data={revenueTrend} barGap={3} barCategoryGap="25%">
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} className="dark:stroke-slate-700" />
                                         <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                                        <YAxis tickFormatter={(v) => compact(v).replace('Rp', '')} tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
+                                        <YAxis tickFormatter={(v) => num(v)} tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} width={80} />
                                         <Tooltip content={<ChartTip />} />
                                         <Legend formatter={(v) => <span className="text-xs text-slate-500">{v}</span>} />
                                         <Bar dataKey="revenue"      name="Revenue"   fill={C.primary} radius={[4, 4, 0, 0]} fillOpacity={0.85} />
@@ -1669,9 +1661,9 @@ export default function Dashboard({
                                             axisLine={false} tickLine={false}
                                         />
                                         <YAxis
-                                            tickFormatter={(v) => compact(v).replace('Rp', '')}
+                                            tickFormatter={(v) => num(v)}
                                             tick={{ fill: '#94a3b8', fontSize: 11 }}
-                                            axisLine={false} tickLine={false}
+                                            axisLine={false} tickLine={false} width={80}
                                         />
                                         <Tooltip content={<ChartTip />} />
                                         <Legend formatter={(v) => <span className="text-xs text-slate-500">{v}</span>} />

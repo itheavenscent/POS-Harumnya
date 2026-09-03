@@ -204,9 +204,14 @@ class PackagingController extends Controller
     {
         $data = $request->validate([
             'components'                          => 'present|array',
-            'components.*.component_packaging_id' => 'required|uuid|exists:packaging_materials,id',
+            'components.*.component_packaging_id' => [
+                'required', 'uuid', 'exists:packaging_materials,id',
+                Rule::notIn(PackagingMaterial::where('is_assembly', true)->pluck('id')),
+            ],
             'components.*.quantity'               => 'required|integer|min:1',
-        ], [], [
+        ], [
+            'components.*.component_packaging_id.not_in' => 'Komponen tidak boleh kemasan rakitan lain (BOM bersarang tidak didukung).',
+        ], [
             'components.*.component_packaging_id' => 'komponen',
             'components.*.quantity'               => 'jumlah',
         ]);

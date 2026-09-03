@@ -18,10 +18,12 @@ class VariantRecipe extends Model
         'base_quantity',
         'unit',
         'notes',
+        'is_active',
     ];
 
     protected $casts = [
         'base_quantity' => 'decimal:4',
+        'is_active'     => 'boolean',
     ];
 
     // ─── Relationships ────────────────────────────────────────────────────────

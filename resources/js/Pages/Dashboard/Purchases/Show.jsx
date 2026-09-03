@@ -169,24 +169,89 @@ export default function Show({ purchase, movements = [] }) {
             {/* ── Edit Tgl / Qty Terima Modal ── */}
             {showReceiptModal && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col">
-                        <h3 className="text-lg font-bold mb-3 flex items-center gap-2 shrink-0">
-                            <IconPencilCog size={20} className="text-amber-600" /> Edit Tanggal / Qty Terima
-                        </h3>
-                        <p className="text-sm text-slate-500 mb-4 shrink-0">
-                            {purchase.status === "completed"
-                                ? "PO sudah selesai — hanya tanggal terima yang bisa diubah. Qty terima terkunci karena stok sudah diperbarui."
-                                : "Ubah tanggal terima dan/atau qty diterima."}
-                        </p>
-                        <div className="mb-4 shrink-0">
-                            <label className="block text-xs font-bold text-slate-600 mb-1">Tanggal Tiba Aktual</label>
-                            <input type="date" value={arrivalDate} min={poDate || undefined}
-                                onChange={(e) => setArrivalDate(e.target.value)}
-                                className="w-full md:w-48 rounded-xl border-slate-200 text-sm focus:ring-amber-500" />
-                            <p className="text-[11px] text-slate-400 mt-1">Tidak boleh sebelum tanggal PO ({fmtDate(poDate)}).</p>
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
+                        <div className="p-6 pb-4 shrink-0 border-b border-slate-100 dark:border-slate-800">
+                            <h3 className="text-lg font-bold flex items-center gap-2">
+                                <IconPencilCog size={20} className="text-amber-600" /> Edit Tanggal / Qty Terima
+                            </h3>
+                            <p className="text-sm text-slate-500 mt-2">
+                                {purchase.status === "completed"
+                                    ? "PO sudah selesai — hanya tanggal terima yang bisa diubah. Qty terima terkunci karena stok sudah diperbarui."
+                                    : "Ubah tanggal terima dan/atau qty diterima."}
+                            </p>
                         </div>
-                        {purchase.status === "received" && (
-                            <div className="flex-1 overflow-y-auto mb-4 border border-slate-200 rounded-xl min-h-[10rem] max-h-[45vh]">
+
+                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 mb-1">Tanggal Tiba Aktual</label>
+                                <input type="date" value={arrivalDate} min={poDate || undefined}
+                                    onChange={(e) => setArrivalDate(e.target.value)}
+                                    className="w-full md:w-48 rounded-xl border-slate-200 text-sm focus:ring-amber-500" />
+                                <p className="text-[11px] text-slate-400 mt-1">Tidak boleh sebelum tanggal PO ({fmtDate(poDate)}).</p>
+                            </div>
+                            {purchase.status === "received" && (
+                                <div className="overflow-y-auto border border-slate-200 rounded-xl max-h-[50vh]">
+                                    <table className="w-full text-left text-sm text-slate-600">
+                                        <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
+                                            <tr>
+                                                <th className="px-4 py-2 font-bold text-xs uppercase">Item</th>
+                                                <th className="px-4 py-2 font-bold text-xs uppercase text-right">Dipesan</th>
+                                                <th className="px-4 py-2 font-bold text-xs uppercase text-right">Diterima</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {purchase.items?.map(i => (
+                                                <tr key={i.id} className="border-b border-slate-100 last:border-0">
+                                                    <td className="px-4 py-2">{i.item_name}</td>
+                                                    <td className="px-4 py-2 text-right font-medium">{fmtQty(i.quantity)} {i.item_unit}</td>
+                                                    <td className="px-4 py-2 text-right w-32">
+                                                        <input type="number" step="1" min="0"
+                                                            value={receivedQuantities[i.id] ?? ""}
+                                                            onChange={e => setReceivedQuantities(prev => ({ ...prev, [i.id]: e.target.value }))}
+                                                            className="w-full text-right p-1.5 text-sm border-slate-200 rounded-lg focus:ring-amber-500" />
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex gap-3 justify-end p-6 pt-4 border-t border-slate-100 dark:border-slate-800 shrink-0">
+                            <button onClick={() => setShowReceiptModal(false)} className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm">Batal</button>
+                            <button onClick={handleUpdateReceipt}
+                                className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-sm flex items-center gap-2">
+                                <IconPencilCog size={16} /> Simpan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Receive Modal ── */}
+            {showReceiveModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
+                        <div className="p-6 pb-4 shrink-0 border-b border-slate-100 dark:border-slate-800">
+                            <h3 className="text-lg font-bold flex items-center gap-2">
+                                <IconTruck size={20} className="text-violet-600" /> Konfirmasi Penerimaan Barang
+                            </h3>
+                            <p className="text-sm text-slate-500 mt-2">
+                                Konfirmasi jumlah barang yang benar-benar diterima. Stok belum berubah — perbarui stok dengan klik <strong>Selesaikan</strong>.
+                            </p>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                            {(purchase.items?.length ?? 0) > 1 && (
+                                <div className="flex justify-end">
+                                    <button type="button" onClick={receiveAllOrdered}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 text-violet-700 border border-violet-200 rounded-lg text-xs font-bold hover:bg-violet-100 transition-colors">
+                                        <IconCheck size={14} /> Terima Semua
+                                    </button>
+                                </div>
+                            )}
+                            <div className="overflow-y-auto border border-slate-200 rounded-xl max-h-[50vh]">
                                 <table className="w-full text-left text-sm text-slate-600">
                                     <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
                                         <tr>
@@ -204,109 +269,56 @@ export default function Show({ purchase, movements = [] }) {
                                                     <input type="number" step="1" min="0"
                                                         value={receivedQuantities[i.id] ?? ""}
                                                         onChange={e => setReceivedQuantities(prev => ({ ...prev, [i.id]: e.target.value }))}
-                                                        className="w-full text-right p-1.5 text-sm border-slate-200 rounded-lg focus:ring-amber-500" />
+                                                        className="w-full text-right p-1.5 text-sm border-slate-200 rounded-lg focus:ring-violet-500" />
                                                 </td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
-                        )}
-                        <div className="flex gap-3 justify-end shrink-0">
-                            <button onClick={() => setShowReceiptModal(false)} className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm">Batal</button>
-                            <button onClick={handleUpdateReceipt}
-                                className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-sm flex items-center gap-2">
-                                <IconPencilCog size={16} /> Simpan
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
-            {/* ── Receive Modal ── */}
-            {showReceiveModal && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col">
-                        <h3 className="text-lg font-bold mb-3 flex items-center gap-2 shrink-0">
-                            <IconTruck size={20} className="text-violet-600" /> Konfirmasi Penerimaan Barang
-                        </h3>
-                        <p className="text-sm text-slate-500 mb-4 shrink-0">
-                            Konfirmasi jumlah barang yang benar-benar diterima. Stok belum berubah — perbarui stok dengan klik <strong>Selesaikan</strong>.
-                        </p>
-                        {(purchase.items?.length ?? 0) > 1 && (
-                            <div className="flex justify-end mb-2 shrink-0">
-                                <button type="button" onClick={receiveAllOrdered}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 text-violet-700 border border-violet-200 rounded-lg text-xs font-bold hover:bg-violet-100 transition-colors">
-                                    <IconCheck size={14} /> Terima Semua
-                                </button>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 mb-1">Tanggal Tiba Aktual</label>
+                                <input type="date" value={arrivalDate} min={poDate || undefined}
+                                    onChange={(e) => setArrivalDate(e.target.value)}
+                                    className="w-full md:w-48 rounded-xl border-slate-200 text-sm focus:ring-violet-500" />
+                                <p className="text-[11px] text-slate-400 mt-1">Tidak boleh sebelum tanggal PO ({fmtDate(poDate)}).</p>
                             </div>
-                        )}
-                        <div className="flex-1 overflow-y-auto mb-4 border border-slate-200 rounded-xl min-h-[10rem] max-h-[45vh]">
-                            <table className="w-full text-left text-sm text-slate-600">
-                                <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
-                                    <tr>
-                                        <th className="px-4 py-2 font-bold text-xs uppercase">Item</th>
-                                        <th className="px-4 py-2 font-bold text-xs uppercase text-right">Dipesan</th>
-                                        <th className="px-4 py-2 font-bold text-xs uppercase text-right">Diterima</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {purchase.items?.map(i => (
-                                        <tr key={i.id} className="border-b border-slate-100 last:border-0">
-                                            <td className="px-4 py-2">{i.item_name}</td>
-                                            <td className="px-4 py-2 text-right font-medium">{fmtQty(i.quantity)} {i.item_unit}</td>
-                                            <td className="px-4 py-2 text-right w-32">
-                                                <input type="number" step="1" min="0"
-                                                    value={receivedQuantities[i.id] ?? ""}
-                                                    onChange={e => setReceivedQuantities(prev => ({ ...prev, [i.id]: e.target.value }))}
-                                                    className="w-full text-right p-1.5 text-sm border-slate-200 rounded-lg focus:ring-violet-500" />
-                                            </td>
-                                        </tr>
+
+                            {/* Biaya tambahan — bisa disesuaikan saat terima barang */}
+                            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/60 dark:bg-slate-800/30">
+                                <p className="text-xs font-bold text-slate-600 mb-3 uppercase tracking-wide">Biaya Tambahan</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    {[
+                                        { key: "shipping_cost", label: "Ongkos Kirim" },
+                                        { key: "tax",           label: "PPN / Pajak" },
+                                        { key: "adjustment",    label: "Biaya Lain-lain" },
+                                    ].map(({ key, label }) => (
+                                        <div key={key}>
+                                            <label className="block text-[11px] font-bold text-slate-500 mb-1">{label}</label>
+                                            <input type="number" step="1" min={key === "adjustment" ? undefined : "0"}
+                                                value={extraCosts[key]}
+                                                onChange={(e) => setExtraCosts(prev => ({ ...prev, [key]: e.target.value }))}
+                                                className="w-full text-right p-2 text-sm border-slate-200 rounded-lg focus:ring-violet-500" />
+                                        </div>
                                     ))}
-                                </tbody>
-                            </table>
-                        </div>
-                        <div className="mb-4 shrink-0">
-                            <label className="block text-xs font-bold text-slate-600 mb-1">Tanggal Tiba Aktual</label>
-                            <input type="date" value={arrivalDate} min={poDate || undefined}
-                                onChange={(e) => setArrivalDate(e.target.value)}
-                                className="w-full md:w-48 rounded-xl border-slate-200 text-sm focus:ring-violet-500" />
-                            <p className="text-[11px] text-slate-400 mt-1">Tidak boleh sebelum tanggal PO ({fmtDate(poDate)}).</p>
-                        </div>
-
-                        {/* Biaya tambahan — bisa disesuaikan saat terima barang */}
-                        <div className="mb-4 shrink-0 border border-slate-200 rounded-xl p-4 bg-slate-50/60 dark:bg-slate-800/30">
-                            <p className="text-xs font-bold text-slate-600 mb-3 uppercase tracking-wide">Biaya Tambahan</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                {[
-                                    { key: "shipping_cost", label: "Ongkos Kirim" },
-                                    { key: "tax",           label: "PPN / Pajak" },
-                                    { key: "adjustment",    label: "Biaya Lain-lain" },
-                                ].map(({ key, label }) => (
-                                    <div key={key}>
-                                        <label className="block text-[11px] font-bold text-slate-500 mb-1">{label}</label>
-                                        <input type="number" step="1" min={key === "adjustment" ? undefined : "0"}
-                                            value={extraCosts[key]}
-                                            onChange={(e) => setExtraCosts(prev => ({ ...prev, [key]: e.target.value }))}
-                                            className="w-full text-right p-2 text-sm border-slate-200 rounded-lg focus:ring-violet-500" />
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="flex justify-between mt-3 pt-3 border-t border-slate-200 text-sm">
-                                <span className="text-slate-500 font-bold">Estimasi Total</span>
-                                <span className="font-black text-violet-700">
-                                    {fmtRp(
-                                        (parseFloat(purchase.subtotal || 0))
-                                        + (parseFloat(extraCosts.tax) || 0)
-                                        - (parseFloat(purchase.discount || 0))
-                                        + (parseFloat(extraCosts.shipping_cost) || 0)
-                                        + (parseFloat(extraCosts.adjustment) || 0)
-                                    )}
-                                </span>
+                                </div>
+                                <div className="flex justify-between mt-3 pt-3 border-t border-slate-200 text-sm">
+                                    <span className="text-slate-500 font-bold">Estimasi Total</span>
+                                    <span className="font-black text-violet-700">
+                                        {fmtRp(
+                                            (parseFloat(purchase.subtotal || 0))
+                                            + (parseFloat(extraCosts.tax) || 0)
+                                            - (parseFloat(purchase.discount || 0))
+                                            + (parseFloat(extraCosts.shipping_cost) || 0)
+                                            + (parseFloat(extraCosts.adjustment) || 0)
+                                        )}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="flex gap-3 justify-end shrink-0">
+                        <div className="flex gap-3 justify-end p-6 pt-4 border-t border-slate-100 dark:border-slate-800 shrink-0">
                             <button onClick={() => setShowReceiveModal(false)} className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm">Batal</button>
                             <button onClick={handleReceive}
                                 className="px-5 py-2 bg-violet-500 hover:bg-violet-600 text-white rounded-xl font-bold text-sm flex items-center gap-2">

@@ -142,19 +142,43 @@ class PackagingMaterial extends Model
     }
 
     /**
-     * HPP rakitan = Σ (average_cost komponen × quantity).
+     * HPP rakitan = Σ (biaya komponen × quantity).
      * Untuk material non-rakitan → average_cost sendiri.
+     * Komponen seharusnya tidak boleh rakitan lain (dicegah saat simpan BOM),
+     * tapi tetap dihitung rekursif untuk jaga-jaga data lama/tidak konsisten —
+     * average_cost milik rakitan adalah data basi (tidak pernah di-update oleh
+     * PO/WAC karena rakitan sendiri tidak pernah diterima/dibeli langsung).
      * Komponen WAJIB sudah di-load via components.component agar tidak N+1.
      */
     public function getAssembledCostAttribute(): float
+    {
+        return $this->resolveAssembledCost();
+    }
+
+    private function resolveAssembledCost(array $visited = []): float
     {
         if (! $this->is_assembly) {
             return (float) $this->average_cost;
         }
 
-        return (float) $this->components->sum(
-            fn ($line) => (float) ($line->component?->average_cost ?? 0) * (int) $line->quantity
-        );
+        // Guard terhadap BOM siklik (A berisi B, B berisi A).
+        if (in_array($this->id, $visited, true)) {
+            return 0.0;
+        }
+        $visited[] = $this->id;
+
+        return (float) $this->components->sum(function ($line) use ($visited) {
+            $component = $line->component;
+            if (! $component) {
+                return 0.0;
+            }
+
+            $unitCost = $component->is_assembly
+                ? $component->resolveAssembledCost($visited)
+                : (float) $component->average_cost;
+
+            return $unitCost * (int) $line->quantity;
+        });
     }
 
     // ─── Scopes ─────────────────────────────────────────────────────────
