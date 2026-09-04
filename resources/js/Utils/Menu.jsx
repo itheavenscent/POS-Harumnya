@@ -104,6 +104,7 @@ export default function Menu() {
                     active: url.startsWith("/dashboard/materials") && url.includes("material_type=bahan_baku"),
                     icon: <IconFlask size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["materials-access"]),
+                    keywords: ["material", "raw material"],
                 },
                 {
                     title: "Formula & Resep",
@@ -111,6 +112,7 @@ export default function Menu() {
                     active: url.startsWith("/dashboard/recipes"),
                     icon: <IconBooks size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["recipes-access"]),
+                    keywords: ["recipe", "formula", "material"],
                 },
                 {
                     title: "Kemasan",
@@ -118,6 +120,7 @@ export default function Menu() {
                     active: url.startsWith("/dashboard/materials") && url.includes("material_type=bahan_kemasan") && !url.includes("is_assembly=1"),
                     icon: <IconPackage size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["materials-access"]),
+                    keywords: ["material", "packaging"],
                 },
                 {
                     title: "Rakitan Kemasan (BOM)",
@@ -125,6 +128,7 @@ export default function Menu() {
                     active: url.startsWith("/dashboard/materials") && url.includes("is_assembly=1"),
                     icon: <IconBoxPadding size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["materials-access"]),
+                    keywords: ["material", "bom", "assembly", "packaging"],
                 },
             ],
         },

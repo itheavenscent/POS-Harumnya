@@ -35,10 +35,13 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
         if (!searchQuery.trim()) return menuNavigation;
         const q = searchQuery.toLowerCase().trim();
         return menuNavigation.map((section) => {
+            const sectionMatches = section.title?.toLowerCase().includes(q);
             const filteredDetails = section.details.filter((detail) => {
+                if (sectionMatches) return true;
                 const matchesTitle = detail.title?.toLowerCase().includes(q);
+                const matchesKeywords = detail.keywords?.some(k => k.toLowerCase().includes(q));
                 const matchesSub = detail.subdetails?.some(sub => sub.title?.toLowerCase().includes(q));
-                return matchesTitle || matchesSub;
+                return matchesTitle || matchesKeywords || matchesSub;
             });
             return { ...section, details: filteredDetails };
         }).filter(section => section.details.length > 0);
@@ -285,7 +288,7 @@ export default function Sidebar({ themeSwitcher, darkMode }) {
                         {filteredMenu.map((section, index) => {
                             const hasPermission = section.details.some(d => d.permissions === true);
                             if (!hasPermission) return null;
-                            const isOpen = openSections[index] !== false;
+                            const isOpen = searchQuery.trim() ? true : openSections[index] !== false;
 
                             return (
                                 <div key={index} className="mb-0.5">
