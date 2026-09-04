@@ -51,7 +51,7 @@ class StoreIngredientStock extends Model
 
     public function ingredient()
     {
-        return $this->belongsTo(Ingredient::class);
+        return $this->belongsTo(Material::class, 'ingredient_id');
     }
 
     public function lastInUser()

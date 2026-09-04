@@ -31,9 +31,6 @@ class StockTransferItem extends Model
 
     public function getItemNameAttribute(): string
     {
-        if ($this->item_type === 'ingredient') {
-            return \App\Models\Ingredient::find($this->item_id)?->name ?? '-';
-        }
-        return \App\Models\PackagingMaterial::find($this->item_id)?->name ?? '-';
+        return Material::find($this->item_id)?->name ?? '-';
     }
 }

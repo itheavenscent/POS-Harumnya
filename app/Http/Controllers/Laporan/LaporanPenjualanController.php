@@ -614,21 +614,21 @@ class LaporanPenjualanController extends Controller
         $topPackaging = DB::table('sale_item_packagings')
             ->join('sale_items', 'sale_item_packagings.sale_item_id', '=', 'sale_items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->leftJoin('packaging_materials', 'sale_item_packagings.packaging_material_id', '=', 'packaging_materials.id')
+            ->leftJoin('materials', 'sale_item_packagings.packaging_material_id', '=', 'materials.id')
             ->when($storeId, fn ($q) => $q->where('sales.store_id', $storeId))
             ->when($status !== 'all', fn ($q) => $q->where('sales.status', $status))
             ->whereBetween('sales.sold_at', [$dateFromDt, $dateToDt])
             ->selectRaw('
                 sale_item_packagings.packaging_name                             AS name,
                 COALESCE(sale_item_packagings.packaging_code,
-                         packaging_materials.code)                              AS code,
+                         materials.code)                                       AS code,
                 SUM(sale_item_packagings.qty)                                   AS qty,
                 COALESCE(SUM(sale_item_packagings.subtotal), 0)                 AS revenue
             ')
             ->groupBy(
                 'sale_item_packagings.packaging_name',
                 'sale_item_packagings.packaging_code',
-                'packaging_materials.code'
+                'materials.code'
             )
             ->orderByDesc('qty')
             ->limit(10)

@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Apps;
 use App\Models\Variant;
 use App\Models\Intensity;
 use App\Models\Size;
-use App\Models\Ingredient;
+use App\Models\Material;
 use App\Models\VariantRecipe;
 use App\Models\Product;
 use App\Models\ProductRecipe;
@@ -14,6 +14,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -112,7 +113,7 @@ class RecipeController extends Controller
         $recipes = VariantRecipe::with([
                 'variant:id,code,name',
                 'intensity:id,code,name',
-                'ingredient:id,name,unit,ingredient_category_id',
+                'ingredient:id,name,unit,material_category_id',
                 'ingredient.category:id,ingredient_type',
             ])
             ->get()
@@ -311,10 +312,11 @@ class RecipeController extends Controller
                 ->orderBy('sort_order')
                 ->get(['id', 'code', 'name', 'gender']),
             'intensities'             => $intensities,
-            'ingredients'             => Ingredient::with('category:id,name,ingredient_type')
+            'ingredients'             => Material::bahanBaku()
+                ->with('category:id,name,ingredient_type')
                 ->where('is_active', true)
                 ->orderBy('name')
-                ->get(['id', 'code', 'name', 'unit', 'ingredient_category_id']),
+                ->get(['id', 'code', 'name', 'unit', 'material_category_id']),
             'intensitySizeQuantities' => $intensitySizeQuantities,
         ]);
     }
@@ -329,7 +331,10 @@ class RecipeController extends Controller
             'variant_id'            => 'required|exists:variants,id',
             'intensity_id'          => 'required|exists:intensities,id',
             'items'                 => 'required|array|min:1',
-            'items.*.ingredient_id' => 'required|exists:ingredients,id',
+            'items.*.ingredient_id' => [
+                'required',
+                Rule::exists('materials', 'id')->where('material_type', 'bahan_baku'),
+            ],
             'items.*.base_quantity' => 'required|numeric|min:0.01',
             'items.*.unit'          => 'nullable|string|max:50',
             'items.*.notes'         => 'nullable|string|max:255',
@@ -432,9 +437,10 @@ class RecipeController extends Controller
             ]),
             'variants'       => Variant::where('is_active', true)->get(['id', 'code', 'name']),
             'intensities'    => Intensity::where('is_active', true)->get(['id', 'code', 'name']),
-            'ingredients'    => Ingredient::with('category:id,name,ingredient_type')
+            'ingredients'    => Material::bahanBaku()
+                ->with('category:id,name,ingredient_type')
                 ->where('is_active', true)
-                ->get(['id', 'code', 'name', 'unit', 'ingredient_category_id']),
+                ->get(['id', 'code', 'name', 'unit', 'material_category_id']),
             'sizeQuantities' => $sizeQuantities,
         ]);
     }
@@ -447,7 +453,10 @@ class RecipeController extends Controller
     {
         $validated = $request->validate([
             'items'                 => 'required|array|min:1',
-            'items.*.ingredient_id' => 'required|exists:ingredients,id',
+            'items.*.ingredient_id' => [
+                'required',
+                Rule::exists('materials', 'id')->where('material_type', 'bahan_baku'),
+            ],
             'items.*.base_quantity' => 'required|numeric|min:0.01',
             'items.*.unit'          => 'nullable|string|max:50',
             'items.*.notes'         => 'nullable|string|max:255',
@@ -686,7 +695,7 @@ class RecipeController extends Controller
     {
         $variants    = Variant::where('is_active', true)->orderBy('code')->get(['code', 'name', 'gender']);
         $intensities = Intensity::where('is_active', true)->orderBy('code')->get(['code', 'name', 'oil_ratio', 'alcohol_ratio']);
-        $ingredients = Ingredient::where('is_active', true)->orderBy('code')->get(['code', 'name', 'unit']);
+        $ingredients = Material::bahanBaku()->where('is_active', true)->orderBy('code')->get(['code', 'name', 'unit']);
 
         // Build workbook dari scratch — tidak bergantung pada file base yang bisa hilang.
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
@@ -998,7 +1007,7 @@ class RecipeController extends Controller
     {
         $variants    = Variant::where('is_active', true)->pluck('id', 'code');
         $intensities = Intensity::where('is_active', true)->pluck('id', 'code');
-        $ingredients = Ingredient::where('is_active', true)->pluck('id', 'code');
+        $ingredients = Material::bahanBaku()->where('is_active', true)->pluck('id', 'code');
 
         $validRows = [];
         $errorRows = [];

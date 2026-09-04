@@ -40,7 +40,7 @@ class VariantRecipe extends Model
 
     public function ingredient(): BelongsTo
     {
-        return $this->belongsTo(Ingredient::class)->withTrashed();
+        return $this->belongsTo(Material::class, 'ingredient_id')->withTrashed();
     }
 
     // ─── Scopes ───────────────────────────────────────────────────────────────

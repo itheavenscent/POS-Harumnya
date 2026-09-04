@@ -70,17 +70,11 @@ class RolePermissionSeeder extends Seeder
             'recipes-delete',
             'recipes-import',
 
-            // ── Ingredients (Bahan Baku) ──────────────────────────────────────
-            'ingredients-access',
-            'ingredients-create',
-            'ingredients-edit',
-            'ingredients-delete',
-
-            // ── Packaging (Kemasan) ──────────────────────────────────────────
-            'packaging-access',
-            'packaging-create',
-            'packaging-edit',
-            'packaging-delete',
+            // ── Materials (Bahan Baku + Kemasan) ────────────────────────────────
+            'materials-access',
+            'materials-create',
+            'materials-edit',
+            'materials-delete',
 
             // ── Suppliers ────────────────────────────────────────────────────
             'suppliers-access',
@@ -239,8 +233,7 @@ class RolePermissionSeeder extends Seeder
 
         // Bahan baku & produk (penuh)
         $bahanProduk = [
-            'ingredients-access', 'ingredients-create', 'ingredients-edit', 'ingredients-delete',
-            'packaging-access', 'packaging-create', 'packaging-edit', 'packaging-delete',
+            'materials-access', 'materials-create', 'materials-edit', 'materials-delete',
             'products-access', 'products-create', 'products-edit', 'products-delete', 'products-recalculate',
         ];
 
@@ -379,7 +372,7 @@ class RolePermissionSeeder extends Seeder
             // Laporan penjualan
             $reportsSales,
             // Katalog (read only)
-            ['products-access', 'variants-access', 'intensities-access', 'sizes-access', 'packaging-access'],
+            ['products-access', 'variants-access', 'intensities-access', 'sizes-access', 'materials-access'],
             // Pelanggan
             ['customers-access', 'customers-create'],
             // Diskon + Hadiah/Reward (lihat)

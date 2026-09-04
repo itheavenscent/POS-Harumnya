@@ -50,7 +50,7 @@ class WarehousePackagingStock extends Model
 
     public function packagingMaterial()
     {
-        return $this->belongsTo(PackagingMaterial::class);
+        return $this->belongsTo(Material::class, 'packaging_material_id');
     }
 
     public function lastInUser()

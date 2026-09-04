@@ -8,8 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\StockTransfer;
 use App\Models\StockMovement;
-use App\Models\Ingredient;
-use App\Models\PackagingMaterial;
+use App\Models\Material;
 use App\Models\Warehouse;
 use App\Models\Store;
 use App\Models\WarehouseIngredientStock;
@@ -657,23 +656,16 @@ class StockTransferController extends Controller
 
     private function resolveItem(string $type, string $id): array
     {
-        if ($type === 'ingredient') {
-            $i = Ingredient::find($id);
-            return [$i?->name ?? '-', $i?->code ?? '-', $i?->unit ?? 'unit'];
-        }
-        $p = PackagingMaterial::with('size')->find($id);
-        return [$p?->name ?? '-', $p?->code ?? '-', $p?->size?->name ?? 'pcs'];
+        $m = Material::with('size')->find($id);
+        $defaultUnit = $type === 'ingredient' ? 'unit' : 'pcs';
+        return [$m?->name ?? '-', $m?->code ?? '-', $m?->unit ?? $m?->size?->name ?? $defaultUnit];
     }
 
     private function syncMasterAverageCost(string $itemType, string $itemId, float $fallbackCost): void
     {
         $globalWac = $this->computeGlobalWac($itemType, $itemId) ?? $fallbackCost;
 
-        match ($itemType) {
-            'ingredient'         => Ingredient::where('id', $itemId)->update(['average_cost' => $globalWac]),
-            'packaging_material' => PackagingMaterial::where('id', $itemId)->update(['average_cost' => $globalWac]),
-            default              => null,
-        };
+        Material::with('size')->find($itemId)?->update(['average_cost' => $globalWac]);
     }
 
     private function computeGlobalWac(string $itemType, string $itemId): ?float
@@ -709,8 +701,6 @@ class StockTransferController extends Controller
 
     private function resolveItemName(string $type, string $id): string
     {
-        return $type === 'ingredient'
-            ? (Ingredient::find($id)?->name        ?? '-')
-            : (PackagingMaterial::find($id)?->name ?? '-');
+        return Material::find($id)?->name ?? '-';
     }
 }

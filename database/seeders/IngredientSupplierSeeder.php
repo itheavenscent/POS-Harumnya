@@ -17,8 +17,8 @@ class IngredientSupplierSeeder extends Seeder
         DB::table('warehouse_ingredient_stocks')->delete();
         DB::table('product_recipes')->delete();
         DB::table('variant_recipes')->delete();
-        DB::table('ingredients')->delete();
-        DB::table('ingredient_categories')->delete();
+        DB::table('materials')->where('material_type', 'bahan_baku')->delete();
+        DB::table('material_categories')->where('material_type', 'bahan_baku')->delete();
         DB::table('suppliers')->delete();
 
         // ── INGREDIENT CATEGORIES ─────────────────────────────────────────────
@@ -30,8 +30,9 @@ class IngredientSupplierSeeder extends Seeder
         ];
 
         foreach ($categories as $cat) {
-            DB::table('ingredient_categories')->insert([
+            DB::table('material_categories')->insert([
                 'id' => $cat['id'],
+                'material_type' => 'bahan_baku',
                 'code' => $cat['code'],
                 'name' => $cat['name'],
                 'description' => 'Kategori untuk ' . $cat['name'],
@@ -211,9 +212,10 @@ class IngredientSupplierSeeder extends Seeder
         $oilCategoryIds = [$foWId, $foMId];
 
         foreach ($ingredients as [$catId, $code, $name, $unit, $avgCost]) {
-            DB::table('ingredients')->insert([
+            DB::table('materials')->insert([
                 'id' => Str::uuid(),
-                'ingredient_category_id' => $catId,
+                'material_category_id' => $catId,
+                'material_type' => 'bahan_baku',
                 'code' => $code,
                 'name' => $name,
                 'unit' => $unit,

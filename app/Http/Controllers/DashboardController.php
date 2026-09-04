@@ -117,7 +117,7 @@ class DashboardController extends Controller
         // ══════════════════════════════════════════════════════════════════
 
         $totalVariants    = DB::table('variants')->where('is_active', true)->count();
-        $totalIngredients = DB::table('ingredients')->where('is_active', true)->count();
+        $totalIngredients = DB::table('materials')->where('material_type', 'bahan_baku')->where('is_active', true)->count();
         $totalCustomers   = DB::table('customers')->where('is_active', true)->count();
         $totalStores      = DB::table('stores')->where('is_active', true)->count();
         $totalProducts    = DB::table('products')->where('is_active', true)->count();
@@ -538,21 +538,21 @@ class DashboardController extends Controller
         $topPackaging = DB::table('sale_item_packagings')
             ->join('sale_items', 'sale_item_packagings.sale_item_id', '=', 'sale_items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->leftJoin('packaging_materials', 'sale_item_packagings.packaging_material_id', '=', 'packaging_materials.id')
+            ->leftJoin('materials', 'sale_item_packagings.packaging_material_id', '=', 'materials.id')
             ->when($storeId, fn ($q) => $q->where('sales.store_id', $storeId))
             ->where('sales.status', 'completed')
             ->whereBetween('sales.sold_at', [$startDate, $endDate])
             ->selectRaw("
-                COALESCE(sale_item_packagings.packaging_name, packaging_materials.name, 'Tidak Diketahui') AS name,
-                COALESCE(sale_item_packagings.packaging_code, packaging_materials.code, '-')               AS code,
+                COALESCE(sale_item_packagings.packaging_name, materials.name, 'Tidak Diketahui') AS name,
+                COALESCE(sale_item_packagings.packaging_code, materials.code, '-')               AS code,
                 SUM(sale_item_packagings.qty)                                                              AS total_qty,
                 COALESCE(SUM(sale_item_packagings.subtotal), 0)                                            AS total_revenue
             ")
             ->groupBy(
                 'sale_item_packagings.packaging_name',
                 'sale_item_packagings.packaging_code',
-                'packaging_materials.name',
-                'packaging_materials.code'
+                'materials.name',
+                'materials.code'
             )
             ->orderByDesc('total_qty')
             ->limit(5)
@@ -568,8 +568,8 @@ class DashboardController extends Controller
         $lowStockIngredients = [];
         if ($storeId) {
             $lowStockIngredients = DB::table('store_ingredient_stocks as sis')
-                ->join('ingredients as ing',          'sis.ingredient_id',          '=', 'ing.id')
-                ->join('ingredient_categories as ic', 'ing.ingredient_category_id', '=', 'ic.id')
+                ->join('materials as ing',            'sis.ingredient_id',        '=', 'ing.id')
+                ->join('material_categories as ic',   'ing.material_category_id', '=', 'ic.id')
                 ->where('sis.store_id', $storeId)
                 ->whereNotNull('sis.min_stock')
                 ->whereRaw('sis.quantity <= sis.min_stock')
@@ -601,7 +601,7 @@ class DashboardController extends Controller
         $lowStockWarehouse = [];
         if ($canFilterStore) {
             $lowStockWarehouse = DB::table('warehouse_ingredient_stocks as wis')
-                ->join('ingredients as ing', 'wis.ingredient_id', '=', 'ing.id')
+                ->join('materials as ing',   'wis.ingredient_id', '=', 'ing.id')
                 ->join('warehouses as wh',   'wis.warehouse_id',  '=', 'wh.id')
                 ->whereNotNull('wis.min_stock')
                 ->whereRaw('wis.quantity <= wis.min_stock')

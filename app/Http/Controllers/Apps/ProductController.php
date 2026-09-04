@@ -98,7 +98,7 @@ class ProductController extends Controller
             'variant:id,code,name,gender,description',
             'intensity:id,code,name,oil_ratio,alcohol_ratio',
             'size:id,name,volume_ml',
-            'recipes.ingredient:id,code,name,unit,average_cost,ingredient_category_id',
+            'recipes.ingredient:id,code,name,unit,average_cost,material_category_id',
             'recipes.ingredient.category:id,name,ingredient_type',
         ]);
 

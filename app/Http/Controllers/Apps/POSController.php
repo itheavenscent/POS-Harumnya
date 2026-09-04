@@ -15,7 +15,7 @@ use App\Models\DiscountType;
 use App\Models\DiscountUsage;
 use App\Models\Intensity;
 use App\Models\IntensitySizePrice;
-use App\Models\PackagingMaterial;
+use App\Models\Material;
 use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Models\RewardItem;
@@ -87,7 +87,8 @@ class POSController extends Controller
             ->orderBy('name')
             ->get();
 
-        $packagingMaterials = PackagingMaterial::select('id', 'name', 'code', 'image', 'selling_price')
+        $packagingMaterials = Material::select('id', 'name', 'code', 'image', 'selling_price')
+            ->where('material_type', 'bahan_kemasan')
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get();
@@ -192,7 +193,7 @@ class POSController extends Controller
             'intensity_id' => 'required|uuid|exists:intensities,id',
             'size_id' => 'required|uuid|exists:sizes,id',
             'packaging_ids' => 'nullable|array',
-            'packaging_ids.*' => 'uuid|exists:packaging_materials,id',
+            'packaging_ids.*' => 'uuid|exists:materials,id,material_type,bahan_kemasan',
         ]);
 
         $product = Product::where('variant_id', $request->variant_id)
@@ -217,7 +218,7 @@ class POSController extends Controller
         $packagingDetails = [];
 
         if ($request->filled('packaging_ids')) {
-            PackagingMaterial::whereIn('id', $request->packaging_ids)
+            Material::whereIn('id', $request->packaging_ids)
                 ->where('is_active', true)
                 ->get(['id', 'name', 'selling_price'])
                 ->each(function ($pkg) use (&$packagingTotal, &$packagingDetails) {
@@ -282,7 +283,7 @@ class POSController extends Controller
             ]);
 
             if ($request->filled('packaging_ids')) {
-                $pkgs = PackagingMaterial::whereIn('id', $request->packaging_ids)
+                $pkgs = Material::whereIn('id', $request->packaging_ids)
                     ->where('is_active', true)
                     ->get();
 
@@ -339,7 +340,7 @@ class POSController extends Controller
     public function addPackaging(Request $request, string $cartId): RedirectResponse
     {
         $request->validate([
-            'packaging_material_id' => 'required|uuid|exists:packaging_materials,id',
+            'packaging_material_id' => 'required|uuid|exists:materials,id,material_type,bahan_kemasan',
             'qty' => 'integer|min:1|max:20',
         ]);
 
@@ -348,7 +349,7 @@ class POSController extends Controller
             ->whereNull('hold_id')
             ->firstOrFail();
 
-        $pkg = PackagingMaterial::findOrFail($request->packaging_material_id);
+        $pkg = Material::findOrFail($request->packaging_material_id);
 
         // uq_cart_packaging: unique per (cart_id, packaging_material_id)
         $existing = CartPackaging::where('cart_id', $cart->id)
@@ -489,7 +490,7 @@ class POSController extends Controller
         $standalonePkgs = [];
         if ($request->filled('standalone_packagings')) {
             foreach ($request->standalone_packagings as $sp) {
-                $pkg = PackagingMaterial::with('components.component')->find($sp['packaging_material_id'] ?? null);
+                $pkg = Material::with('components.component')->find($sp['packaging_material_id'] ?? null);
                 if ($pkg) {
                     $standalonePkgs[] = ['pkg' => $pkg, 'qty' => (int) ($sp['qty'] ?? 1)];
                 }

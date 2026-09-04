@@ -34,18 +34,14 @@ class StockAdjustmentItem extends Model
 
     public function getItemNameAttribute(): string
     {
-        if ($this->item_type === 'ingredient') {
-            return \App\Models\Ingredient::find($this->item_id)?->name ?? '-';
-        }
-        return \App\Models\PackagingMaterial::find($this->item_id)?->name ?? '-';
+        return Material::find($this->item_id)?->name ?? '-';
     }
 
     public function getItemUnitAttribute(): string
     {
-        if ($this->item_type === 'ingredient') {
-            return \App\Models\Ingredient::find($this->item_id)?->unit ?? 'unit';
-        }
-        return \App\Models\PackagingMaterial::with('size')->find($this->item_id)?->size?->name ?? 'pcs';
+        $m = Material::with('size')->find($this->item_id);
+        $defaultUnit = $this->item_type === 'ingredient' ? 'unit' : 'pcs';
+        return $m?->unit ?? $m?->size?->name ?? $defaultUnit;
     }
 
     public function getDirectionAttribute(): string

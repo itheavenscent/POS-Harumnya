@@ -9,7 +9,7 @@ import toast from "react-hot-toast";
 
 const fmt = (v = 0) => Number(v || 0).toLocaleString("id-ID");
 
-export default function Components({ packaging, components, candidates }) {
+export default function Components({ material, components, candidates }) {
     const { data, setData, put, processing } = useForm({
         components: components.map(c => ({
             component_packaging_id: c.component_packaging_id,
@@ -59,7 +59,7 @@ export default function Components({ packaging, components, candidates }) {
 
     const submit = (e) => {
         e.preventDefault();
-        put(route("packaging.components.sync", packaging.id), {
+        put(route("materials.components.sync", material.id), {
             onSuccess: () => toast.success("Komponen rakitan disimpan"),
             onError:   () => toast.error("Gagal menyimpan komponen"),
         });
@@ -67,10 +67,10 @@ export default function Components({ packaging, components, candidates }) {
 
     return (
         <>
-            <Head title={`Komponen ${packaging.name}`} />
+            <Head title={`Komponen ${material.name}`} />
             <div className="max-w-4xl mx-auto px-4 py-6">
                 <Link
-                    href={route("packaging.edit", packaging.id)}
+                    href={route("materials.edit", material.id)}
                     className="flex items-center gap-2 text-sm text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 mb-5 font-medium transition-colors"
                 >
                     <IconArrowLeft size={16} /> Kembali ke Edit Kemasan
@@ -83,7 +83,7 @@ export default function Components({ packaging, components, candidates }) {
                     <div>
                         <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Komponen Rakitan</h1>
                         <p className="text-sm text-slate-500 mt-0.5">
-                            <span className="font-mono text-slate-400">{packaging.code}</span> · {packaging.name}
+                            <span className="font-mono text-slate-400">{material.code}</span> · {material.name}
                         </p>
                     </div>
                 </div>
@@ -188,7 +188,7 @@ export default function Components({ packaging, components, candidates }) {
                             {processing ? "Menyimpan…" : "Simpan Komponen"}
                         </button>
                         <Link
-                            href={route("packaging.index")}
+                            href={route("materials.index", { material_type: "bahan_kemasan" })}
                             className="px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-2xl flex items-center justify-center text-sm transition-colors"
                         >
                             Batal

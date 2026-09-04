@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Apps;
 
 use App\Models\Variant;
 use App\Models\Intensity;
-use App\Models\Ingredient;
+use App\Models\Material;
 use App\Models\VariantRecipe;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -28,7 +28,7 @@ class RecipeImportController extends Controller
         // Ambil data referensi
         $variants    = Variant::where('is_active', true)->orderBy('code')->get(['code', 'name', 'gender']);
         $intensities = Intensity::where('is_active', true)->orderBy('code')->get(['code', 'name', 'oil_ratio', 'alcohol_ratio']);
-        $ingredients = Ingredient::where('is_active', true)->orderBy('code')->get(['code', 'name', 'unit']);
+        $ingredients = Material::bahanBaku()->where('is_active', true)->orderBy('code')->get(['code', 'name', 'unit']);
 
         $templatePath = storage_path('app/templates/template_import_variant_recipe.xlsx');
 
@@ -330,7 +330,7 @@ class RecipeImportController extends Controller
         // Cache semua kode yang valid
         $variants    = Variant::where('is_active', true)->pluck('id', 'code');
         $intensities = Intensity::where('is_active', true)->pluck('id', 'code');
-        $ingredients = Ingredient::where('is_active', true)->pluck('id', 'code');
+        $ingredients = Material::bahanBaku()->where('is_active', true)->pluck('id', 'code');
 
         $validRows  = [];
         $errorRows  = [];

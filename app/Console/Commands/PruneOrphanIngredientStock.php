@@ -32,7 +32,7 @@ class PruneOrphanIngredientStock extends Command
 
         foreach ($tables as $table => $label) {
             $rows = DB::table("{$table} as s")
-                ->leftJoin('ingredients as i', 'i.id', '=', 's.ingredient_id')
+                ->leftJoin('materials as i', 'i.id', '=', 's.ingredient_id')
                 ->whereNotIn('s.ingredient_id', $used)
                 ->where('s.quantity', 0)
                 ->select('s.id', 's.ingredient_id', 'i.name', 'i.code')

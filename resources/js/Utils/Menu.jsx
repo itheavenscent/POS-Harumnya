@@ -100,10 +100,10 @@ export default function Menu() {
             details: [
                 {
                     title: "Bahan Baku",
-                    href: route("ingredients.index"),
-                    active: url.startsWith("/dashboard/ingredients"),
+                    href: route("materials.index", { material_type: "bahan_baku" }),
+                    active: url.startsWith("/dashboard/materials") && url.includes("material_type=bahan_baku"),
                     icon: <IconFlask size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["ingredients-access"]),
+                    permissions: hasAnyPermission(["materials-access"]),
                 },
                 {
                     title: "Formula & Resep",
@@ -114,17 +114,17 @@ export default function Menu() {
                 },
                 {
                     title: "Kemasan",
-                    href: route("packaging.index"),
-                    active: url.startsWith("/dashboard/packaging") && !url.includes("is_assembly=1"),
+                    href: route("materials.index", { material_type: "bahan_kemasan" }),
+                    active: url.startsWith("/dashboard/materials") && url.includes("material_type=bahan_kemasan") && !url.includes("is_assembly=1"),
                     icon: <IconPackage size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["packaging-access"]),
+                    permissions: hasAnyPermission(["materials-access"]),
                 },
                 {
                     title: "Rakitan Kemasan (BOM)",
-                    href: route("packaging.index", { is_assembly: 1 }),
-                    active: url.startsWith("/dashboard/packaging") && url.includes("is_assembly=1"),
+                    href: route("materials.index", { material_type: "bahan_kemasan", is_assembly: 1 }),
+                    active: url.startsWith("/dashboard/materials") && url.includes("is_assembly=1"),
                     icon: <IconBoxPadding size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["packaging-access"]),
+                    permissions: hasAnyPermission(["materials-access"]),
                 },
             ],
         },

@@ -10,10 +10,9 @@ use App\Models\Customer;
 use App\Models\CustomerPointLedger;
 use App\Models\DiscountType;
 use App\Models\DiscountUsage;
-use App\Models\Ingredient;
 use App\Models\Intensity;
 use App\Models\IntensitySizePrice;
-use App\Models\PackagingMaterial;
+use App\Models\Material;
 use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Models\Sale;
@@ -91,7 +90,7 @@ class TransactionController extends Controller
             ->orderBy('name')
             ->get();
 
-        $packagingMaterials = PackagingMaterial::select(
+        $packagingMaterials = Material::select(
             'id',
             'name',
             'code',
@@ -102,6 +101,7 @@ class TransactionController extends Controller
             'average_cost',
             'sort_order'
         )
+            ->where('material_type', 'bahan_kemasan')
             ->where('is_active', true)
             ->where('is_available_as_addon', true)
             ->orderBy('sort_order')
@@ -269,7 +269,7 @@ class TransactionController extends Controller
             'custom_unit_price' => 'required|numeric|min:0',
             'qty' => 'required|integer|min:1|max:99',
             'packaging_ids' => 'nullable|array',
-            'packaging_ids.*' => 'uuid|exists:packaging_materials,id',
+            'packaging_ids.*' => 'uuid|exists:materials,id,material_type,bahan_kemasan',
             'notes' => 'nullable|string|max:500',
         ]);
 
@@ -336,7 +336,7 @@ class TransactionController extends Controller
             ]);
 
             if ($request->filled('packaging_ids')) {
-                PackagingMaterial::whereIn('id', $request->packaging_ids)
+                Material::whereIn('id', $request->packaging_ids)
                     ->where('is_active', true)
                     ->get()
                     ->each(function ($pkg) use ($cart) {
@@ -917,7 +917,7 @@ class TransactionController extends Controller
             'variant_id' => 'required|uuid|exists:variants,id',
             'size_id' => 'required|uuid|exists:sizes,id',
             'packaging_ids' => 'nullable|array',
-            'packaging_ids.*' => 'uuid|exists:packaging_materials,id',
+            'packaging_ids.*' => 'uuid|exists:materials,id,material_type,bahan_kemasan',
         ]);
 
         $perfumePrice = IntensitySizePrice::where('intensity_id', $request->intensity_id)
@@ -946,7 +946,7 @@ class TransactionController extends Controller
         $packagingDetails = [];
 
         if ($request->filled('packaging_ids')) {
-            PackagingMaterial::whereIn('id', $request->packaging_ids)
+            Material::whereIn('id', $request->packaging_ids)
                 ->where('is_active', true)
                 ->get(['id', 'name', 'selling_price', 'is_free', 'free_condition_note', 'average_cost'])
                 ->each(function ($pkg) use (&$packagingTotal, &$packagingDetails) {
@@ -987,7 +987,7 @@ class TransactionController extends Controller
             'size_id' => 'required|uuid|exists:sizes,id',
             'qty' => 'required|integer|min:1|max:99',
             'packaging_ids' => 'nullable|array',
-            'packaging_ids.*' => 'uuid|exists:packaging_materials,id',
+            'packaging_ids.*' => 'uuid|exists:materials,id,material_type,bahan_kemasan',
         ]);
 
         $user = Auth::user();
@@ -1031,7 +1031,7 @@ class TransactionController extends Controller
             ]);
 
             if ($request->filled('packaging_ids')) {
-                PackagingMaterial::whereIn('id', $request->packaging_ids)
+                Material::whereIn('id', $request->packaging_ids)
                     ->where('is_active', true)
                     ->get()
                     ->each(function ($pkg) use ($cart, $isFree) {
@@ -1147,7 +1147,7 @@ class TransactionController extends Controller
             'discount_amount' => 'nullable|numeric|min:0',
             'cash_amount' => 'nullable|numeric|min:0',
             'standalone_packagings' => 'nullable|array',
-            'standalone_packagings.*.packaging_material_id' => 'required|uuid|exists:packaging_materials,id',
+            'standalone_packagings.*.packaging_material_id' => 'required|uuid|exists:materials,id,material_type,bahan_kemasan',
             'standalone_packagings.*.qty' => 'required|integer|min:1|max:99',
         ]);
 
@@ -1199,7 +1199,7 @@ class TransactionController extends Controller
 
         $standalonePkgs = [];
         foreach ((array) $request->standalone_packagings as $sp) {
-            $pkg = PackagingMaterial::with('components.component')->find($sp['packaging_material_id'] ?? null);
+            $pkg = Material::with('components.component')->find($sp['packaging_material_id'] ?? null);
             if ($pkg) {
                 $standalonePkgs[] = ['pkg' => $pkg, 'qty' => (int) ($sp['qty'] ?? 1)];
             }
@@ -1814,7 +1814,7 @@ class TransactionController extends Controller
             'reward_item_id'   => 'nullable|uuid|exists:reward_items,id',
             'points_amount'    => 'nullable|integer|min:1',
             'reward_label'     => 'nullable|string|max:200',
-            'packaging_material_id' => 'nullable|uuid|exists:packaging_materials,id',
+            'packaging_material_id' => 'nullable|uuid|exists:materials,id,material_type,bahan_kemasan',
             'qty'              => 'nullable|integer|min:1|max:99',
             // Botol standalone (Kemasan Satuan) — ikut dihitung untuk syarat botol promo.
             'standalone_packagings' => 'nullable|string',
@@ -1916,7 +1916,7 @@ class TransactionController extends Controller
         $freeBottleId = $request->packaging_material_id;
 
         if (!$freeBottleId && $request->variant_id && $request->size_id) {
-            $freeBottleId = PackagingMaterial::where('size_id', $request->size_id)
+            $freeBottleId = Material::where('size_id', $request->size_id)
                 ->where('is_active', true)
                 ->whereHas('category', fn ($q) => $q->where('name', 'Botol'))
                 ->orderBy('sort_order')
@@ -1974,8 +1974,8 @@ class TransactionController extends Controller
     {
         // Prioritas 1: spesifik variant
         if ($variantId) {
-            $ingredient = DB::table('ingredients as i')
-                ->join('ingredient_categories as ic', 'ic.id', '=', 'i.ingredient_category_id')
+            $ingredient = DB::table('materials as i')
+                ->join('material_categories as ic', 'ic.id', '=', 'i.material_category_id')
                 ->join('variant_recipes as vr', 'vr.ingredient_id', '=', 'i.id')
                 ->where('vr.variant_id', $variantId)
                 ->where('ic.ingredient_type', 'oil')
@@ -1992,8 +1992,8 @@ class TransactionController extends Controller
         }
 
         // Prioritas 2: fallback global — ingredient oil apapun yang punya selling_price
-        return DB::table('ingredients as i')
-            ->join('ingredient_categories as ic', 'ic.id', '=', 'i.ingredient_category_id')
+        return DB::table('materials as i')
+            ->join('material_categories as ic', 'ic.id', '=', 'i.material_category_id')
             ->where('ic.ingredient_type', 'oil')
             ->where('i.is_active', true)
             ->whereNotNull('i.selling_price')
@@ -2043,8 +2043,8 @@ class TransactionController extends Controller
             return 0;
 
         return (float) DB::table('store_ingredient_stocks as sis')
-            ->join('ingredients as i', 'i.id', '=', 'sis.ingredient_id')
-            ->join('ingredient_categories as ic', 'ic.id', '=', 'i.ingredient_category_id')
+            ->join('materials as i', 'i.id', '=', 'sis.ingredient_id')
+            ->join('material_categories as ic', 'ic.id', '=', 'i.material_category_id')
             ->where('sis.store_id', $storeId)
             ->where('ic.ingredient_type', 'alcohol')
             ->where('i.is_active', true)
@@ -2064,8 +2064,8 @@ class TransactionController extends Controller
         if ($variantId) {
             $wac = (float) DB::table('store_ingredient_stocks as sis')
                 ->join('variant_recipes as vr', 'vr.ingredient_id', '=', 'sis.ingredient_id')
-                ->join('ingredients as i', 'i.id', '=', 'sis.ingredient_id')
-                ->join('ingredient_categories as ic', 'ic.id', '=', 'i.ingredient_category_id')
+                ->join('materials as i', 'i.id', '=', 'sis.ingredient_id')
+                ->join('material_categories as ic', 'ic.id', '=', 'i.material_category_id')
                 ->where('sis.store_id', $storeId)
                 ->where('vr.variant_id', $variantId)
                 ->where('ic.ingredient_type', 'oil')
@@ -2077,8 +2077,8 @@ class TransactionController extends Controller
         }
 
         return (float) DB::table('store_ingredient_stocks as sis')
-            ->join('ingredients as i', 'i.id', '=', 'sis.ingredient_id')
-            ->join('ingredient_categories as ic', 'ic.id', '=', 'i.ingredient_category_id')
+            ->join('materials as i', 'i.id', '=', 'sis.ingredient_id')
+            ->join('material_categories as ic', 'ic.id', '=', 'i.material_category_id')
             ->where('sis.store_id', $storeId)
             ->where('ic.ingredient_type', 'oil')
             ->where('i.is_active', true)
@@ -2292,7 +2292,7 @@ class TransactionController extends Controller
             return [];
         }
 
-        return PackagingMaterial::whereIn('id', $pkgIds)
+        return Material::whereIn('id', $pkgIds)
             ->pluck('size_id', 'id')
             ->toArray();
     }

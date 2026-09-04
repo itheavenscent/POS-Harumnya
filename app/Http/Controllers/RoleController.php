@@ -116,8 +116,7 @@ class RoleController extends Controller
                 if (str_contains($name, 'sizes')) return 'Ukuran';
                 if (str_contains($name, 'categories')) return 'Kategori';
                 if (str_contains($name, 'recipes')) return 'Resep';
-                if (str_contains($name, 'ingredients')) return 'Bahan Baku';
-                if (str_contains($name, 'packaging')) return 'Kemasan';
+                if (str_contains($name, 'materials')) return 'Bahan Baku & Kemasan';
                 if (str_contains($name, 'suppliers')) return 'Supplier';
                 if (str_contains($name, 'warehouses')) return 'Gudang';
                 if (str_contains($name, 'stores')) return 'Toko';

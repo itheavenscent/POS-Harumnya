@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Apps;
 
 use App\Http\Controllers\Controller;
 use App\Models\DiscountType;
-use App\Models\PackagingMaterial;
+use App\Models\Material;
 use App\Models\RewardItem;
 use App\Models\Store;
 use App\Models\Variant;
@@ -13,6 +13,7 @@ use App\Models\Size;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class DiscountController extends Controller
@@ -252,14 +253,14 @@ class DiscountController extends Controller
             'applicabilities.*.variant_id'   => ['nullable', 'uuid', 'exists:variants,id'],
             'applicabilities.*.intensity_id' => ['nullable', 'uuid', 'exists:intensities,id'],
             'applicabilities.*.size_id'      => ['nullable', 'uuid', 'exists:sizes,id'],
-            'applicabilities.*.packaging_material_id' => ['nullable', 'uuid', 'exists:packaging_materials,id'],
+            'applicabilities.*.packaging_material_id' => ['nullable', 'uuid', Rule::exists('materials', 'id')->where('material_type', 'bahan_kemasan')],
 
             // ── Requirements ──────────────────────────────────────────────────
             'requirements'                       => ['nullable', 'array'],
             'requirements.*.variant_id'          => ['nullable', 'uuid', 'exists:variants,id'],
             'requirements.*.intensity_id'        => ['nullable', 'uuid', 'exists:intensities,id'],
             'requirements.*.size_id'             => ['nullable', 'uuid', 'exists:sizes,id'],
-            'requirements.*.packaging_material_id' => ['nullable', 'uuid', 'exists:packaging_materials,id'],
+            'requirements.*.packaging_material_id' => ['nullable', 'uuid', Rule::exists('materials', 'id')->where('material_type', 'bahan_kemasan')],
             'requirements.*.required_quantity'   => ['required_with:requirements.*', 'integer', 'min:1'],
             'requirements.*.matching_mode'       => ['nullable', 'in:all,any'],
             'requirements.*.group_key'           => ['nullable', 'string', 'max:50'],
@@ -270,7 +271,7 @@ class DiscountController extends Controller
             'rewards.*.variant_id'               => ['nullable', 'uuid', 'exists:variants,id'],
             'rewards.*.intensity_id'             => ['nullable', 'uuid', 'exists:intensities,id'],
             'rewards.*.size_id'                  => ['nullable', 'uuid', 'exists:sizes,id'],
-            'rewards.*.packaging_material_id'    => ['nullable', 'uuid', 'exists:packaging_materials,id'],
+            'rewards.*.packaging_material_id'    => ['nullable', 'uuid', Rule::exists('materials', 'id')->where('material_type', 'bahan_kemasan')],
             'rewards.*.reward_item_id'           => ['nullable', 'uuid', 'exists:reward_items,id'],
             'rewards.*.points_amount'            => ['nullable', 'integer', 'min:1'],
             'rewards.*.reward_quantity'          => ['required_with:rewards.*', 'integer', 'min:1'],
@@ -289,7 +290,7 @@ class DiscountController extends Controller
             'rewards.*.pools.*.variant_id'       => ['nullable', 'uuid', 'exists:variants,id'],
             'rewards.*.pools.*.intensity_id'     => ['nullable', 'uuid', 'exists:intensities,id'],
             'rewards.*.pools.*.size_id'          => ['nullable', 'uuid', 'exists:sizes,id'],
-            'rewards.*.pools.*.packaging_material_id' => ['nullable', 'uuid', 'exists:packaging_materials,id'],
+            'rewards.*.pools.*.packaging_material_id' => ['nullable', 'uuid', Rule::exists('materials', 'id')->where('material_type', 'bahan_kemasan')],
             'rewards.*.pools.*.reward_item_id'   => ['nullable', 'uuid', 'exists:reward_items,id'],
             'rewards.*.pools.*.points_amount'    => ['nullable', 'integer', 'min:1'],
             'rewards.*.pools.*.image_url'        => ['nullable', 'string', 'max:500'],
@@ -332,8 +333,9 @@ class DiscountController extends Controller
                                 ->where('is_active', true)
                                 ->orderBy('sort_order')
                                 ->get(),
-            'packagings'  => PackagingMaterial::select('id', 'name', 'code', 'size_id', 'packaging_category_id')
-                                ->where('is_active', true)
+            'packagings'  => Material::bahanKemasan()
+                                ->select('id', 'name', 'code', 'size_id', 'material_category_id')
+                                ->active()
                                 ->with('category:id,name')
                                 ->orderBy('sort_order')
                                 ->orderBy('name')

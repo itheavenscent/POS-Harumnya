@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class IngredientCategory extends Model
+class MaterialCategory extends Model
 {
     use HasFactory, HasUuids;
 
     protected $fillable = [
+        'material_type',
         'code',
         'name',
         'description',
@@ -26,9 +27,9 @@ class IngredientCategory extends Model
 
     // ─── Relationships ────────────────────────────────────────────────────
 
-    public function ingredients()
+    public function materials()
     {
-        return $this->hasMany(Ingredient::class);
+        return $this->hasMany(Material::class);
     }
 
     // ─── Scopes ───────────────────────────────────────────────────────────
@@ -36,5 +37,15 @@ class IngredientCategory extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    public function scopeBahanBaku($query)
+    {
+        return $query->where('material_type', 'bahan_baku');
+    }
+
+    public function scopeBahanKemasan($query)
+    {
+        return $query->where('material_type', 'bahan_kemasan');
     }
 }

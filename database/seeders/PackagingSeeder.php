@@ -29,8 +29,8 @@ class PackagingSeeder extends Seeder
         // Clear existing packaging data for clean, idempotent re-seeding
         DB::table('store_packaging_stocks')->delete();
         DB::table('warehouse_packaging_stocks')->delete();
-        DB::table('packaging_materials')->delete();
-        DB::table('packaging_categories')->delete();
+        DB::table('materials')->where('material_type', 'bahan_kemasan')->delete();
+        DB::table('material_categories')->where('material_type', 'bahan_kemasan')->delete();
 
         // ── CATEGORIES ────────────────────────────────────────────────────────
         $categories = [
@@ -39,15 +39,16 @@ class PackagingSeeder extends Seeder
         ];
 
         foreach ($categories as $cat) {
-            DB::table('packaging_categories')->insert([
-                'id'          => $cat['id'],
-                'code'        => $cat['code'],
-                'name'        => $cat['name'],
-                'description' => 'Kategori packaging ' . $cat['name'],
-                'is_active'   => true,
-                'sort_order'  => $cat['sort_order'],
-                'created_at'  => $now,
-                'updated_at'  => $now,
+            DB::table('material_categories')->insert([
+                'id'            => $cat['id'],
+                'material_type' => 'bahan_kemasan',
+                'code'          => $cat['code'],
+                'name'          => $cat['name'],
+                'description'   => 'Kategori packaging ' . $cat['name'],
+                'is_active'     => true,
+                'sort_order'    => $cat['sort_order'],
+                'created_at'    => $now,
+                'updated_at'    => $now,
             ]);
         }
 
@@ -77,9 +78,10 @@ class PackagingSeeder extends Seeder
         ];
 
         foreach ($materials as $item) {
-            DB::table('packaging_materials')->insert([
+            DB::table('materials')->insert([
                 'id'                    => Str::uuid(),
-                'packaging_category_id' => $item['cat'],
+                'material_category_id'  => $item['cat'],
+                'material_type'         => 'bahan_kemasan',
                 'unit'                  => 'pcs',
                 'code'                  => $item['code'],
                 'name'                  => $item['name'],

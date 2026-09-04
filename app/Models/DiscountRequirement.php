@@ -55,6 +55,6 @@ class DiscountRequirement extends Model
 
     public function packagingMaterial(): BelongsTo
     {
-        return $this->belongsTo(PackagingMaterial::class, 'packaging_material_id');
+        return $this->belongsTo(Material::class, 'packaging_material_id');
     }
 }

@@ -2,8 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Ingredient;
-use App\Models\PackagingMaterial;
+use App\Models\Material;
 use App\Models\StockMovement;
 use App\Models\WarehouseIngredientStock;
 use App\Models\WarehousePackagingStock;
@@ -145,12 +144,12 @@ class StockMovementService
             $rows = WarehouseIngredientStock::where('ingredient_id', $itemId)
                 ->get(['quantity', 'average_cost'])
                 ->concat(StoreIngredientStock::where('ingredient_id', $itemId)->get(['quantity', 'average_cost']));
-            $master = Ingredient::find($itemId);
+            $master = Material::find($itemId);
         } elseif ($itemType === 'App\\Models\\PackagingMaterial') {
             $rows = WarehousePackagingStock::where('packaging_material_id', $itemId)
                 ->get(['quantity', 'average_cost'])
                 ->concat(StorePackagingStock::where('packaging_material_id', $itemId)->get(['quantity', 'average_cost']));
-            $master = PackagingMaterial::find($itemId);
+            $master = Material::find($itemId);
         } else {
             return;
         }

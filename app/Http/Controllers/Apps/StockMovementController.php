@@ -8,8 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\StockMovement;
 use App\Models\Warehouse;
 use App\Models\Store;
-use App\Models\Ingredient;
-use App\Models\PackagingMaterial;
+use App\Models\Material;
 
 /**
  * StockMovementController — PRODUCTION READY
@@ -120,15 +119,19 @@ class StockMovementController extends Controller
                       ->orWhere(function($sub) use ($term) {
                           $sub->where('item_type', 'ingredient')
                               ->whereIn('item_id', function($query) use ($term) {
-                                  $query->select('id')->from('ingredients')->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"]);
+                                  $query->select('id')->from('materials')
+                                      ->where('material_type', 'bahan_baku')
+                                      ->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"]);
                               });
                       })
-                      
+
                       // Search in Packaging Materials
                       ->orWhere(function($sub) use ($term) {
                           $sub->where('item_type', 'packaging')
                               ->whereIn('item_id', function($query) use ($term) {
-                                  $query->select('id')->from('packaging_materials')->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"]);
+                                  $query->select('id')->from('materials')
+                                      ->where('material_type', 'bahan_kemasan')
+                                      ->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"]);
                               });
                       })
                       
@@ -167,9 +170,7 @@ class StockMovementController extends Controller
 
     private function resolveItemName(string $type, string $id): string
     {
-        return $type === 'ingredient'
-            ? (Ingredient::find($id)?->name        ?? '-')
-            : (PackagingMaterial::find($id)?->name ?? '-');
+        return Material::find($id)?->name ?? '-';
     }
 
     /**

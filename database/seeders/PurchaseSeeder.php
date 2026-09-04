@@ -31,8 +31,8 @@ class PurchaseSeeder extends Seeder
             return;
         }
 
-        $ingredients = DB::table('ingredients')->get()->keyBy('code');
-        $packagings  = DB::table('packaging_materials')->get()->keyBy('code');
+        $ingredients = DB::table('materials')->where('material_type', 'bahan_baku')->get()->keyBy('code');
+        $packagings  = DB::table('materials')->where('material_type', 'bahan_kemasan')->get()->keyBy('code');
         $adminId     = $adminUser?->id;
 
         // ── PO 1: Bahan baku ke Gudang Pusat (Completed) ─────────────────────

@@ -55,10 +55,10 @@ class DiscountSeeder extends Seeder
 
         // Botol default per ukuran (dari PackagingSeeder) — ikut otomatis
         // ke keranjang saat reward parfum diklaim.
-        $botolRoll    = DB::table('packaging_materials')->where('code', 'ROLL')->value('id'); // 10 ml spray
-        $botolPrisma  = DB::table('packaging_materials')->where('code', 'PRI')->value('id');  // 30 ml
-        $botolOrion   = DB::table('packaging_materials')->where('code', 'OR')->value('id');   // 50 ml
-        $botolPersegi = DB::table('packaging_materials')->where('code', 'PER')->value('id');  // 100 ml
+        $botolRoll    = DB::table('materials')->where('code', 'ROLL')->value('id'); // 10 ml spray
+        $botolPrisma  = DB::table('materials')->where('code', 'PRI')->value('id');  // 30 ml
+        $botolOrion   = DB::table('materials')->where('code', 'OR')->value('id');   // 50 ml
+        $botolPersegi = DB::table('materials')->where('code', 'PER')->value('id');  // 100 ml
 
         // Ensure 10 mL size exists
         if (!$size10) {

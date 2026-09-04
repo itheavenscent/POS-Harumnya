@@ -9,11 +9,12 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use App\Http\Controllers\Controller;
 use App\Models\RepackTransaction;
 use App\Models\StockMovement;
-use App\Models\Ingredient;
+use App\Models\Material;
 use App\Models\Warehouse;
 use App\Models\Store;
 use App\Models\WarehouseIngredientStock;
 use App\Models\StoreIngredientStock;
+use Illuminate\Validation\Rule;
 
 class RepackController extends Controller
 {
@@ -70,10 +71,11 @@ class RepackController extends Controller
         return Inertia::render('Dashboard/Repacks/Create', [
             'warehouses'  => Warehouse::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
             'stores'      => Store::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
-            'ingredients' => Ingredient::where('is_active', true)
+            'ingredients' => Material::bahanBaku()
+                ->where('is_active', true)
                 ->with('category:id,name')
                 ->orderBy('name')
-                ->get(['id', 'name', 'code', 'unit', 'ingredient_category_id']),
+                ->get(['id', 'name', 'code', 'unit', 'material_category_id']),
         ]);
     }
 
@@ -86,12 +88,18 @@ class RepackController extends Controller
         $validated = $request->validate([
             'location_type'         => 'required|in:warehouse,store',
             'location_id'           => 'required|uuid',
-            'repack_ingredient_id'  => 'required|uuid|exists:ingredients,id',
+            'repack_ingredient_id'  => [
+                'required', 'uuid',
+                Rule::exists('materials', 'id')->where('material_type', 'bahan_baku'),
+            ],
             'output_quantity'       => 'required|integer|min:1',
             'repack_date'           => 'required|date',
             'notes'                 => 'nullable|string|max:1000',
             'items'                 => 'required|array|min:1',
-            'items.*.ingredient_id' => 'required|uuid|exists:ingredients,id',
+            'items.*.ingredient_id' => [
+                'required', 'uuid',
+                Rule::exists('materials', 'id')->where('material_type', 'bahan_baku'),
+            ],
             'items.*.quantity'      => 'required|integer|min:1',
         ]);
 
@@ -210,10 +218,11 @@ class RepackController extends Controller
             'repack'      => $repack,
             'warehouses'  => Warehouse::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
             'stores'      => Store::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
-            'ingredients' => Ingredient::where('is_active', true)
+            'ingredients' => Material::bahanBaku()
+                ->where('is_active', true)
                 ->with('category:id,name')
                 ->orderBy('name')
-                ->get(['id', 'name', 'code', 'unit', 'ingredient_category_id']),
+                ->get(['id', 'name', 'code', 'unit', 'material_category_id']),
         ]);
     }
 
@@ -230,12 +239,18 @@ class RepackController extends Controller
         }
 
         $validated = $request->validate([
-            'repack_ingredient_id'  => 'required|uuid|exists:ingredients,id',
+            'repack_ingredient_id'  => [
+                'required', 'uuid',
+                Rule::exists('materials', 'id')->where('material_type', 'bahan_baku'),
+            ],
             'output_quantity'       => 'required|integer|min:1',
             'repack_date'           => 'required|date',
             'notes'                 => 'nullable|string|max:1000',
             'items'                 => 'required|array|min:1',
-            'items.*.ingredient_id' => 'required|uuid|exists:ingredients,id',
+            'items.*.ingredient_id' => [
+                'required', 'uuid',
+                Rule::exists('materials', 'id')->where('material_type', 'bahan_baku'),
+            ],
             'items.*.quantity'      => 'required|integer|min:1',
         ]);
 
@@ -495,7 +510,7 @@ class RepackController extends Controller
         }
 
         if ($totalQty > 0) {
-            Ingredient::where('id', $ingredientId)
+            Material::where('id', $ingredientId)
                 ->update(['average_cost' => round($totalValue / $totalQty, 4)]);
         }
     }

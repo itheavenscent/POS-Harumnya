@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import { Head, Link, router, useForm } from "@inertiajs/react";
 import {
-    IconCirclePlus, IconPencil, IconTrash, IconPackage,
-    IconPhoto, IconCheck, IconX, IconLock,
+    IconCirclePlus, IconFlask, IconPackage, IconPencil, IconTrash,
+    IconPhoto, IconCheck, IconX, IconLock, IconTag, IconCurrencyDollar,
     IconTrendingUp, IconTrendingDown, IconAlertTriangle, IconFilter, IconGift,
 } from "@tabler/icons-react";
 import Search from "@/Components/Dashboard/Search";
@@ -12,6 +12,21 @@ import Input from "@/Components/Dashboard/Input";
 import toast from "react-hot-toast";
 
 const fmt = (v = 0) => Number(v || 0).toLocaleString("id-ID");
+
+const TYPE_CFG = {
+    oil:     { label: "Fragrance Oil", color: "bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700" },
+    alcohol: { label: "Alkohol",       color: "bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700" },
+    other:   { label: "Lainnya",       color: "bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700" },
+};
+
+function TypeBadge({ type }) {
+    const cfg = TYPE_CFG[type] ?? TYPE_CFG.other;
+    return (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${cfg.color}`}>
+            {cfg.label}
+        </span>
+    );
+}
 
 function Select({ value, onChange, children, className = "" }) {
     return (
@@ -68,26 +83,31 @@ function DeleteModal({ show, title, message, onConfirm, onClose, loading }) {
     );
 }
 
-function CategoryModal({ show, onClose, category = null }) {
+function CategoryModal({ show, onClose, category = null, materialType }) {
     const isEdit = !!category;
+    const isBahanBaku = (category?.material_type ?? materialType) === "bahan_baku";
 
     const { data, setData, post, put, processing, reset, errors, clearErrors } = useForm({
-        code:        "",
-        name:        "",
-        description: "",
-        sort_order:  0,
-        is_active:   true,
+        material_type:   materialType,
+        code:            "",
+        name:            "",
+        ingredient_type: "other",
+        description:     "",
+        sort_order:      0,
+        is_active:       true,
     });
 
     useEffect(() => {
         if (show) {
             if (category) {
                 setData({
-                    code:        category.code        || "",
-                    name:        category.name        || "",
-                    description: category.description || "",
-                    sort_order:  category.sort_order  ?? 0,
-                    is_active:   category.is_active   ?? true,
+                    material_type:   category.material_type   || materialType,
+                    code:            category.code            || "",
+                    name:            category.name            || "",
+                    ingredient_type: category.ingredient_type || "other",
+                    description:     category.description     || "",
+                    sort_order:      category.sort_order      ?? 0,
+                    is_active:       category.is_active       ?? true,
                 });
             } else {
                 reset();
@@ -102,20 +122,20 @@ function CategoryModal({ show, onClose, category = null }) {
         const opts = {
             onSuccess: () => {
                 onClose();
-                toast.success(isEdit ? "Kategori berhasil diperbarui" : "Kategori berhasil dibuat");
+                toast.success(isEdit ? "Kategori berhasil diperbarui" : "Kategori berhasil ditambahkan");
             },
-            onError: () => toast.error("Periksa kembali input Anda"),
+            onError: () => toast.error("Periksa kembali input"),
         };
         isEdit
-            ? put(route("packaging.categories.update", category.id), opts)
-            : post(route("packaging.categories.store"), opts);
+            ? put(route("materials.categories.update", category.id), opts)
+            : post(route("materials.categories.store"), opts);
     };
 
     if (!show) return null;
 
     return (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md p-6 shadow-xl border border-slate-200 dark:border-slate-800">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md p-6 shadow-xl border dark:border-slate-800">
                 <div className="flex items-center justify-between mb-5">
                     <h3 className="text-lg font-bold dark:text-white">
                         {isEdit ? "Edit Kategori" : "Tambah Kategori"}
@@ -133,7 +153,7 @@ function CategoryModal({ show, onClose, category = null }) {
                             onChange={e => setData("code", e.target.value.toUpperCase())}
                             errors={errors.code}
                             required
-                            placeholder="BTL"
+                            placeholder={isBahanBaku ? "OIL" : "BTL"}
                         />
                         <Input
                             label="Urutan"
@@ -151,8 +171,45 @@ function CategoryModal({ show, onClose, category = null }) {
                         onChange={e => setData("name", e.target.value)}
                         errors={errors.name}
                         required
-                        placeholder="Botol, Tutup, Box, dll"
+                        placeholder={isBahanBaku ? "Fragrance Oil" : "Botol, Tutup, Box, dll"}
                     />
+
+                    {isBahanBaku && (
+                        <div>
+                            <label className="block text-sm font-medium mb-1.5 dark:text-slate-300">
+                                Tipe Scaling <span className="text-slate-700">*</span>
+                            </label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {Object.entries(TYPE_CFG).map(([val, cfg]) => (
+                                    <label
+                                        key={val}
+                                        className={`cursor-pointer rounded-xl border-2 p-3 text-center transition-all ${
+                                            data.ingredient_type === val
+                                                ? "border-teal-500 bg-slate-100 dark:bg-teal-950/30"
+                                                : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                                        }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="ingredient_type"
+                                            value={val}
+                                            checked={data.ingredient_type === val}
+                                            onChange={() => setData("ingredient_type", val)}
+                                            className="sr-only"
+                                        />
+                                        <div className="text-xs font-bold text-slate-700 dark:text-slate-300">{cfg.label}</div>
+                                        <div className="text-[10px] text-slate-400 capitalize mt-0.5">{val}</div>
+                                    </label>
+                                ))}
+                            </div>
+                            {errors.ingredient_type && (
+                                <p className="text-slate-700 text-xs mt-1">{errors.ingredient_type}</p>
+                            )}
+                            <p className="text-[10px] text-slate-400 mt-1.5">
+                                Tipe ini otomatis berlaku ke semua bahan dalam kategori ini.
+                            </p>
+                        </div>
+                    )}
 
                     <div>
                         <label className="block text-sm font-medium mb-1 dark:text-slate-300">Deskripsi</label>
@@ -168,12 +225,12 @@ function CategoryModal({ show, onClose, category = null }) {
                     <div className="flex items-center gap-2">
                         <input
                             type="checkbox"
-                            id="pkg_cat_active"
+                            id="mat_cat_active"
                             checked={data.is_active}
                             onChange={e => setData("is_active", e.target.checked)}
                             className="rounded accent-teal-600 w-4 h-4"
                         />
-                        <label htmlFor="pkg_cat_active" className="text-sm dark:text-slate-300 cursor-pointer">
+                        <label htmlFor="mat_cat_active" className="text-sm dark:text-slate-300 cursor-pointer">
                             Status Aktif
                         </label>
                     </div>
@@ -201,7 +258,6 @@ function CategoryModal({ show, onClose, category = null }) {
     );
 }
 
-// ─── Harga Jual Cell ───────────────────────────────────────────────────────────
 function SellingPriceCell({ item }) {
     if (item.is_free) {
         return (
@@ -224,11 +280,9 @@ function SellingPriceCell({ item }) {
     );
 }
 
-// ─── Margin Badge ──────────────────────────────────────────────────────────────
 function MarginBadge({ item }) {
     const avgCost = parseFloat(item.average_cost || 0);
 
-    // Kemasan gratis → tampilkan biaya subsidi
     if (item.is_free) {
         if (avgCost <= 0) return <span className="text-slate-300 dark:text-slate-600 text-xs">—</span>;
         return (
@@ -251,11 +305,11 @@ function MarginBadge({ item }) {
 
     return (
         <div className="text-right">
-            <span className={`text-sm font-bold flex items-center justify-end gap-1 text-slate-700 dark:text-slate-300`}>
+            <span className="text-sm font-bold flex items-center justify-end gap-1 text-slate-700 dark:text-slate-300">
                 {isGood ? <IconTrendingUp size={13} /> : <IconTrendingDown size={13} />}
                 {margin.toFixed(2)}%
             </span>
-            <span className={`text-[10px] text-slate-500 dark:text-slate-400`}>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">
                 {isGood ? "+" : ""}{fmt(profit)}/unit
             </span>
         </div>
@@ -263,59 +317,70 @@ function MarginBadge({ item }) {
 }
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
-export default function Index({ materials, categories, filters }) {
-    const [activeTab,   setActiveTab]   = useState(filters.tab || "materials");
+export default function Index({ materials, categories, material_type, filters }) {
+    const isKemasan = material_type === "bahan_kemasan";
+    const [activeTab,   setActiveTab]   = useState(filters.tab || "items");
     const [catModal,    setCatModal]    = useState({ show: false, data: null });
     const [deleteModal, setDeleteModal] = useState({ show: false, type: null, item: null, loading: false });
 
     const confirmDelete = (type, item) => setDeleteModal({ show: true, type, item, loading: false });
     const closeDelete   = () => setDeleteModal({ show: false, type: null, item: null, loading: false });
 
+    const goto = (params) => router.get(
+        route("materials.index"),
+        { material_type, ...params },
+        { preserveState: true }
+    );
+
     const handleDelete = () => {
         const { type, item } = deleteModal;
         setDeleteModal(prev => ({ ...prev, loading: true }));
 
         router.delete(
-            route(type === "category" ? "packaging.categories.destroy" : "packaging.destroy", item.id),
+            route(type === "category" ? "materials.categories.destroy" : "materials.destroy", item.id),
             {
                 onSuccess: () => {
                     closeDelete();
-                    toast.success(type === "category" ? "Kategori berhasil dihapus" : "Kemasan berhasil dihapus");
+                    toast.success(type === "category" ? "Kategori berhasil dihapus" : "Material berhasil dihapus");
                 },
                 onError: () => {
                     closeDelete();
                     toast.error(
                         type === "category"
                             ? "Kategori masih memiliki material, tidak bisa dihapus"
-                            : "Gagal menghapus kemasan"
+                            : "Gagal menghapus material"
                     );
                 },
             }
         );
     };
 
+    const title    = isKemasan ? "Kemasan & Packaging" : "Bahan Baku";
+    const subtitle = isKemasan ? "Kelola material kemasan dan kategorisasinya" : "Kelola bahan baku parfum dan kategorisasinya";
+    const Icon     = isKemasan ? IconPackage : IconFlask;
+
     return (
         <>
-            <Head title="Manajemen Kemasan" />
+            <Head title={`Manajemen ${title}`} />
 
             {/* Header */}
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <div className="p-2 bg-teal-600 rounded-lg text-white shadow-lg shadow-teal-500/30">
-                            <IconPackage size={20} />
+                            <Icon size={20} />
                         </div>
-                        Kemasan & Packaging
+                        {title}
                     </h1>
-                    <p className="text-sm text-slate-500 mt-1 ml-11">Kelola material kemasan dan kategorisasinya</p>
+                    <p className="text-sm text-slate-500 mt-1 ml-11">{subtitle}</p>
                 </div>
                 <div className="flex gap-2">
-                    {activeTab === "materials" ? (
+                    {activeTab === "items" ? (
                         <Link
-                            href={route("packaging.create")}
+                            href={route("materials.create", { material_type })}
                             className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm rounded-xl transition-colors shadow-lg shadow-teal-500/30"
                         >
-                            <IconCirclePlus size={18} /> Tambah Kemasan
+                            <IconCirclePlus size={18} /> {isKemasan ? "Tambah Kemasan" : "Tambah Bahan"}
                         </Link>
                     ) : (
                         <button
@@ -331,8 +396,8 @@ export default function Index({ materials, categories, filters }) {
             {/* Tabs */}
             <div className="flex gap-6 mb-6 border-b border-slate-200 dark:border-slate-800">
                 {[
-                    { key: "materials",  label: "Daftar Kemasan", count: materials.total },
-                    { key: "categories", label: "Kategori",        count: categories.length },
+                    { key: "items",      label: isKemasan ? "Daftar Kemasan" : "Daftar Bahan Baku", count: materials.total },
+                    { key: "categories", label: "Kategori",                                         count: categories.length },
                 ].map(tab => (
                     <button
                         key={tab.key}
@@ -355,14 +420,14 @@ export default function Index({ materials, categories, filters }) {
                 ))}
             </div>
 
-            {/* ── TAB: Materials ─────────────────────────────────────────────── */}
-            {activeTab === "materials" && (
+            {/* ── TAB: Items ────────────────────────────────────────────────── */}
+            {activeTab === "items" && (
                 <>
                     <div className="mb-5 flex flex-col sm:flex-row gap-3 items-center justify-between">
                         <div className="w-full sm:w-96">
                             <Search
-                                url={route("packaging.index")}
-                                placeholder="Cari nama atau kode kemasan..."
+                                url={route("materials.index", { material_type })}
+                                placeholder={isKemasan ? "Cari nama atau kode kemasan..." : "Cari kode atau nama bahan..."}
                                 defaultValue={filters.search}
                             />
                         </div>
@@ -370,11 +435,7 @@ export default function Index({ materials, categories, filters }) {
                             <IconFilter size={15} className="text-slate-400" />
                             <Select
                                 value={filters.category_id || ""}
-                                onChange={e => router.get(
-                                    route("packaging.index"),
-                                    { category_id: e.target.value || undefined, search: filters.search },
-                                    { preserveState: true }
-                                )}
+                                onChange={e => goto({ category_id: e.target.value || undefined, search: filters.search, is_assembly: filters.is_assembly })}
                                 className="w-52"
                             >
                                 <option value="">Semua Kategori</option>
@@ -382,19 +443,17 @@ export default function Index({ materials, categories, filters }) {
                                     <option key={c.id} value={c.id}>{c.name}</option>
                                 ))}
                             </Select>
-                            <Select
-                                value={filters.is_assembly ?? ""}
-                                onChange={e => router.get(
-                                    route("packaging.index"),
-                                    { is_assembly: e.target.value || undefined, search: filters.search, category_id: filters.category_id },
-                                    { preserveState: true }
-                                )}
-                                className="w-44"
-                            >
-                                <option value="">Semua Jenis</option>
-                                <option value="1">Rakitan (BOM)</option>
-                                <option value="0">Tunggal</option>
-                            </Select>
+                            {isKemasan && (
+                                <Select
+                                    value={filters.is_assembly ?? ""}
+                                    onChange={e => goto({ is_assembly: e.target.value || undefined, search: filters.search, category_id: filters.category_id })}
+                                    className="w-44"
+                                >
+                                    <option value="">Semua Jenis</option>
+                                    <option value="1">Rakitan (BOM)</option>
+                                    <option value="0">Tunggal</option>
+                                </Select>
+                            )}
                         </div>
                     </div>
 
@@ -403,32 +462,39 @@ export default function Index({ materials, categories, filters }) {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-slate-50 dark:bg-slate-800/50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                        <th className="px-5 py-3.5">Produk Kemasan</th>
+                                        <th className="px-5 py-3.5">{isKemasan ? "Produk Kemasan" : "Bahan Baku"}</th>
                                         <th className="px-5 py-3.5">Kategori</th>
                                         <th className="px-5 py-3.5">Satuan</th>
-                                        <th className="px-5 py-3.5 text-right">Harga Beli</th>
-                                        <th className="px-5 py-3.5">Harga Jual</th>
+                                        {isKemasan && <th className="px-5 py-3.5 text-right">Harga Beli</th>}
+                                        <th className="px-5 py-3.5">
+                                            {isKemasan ? "Harga Jual" : (
+                                                <span className="flex items-center gap-1"><IconCurrencyDollar size={11} /> Harga Jual</span>
+                                            )}
+                                        </th>
                                         <th className="px-5 py-3.5 text-right">
                                             <span className="flex items-center justify-end gap-1">
                                                 <IconLock size={11} /> HPP (WAC)
                                             </span>
                                         </th>
-                                        <th className="px-5 py-3.5 text-right">Margin / Subsidi</th>
-                                        <th className="px-5 py-3.5 text-center">Addon</th>
+                                        {isKemasan && <th className="px-5 py-3.5 text-right">Margin / Subsidi</th>}
+                                        {isKemasan && <th className="px-5 py-3.5 text-center">Addon</th>}
+                                        {!isKemasan && <th className="px-5 py-3.5 text-center">Aktif</th>}
                                         <th className="px-5 py-3.5 text-right">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                     {materials.data.length === 0 ? (
                                         <tr>
-                                            <td colSpan={9} className="px-5 py-16 text-center">
-                                                <IconPackage size={40} className="mx-auto text-slate-200 dark:text-slate-700 mb-3" />
-                                                <p className="text-slate-400 text-sm font-medium">Belum ada material kemasan</p>
+                                            <td colSpan={isKemasan ? 9 : 7} className="px-5 py-16 text-center">
+                                                <Icon size={40} className="mx-auto text-slate-200 dark:text-slate-700 mb-3" />
+                                                <p className="text-slate-400 text-sm font-medium">
+                                                    {isKemasan ? "Belum ada material kemasan" : "Belum ada bahan baku"}
+                                                </p>
                                                 <Link
-                                                    href={route("packaging.create")}
+                                                    href={route("materials.create", { material_type })}
                                                     className="inline-flex items-center gap-1.5 mt-3 text-sm text-slate-700 hover:text-slate-700 font-semibold"
                                                 >
-                                                    <IconCirclePlus size={16} /> Tambah Kemasan
+                                                    <IconCirclePlus size={16} /> {isKemasan ? "Tambah Kemasan" : "Tambah Bahan Baku"}
                                                 </Link>
                                             </td>
                                         </tr>
@@ -464,13 +530,25 @@ export default function Index({ materials, categories, filters }) {
                                             <td className="px-5 py-3.5 text-xs text-slate-500 uppercase font-medium">
                                                 {item.unit}
                                             </td>
-                                            <td className="px-5 py-3.5 text-right">
-                                                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                                                    {item.purchase_price > 0 ? `Rp ${fmt(item.purchase_price)}` : "—"}
-                                                </span>
-                                            </td>
+                                            {isKemasan && (
+                                                <td className="px-5 py-3.5 text-right">
+                                                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                                                        {item.purchase_price > 0 ? `Rp ${fmt(item.purchase_price)}` : "—"}
+                                                    </span>
+                                                </td>
+                                            )}
                                             <td className="px-5 py-3.5">
-                                                <SellingPriceCell item={item} />
+                                                {isKemasan ? (
+                                                    <SellingPriceCell item={item} />
+                                                ) : (
+                                                    item.selling_price != null && parseFloat(item.selling_price) > 0 ? (
+                                                        <span className="text-sm font-mono font-semibold text-slate-800 dark:text-slate-200">
+                                                            Rp {fmt(item.selling_price)}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs text-slate-300 dark:text-slate-600">—</span>
+                                                    )
+                                                )}
                                             </td>
                                             <td className="px-5 py-3.5 text-right">
                                                 {parseFloat(item.average_cost) > 0 ? (
@@ -485,19 +563,31 @@ export default function Index({ materials, categories, filters }) {
                                                     <span className="text-xs text-slate-300 dark:text-slate-600 italic">Belum ada PO</span>
                                                 )}
                                             </td>
-                                            <td className="px-5 py-3.5">
-                                                <MarginBadge item={item} />
-                                            </td>
-                                            <td className="px-5 py-3.5 text-center">
-                                                {item.is_available_as_addon
-                                                    ? <IconCheck size={18} className="text-slate-700 dark:text-slate-300 mx-auto" />
-                                                    : <IconX    size={18} className="text-slate-300 dark:text-slate-600 mx-auto" />
-                                                }
-                                            </td>
+                                            {isKemasan && (
+                                                <td className="px-5 py-3.5">
+                                                    <MarginBadge item={item} />
+                                                </td>
+                                            )}
+                                            {isKemasan && (
+                                                <td className="px-5 py-3.5 text-center">
+                                                    {item.is_available_as_addon
+                                                        ? <IconCheck size={18} className="text-slate-700 dark:text-slate-300 mx-auto" />
+                                                        : <IconX    size={18} className="text-slate-300 dark:text-slate-600 mx-auto" />
+                                                    }
+                                                </td>
+                                            )}
+                                            {!isKemasan && (
+                                                <td className="px-5 py-3.5 text-center">
+                                                    {item.is_active
+                                                        ? <IconCheck size={18} className="text-slate-700 dark:text-slate-300 mx-auto" />
+                                                        : <IconX size={18} className="text-slate-300 dark:text-slate-600 mx-auto" />
+                                                    }
+                                                </td>
+                                            )}
                                             <td className="px-5 py-3.5 text-right">
                                                 <div className="flex justify-end gap-2">
                                                     <Link
-                                                        href={route("packaging.edit", item.id)}
+                                                        href={route("materials.edit", item.id)}
                                                         className="p-1.5 bg-slate-100 dark:bg-amber-950/30 hover:bg-amber-100 text-slate-700 rounded-lg transition-colors"
                                                         title="Edit"
                                                     >
@@ -535,6 +625,7 @@ export default function Index({ materials, categories, filters }) {
                                     <th className="px-6 py-4">Urutan</th>
                                     <th className="px-6 py-4">Kode</th>
                                     <th className="px-6 py-4">Kategori</th>
+                                    {!isKemasan && <th className="px-6 py-4">Tipe Scaling</th>}
                                     <th className="px-6 py-4 text-center">Status</th>
                                     <th className="px-6 py-4 text-right">Aksi</th>
                                 </tr>
@@ -542,7 +633,7 @@ export default function Index({ materials, categories, filters }) {
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {categories.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="px-6 py-10 text-center text-slate-400 text-sm">
+                                        <td colSpan={isKemasan ? 5 : 6} className="px-6 py-10 text-center text-slate-400 text-sm">
                                             Belum ada kategori.
                                         </td>
                                     </tr>
@@ -551,6 +642,7 @@ export default function Index({ materials, categories, filters }) {
                                         <td className="px-6 py-4 text-xs text-slate-400 font-mono">{cat.sort_order}</td>
                                         <td className="px-6 py-4 font-mono text-xs text-slate-700 dark:text-slate-300 font-bold">{cat.code}</td>
                                         <td className="px-6 py-4 text-sm font-semibold text-slate-800 dark:text-white">{cat.name}</td>
+                                        {!isKemasan && <td className="px-6 py-4"><TypeBadge type={cat.ingredient_type} /></td>}
                                         <td className="px-6 py-4 text-center">
                                             {cat.is_active
                                                 ? <span className="px-2 py-0.5 text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full border border-slate-300 dark:border-slate-700">Aktif</span>
@@ -581,10 +673,13 @@ export default function Index({ materials, categories, filters }) {
 
                     <div className="space-y-4">
                         <div className="bg-slate-100 dark:bg-teal-950/20 rounded-xl border border-teal-100 dark:border-slate-700 p-5">
-                            <h3 className="font-bold text-sm text-slate-700 dark:text-slate-300 mb-2">💡 Tips Kategori</h3>
+                            <h3 className="font-bold text-sm text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
+                                <IconTag size={16} className="text-slate-700" /> Tips Kategori
+                            </h3>
                             <p className="text-xs text-slate-700 dark:text-slate-300">
-                                Gunakan kategori untuk mengelompokkan kemasan sejenis.
-                                Urutan menentukan tampilan di dropdown POS.
+                                {isKemasan
+                                    ? "Gunakan kategori untuk mengelompokkan kemasan sejenis. Urutan menentukan tampilan di dropdown POS."
+                                    : "Tipe scaling diatur di level kategori, bukan per bahan. Semua bahan dalam satu kategori otomatis mengikuti tipe kategorinya."}
                             </p>
                         </div>
                         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-800 p-5">
@@ -602,6 +697,7 @@ export default function Index({ materials, categories, filters }) {
                 show={catModal.show}
                 onClose={() => setCatModal({ show: false, data: null })}
                 category={catModal.data}
+                materialType={material_type}
             />
 
             <DeleteModal
@@ -610,12 +706,12 @@ export default function Index({ materials, categories, filters }) {
                 title={
                     deleteModal.type === "category"
                         ? `Hapus Kategori "${deleteModal.item?.name}"?`
-                        : `Hapus Kemasan "${deleteModal.item?.name}"?`
+                        : `Hapus "${deleteModal.item?.name}"?`
                 }
                 message={
                     deleteModal.type === "category"
                         ? "Kategori yang masih memiliki material tidak dapat dihapus. Pastikan semua material sudah dipindahkan."
-                        : "Kemasan akan dihapus dari sistem. Aksi ini tidak dapat dibatalkan."
+                        : "Material akan dihapus dari sistem. Aksi ini tidak dapat dibatalkan."
                 }
                 onConfirm={handleDelete}
                 onClose={closeDelete}

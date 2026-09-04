@@ -8,8 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\StockAdjustment;
 use App\Models\StockMovement;
-use App\Models\Ingredient;
-use App\Models\PackagingMaterial;
+use App\Models\Material;
 use App\Models\Warehouse;
 use App\Models\Store;
 use App\Models\WarehouseIngredientStock;
@@ -45,8 +44,8 @@ class StockAdjustmentImportController extends Controller
             ? (Warehouse::find($locationId)?->name ?? '-')
             : (Store::find($locationId)?->name ?? '-');
 
-        $ingredients = Ingredient::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code', 'unit']);
-        $packagings  = PackagingMaterial::where('is_active', true)
+        $ingredients = Material::bahanBaku()->active()->orderBy('name')->get(['id', 'name', 'code', 'unit']);
+        $packagings  = Material::bahanKemasan()->active()
             ->with('size:id,name')
             ->orderBy('name')
             ->get(['id', 'name', 'code', 'size_id']);
@@ -322,8 +321,8 @@ class StockAdjustmentImportController extends Controller
 
     private function validateRows(array $rows, string $locationType, string $locationId): array
     {
-        $ingredients = Ingredient::where('is_active', true)->pluck('id', 'code');
-        $packagings  = PackagingMaterial::where('is_active', true)->pluck('id', 'code');
+        $ingredients = Material::bahanBaku()->active()->pluck('id', 'code');
+        $packagings  = Material::bahanKemasan()->active()->pluck('id', 'code');
 
         $validRows  = [];
         $errorRows  = [];

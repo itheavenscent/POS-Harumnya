@@ -39,28 +39,18 @@ class PurchaseItem extends Model
 
     public function getItemNameAttribute(): string
     {
-        return match ($this->item_type) {
-            'ingredient'         => Ingredient::find($this->item_id)?->name ?? '-',
-            'packaging_material' => PackagingMaterial::find($this->item_id)?->name ?? '-',
-            default              => '-',
-        };
+        return Material::find($this->item_id)?->name ?? '-';
     }
 
     public function getItemCodeAttribute(): string
     {
-        return match ($this->item_type) {
-            'ingredient'         => Ingredient::find($this->item_id)?->code ?? '-',
-            'packaging_material' => PackagingMaterial::find($this->item_id)?->code ?? '-',
-            default              => '-',
-        };
+        return Material::find($this->item_id)?->code ?? '-';
     }
 
     public function getItemUnitAttribute(): string
     {
-        return match ($this->item_type) {
-            'ingredient'         => Ingredient::find($this->item_id)?->unit ?? 'unit',
-            'packaging_material' => PackagingMaterial::with('size')->find($this->item_id)?->size?->name ?? 'pcs',
-            default              => 'unit',
-        };
+        $m = Material::with('size')->find($this->item_id);
+        $defaultUnit = $this->item_type === 'ingredient' ? 'unit' : 'pcs';
+        return $m?->unit ?? $m?->size?->name ?? $defaultUnit;
     }
 }

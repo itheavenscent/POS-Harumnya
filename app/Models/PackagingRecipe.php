@@ -34,11 +34,11 @@ class PackagingRecipe extends Model
 
     public function parent(): BelongsTo
     {
-        return $this->belongsTo(PackagingMaterial::class, 'parent_packaging_id');
+        return $this->belongsTo(Material::class, 'parent_packaging_id');
     }
 
     public function component(): BelongsTo
     {
-        return $this->belongsTo(PackagingMaterial::class, 'component_packaging_id')->withTrashed();
+        return $this->belongsTo(Material::class, 'component_packaging_id')->withTrashed();
     }
 }

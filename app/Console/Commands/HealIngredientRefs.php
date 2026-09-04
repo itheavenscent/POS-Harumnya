@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Ingredient;
+use App\Models\Material;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -26,7 +26,7 @@ class HealIngredientRefs extends Command
             ->unique()
             ->filter();
 
-        $ghosts = Ingredient::withTrashed()
+        $ghosts = Material::bahanBaku()->withTrashed()
             ->whereIn('id', $refIds)
             ->whereNotNull('deleted_at')
             ->get();
@@ -36,7 +36,7 @@ class HealIngredientRefs extends Command
             return self::SUCCESS;
         }
 
-        $liveByName = Ingredient::query()
+        $liveByName = Material::bahanBaku()
             ->get(['id', 'name'])
             ->keyBy(fn ($i) => mb_strtolower(trim($i->name)));
 

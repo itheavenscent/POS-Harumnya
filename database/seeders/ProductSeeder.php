@@ -59,7 +59,7 @@ class ProductSeeder extends Seeder
 
         // Preload ingredient average_cost untuk kalkulasi COGS
         $ingCostMap = [];
-        foreach (DB::table('ingredients')->get() as $ing) {
+        foreach (DB::table('materials')->where('material_type', 'bahan_baku')->get() as $ing) {
             $ingCostMap[$ing->id] = (float) $ing->average_cost;
         }
 

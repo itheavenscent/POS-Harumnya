@@ -44,7 +44,7 @@ class VariantRecipeSeeder extends Seeder
             return;
         }
 
-        $ingMap = DB::table('ingredients')->get()->keyBy('code');
+        $ingMap = DB::table('materials')->where('material_type', 'bahan_baku')->get()->keyBy('code');
         $alcIng = $ingMap['ALK'] ?? null;
 
         if (!$alcIng) {

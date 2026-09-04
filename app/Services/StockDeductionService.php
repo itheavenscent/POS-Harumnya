@@ -7,7 +7,7 @@ use App\Models\ProductRecipe;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockMovement;
-use App\Models\PackagingMaterial;
+use App\Models\Material;
 use App\Models\StoreIngredientStock;
 use App\Models\StorePackagingStock;
 use App\Models\VariantRecipe;
@@ -330,8 +330,8 @@ class StockDeductionService
     private function resolveOilIngredient(?string $variantId): ?object
     {
         if ($variantId) {
-            $ingredient = \Illuminate\Support\Facades\DB::table('ingredients as i')
-                ->join('ingredient_categories as ic', 'ic.id', '=', 'i.ingredient_category_id')
+            $ingredient = \Illuminate\Support\Facades\DB::table('materials as i')
+                ->join('material_categories as ic', 'ic.id', '=', 'i.material_category_id')
                 ->join('variant_recipes as vr', 'vr.ingredient_id', '=', 'i.id')
                 ->where('vr.variant_id', $variantId)
                 ->where('ic.ingredient_type', 'oil')
@@ -342,8 +342,8 @@ class StockDeductionService
             if ($ingredient) return $ingredient;
         }
 
-        return \Illuminate\Support\Facades\DB::table('ingredients as i')
-            ->join('ingredient_categories as ic', 'ic.id', '=', 'i.ingredient_category_id')
+        return \Illuminate\Support\Facades\DB::table('materials as i')
+            ->join('material_categories as ic', 'ic.id', '=', 'i.material_category_id')
             ->where('ic.ingredient_type', 'oil')
             ->where('i.is_active', true)
             ->select('i.id')
@@ -352,8 +352,8 @@ class StockDeductionService
 
     private function resolveAlcoholIngredient(): ?object
     {
-        return \Illuminate\Support\Facades\DB::table('ingredients as i')
-            ->join('ingredient_categories as ic', 'ic.id', '=', 'i.ingredient_category_id')
+        return \Illuminate\Support\Facades\DB::table('materials as i')
+            ->join('material_categories as ic', 'ic.id', '=', 'i.material_category_id')
             ->where('ic.ingredient_type', 'alcohol')
             ->where('i.is_active', true)
             ->select('i.id')
@@ -453,7 +453,7 @@ class StockDeductionService
         ?string $pkgName,
         int     $qty,
     ): void {
-        $material = PackagingMaterial::with('components.component')->find($pkgId);
+        $material = Material::with('components.component')->find($pkgId);
 
         if ($material && $material->is_assembly) {
             if ($material->components->isEmpty()) {

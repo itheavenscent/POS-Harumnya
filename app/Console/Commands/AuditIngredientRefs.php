@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Ingredient;
+use App\Models\Material;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -16,7 +16,7 @@ class AuditIngredientRefs extends Command
     {
         // 1. Duplikat nama (live vs trashed)
         $this->info('=== Ingredient dengan nama duplikat ===');
-        $byName = Ingredient::withTrashed()
+        $byName = Material::bahanBaku()->withTrashed()
             ->get(['id', 'name', 'code', 'deleted_at'])
             ->groupBy(fn ($i) => mb_strtolower(trim($i->name)));
 
@@ -35,7 +35,7 @@ class AuditIngredientRefs extends Command
             $this->info("=== {$table}: ingredient_id trashed/hilang ===");
 
             $rows = DB::table("{$table} as r")
-                ->leftJoin('ingredients as i', 'i.id', '=', 'r.ingredient_id')
+                ->leftJoin('materials as i', 'i.id', '=', 'r.ingredient_id')
                 ->select(
                     'r.ingredient_id',
                     'i.name', 'i.code', 'i.deleted_at',
@@ -71,7 +71,7 @@ class AuditIngredientRefs extends Command
             $this->line('');
             $this->info("=== {$label} ({$table}): ingredient trashed/hilang ===");
             $rows = DB::table("{$table} as s")
-                ->leftJoin('ingredients as i', 'i.id', '=', 's.ingredient_id')
+                ->leftJoin('materials as i', 'i.id', '=', 's.ingredient_id')
                 ->select('s.ingredient_id', 'i.name', 'i.code', 'i.deleted_at',
                     DB::raw('sum(s.quantity) as qty'), DB::raw('count(*) as rows'))
                 ->groupBy('s.ingredient_id', 'i.name', 'i.code', 'i.deleted_at')
@@ -90,7 +90,7 @@ class AuditIngredientRefs extends Command
         $this->line('');
         $this->info('=== stock_movements (ingredient) trashed/hilang ===');
         $mv = DB::table('stock_movements as m')
-            ->leftJoin('ingredients as i', 'i.id', '=', 'm.item_id')
+            ->leftJoin('materials as i', 'i.id', '=', 'm.item_id')
             ->where('m.item_type', 'ingredient')
             ->select('m.item_id', 'i.name', 'i.code', 'i.deleted_at', DB::raw('count(*) as moves'))
             ->groupBy('m.item_id', 'i.name', 'i.code', 'i.deleted_at')

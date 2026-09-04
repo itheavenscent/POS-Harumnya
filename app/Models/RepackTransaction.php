@@ -32,7 +32,7 @@ class RepackTransaction extends Model
 
     public function outputIngredient()
     {
-        return $this->belongsTo(Ingredient::class, 'output_ingredient_id');
+        return $this->belongsTo(Material::class, 'output_ingredient_id');
     }
 
     public function items()

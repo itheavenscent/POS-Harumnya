@@ -4,6 +4,7 @@ namespace App\Http\Requests\POS;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class AddToCartRequest extends FormRequest
 {
@@ -21,7 +22,7 @@ class AddToCartRequest extends FormRequest
             'size_id'         => ['required', 'uuid', 'exists:sizes,id'],
             'qty'             => ['required', 'integer', 'min:1', 'max:99'],
             'packaging_ids'   => ['nullable', 'array'],
-            'packaging_ids.*' => ['uuid', 'exists:packaging_materials,id'],
+            'packaging_ids.*' => ['uuid', Rule::exists('materials', 'id')->where('material_type', 'bahan_kemasan')],
             'is_free'         => ['nullable', 'boolean'],
             'notes'           => ['nullable', 'string', 'max:255'],
         ];

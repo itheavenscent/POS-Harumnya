@@ -4,8 +4,7 @@ namespace App\Http\Controllers\Apps;
 
 use Inertia\Inertia;
 use App\Models\Warehouse;
-use App\Models\Ingredient;
-use App\Models\PackagingMaterial;
+use App\Models\Material;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\WarehouseIngredientStock;
@@ -121,15 +120,17 @@ class WarehouseStockController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name', 'code']),
 
-            'ingredients' => Ingredient::where('is_active', true)
+            'ingredients' => Material::bahanBaku()->active()
                 ->with('category:id,name')
                 ->orderBy('name')
-                ->get(['id', 'name', 'code', 'unit', 'ingredient_category_id']),
+                ->get(['id', 'name', 'code', 'unit', 'material_category_id'])
+                ->map(fn ($m) => $m->setAttribute('ingredient_category_id', $m->material_category_id)),
 
-            'packagingMaterials' => PackagingMaterial::where('is_active', true)
+            'packagingMaterials' => Material::bahanKemasan()->active()
                 ->with(['category:id,name', 'size:id,name'])
                 ->orderBy('name')
-                ->get(['id', 'name', 'code', 'packaging_category_id', 'size_id']),
+                ->get(['id', 'name', 'code', 'material_category_id', 'size_id'])
+                ->map(fn ($m) => $m->setAttribute('packaging_category_id', $m->material_category_id)),
         ]);
     }
 

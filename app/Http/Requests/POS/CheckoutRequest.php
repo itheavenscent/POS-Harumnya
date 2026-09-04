@@ -4,6 +4,7 @@ namespace App\Http\Requests\POS;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class CheckoutRequest extends FormRequest
 {
@@ -32,7 +33,7 @@ class CheckoutRequest extends FormRequest
 
             // Standalone packagings dari tab Kemasan (tidak terikat ke cart item)
             'standalone_packagings'                    => ['nullable', 'array'],
-            'standalone_packagings.*.packaging_material_id' => ['required', 'uuid', 'exists:packaging_materials,id'],
+            'standalone_packagings.*.packaging_material_id' => ['required', 'uuid', Rule::exists('materials', 'id')->where('material_type', 'bahan_kemasan')],
             'standalone_packagings.*.qty'              => ['required', 'integer', 'min:1', 'max:99'],
         ];
     }

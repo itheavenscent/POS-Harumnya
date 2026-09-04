@@ -5,8 +5,7 @@ namespace App\Http\Controllers\Laporan;
 use App\Http\Controllers\Controller;
 use App\Models\Store;
 use App\Models\Warehouse;
-use App\Models\Ingredient;
-use App\Models\PackagingMaterial;
+use App\Models\Material;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -45,8 +44,8 @@ class LaporanMutasiController extends Controller
         $warehouses = Warehouse::where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
         // ── 1. Fetch active items ──
-        $ingredients = Ingredient::where('is_active', true)->get(['id', 'name', 'code', 'unit']);
-        $packaging = PackagingMaterial::where('is_active', true)->with('size')->get(['id', 'name', 'code', 'unit', 'size_id']);
+        $ingredients = Material::bahanBaku()->active()->get(['id', 'name', 'code', 'unit']);
+        $packaging = Material::bahanKemasan()->active()->with('size')->get(['id', 'name', 'code', 'unit', 'size_id']);
 
         // ── 2. Query movements in the period ──
         $movements = DB::table('stock_movements')
@@ -283,8 +282,8 @@ class LaporanMutasiController extends Controller
             $dateFromDt = $dateToDt->copy()->subDays(90)->startOfDay();
         }
 
-        $ingredients = Ingredient::where('is_active', true)->get(['id', 'name', 'code', 'unit']);
-        $packaging = PackagingMaterial::where('is_active', true)->with('size')->get(['id', 'name', 'code', 'unit', 'size_id']);
+        $ingredients = Material::bahanBaku()->active()->get(['id', 'name', 'code', 'unit']);
+        $packaging = Material::bahanKemasan()->active()->with('size')->get(['id', 'name', 'code', 'unit', 'size_id']);
 
         $movements = DB::table('stock_movements')
             ->leftJoin('stock_adjustments', function ($join) {

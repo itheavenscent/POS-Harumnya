@@ -13,8 +13,7 @@ use App\Models\WarehouseIngredientStock;
 use App\Models\WarehousePackagingStock;
 use App\Models\Warehouse;
 use App\Models\Store;
-use App\Models\Ingredient;
-use App\Models\PackagingMaterial;
+use App\Models\Material;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -34,31 +33,31 @@ class POSFeatureController extends Controller
 
         if ($type === 'ingredient') {
             $stocks = StoreIngredientStock::with(['ingredient.category'])
-                ->join('ingredients', 'store_ingredient_stocks.ingredient_id', '=', 'ingredients.id')
-                ->whereNull('ingredients.deleted_at') // sembunyikan ingredient terhapus (ghost NO-CODE)
+                ->join('materials', 'store_ingredient_stocks.ingredient_id', '=', 'materials.id')
+                ->whereNull('materials.deleted_at') // sembunyikan ingredient terhapus (ghost NO-CODE)
                 ->where('store_ingredient_stocks.store_id', $storeId)
                 ->when($request->search, function ($query, $search) {
                     $query->where(function ($q) use ($search) {
-                        $q->where('ingredients.name', 'ilike', "%{$search}%")
-                          ->orWhere('ingredients.code', 'ilike', "%{$search}%");
+                        $q->where('materials.name', 'ilike', "%{$search}%")
+                          ->orWhere('materials.code', 'ilike', "%{$search}%");
                     });
                 })
-                ->orderBy('ingredients.name')
+                ->orderBy('materials.name')
                 ->select('store_ingredient_stocks.*')
                 ->paginate(20)
                 ->withQueryString();
         } else {
             $stocks = StorePackagingStock::with(['packagingMaterial.category', 'packagingMaterial.size'])
-                ->join('packaging_materials', 'store_packaging_stocks.packaging_material_id', '=', 'packaging_materials.id')
-                ->whereNull('packaging_materials.deleted_at') // sembunyikan kemasan terhapus
+                ->join('materials', 'store_packaging_stocks.packaging_material_id', '=', 'materials.id')
+                ->whereNull('materials.deleted_at') // sembunyikan kemasan terhapus
                 ->where('store_packaging_stocks.store_id', $storeId)
                 ->when($request->search, function ($query, $search) {
                     $query->where(function ($q) use ($search) {
-                        $q->where('packaging_materials.name', 'ilike', "%{$search}%")
-                          ->orWhere('packaging_materials.code', 'ilike', "%{$search}%");
+                        $q->where('materials.name', 'ilike', "%{$search}%")
+                          ->orWhere('materials.code', 'ilike', "%{$search}%");
                     });
                 })
-                ->orderBy('packaging_materials.name')
+                ->orderBy('materials.name')
                 ->select('store_packaging_stocks.*')
                 ->paginate(20)
                 ->withQueryString();
@@ -537,11 +536,8 @@ class POSFeatureController extends Controller
 
     private function resolveItem(string $type, string $id): array
     {
-        if ($type === 'ingredient') {
-            $i = Ingredient::find($id);
-            return [$i?->name ?? '-', $i?->code ?? '-', $i?->unit ?? 'unit'];
-        }
-        $p = PackagingMaterial::with('size')->find($id);
-        return [$p?->name ?? '-', $p?->code ?? '-', $p?->size?->name ?? 'pcs'];
+        $m = Material::with('size')->find($id);
+        $defaultUnit = $type === 'ingredient' ? 'unit' : 'pcs';
+        return [$m?->name ?? '-', $m?->code ?? '-', $m?->unit ?? $m?->size?->name ?? $defaultUnit];
     }
 }

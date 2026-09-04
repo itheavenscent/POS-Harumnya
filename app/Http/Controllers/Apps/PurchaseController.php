@@ -11,8 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Purchase;
 use App\Models\StockMovement;
 use App\Models\Supplier;
-use App\Models\Ingredient;
-use App\Models\PackagingMaterial;
+use App\Models\Material;
 use App\Models\Warehouse;
 use App\Models\Store;
 use App\Models\WarehouseIngredientStock;
@@ -661,14 +660,16 @@ class PurchaseController extends Controller
             'stores' => Store::where('is_active', true)
                 ->orderBy('name')
                 ->get(['id', 'name', 'code']),
-            'ingredients' => Ingredient::where('is_active', true)
+            'ingredients' => Material::bahanBaku()->active()
                 ->with('category:id,name')
                 ->orderBy('sort_order')->orderBy('name')
-                ->get(['id', 'name', 'code', 'unit', 'ingredient_category_id', 'average_cost']),
-            'packagingMaterials' => PackagingMaterial::where('is_active', true)
+                ->get(['id', 'name', 'code', 'unit', 'material_category_id', 'average_cost'])
+                ->map(fn ($m) => $m->setAttribute('ingredient_category_id', $m->material_category_id)),
+            'packagingMaterials' => Material::bahanKemasan()->active()
                 ->with(['category:id,name', 'size:id,name'])
                 ->orderBy('sort_order')->orderBy('name')
-                ->get(['id', 'name', 'code', 'packaging_category_id', 'size_id', 'purchase_price', 'average_cost']),
+                ->get(['id', 'name', 'code', 'material_category_id', 'size_id', 'purchase_price', 'average_cost'])
+                ->map(fn ($m) => $m->setAttribute('packaging_category_id', $m->material_category_id)),
         ];
     }
 
@@ -813,11 +814,7 @@ class PurchaseController extends Controller
     {
         $globalWac = $this->computeGlobalWac($itemType, $itemId) ?? $fallbackCost;
 
-        match ($itemType) {
-            'ingredient'         => Ingredient::where('id', $itemId)->update(['average_cost' => $globalWac]),
-            'packaging_material' => PackagingMaterial::where('id', $itemId)->update(['average_cost' => $globalWac]),
-            default              => null,
-        };
+        Material::where('id', $itemId)->update(['average_cost' => $globalWac]);
     }
 
     private function computeGlobalWac(string $itemType, string $itemId): ?float
@@ -862,19 +859,14 @@ class PurchaseController extends Controller
 
     private function resolveItem(string $type, string $id): array
     {
-        if ($type === 'ingredient') {
-            $i = Ingredient::find($id);
-            return [$i?->name ?? '-', $i?->code ?? '-', $i?->unit ?? 'unit'];
-        }
-        $p = PackagingMaterial::with('size')->find($id);
-        return [$p?->name ?? '-', $p?->code ?? '-', $p?->size?->name ?? 'pcs'];
+        $m = Material::with('size')->find($id);
+        $defaultUnit = $type === 'ingredient' ? 'unit' : 'pcs';
+        return [$m?->name ?? '-', $m?->code ?? '-', $m?->unit ?? $m?->size?->name ?? $defaultUnit];
     }
 
     private function resolveItemName(string $type, string $id): string
     {
-        return $type === 'ingredient'
-            ? (Ingredient::find($id)?->name        ?? '-')
-            : (PackagingMaterial::find($id)?->name ?? '-');
+        return Material::find($id)?->name ?? '-';
     }
 
     private function bcAdd($a, $b, $scale = 2): string

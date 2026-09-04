@@ -4,10 +4,9 @@ use App\Http\Controllers\Apps\AppSettingController;
 use App\Http\Controllers\Apps\CategoryController;
 use App\Http\Controllers\Apps\CustomerController;
 use App\Http\Controllers\Apps\DiscountController;
-use App\Http\Controllers\Apps\IngredientController;
 use App\Http\Controllers\Apps\IntensityController;
 use App\Http\Controllers\Apps\IntensitySizePriceController;
-use App\Http\Controllers\Apps\PackagingController;
+use App\Http\Controllers\Apps\MaterialController;
 use App\Http\Controllers\Apps\PaymentSettingController;
 use App\Http\Controllers\Apps\ProductController;
 use App\Http\Controllers\Apps\PurchaseController;
@@ -220,44 +219,26 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     // Produk & Formula
     // ─────────────────────────────────────────────────────────────────────────
 
-    // ── Ingredients (Bahan Baku) ──────────────────────────────────────────────
+    // ── Materials (Bahan Baku + Kemasan) ────────────────────────────────────────
 
-    Route::prefix('ingredients')->name('ingredients.')->group(function () {
-        Route::get('/', [IngredientController::class, 'index'])->name('index')->middleware('permission:ingredients-access');
-        Route::get('/create', [IngredientController::class, 'create'])->name('create')->middleware('permission:ingredients-create');
-        Route::post('/', [IngredientController::class, 'store'])->name('store')->middleware('permission:ingredients-create');
-
-        Route::prefix('categories')->name('categories.')->group(function () {
-            Route::post('/', [IngredientController::class, 'storeCategory'])->name('store')->middleware('permission:ingredients-create');
-            Route::put('/{category}', [IngredientController::class, 'updateCategory'])->name('update')->middleware('permission:ingredients-edit');
-            Route::delete('/{category}', [IngredientController::class, 'destroyCategory'])->name('destroy')->middleware('permission:ingredients-delete');
-        });
-
-        Route::get('/{ingredient}/edit', [IngredientController::class, 'edit'])->name('edit')->middleware('permission:ingredients-edit');
-        Route::put('/{ingredient}', [IngredientController::class, 'update'])->name('update')->middleware('permission:ingredients-edit');
-        Route::delete('/{ingredient}', [IngredientController::class, 'destroy'])->name('destroy')->middleware('permission:ingredients-delete');
-    });
-
-    // ── Packaging (Kemasan) ───────────────────────────────────────────────────
-
-    Route::prefix('packaging')->name('packaging.')->group(function () {
-        Route::get('/', [PackagingController::class, 'index'])->name('index')->middleware('permission:packaging-access');
-        Route::get('/create', [PackagingController::class, 'create'])->name('create')->middleware('permission:packaging-create');
-        Route::post('/', [PackagingController::class, 'store'])->name('store')->middleware('permission:packaging-create');
+    Route::prefix('materials')->name('materials.')->group(function () {
+        Route::get('/', [MaterialController::class, 'index'])->name('index')->middleware('permission:materials-access');
+        Route::get('/create', [MaterialController::class, 'create'])->name('create')->middleware('permission:materials-create');
+        Route::post('/', [MaterialController::class, 'store'])->name('store')->middleware('permission:materials-create');
 
         Route::prefix('categories')->name('categories.')->group(function () {
-            Route::post('/', [PackagingController::class, 'storeCategory'])->name('store')->middleware('permission:packaging-create');
-            Route::put('/{category}', [PackagingController::class, 'updateCategory'])->name('update')->middleware('permission:packaging-edit');
-            Route::delete('/{category}', [PackagingController::class, 'destroyCategory'])->name('destroy')->middleware('permission:packaging-delete');
+            Route::post('/', [MaterialController::class, 'storeCategory'])->name('store')->middleware('permission:materials-create');
+            Route::put('/{category}', [MaterialController::class, 'updateCategory'])->name('update')->middleware('permission:materials-edit');
+            Route::delete('/{category}', [MaterialController::class, 'destroyCategory'])->name('destroy')->middleware('permission:materials-delete');
         });
 
-        Route::get('/{packaging}/edit', [PackagingController::class, 'edit'])->name('edit')->middleware('permission:packaging-edit');
-        Route::put('/{packaging}', [PackagingController::class, 'update'])->name('update')->middleware('permission:packaging-edit');
-        Route::delete('/{packaging}', [PackagingController::class, 'destroy'])->name('destroy')->middleware('permission:packaging-delete');
+        Route::get('/{material}/edit', [MaterialController::class, 'edit'])->name('edit')->middleware('permission:materials-edit');
+        Route::put('/{material}', [MaterialController::class, 'update'])->name('update')->middleware('permission:materials-edit');
+        Route::delete('/{material}', [MaterialController::class, 'destroy'])->name('destroy')->middleware('permission:materials-delete');
 
-        // Komponen rakitan (BOM)
-        Route::get('/{packaging}/components', [PackagingController::class, 'editComponents'])->name('components.edit')->middleware('permission:packaging-edit');
-        Route::put('/{packaging}/components', [PackagingController::class, 'syncComponents'])->name('components.sync')->middleware('permission:packaging-edit');
+        // Komponen rakitan (BOM, bahan_kemasan saja)
+        Route::get('/{material}/components', [MaterialController::class, 'editComponents'])->name('components.edit')->middleware('permission:materials-edit');
+        Route::put('/{material}/components', [MaterialController::class, 'syncComponents'])->name('components.sync')->middleware('permission:materials-edit');
     });
 
     // ── Recipes (Formula & Resep) ─────────────────────────────────────────────

@@ -159,7 +159,8 @@ class SalesSeeder extends Seeder
             ];
         }
 
-        $this->packagings = DB::table('packaging_materials')
+        $this->packagings = DB::table('materials')
+            ->where('material_type', 'bahan_kemasan')
             ->where('is_active', true)
             ->where('is_available_as_addon', true)
             ->where('selling_price', '>', 0)

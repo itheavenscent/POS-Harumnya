@@ -65,7 +65,7 @@ class FindStaleProductRecipes extends Command
     private function names($ids): string
     {
         if ($ids->isEmpty()) return '-';
-        return \App\Models\Ingredient::withTrashed()
+        return \App\Models\Material::bahanBaku()->withTrashed()
             ->whereIn('id', $ids)
             ->get(['name', 'code'])
             ->map(fn ($i) => ($i->code ?? 'NO-CODE') . ':' . $i->name)

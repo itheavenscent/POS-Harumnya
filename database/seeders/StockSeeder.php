@@ -31,8 +31,8 @@ class StockSeeder extends Seeder
             return;
         }
 
-        $ingredients = DB::table('ingredients')->get()->keyBy('code');
-        $packagings  = DB::table('packaging_materials')->get()->keyBy('code');
+        $ingredients = DB::table('materials')->where('material_type', 'bahan_baku')->get()->keyBy('code');
+        $packagings  = DB::table('materials')->where('material_type', 'bahan_kemasan')->get()->keyBy('code');
 
         // ══════════════════════════════════════════════════════════════════════
         // DATA DARI EXCEL PERSEDIAAN HARUMNYA
@@ -308,8 +308,8 @@ class StockSeeder extends Seeder
         // Tanpa ini, "bahan baku tercatat" ≠ "stok global tercatat".
         $this->command->line('Sinkron HPP master = WAC stok global...');
 
-        $syncMaster = function (string $masterTable, string $fk, array $stockTables) {
-            $rows = DB::table($masterTable)->select('id')->get();
+        $syncMaster = function (string $materialType, string $fk, array $stockTables) {
+            $rows = DB::table('materials')->where('material_type', $materialType)->select('id')->get();
             foreach ($rows as $row) {
                 $totalQty = 0;
                 $totalValue = 0.0;
@@ -325,15 +325,15 @@ class StockSeeder extends Seeder
                     }
                 }
                 if ($totalQty > 0) {
-                    DB::table($masterTable)->where('id', $row->id)->update([
+                    DB::table('materials')->where('id', $row->id)->update([
                         'average_cost' => round($totalValue / $totalQty, 4),
                     ]);
                 }
             }
         };
 
-        $syncMaster('ingredients', 'ingredient_id', ['warehouse_ingredient_stocks', 'store_ingredient_stocks']);
-        $syncMaster('packaging_materials', 'packaging_material_id', ['warehouse_packaging_stocks', 'store_packaging_stocks']);
+        $syncMaster('bahan_baku', 'ingredient_id', ['warehouse_ingredient_stocks', 'store_ingredient_stocks']);
+        $syncMaster('bahan_kemasan', 'packaging_material_id', ['warehouse_packaging_stocks', 'store_packaging_stocks']);
 
         // ── Summary ─────────────────────────────────────────────────────────
         $this->command->info("✓ StockSeeder selesai — {$ingCount} ingredient + {$pkgCount} packaging (warehouse).");

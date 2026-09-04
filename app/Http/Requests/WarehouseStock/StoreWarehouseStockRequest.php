@@ -22,8 +22,8 @@ class StoreWarehouseStockRequest extends FormRequest
             'item_id' => [
                 'required',
                 $itemType === 'ingredient'
-                    ? 'exists:ingredients,id'
-                    : 'exists:packaging_materials,id',
+                    ? Rule::exists('materials', 'id')->where('material_type', 'bahan_baku')
+                    : Rule::exists('materials', 'id')->where('material_type', 'bahan_kemasan'),
                 // Prevent duplicate
                 Rule::unique($itemType === 'ingredient' ? 'warehouse_ingredient_stocks' : 'warehouse_packaging_stocks')
                     ->where('warehouse_id', $this->warehouse_id)

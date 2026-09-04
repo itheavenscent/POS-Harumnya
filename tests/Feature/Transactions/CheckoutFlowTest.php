@@ -6,8 +6,8 @@ use App\Models\CashDrawer;
 use App\Models\Cart;
 use App\Models\Intensity;
 use App\Models\IntensitySizePrice;
-use App\Models\PackagingCategory;
-use App\Models\PackagingMaterial;
+use App\Models\Material;
+use App\Models\MaterialCategory;
 use App\Models\PackagingRecipe;
 use App\Models\PaymentMethod;
 use App\Models\Sale;
@@ -105,9 +105,10 @@ class CheckoutFlowTest extends TestCase
         return compact('variant', 'intensity', 'size', 'price');
     }
 
-    protected function createPackagingCategory(): PackagingCategory
+    protected function createPackagingCategory(): MaterialCategory
     {
-        return PackagingCategory::create([
+        return MaterialCategory::create([
+            'material_type' => 'bahan_kemasan',
             'code' => 'CAT-' . strtoupper(substr(md5(uniqid()), 0, 6)),
             'name' => 'Botol',
             'is_active' => true,
@@ -178,8 +179,9 @@ class CheckoutFlowTest extends TestCase
         $paymentMethod = $this->createPaymentMethod();
         $category = $this->createPackagingCategory();
 
-        $component = PackagingMaterial::create([
-            'packaging_category_id' => $category->id,
+        $component = Material::create([
+            'material_type' => 'bahan_kemasan',
+            'material_category_id' => $category->id,
             'code' => 'COMP-' . strtoupper(substr(md5(uniqid()), 0, 6)),
             'name' => 'Botol Kaca 30ml',
             'unit' => 'pcs',
@@ -192,8 +194,9 @@ class CheckoutFlowTest extends TestCase
             'is_active' => true,
         ]);
 
-        $assembly = PackagingMaterial::create([
-            'packaging_category_id' => $category->id,
+        $assembly = Material::create([
+            'material_type' => 'bahan_kemasan',
+            'material_category_id' => $category->id,
             'code' => 'ASSY-' . strtoupper(substr(md5(uniqid()), 0, 6)),
             'name' => 'Botol Rakitan Lengkap',
             'unit' => 'pcs',
