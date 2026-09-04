@@ -226,7 +226,7 @@ export default function Index({ adjustments, filters = {}, summary = {}, typeOpt
                                                 >
                                                     <IconEye size={14} />
                                                 </Link>
-                                                {canManage && ["draft", "pending"].includes(adj.status) && (
+                                                {canManage && (
                                                     <Link
                                                         href={route("stock-adjustments.edit", adj.id)}
                                                         className="p-1.5 bg-slate-100 text-slate-700 hover:bg-amber-100 border border-slate-300 rounded-lg"

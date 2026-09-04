@@ -246,7 +246,7 @@ class StockAdjustmentController extends Controller
 
         $v = $request->validate([
             'adjustment_date'           => 'required|date|before_or_equal:today',
-            'type'                      => 'required|in:stock_opname,damage,loss,found,expired,other',
+            'type'                      => 'required|in:stock_opname,damage,loss,found,expired,daily_mutation,other',
             'notes'                     => 'nullable|string|max:2000',
             'items'                     => 'required|array|min:1',
             'items.*.item_type'         => 'required|in:ingredient,packaging_material',
@@ -258,6 +258,14 @@ class StockAdjustmentController extends Controller
         ]);
 
         DB::transaction(function () use ($adj, $v) {
+            // Hanya status 'completed' yang sudah mengubah stok. Reverse dulu
+            // supaya findStock() di bawah membaca qty baseline sebelum adjustment,
+            // sehinnga difference item baru dihitung terhadap stok yang benar.
+            $wasCompleted = $adj->status === 'completed';
+            if ($wasCompleted) {
+                $this->reverseAdjustmentStock($adj);
+            }
+
             $adj->update([
                 'adjustment_date' => $v['adjustment_date'],
                 'type'            => $v['type'],
@@ -284,6 +292,12 @@ class StockAdjustmentController extends Controller
                     'value_difference'  => $valueDiff,
                     'notes'             => $item['notes'] ?? null,
                 ]);
+            }
+
+            // Terapkan ulang efek stok + StockMovement baru bila sebelumnya completed.
+            if ($wasCompleted) {
+                $adj->load('items');
+                $this->applyAdjustmentStock($adj);
             }
         });
 
@@ -343,88 +357,137 @@ class StockAdjustmentController extends Controller
         }
 
         DB::transaction(function () use ($adj) {
-            $userId = auth()->id();
-            $now    = now();
-
-            foreach ($adj->items as $item) {
-                $diff = (int) $item->difference;
-                if ($diff === 0) continue;
-
-                $stock = $this->findStock(
-                    $adj->location_type, $adj->location_id,
-                    $item->item_type,    $item->item_id
-                );
-
-                if (! $stock) {
-                    $stock = $this->createStock(
-                        $adj->location_type, $adj->location_id,
-                        $item->item_type,    $item->item_id,
-                        ['quantity' => 0, 'average_cost' => (float) $item->unit_cost, 'total_value' => 0.0]
-                    );
-                }
-
-                $qtyBefore = (int)   $stock->quantity;
-                $avgCost   = (float) $stock->average_cost;
-                $unitCost  = (float) $item->unit_cost;
-                $qtyAfter  = $qtyBefore + $diff;
-
-                // Recalculate WAC hanya pada surplus
-                $newAvgCost = $avgCost;
-                if ($diff > 0 && $qtyAfter > 0) {
-                    $newAvgCost = round(
-                        (($qtyBefore * $avgCost) + ($diff * $unitCost)) / $qtyAfter,
-                        4
-                    );
-                }
-
-                $stockUpdate = [
-                    'quantity'    => $qtyAfter,
-                    'total_value' => round($qtyAfter * $newAvgCost, 2),
-                ];
-
-                if ($diff > 0) {
-                    $stockUpdate['average_cost'] = $newAvgCost;
-                    $stockUpdate['last_in_at']   = $now;
-                    $stockUpdate['last_in_by']   = $userId;
-                    $stockUpdate['last_in_qty']  = $diff;
-                } else {
-                    $stockUpdate['last_out_at']  = $now;
-                    $stockUpdate['last_out_by']  = $userId;
-                    $stockUpdate['last_out_qty'] = abs($diff);
-                }
-
-                $stock->update($stockUpdate);
-
-                $this->syncMasterAverageCost($item->item_type, $item->item_id, $newAvgCost);
-
-                StockMovement::create([
-                    'location_type'    => $adj->location_type,
-                    'location_id'      => $adj->location_id,
-                    'movement_type'    => $this->resolveMovementType($adj->type, $diff),
-                    'item_type'        => $item->item_type,
-                    'item_id'          => $item->item_id,
-                    'qty_change'       => $diff,
-                    'qty_before'       => $qtyBefore,
-                    'qty_after'        => $qtyAfter,
-                    'unit_cost'        => $unitCost,
-                    'total_cost'       => round(abs($diff) * $unitCost, 2),
-                    'avg_cost_before'  => $avgCost,
-                    'avg_cost_after'   => $newAvgCost,
-                    'reference_type'   => StockAdjustment::class,
-                    'reference_id'     => $adj->id,
-                    'reference_number' => $adj->adjustment_number,
-                    'movement_date'    => $adj->adjustment_date,
-                    'notes'            => "[{$adj->type}] {$adj->adjustment_number}"
-                        . ($item->notes ? " — {$item->notes}" : ''),
-                    'created_by'       => $userId,
-                ]);
-            }
-
+            $this->applyAdjustmentStock($adj);
             $adj->update(['status' => 'completed']);
         });
 
         return to_route('stock-adjustments.show', $id)
             ->with('success', 'Adjustment selesai! Stok telah diperbarui.');
+    }
+
+    // =========================================================================
+    // STOCK EFFECT — apply & reverse
+    // Dipakai complete() dan update() (edit adjustment yang sudah completed).
+    // Harus dipanggil di dalam DB::transaction.
+    // =========================================================================
+
+    /**
+     * Terapkan efek stok tiap item (mutasi qty + WAC) dan catat StockMovement.
+     */
+    private function applyAdjustmentStock(StockAdjustment $adj): void
+    {
+        $userId = auth()->id();
+        $now    = now();
+
+        foreach ($adj->items as $item) {
+            $diff = (int) $item->difference;
+            if ($diff === 0) continue;
+
+            $stock = $this->findStock(
+                $adj->location_type, $adj->location_id,
+                $item->item_type,    $item->item_id
+            );
+
+            if (! $stock) {
+                $stock = $this->createStock(
+                    $adj->location_type, $adj->location_id,
+                    $item->item_type,    $item->item_id,
+                    ['quantity' => 0, 'average_cost' => (float) $item->unit_cost, 'total_value' => 0.0]
+                );
+            }
+
+            $qtyBefore = (int)   $stock->quantity;
+            $avgCost   = (float) $stock->average_cost;
+            $unitCost  = (float) $item->unit_cost;
+            $qtyAfter  = $qtyBefore + $diff;
+
+            // Recalculate WAC hanya pada surplus
+            $newAvgCost = $avgCost;
+            if ($diff > 0 && $qtyAfter > 0) {
+                $newAvgCost = round(
+                    (($qtyBefore * $avgCost) + ($diff * $unitCost)) / $qtyAfter,
+                    4
+                );
+            }
+
+            $stockUpdate = [
+                'quantity'    => $qtyAfter,
+                'total_value' => round($qtyAfter * $newAvgCost, 2),
+            ];
+
+            if ($diff > 0) {
+                $stockUpdate['average_cost'] = $newAvgCost;
+                $stockUpdate['last_in_at']   = $now;
+                $stockUpdate['last_in_by']   = $userId;
+                $stockUpdate['last_in_qty']  = $diff;
+            } else {
+                $stockUpdate['last_out_at']  = $now;
+                $stockUpdate['last_out_by']  = $userId;
+                $stockUpdate['last_out_qty'] = abs($diff);
+            }
+
+            $stock->update($stockUpdate);
+
+            $this->syncMasterAverageCost($item->item_type, $item->item_id, $newAvgCost);
+
+            StockMovement::create([
+                'location_type'    => $adj->location_type,
+                'location_id'      => $adj->location_id,
+                'movement_type'    => $this->resolveMovementType($adj->type, $diff),
+                'item_type'        => $item->item_type,
+                'item_id'          => $item->item_id,
+                'qty_change'       => $diff,
+                'qty_before'       => $qtyBefore,
+                'qty_after'        => $qtyAfter,
+                'unit_cost'        => $unitCost,
+                'total_cost'       => round(abs($diff) * $unitCost, 2),
+                'avg_cost_before'  => $avgCost,
+                'avg_cost_after'   => $newAvgCost,
+                'reference_type'   => StockAdjustment::class,
+                'reference_id'     => $adj->id,
+                'reference_number' => $adj->adjustment_number,
+                'movement_date'    => $adj->adjustment_date,
+                'notes'            => "[{$adj->type}] {$adj->adjustment_number}"
+                    . ($item->notes ? " — {$item->notes}" : ''),
+                'created_by'       => $userId,
+            ]);
+        }
+    }
+
+    /**
+     * Balikkan efek stok yang pernah diterapkan adjustment ini, memakai
+     * StockMovement sebagai sumber kebenaran (qty_change + avg_cost_before),
+     * lalu hapus movement lama. Qty dikembalikan persis; average_cost
+     * direstore ke nilai sebelum adjustment (persis bila ini mutasi terakhir
+     * atas item tsb; pendekatan bila ada mutasi lain sesudahnya).
+     */
+    private function reverseAdjustmentStock(StockAdjustment $adj): void
+    {
+        $movements = StockMovement::where('reference_type', StockAdjustment::class)
+            ->where('reference_id', $adj->id)
+            ->get();
+
+        foreach ($movements as $mv) {
+            $stock = $this->findStock(
+                $adj->location_type, $adj->location_id,
+                $mv->item_type,      $mv->item_id
+            );
+
+            if (! $stock) continue;
+
+            $qtyAfter = max(0, (int) $stock->quantity - (int) $mv->qty_change);
+            $restoredAvg = (float) $mv->avg_cost_before;
+
+            $stock->update([
+                'quantity'     => $qtyAfter,
+                'average_cost' => $restoredAvg,
+                'total_value'  => round($qtyAfter * $restoredAvg, 2),
+            ]);
+
+            $this->syncMasterAverageCost($mv->item_type, $mv->item_id, $restoredAvg);
+        }
+
+        $movements->each->delete();
     }
 
     // =========================================================================

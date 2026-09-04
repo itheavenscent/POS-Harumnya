@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Head, router, Link } from "@inertiajs/react";
+import { Head, router, Link, usePage } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import Pagination from "@/Components/Dashboard/Pagination";
 import {
@@ -49,6 +49,8 @@ const STATUS_LABEL = {
 };
 
 export default function History({ sales, filters, summary = {}, stores = [], isAdmin = false, canCancelSale = false, canPrint = false }) {
+    // Superadmin boleh membatalkan transaksi kapan saja (bypass rule hari H).
+    const isSuper = usePage().props.auth?.super ?? false;
     const [q,          setQ]          = useState(filters.q          || "");
     const [dateFrom,   setDateFrom]   = useState(filters.date_from  || "");
     const [dateTo,     setDateTo]     = useState(filters.date_to    || "");
@@ -617,7 +619,7 @@ export default function History({ sales, filters, summary = {}, stores = [], isA
                         <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex justify-between gap-3">
                             <div>
                                 {canCancelSale && selectedSale.status === "completed" && (
-                                    isSameDay(selectedSale.sold_at) ? (
+                                    (isSuper || isSameDay(selectedSale.sold_at)) ? (
                                         <button onClick={() => setShowCancelSale(true)}
                                             className="px-6 py-2.5 rounded-xl bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 text-sm font-bold flex items-center gap-2 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors">
                                             <IconX size={18}/> Batalkan Transaksi

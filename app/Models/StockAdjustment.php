@@ -81,7 +81,9 @@ class StockAdjustment extends Model
 
     // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-    public function canEdit():    bool { return in_array($this->status, ['draft', 'pending']); }
+    // Semua status boleh diedit. Untuk status 'completed', controller akan
+    // me-reverse efek stok lama lalu menerapkan ulang item baru agar konsisten.
+    public function canEdit():    bool { return true; }
     public function canApprove(): bool { return $this->status === 'pending'; }
     public function canComplete(): bool { return $this->status === 'approved'; }
     public function canCancel():  bool { return in_array($this->status, ['draft', 'pending', 'approved']); }
