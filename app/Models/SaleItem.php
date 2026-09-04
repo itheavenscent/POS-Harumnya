@@ -60,6 +60,22 @@ class SaleItem extends Model
         'alcohol_cogs_total'    => 'decimal:2',
     ];
 
+    /**
+     * Hitung margin persen aman untuk kolom line_gross_margin_pct decimal(9,2).
+     * Mengembalikan 0 bila subtotal <= 0, dan meng-clamp ke rentang kolom agar
+     * COGS/HPP abnormal (mis. rakitan kemasan bermasalah) tak memicu overflow 22003.
+     */
+    public static function marginPct($subtotal, $profit): float
+    {
+        $sub = (float) $subtotal;
+        if ($sub <= 0) return 0.0;
+
+        $pct = round(((float) $profit) / $sub * 100, 2);
+
+        // decimal(9,2) → ±9.999.999,99
+        return max(-9999999.99, min(9999999.99, $pct));
+    }
+
     public function sale(): BelongsTo
     {
         return $this->belongsTo(Sale::class, 'sale_id');

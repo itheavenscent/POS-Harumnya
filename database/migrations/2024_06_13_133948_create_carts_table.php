@@ -306,7 +306,8 @@ return new class extends Migration
             // Margin — SIGNED: bisa negatif
             $table->decimal('gross_profit', 15, 2)->default(0)
                   ->comment('total - cogs_total; bisa negatif');
-            $table->decimal('gross_margin_pct', 6, 2)->default(0);
+            // decimal(9,2): margin bisa ekstrem negatif bila COGS > total (mis. HPP abnormal).
+            $table->decimal('gross_margin_pct', 9, 2)->default(0);
 
             // Loyalty
             $table->unsignedInteger('points_earned')->default(0);
@@ -391,7 +392,8 @@ return new class extends Migration
 
             // Margin — SIGNED
             $table->decimal('line_gross_profit', 15, 2)->default(0);
-            $table->decimal('line_gross_margin_pct', 6, 2)->default(0);
+            // decimal(9,2): margin bisa ekstrem negatif bila COGS > harga jual (mis. HPP abnormal).
+            $table->decimal('line_gross_margin_pct', 9, 2)->default(0);
 
             $table->text('notes')->nullable();
             $table->timestamps();
@@ -425,7 +427,8 @@ return new class extends Migration
                   ->comment('WAC packaging saat transaksi (snapshot)');
             $table->decimal('cogs_total', 15, 2)->default(0);
             $table->decimal('line_gross_profit', 15, 2)->default(0);
-            $table->decimal('line_gross_margin_pct', 6, 2)->default(0);
+            // decimal(9,2): margin bisa ekstrem negatif bila COGS > harga jual (mis. HPP abnormal).
+            $table->decimal('line_gross_margin_pct', 9, 2)->default(0);
 
             $table->timestamps();
 

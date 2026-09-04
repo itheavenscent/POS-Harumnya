@@ -532,7 +532,7 @@ class POSController extends Controller
             $change = $isCash ? max(0, $amountPaid - $total) : 0;
             $cogsTotal = $cogsPerfume + $cogsPackaging;
             $grossProfit = $total - $cogsTotal;
-            $marginPct = $total > 0 ? round($grossProfit / $total * 100, 2) : 0;
+            $marginPct = SaleItem::marginPct($total, $grossProfit);
 
             // ── Sale header ────────────────────────────────────────────────────
             $sale = Sale::create([
@@ -590,7 +590,7 @@ class POSController extends Controller
                     'cogs_per_unit' => $cart->product?->production_cost ?? 0,
                     'cogs_total' => $itemCogs,
                     'line_gross_profit' => $itemProfit,
-                    'line_gross_margin_pct' => $itemSub > 0 ? round($itemProfit / $itemSub * 100, 2) : 0,
+                    'line_gross_margin_pct' => SaleItem::marginPct($itemSub, $itemProfit),
                 ]);
 
                 foreach ($cart->packagings as $cartPkg) {
@@ -620,8 +620,7 @@ class POSController extends Controller
                     'cogs_per_unit' => $this->packagingUnitCost($pkg),
                     'cogs_total' => $pkgCogs,
                     'line_gross_profit' => $pkgSub - $pkgCogs,
-                    'line_gross_margin_pct' => $pkgSub > 0
-                        ? round(($pkgSub - $pkgCogs) / $pkgSub * 100, 2) : 0,
+                    'line_gross_margin_pct' => SaleItem::marginPct($pkgSub, $pkgSub - $pkgCogs),
                     'notes' => 'Kemasan standalone',
                 ]);
             }
@@ -1026,7 +1025,7 @@ class POSController extends Controller
             'unit_cost' => $unitCost,
             'cogs_total' => $cogs,
             'line_gross_profit' => $sub - $cogs,
-            'line_gross_margin_pct' => $sub > 0 ? round(($sub - $cogs) / $sub * 100, 2) : 0,
+            'line_gross_margin_pct' => SaleItem::marginPct($sub, $sub - $cogs),
         ]);
     }
 
