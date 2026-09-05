@@ -4,7 +4,7 @@ import { Head, Link, router, usePage } from "@inertiajs/react";
 import {
     IconArrowLeft, IconEdit, IconTrash, IconFlask, IconRuler, IconDroplet,
     IconChevronDown, IconChevronUp, IconCircleCheck, IconAlertTriangle,
-    IconPackage, IconRefresh, IconSparkles, IconX, IconCheck,
+    IconPackage, IconRefresh, IconSparkles, IconX, IconCheck, IconEyeOff,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 
@@ -288,8 +288,60 @@ function SizePreviewPanel({ sizePreview }) {
     );
 }
 
+// ─── Generated Sizes Panel — aktif/nonaktif per ukuran untuk POS ──────────────
+function GeneratedSizesPanel({ products }) {
+    const [busyId, setBusyId] = useState(null);
+
+    if (!products || products.length === 0) return null;
+
+    const toggle = (product) => {
+        setBusyId(product.id);
+        router.patch(route("products.toggle-active", product.id), {}, {
+            preserveScroll: true,
+            onSuccess: (page) => {
+                const flash = page.props.flash ?? {};
+                if (flash.success) toast.success(flash.success);
+            },
+            onError: () => toast.error("Gagal mengubah status ukuran"),
+            onFinish: () => setBusyId(null),
+        });
+    };
+
+    return (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className="px-5 py-3.5 border-b bg-slate-50 dark:bg-slate-800 flex items-center gap-2">
+                <IconEyeOff size={14} className="text-teal-500" />
+                <div>
+                    <h3 className="font-bold text-slate-700 dark:text-slate-300 text-xs uppercase tracking-wider">Ukuran Aktif di POS</h3>
+                    <p className="text-[11px] text-slate-400 mt-0.5 normal-case">Nonaktifkan ukuran yang tidak dijual — disembunyikan dari POS tanpa hapus formula</p>
+                </div>
+            </div>
+            <div className="divide-y divide-slate-50 dark:divide-slate-800">
+                {products.map(p => (
+                    <div key={p.id} className="flex items-center justify-between px-5 py-3">
+                        <div>
+                            <p className={`text-sm font-semibold ${p.is_active ? "text-slate-800 dark:text-slate-200" : "text-slate-400 line-through"}`}>
+                                {p.size?.volume_ml}ml
+                            </p>
+                            <p className="text-[10px] text-slate-400 font-mono">{p.sku}</p>
+                        </div>
+                        <button
+                            onClick={() => toggle(p)}
+                            disabled={busyId === p.id}
+                            className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 disabled:opacity-50 ${p.is_active ? "bg-teal-500" : "bg-slate-300 dark:bg-slate-700"}`}
+                            title={p.is_active ? "Klik untuk nonaktifkan" : "Klik untuk aktifkan"}
+                        >
+                            <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${p.is_active ? "translate-x-4" : ""}`} />
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 // ─── Main Show ────────────────────────────────────────────────────────────────
-export default function Show({ recipes, variant, intensity, sizePreview }) {
+export default function Show({ recipes, variant, intensity, sizePreview, products }) {
     const { props } = usePage();
     const flash           = props.flash ?? {};
     const generateDetails = props.generateDetails ?? null;
@@ -450,6 +502,7 @@ export default function Show({ recipes, variant, intensity, sizePreview }) {
                         sizePreview={sizePreview}
                     />
                     <SizePreviewPanel sizePreview={sizePreview} />
+                    <GeneratedSizesPanel products={products} />
 
                     {/* Quick Actions */}
                     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5">

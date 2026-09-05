@@ -786,14 +786,21 @@ function SizeModal({ show, onClose, onBack, variant, intensity, sizes, loading, 
 }
 
 // ─── Packaging Modal ──────────────────────────────────────────────────────────
-function PackagingModal({ show, onClose, packagingMaterials = [], selectedPkgs = [], onToggle, onAddStandalone, isPendingMode = false, onSubmitPending = null, isSubmitting = false }) {
+function PackagingModal({ show, onClose, packagingMaterials = [], minVolumeMl = null, selectedPkgs = [], onToggle, onAddStandalone, isPendingMode = false, onSubmitPending = null, isSubmitting = false }) {
     const [search, setSearch] = useState("");
     const filtered = useMemo(() => {
-        if (!search) return packagingMaterials;
-        return packagingMaterials.filter(p =>
+        // Botol harus berukuran >= volume parfum yang baru dipilih (misal parfum
+        // 30ml → hanya tampil botol 30ml ke atas). Kemasan tanpa ukuran (kresek,
+        // box, dll — bukan botol) selalu ikut tampil karena tidak terikat volume.
+        const bySize = minVolumeMl
+            ? packagingMaterials.filter(p => !p.size?.volume_ml || p.size.volume_ml >= minVolumeMl)
+            : packagingMaterials;
+
+        if (!search) return bySize;
+        return bySize.filter(p =>
             p.name.toLowerCase().includes(search.toLowerCase()) || (p.code ?? "").toLowerCase().includes(search.toLowerCase())
         );
-    }, [packagingMaterials, search]);
+    }, [packagingMaterials, minVolumeMl, search]);
 
     return (
         <Modal show={show} onClose={onClose} maxW="max-w-lg">
@@ -1459,6 +1466,10 @@ export default function Index({
     const [showPackagingModal, setShowPackagingModal] = useState(false);
     const [addingToCart, setAddingToCart] = useState(false);
     const [pendingOrder, setPendingOrder] = useState(null);
+    // Volume ml parfum yang baru dipilih — dipakai buat filter kemasan (hanya
+    // tampilkan botol berukuran >= volume parfum). null = tidak difilter
+    // (mode standalone / tambah kemasan satuan tanpa parfum terkait).
+    const [pendingPerfumeVolumeMl, setPendingPerfumeVolumeMl] = useState(null);
 
     // ── State: custom order ────────────────────────────────────────────────────
     const [showCustomModal, setShowCustomModal] = useState(false);
@@ -1777,6 +1788,7 @@ export default function Index({
         // Parfum langsung masuk keranjang. Setelah sukses (kembali ke halaman katalog),
         // modal pilih botol otomatis terbuka — bisa ditutup (opsional).
         setSelectedPkgs([]);
+        setPendingPerfumeVolumeMl(size.volume_ml ?? null);
         setShowSizeModal(false);
         submitPendingOrder({ type: "regular", payload, openBottlePicker: true });
     };
@@ -1857,7 +1869,7 @@ export default function Index({
     };
 
     // Modal botol bersifat opsional — parfum sudah lebih dulu masuk keranjang.
-    const handleClosePackagingModal = () => setShowPackagingModal(false);
+    const handleClosePackagingModal = () => { setShowPackagingModal(false); setPendingPerfumeVolumeMl(null); };
 
     const togglePkg = (pkgId) => setSelectedPkgs(prev => prev.includes(pkgId) ? prev.filter(id => id !== pkgId) : [...prev, pkgId]);
 
@@ -1983,6 +1995,7 @@ export default function Index({
                 show={showPackagingModal}
                 onClose={handleClosePackagingModal}
                 packagingMaterials={packagingMaterials}
+                minVolumeMl={pendingPerfumeVolumeMl}
                 selectedPkgs={selectedPkgs}
                 onToggle={togglePkg}
                 onAddStandalone={handleAddPkg}
@@ -2899,7 +2912,7 @@ export default function Index({
                                     {packagingMaterials.length > 0 && (
                                         <button
                                             type="button"
-                                            onClick={() => setShowPackagingModal(true)}
+                                            onClick={() => { setPendingPerfumeVolumeMl(null); setShowPackagingModal(true); }}
                                             className="bg-[#fbfbfb] dark:bg-slate-800/40 border border-dashed border-[#d4d4d4] dark:border-slate-700 rounded-[6px] p-[10px] flex items-center justify-between hover:border-[#54b8c3] transition-all text-left cursor-pointer w-full mt-[8px] group"
                                         >
                                             <div className="flex items-center gap-[6.34px]">

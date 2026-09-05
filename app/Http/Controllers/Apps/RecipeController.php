@@ -24,36 +24,28 @@ class RecipeController extends Controller
     // INDEX — Grouped by Variant
     // =========================================================================
 
-    public function index()
+    public function index(Request $request)
     {
-        // Ambil semua kombinasi variant+intensity beserta aggregate
-        $raw = VariantRecipe::with(['variant', 'intensity', 'ingredient.category'])
+        $search  = trim((string) $request->input('search', ''));
+        $status  = $request->input('status', 'all');
+        $perPage = 10;
+
+        // Ambil semua kombinasi variant+intensity beserta aggregate.
+        // Ringan sengaja: index cuma menampilkan ringkasan per variant (baris tabel),
+        // detail penuh (komposisi bahan + scaling per ukuran) ada di halaman
+        // tersendiri lewat recipes.by-variant — lihat showByVariant().
+        $raw = VariantRecipe::with(['variant', 'intensity'])
             ->select('variant_id', 'intensity_id')
             ->selectRaw('COUNT(*) as ingredient_count')
             ->selectRaw('SUM(base_quantity) as total_volume')
+            ->selectRaw('MAX(is_active) as is_active')
             ->groupBy('variant_id', 'intensity_id')
             ->get();
 
-        // Group per variant_id
-        $grouped = $raw->groupBy('variant_id');
+        $variantGroups = $raw->groupBy('variant_id')->map(function ($items) {
+            $variant = $items->first()->variant;
 
-        $variantGroups = $grouped->map(function ($items) {
-            $firstItem = $items->first();
-            $variant   = $firstItem->variant;
-
-            // Bangun data per intensity
             $intensities = $items->map(function ($item) {
-                $recipes = VariantRecipe::with('ingredient.category')
-                    ->where('variant_id', $item->variant_id)
-                    ->where('intensity_id', $item->intensity_id)
-                    ->get();
-
-                $sizeQuantities = IntensitySizeQuantity::with('size')
-                    ->where('intensity_id', $item->intensity_id)
-                    ->where('is_active', true)
-                    ->get()
-                    ->sortBy('size.volume_ml');
-
                 $generatedSizes = Product::where('variant_id', $item->variant_id)
                     ->where('intensity_id', $item->intensity_id)
                     ->pluck('size_id')
@@ -65,41 +57,97 @@ class RecipeController extends Controller
                     'intensity'        => $item->intensity,
                     'ingredient_count' => $item->ingredient_count,
                     'total_volume'     => $item->total_volume,
-                    'recipes'          => $recipes,
                     'generated_sizes'  => $generatedSizes,
                     'is_generated'     => count($generatedSizes) > 0,
-                    // Semua baris satu formula (variant+intensity) di-flag bersamaan,
-                    // jadi cukup ambil dari baris pertama.
-                    'is_active'        => (bool) ($recipes->first()->is_active ?? true),
-                    'size_scaling'     => $sizeQuantities->map(fn($q) => [
-                        'size_id'          => $q->size->id,
-                        'size_name'        => $q->size->name,
-                        'volume_ml'        => $q->size->volume_ml,
-                        'total_volume'     => $q->total_volume,
-                        'oil_quantity'     => $q->oil_quantity,
-                        'alcohol_quantity' => $q->alcohol_quantity,
-                        'other_quantity'   => $q->other_quantity ?? 0,
-                        'ingredients'      => $this->buildScaledIngredients($recipes, $q),
-                    ])->values(),
+                    'is_active'        => (bool) $item->is_active,
                 ];
             })->values();
-
-            $isAnyGenerated = $intensities->contains('is_generated', true);
-            $isAllGenerated = $intensities->every(fn($i) => $i['is_generated']);
 
             return [
                 'variant'           => $variant,
                 'variant_id'        => $variant->id,
                 'intensity_count'   => $intensities->count(),
                 'total_ingredients' => $intensities->sum('ingredient_count'),
-                'is_any_generated'  => $isAnyGenerated,
-                'is_all_generated'  => $isAllGenerated,
+                'is_any_generated'  => $intensities->contains('is_generated', true),
+                'is_all_generated'  => $intensities->every(fn ($i) => $i['is_generated']),
+                'has_inactive'      => $intensities->contains('is_active', false),
                 'intensities'       => $intensities,
             ];
         })->values();
 
+        // Stats dari keseluruhan data (sebelum search/filter) — supaya angka
+        // ringkasan di atas tabel tidak berubah-ubah saat user mengetik/filter.
+        $stats = [
+            'total_variants'    => $variantGroups->count(),
+            'total_formulas'    => $variantGroups->sum('intensity_count'),
+            'total_generated'   => $variantGroups->sum(fn ($g) => collect($g['intensities'])->where('is_generated', true)->count()),
+            'total_ingredients' => $variantGroups->sum('total_ingredients'),
+        ];
+
+        $filtered = $variantGroups->filter(function ($group) use ($search, $status) {
+            if ($search !== '') {
+                $term = mb_strtolower($search);
+                $matchVariant = str_contains(mb_strtolower($group['variant']->name), $term)
+                    || str_contains(mb_strtolower($group['variant']->code), $term);
+                $matchIntensity = collect($group['intensities'])->contains(
+                    fn ($i) => str_contains(mb_strtolower($i['intensity']->name ?? ''), $term)
+                        || str_contains(mb_strtolower($i['intensity']->code ?? ''), $term)
+                );
+                if (! $matchVariant && ! $matchIntensity) {
+                    return false;
+                }
+            }
+
+            return match ($status) {
+                'all_generated' => $group['is_all_generated'],
+                'generated'     => $group['is_any_generated'] && ! $group['is_all_generated'],
+                'pending'       => ! $group['is_any_generated'],
+                'inactive'      => $group['has_inactive'],
+                default         => true,
+            };
+        })->values();
+
+        $page = max((int) $request->input('page', 1), 1);
+        $paginated = new \Illuminate\Pagination\LengthAwarePaginator(
+            $filtered->forPage($page, $perPage)->values(),
+            $filtered->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
         return Inertia::render('Dashboard/Recipes/Index', [
-            'variantRecipes' => $variantGroups,
+            'variantRecipes' => $paginated,
+            'filters'        => ['search' => $search, 'status' => $status],
+            'stats'          => $stats,
+        ]);
+    }
+
+    // =========================================================================
+    // SHOW BY VARIANT — semua intensitas & resep sekaligus untuk 1 variant
+    // =========================================================================
+
+    public function showByVariant(string $variant_id)
+    {
+        $variant = Variant::findOrFail($variant_id);
+
+        $intensityIds = VariantRecipe::where('variant_id', $variant_id)
+            ->distinct()
+            ->pluck('intensity_id');
+
+        if ($intensityIds->isEmpty()) {
+            abort(404, 'Belum ada formula untuk variant ini.');
+        }
+
+        $intensities = $intensityIds
+            ->map(fn ($intensityId) => $this->buildIntensityCard($variant_id, $intensityId))
+            ->sortBy(fn ($i) => $i['intensity']->sort_order ?? 0)
+            ->values();
+
+        return Inertia::render('Dashboard/Recipes/VariantDetail', [
+            'variant'           => $variant,
+            'intensities'       => $intensities,
+            'total_ingredients' => $intensities->sum('ingredient_count'),
         ]);
     }
 
@@ -385,11 +433,19 @@ class RecipeController extends Controller
         $variant   = Variant::findOrFail($variant_id);
         $intensity = Intensity::findOrFail($intensity_id);
 
+        $products = Product::where('variant_id', $variant_id)
+            ->where('intensity_id', $intensity_id)
+            ->with('size:id,name,volume_ml')
+            ->get(['id', 'size_id', 'sku', 'is_active'])
+            ->sortBy('size.volume_ml')
+            ->values();
+
         return Inertia::render('Dashboard/Recipes/Show', [
             'recipes'     => $recipes,
             'variant'     => $variant,
             'intensity'   => $intensity,
             'sizePreview' => $this->calculateSizePreview($recipes, $intensity_id),
+            'products'    => $products,
         ]);
     }
 
@@ -630,7 +686,12 @@ class RecipeController extends Controller
                 $scaledMap = VariantRecipe::scaleCollection($recipes, $intensityQty);
 
                 if ($existingProduct) {
-                    if ($existingProduct->trashed()) {
+                    // Restore produk yang di-soft-delete → aktifkan lagi. Tapi kalau
+                    // produk masih hidup dan sengaja dinonaktifkan admin (is_active=false
+                    // untuk sembunyikan ukuran ini dari POS), regenerate TIDAK BOLEH
+                    // diam-diam mengaktifkannya kembali.
+                    $wasTrashed = $existingProduct->trashed();
+                    if ($wasTrashed) {
                         $existingProduct->restore();
                     }
                     $existingProduct->recipes()->delete();
@@ -643,7 +704,7 @@ class RecipeController extends Controller
                         'size_id'       => $size->id,
                         'name'          => "{$variant->name} - {$intensity->code} - {$size->name}",
                         'selling_price' => $priceRecord->price,
-                        'is_active'     => true,
+                        'is_active'     => $wasTrashed ? true : $existingProduct->is_active,
                     ]);
                 } else {
                     $product = Product::create([
@@ -901,6 +962,53 @@ class RecipeController extends Controller
     // =========================================================================
     // PRIVATE HELPERS
     // =========================================================================
+
+    /**
+     * Bangun data lengkap satu kartu intensitas (komposisi bahan + scaling per
+     * ukuran) untuk halaman detail per variant. Dipakai oleh showByVariant().
+     */
+    private function buildIntensityCard(string $variantId, string $intensityId): array
+    {
+        $recipes = VariantRecipe::with('ingredient.category')
+            ->where('variant_id', $variantId)
+            ->where('intensity_id', $intensityId)
+            ->get();
+
+        $intensity = $recipes->first()->intensity ?? Intensity::find($intensityId);
+
+        $sizeQuantities = IntensitySizeQuantity::with('size')
+            ->where('intensity_id', $intensityId)
+            ->where('is_active', true)
+            ->get()
+            ->sortBy('size.volume_ml');
+
+        $generatedSizes = Product::where('variant_id', $variantId)
+            ->where('intensity_id', $intensityId)
+            ->pluck('size_id')
+            ->toArray();
+
+        return [
+            'variant_id'       => $variantId,
+            'intensity_id'     => $intensityId,
+            'intensity'        => $intensity,
+            'ingredient_count' => $recipes->count(),
+            'total_volume'     => $recipes->sum('base_quantity'),
+            'recipes'          => $recipes,
+            'generated_sizes'  => $generatedSizes,
+            'is_generated'     => count($generatedSizes) > 0,
+            'is_active'        => (bool) ($recipes->first()->is_active ?? true),
+            'size_scaling'     => $sizeQuantities->map(fn($q) => [
+                'size_id'          => $q->size->id,
+                'size_name'        => $q->size->name,
+                'volume_ml'        => $q->size->volume_ml,
+                'total_volume'     => $q->total_volume,
+                'oil_quantity'     => $q->oil_quantity,
+                'alcohol_quantity' => $q->alcohol_quantity,
+                'other_quantity'   => $q->other_quantity ?? 0,
+                'ingredients'      => $this->buildScaledIngredients($recipes, $q),
+            ])->values(),
+        ];
+    }
 
     private function calculateSizePreview($recipes, string $intensityId): array
     {

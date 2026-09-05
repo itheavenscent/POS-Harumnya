@@ -266,6 +266,10 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::get('/create', [RecipeController::class, 'create'])->name('create')->middleware('permission:recipes-create');
         Route::post('/', [RecipeController::class, 'store'])->name('store')->middleware('permission:recipes-create');
 
+        // Detail per variant — semua intensitas & resep sekaligus (statis "variant/"
+        // WAJIB sebelum wildcard /{variant}/{intensity} di bawah).
+        Route::get('/variant/{variant}', [RecipeController::class, 'showByVariant'])->name('by-variant')->middleware('permission:recipes-access');
+
         // 3. Wildcard
         Route::get('/{variant}/{intensity}', [RecipeController::class, 'show'])->name('show')->middleware('permission:recipes-access');
         Route::get('/{variant}/{intensity}/edit', [RecipeController::class, 'edit'])->name('edit')->middleware('permission:recipes-edit');
@@ -443,6 +447,14 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     Route::get('customers/{customer}/history', [CustomerController::class, 'getHistory'])
         ->middleware('permission:transactions-access')
         ->name('customers.history');
+
+    Route::get('customers/trash', [CustomerController::class, 'trash'])
+        ->middleware('permission:customers-delete')
+        ->name('customers.trash');
+
+    Route::put('customers/{id}/restore', [CustomerController::class, 'restore'])
+        ->middleware('permission:customers-delete')
+        ->name('customers.restore');
 
     Route::resource('customers', CustomerController::class)
         ->middleware([

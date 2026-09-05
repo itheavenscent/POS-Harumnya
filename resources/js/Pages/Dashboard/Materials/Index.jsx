@@ -374,7 +374,29 @@ export default function Index({ materials, categories, material_type, filters })
                     </h1>
                     <p className="text-sm text-slate-500 mt-1 ml-11">{subtitle}</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-3">
+                    <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                        <button
+                            onClick={() => router.get(route("materials.index"), { material_type: "bahan_baku" })}
+                            className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-colors ${
+                                !isKemasan
+                                    ? "bg-white dark:bg-slate-950 text-slate-700 dark:text-white shadow-sm"
+                                    : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                            }`}
+                        >
+                            <IconFlask size={15} /> Bahan Baku
+                        </button>
+                        <button
+                            onClick={() => router.get(route("materials.index"), { material_type: "bahan_kemasan" })}
+                            className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-colors ${
+                                isKemasan
+                                    ? "bg-white dark:bg-slate-950 text-slate-700 dark:text-white shadow-sm"
+                                    : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                            }`}
+                        >
+                            <IconPackage size={15} /> Kemasan
+                        </button>
+                    </div>
                     {activeTab === "items" ? (
                         <Link
                             href={route("materials.create", { material_type })}

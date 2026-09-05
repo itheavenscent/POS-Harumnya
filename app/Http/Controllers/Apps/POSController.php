@@ -87,7 +87,8 @@ class POSController extends Controller
             ->orderBy('name')
             ->get();
 
-        $packagingMaterials = Material::select('id', 'name', 'code', 'image', 'selling_price')
+        $packagingMaterials = Material::select('id', 'name', 'code', 'image', 'selling_price', 'size_id')
+            ->with('size:id,volume_ml')
             ->where('material_type', 'bahan_kemasan')
             ->where('is_active', true)
             ->orderBy('sort_order')

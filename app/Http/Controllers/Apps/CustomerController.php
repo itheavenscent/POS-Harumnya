@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Support\PhoneFormatter;
 use App\Http\Requests\CustomerRequest;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -135,6 +136,34 @@ class CustomerController extends Controller
         $customer->delete();
 
         return back()->with('success', 'Pelanggan berhasil dihapus.');
+    }
+
+    public function trash(Request $request): Response
+    {
+        $customers = Customer::onlyTrashed()
+            ->when($request->search, function ($query, $search) {
+                $term = strtolower($search);
+                $query->where(function ($q) use ($term) {
+                    $q->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"])
+                      ->orWhereRaw('LOWER(phone) LIKE ?', ["%{$term}%"])
+                      ->orWhereRaw('LOWER(code) LIKE ?', ["%{$term}%"]);
+                });
+            })
+            ->orderByDesc('deleted_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return Inertia::render('Dashboard/Customers/Trash', [
+            'customers' => $customers,
+            'filters'   => $request->only(['search']),
+        ]);
+    }
+
+    public function restore(string $id): RedirectResponse
+    {
+        Customer::onlyTrashed()->findOrFail($id)->restore();
+
+        return back()->with('success', 'Pelanggan berhasil dipulihkan.');
     }
 
     public function export(): StreamedResponse

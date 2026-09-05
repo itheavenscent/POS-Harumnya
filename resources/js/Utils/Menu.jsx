@@ -2,7 +2,6 @@ import { usePage } from "@inertiajs/react";
 import {
     IconAdjustments,
     IconBooks,
-    IconBoxPadding,
     IconBuildingSkyscraper,
     IconBuildingStore,
     IconBuildingWarehouse,
@@ -99,12 +98,12 @@ export default function Menu() {
             title: "Material & BOM",
             details: [
                 {
-                    title: "Bahan Baku",
-                    href: route("materials.index", { material_type: "bahan_baku" }),
-                    active: url.startsWith("/dashboard/materials") && url.includes("material_type=bahan_baku"),
+                    title: "Material",
+                    href: route("materials.index"),
+                    active: url.startsWith("/dashboard/materials"),
                     icon: <IconFlask size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["materials-access"]),
-                    keywords: ["material", "raw material"],
+                    keywords: ["material", "raw material", "packaging", "bahan baku", "kemasan", "bom", "assembly", "rakitan"],
                 },
                 {
                     title: "Formula & Resep",
@@ -113,22 +112,6 @@ export default function Menu() {
                     icon: <IconBooks size={20} strokeWidth={1.5} />,
                     permissions: hasAnyPermission(["recipes-access"]),
                     keywords: ["recipe", "formula", "material"],
-                },
-                {
-                    title: "Kemasan",
-                    href: route("materials.index", { material_type: "bahan_kemasan" }),
-                    active: url.startsWith("/dashboard/materials") && url.includes("material_type=bahan_kemasan") && !url.includes("is_assembly=1"),
-                    icon: <IconPackage size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["materials-access"]),
-                    keywords: ["material", "packaging"],
-                },
-                {
-                    title: "Rakitan Kemasan (BOM)",
-                    href: route("materials.index", { material_type: "bahan_kemasan", is_assembly: 1 }),
-                    active: url.startsWith("/dashboard/materials") && url.includes("is_assembly=1"),
-                    icon: <IconBoxPadding size={20} strokeWidth={1.5} />,
-                    permissions: hasAnyPermission(["materials-access"]),
-                    keywords: ["material", "bom", "assembly", "packaging"],
                 },
             ],
         },
