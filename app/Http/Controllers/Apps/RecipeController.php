@@ -38,7 +38,7 @@ class RecipeController extends Controller
             ->select('variant_id', 'intensity_id')
             ->selectRaw('COUNT(*) as ingredient_count')
             ->selectRaw('SUM(base_quantity) as total_volume')
-            ->selectRaw('MAX(is_active) as is_active')
+            ->selectRaw('bool_or(is_active) as is_active')
             ->groupBy('variant_id', 'intensity_id')
             ->get();
 
