@@ -275,8 +275,8 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::get('/{variant}/{intensity}/edit', [RecipeController::class, 'edit'])->name('edit')->middleware('permission:recipes-edit');
         Route::put('/{variant}/{intensity}', [RecipeController::class, 'update'])->name('update')->middleware('permission:recipes-edit');
         Route::delete('/{variant}/{intensity}', [RecipeController::class, 'destroy'])->name('destroy')->middleware('permission:recipes-delete');
-        Route::patch('/{variant}/{intensity}/toggle-active', [RecipeController::class, 'toggleActive'])->name('toggle-active')->middleware('permission:recipes-edit');
         Route::post('/{variant}/{intensity}/generate-products', [RecipeController::class, 'generateProducts'])->name('generate-products')->middleware('permission:recipes-create');
+        Route::post('/{variant}/{intensity}/sizes/{size}/generate', [RecipeController::class, 'generateSingleSize'])->name('generate-size')->middleware('permission:recipes-create');
     });
 
     // ── Products ──────────────────────────────────────────────────────────────

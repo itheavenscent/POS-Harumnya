@@ -38,7 +38,6 @@ class RecipeController extends Controller
             ->select('variant_id', 'intensity_id')
             ->selectRaw('COUNT(*) as ingredient_count')
             ->selectRaw('SUM(base_quantity) as total_volume')
-            ->selectRaw('bool_or(is_active) as is_active')
             ->groupBy('variant_id', 'intensity_id')
             ->get();
 
@@ -59,7 +58,6 @@ class RecipeController extends Controller
                     'total_volume'     => $item->total_volume,
                     'generated_sizes'  => $generatedSizes,
                     'is_generated'     => count($generatedSizes) > 0,
-                    'is_active'        => (bool) $item->is_active,
                 ];
             })->values();
 
@@ -70,7 +68,6 @@ class RecipeController extends Controller
                 'total_ingredients' => $intensities->sum('ingredient_count'),
                 'is_any_generated'  => $intensities->contains('is_generated', true),
                 'is_all_generated'  => $intensities->every(fn ($i) => $i['is_generated']),
-                'has_inactive'      => $intensities->contains('is_active', false),
                 'intensities'       => $intensities,
             ];
         })->values();
@@ -102,7 +99,6 @@ class RecipeController extends Controller
                 'all_generated' => $group['is_all_generated'],
                 'generated'     => $group['is_any_generated'] && ! $group['is_all_generated'],
                 'pending'       => ! $group['is_any_generated'],
-                'inactive'      => $group['has_inactive'],
                 default         => true,
             };
         })->values();
@@ -389,11 +385,6 @@ class RecipeController extends Controller
         ]);
 
         DB::transaction(function () use ($validated) {
-            // Pertahankan status aktif/nonaktif kalau formula ini sudah ada sebelumnya.
-            $wasActive = VariantRecipe::where('variant_id', $validated['variant_id'])
-                ->where('intensity_id', $validated['intensity_id'])
-                ->value('is_active') ?? true;
-
             VariantRecipe::where('variant_id', $validated['variant_id'])
                 ->where('intensity_id', $validated['intensity_id'])
                 ->delete();
@@ -406,7 +397,6 @@ class RecipeController extends Controller
                     'base_quantity' => $item['base_quantity'],
                     'unit'          => $item['unit'] ?? 'ml',
                     'notes'         => $item['notes'] ?? null,
-                    'is_active'     => $wasActive,
                 ]);
             }
         });
@@ -522,12 +512,6 @@ class RecipeController extends Controller
         Intensity::findOrFail($intensity_id);
 
         DB::transaction(function () use ($validated, $variant_id, $intensity_id) {
-            // Pertahankan status aktif/nonaktif — delete+recreate tidak boleh
-            // diam-diam mengaktifkan kembali formula yang sengaja dinonaktifkan.
-            $wasActive = VariantRecipe::where('variant_id', $variant_id)
-                ->where('intensity_id', $intensity_id)
-                ->value('is_active') ?? true;
-
             VariantRecipe::where('variant_id', $variant_id)
                 ->where('intensity_id', $intensity_id)
                 ->delete();
@@ -540,35 +524,12 @@ class RecipeController extends Controller
                     'base_quantity' => $item['base_quantity'],
                     'unit'          => $item['unit'] ?? 'ml',
                     'notes'         => $item['notes'] ?? null,
-                    'is_active'     => $wasActive,
                 ]);
             }
         });
 
         return to_route('recipes.index')
             ->with('success', 'Formula variant berhasil diupdate');
-    }
-
-    // =========================================================================
-    // TOGGLE ACTIVE — nonaktifkan/aktifkan formula (variant+intensity) tanpa hapus
-    // =========================================================================
-
-    public function toggleActive($variant_id, $intensity_id)
-    {
-        $rows = VariantRecipe::forVariantIntensity($variant_id, $intensity_id)->get();
-
-        if ($rows->isEmpty()) {
-            return back()->with('error', 'Formula tidak ditemukan.');
-        }
-
-        $newStatus = ! (bool) ($rows->first()->is_active ?? true);
-
-        VariantRecipe::forVariantIntensity($variant_id, $intensity_id)
-            ->update(['is_active' => $newStatus]);
-
-        return back()->with('success', $newStatus
-            ? 'Formula diaktifkan kembali.'
-            : 'Formula dinonaktifkan. Formula ini tidak bisa dipakai untuk generate product baru selama nonaktif.');
     }
 
     // =========================================================================
@@ -618,10 +579,6 @@ class RecipeController extends Controller
             return back()->with('error', 'Formula belum ada — buat formula terlebih dahulu.');
         }
 
-        if (! (bool) ($recipes->first()->is_active ?? true)) {
-            return back()->with('error', 'Formula ini nonaktif — aktifkan kembali sebelum generate product.');
-        }
-
         if (!$regenerate) {
             $existingCount = Product::where('variant_id', $variant_id)
                 ->where('intensity_id', $intensity_id)
@@ -632,112 +589,14 @@ class RecipeController extends Controller
             }
         }
 
-        $generated = 0;
-        $skipped   = 0;
-        $details   = [];
-
-        DB::transaction(function () use (
-            $sizes, $variant, $intensity, $variant_id, $intensity_id,
-            $recipes, $regenerate, &$generated, &$skipped, &$details
-        ) {
-            foreach ($sizes as $size) {
-                $sku = $this->generateSKU($variant, $intensity, $size);
-
-                // Lookup by the unique key (sku) so a pre-existing/seeded product
-                // with a different id-tuple is matched instead of colliding on insert.
-                $existingProduct = Product::withTrashed()
-                    ->where(function ($q) use ($variant_id, $intensity_id, $size, $sku) {
-                        $q->where(function ($qq) use ($variant_id, $intensity_id, $size) {
-                            $qq->where('variant_id', $variant_id)
-                               ->where('intensity_id', $intensity_id)
-                               ->where('size_id', $size->id);
-                        })->orWhere('sku', $sku);
-                    })
-                    ->first();
-
-                // Skip hanya jika produk LIVE (bukan soft-deleted) sudah ada dan
-                // tidak sedang regenerate. Produk trashed harus di-restore, bukan
-                // dilewati — kalau tidak, POS tetap kosong walau notif "berhasil".
-                if ($existingProduct && !$existingProduct->trashed() && !$regenerate) {
-                    $skipped++;
-                    $details[] = ['size' => $size->name, 'status' => 'skipped', 'reason' => 'Product sudah ada'];
-                    continue;
-                }
-
-                $priceRecord = DB::table('intensity_size_prices')
-                    ->where('intensity_id', $intensity_id)
-                    ->where('size_id', $size->id)
-                    ->where('is_active', true)
-                    ->first();
-
-                if (!$priceRecord) {
-                    $skipped++;
-                    $details[] = ['size' => $size->name, 'status' => 'skipped', 'reason' => 'Harga belum dikonfigurasi'];
-                    continue;
-                }
-
-                $intensityQty = IntensitySizeQuantity::getFor($intensity_id, $size->id);
-                if (!$intensityQty) {
-                    $skipped++;
-                    $details[] = ['size' => $size->name, 'status' => 'skipped', 'reason' => 'Kalibrasi belum dikonfigurasi'];
-                    continue;
-                }
-
-                $scaledMap = VariantRecipe::scaleCollection($recipes, $intensityQty);
-
-                if ($existingProduct) {
-                    // Restore produk yang di-soft-delete → aktifkan lagi. Tapi kalau
-                    // produk masih hidup dan sengaja dinonaktifkan admin (is_active=false
-                    // untuk sembunyikan ukuran ini dari POS), regenerate TIDAK BOLEH
-                    // diam-diam mengaktifkannya kembali.
-                    $wasTrashed = $existingProduct->trashed();
-                    if ($wasTrashed) {
-                        $existingProduct->restore();
-                    }
-                    $existingProduct->recipes()->delete();
-
-                    $product = $existingProduct;
-                    $product->update([
-                        'sku'           => $sku,
-                        'variant_id'    => $variant_id,
-                        'intensity_id'  => $intensity_id,
-                        'size_id'       => $size->id,
-                        'name'          => "{$variant->name} - {$intensity->code} - {$size->name}",
-                        'selling_price' => $priceRecord->price,
-                        'is_active'     => $wasTrashed ? true : $existingProduct->is_active,
-                    ]);
-                } else {
-                    $product = Product::create([
-                        'sku'           => $sku,
-                        'variant_id'    => $variant_id,
-                        'intensity_id'  => $intensity_id,
-                        'size_id'       => $size->id,
-                        'name'          => "{$variant->name} - {$intensity->code} - {$size->name}",
-                        'selling_price' => $priceRecord->price,
-                        'is_active'     => true,
-                    ]);
-                }
-
-                foreach ($recipes as $idx => $recipe) {
-                    $scaledQty  = $scaledMap[$idx] ?? 0;
-                    $ingredient = $recipe->ingredient;
-
-                    ProductRecipe::create([
-                        'product_id'    => $product->id,
-                        'ingredient_id' => $recipe->ingredient_id,
-                        'quantity'      => $scaledQty,
-                        'unit'          => $recipe->unit,
-                        'unit_cost'     => $ingredient->average_cost ?? 0,
-                        'total_cost'    => $scaledQty * ($ingredient->average_cost ?? 0),
-                    ]);
-                }
-
-                $product->calculateProductionCost();
-
-                $generated++;
-                $details[] = ['size' => $size->name, 'status' => 'generated', 'sku' => $product->sku, 'recipes' => $recipes->count()];
-            }
+        $details = DB::transaction(function () use ($sizes, $variant, $intensity, $variant_id, $intensity_id, $recipes, $regenerate) {
+            return $sizes->map(
+                fn ($size) => $this->generateProductForSize($variant, $intensity, $variant_id, $intensity_id, $recipes, $size, $regenerate)
+            )->all();
         });
+
+        $generated = count(array_filter($details, fn ($d) => $d['status'] === 'generated'));
+        $skipped   = count($details) - $generated;
 
         $message = $generated > 0
             ? "{$generated} product berhasil di-generate" . ($skipped > 0 ? ", {$skipped} dilewati" : "")
@@ -746,6 +605,140 @@ class RecipeController extends Controller
         return back()
             ->with($generated > 0 ? 'success' : 'warning', $message)
             ->with('generateDetails', $details);
+    }
+
+    // =========================================================================
+    // GENERATE PRODUCT — 1 ukuran saja ("Tambahkan ke POS" per baris scaling)
+    // =========================================================================
+
+    public function generateSingleSize(string $variant_id, string $intensity_id, string $size_id)
+    {
+        $variant   = Variant::findOrFail($variant_id);
+        $intensity = Intensity::findOrFail($intensity_id);
+        $size      = Size::findOrFail($size_id);
+
+        $recipes = VariantRecipe::with('ingredient.category')
+            ->where('variant_id', $variant_id)
+            ->where('intensity_id', $intensity_id)
+            ->get();
+
+        if ($recipes->isEmpty()) {
+            return back()->with('error', 'Formula belum ada — buat formula terlebih dahulu.');
+        }
+
+        $detail = DB::transaction(
+            fn () => $this->generateProductForSize($variant, $intensity, $variant_id, $intensity_id, $recipes, $size, false)
+        );
+
+        if ($detail['status'] === 'generated') {
+            return back()->with('success', "{$size->name} ({$size->volume_ml}ml) berhasil ditambahkan ke POS!");
+        }
+
+        return back()->with('warning', $detail['reason'] ?? 'Ukuran ini tidak bisa ditambahkan ke POS.');
+    }
+
+    /**
+     * Generate/update 1 Product (variant+intensity+size) dari resep yang sudah
+     * di-scale. Dipakai baik oleh generateProducts() (bulk, semua ukuran) maupun
+     * generateSingleSize() (satu ukuran lewat tombol "Tambahkan ke POS").
+     */
+    private function generateProductForSize(
+        Variant $variant,
+        Intensity $intensity,
+        string $variant_id,
+        string $intensity_id,
+        $recipes,
+        Size $size,
+        bool $regenerate
+    ): array {
+        $sku = $this->generateSKU($variant, $intensity, $size);
+
+        // Lookup by the unique key (sku) so a pre-existing/seeded product
+        // with a different id-tuple is matched instead of colliding on insert.
+        $existingProduct = Product::withTrashed()
+            ->where(function ($q) use ($variant_id, $intensity_id, $size, $sku) {
+                $q->where(function ($qq) use ($variant_id, $intensity_id, $size) {
+                    $qq->where('variant_id', $variant_id)
+                       ->where('intensity_id', $intensity_id)
+                       ->where('size_id', $size->id);
+                })->orWhere('sku', $sku);
+            })
+            ->first();
+
+        // Skip hanya jika produk LIVE (bukan soft-deleted) sudah ada dan
+        // tidak sedang regenerate. Produk trashed harus di-restore, bukan
+        // dilewati — kalau tidak, POS tetap kosong walau notif "berhasil".
+        if ($existingProduct && !$existingProduct->trashed() && !$regenerate) {
+            return ['size' => $size->name, 'status' => 'skipped', 'reason' => 'Product sudah ada'];
+        }
+
+        $priceRecord = DB::table('intensity_size_prices')
+            ->where('intensity_id', $intensity_id)
+            ->where('size_id', $size->id)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$priceRecord) {
+            return ['size' => $size->name, 'status' => 'skipped', 'reason' => 'Harga belum dikonfigurasi'];
+        }
+
+        $intensityQty = IntensitySizeQuantity::getFor($intensity_id, $size->id);
+        if (!$intensityQty) {
+            return ['size' => $size->name, 'status' => 'skipped', 'reason' => 'Kalibrasi belum dikonfigurasi'];
+        }
+
+        $scaledMap = VariantRecipe::scaleCollection($recipes, $intensityQty);
+
+        if ($existingProduct) {
+            // Restore produk yang di-soft-delete → aktifkan lagi. Tapi kalau
+            // produk masih hidup dan sengaja dinonaktifkan admin (is_active=false
+            // untuk sembunyikan ukuran ini dari POS), regenerate TIDAK BOLEH
+            // diam-diam mengaktifkannya kembali.
+            $wasTrashed = $existingProduct->trashed();
+            if ($wasTrashed) {
+                $existingProduct->restore();
+            }
+            $existingProduct->recipes()->delete();
+
+            $product = $existingProduct;
+            $product->update([
+                'sku'           => $sku,
+                'variant_id'    => $variant_id,
+                'intensity_id'  => $intensity_id,
+                'size_id'       => $size->id,
+                'name'          => "{$variant->name} - {$intensity->code} - {$size->name}",
+                'selling_price' => $priceRecord->price,
+                'is_active'     => $wasTrashed ? true : $existingProduct->is_active,
+            ]);
+        } else {
+            $product = Product::create([
+                'sku'           => $sku,
+                'variant_id'    => $variant_id,
+                'intensity_id'  => $intensity_id,
+                'size_id'       => $size->id,
+                'name'          => "{$variant->name} - {$intensity->code} - {$size->name}",
+                'selling_price' => $priceRecord->price,
+                'is_active'     => true,
+            ]);
+        }
+
+        foreach ($recipes as $idx => $recipe) {
+            $scaledQty  = $scaledMap[$idx] ?? 0;
+            $ingredient = $recipe->ingredient;
+
+            ProductRecipe::create([
+                'product_id'    => $product->id,
+                'ingredient_id' => $recipe->ingredient_id,
+                'quantity'      => $scaledQty,
+                'unit'          => $recipe->unit,
+                'unit_cost'     => $ingredient->average_cost ?? 0,
+                'total_cost'    => $scaledQty * ($ingredient->average_cost ?? 0),
+            ]);
+        }
+
+        $product->calculateProductionCost();
+
+        return ['size' => $size->name, 'status' => 'generated', 'sku' => $product->sku, 'recipes' => $recipes->count()];
     }
 
     // =========================================================================
@@ -996,7 +989,6 @@ class RecipeController extends Controller
             'recipes'          => $recipes,
             'generated_sizes'  => $generatedSizes,
             'is_generated'     => count($generatedSizes) > 0,
-            'is_active'        => (bool) ($recipes->first()->is_active ?? true),
             'size_scaling'     => $sizeQuantities->map(fn($q) => [
                 'size_id'          => $q->size->id,
                 'size_name'        => $q->size->name,

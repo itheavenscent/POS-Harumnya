@@ -121,7 +121,6 @@ export default function Index({ variantRecipes, filters, stats }) {
                                 { key: "all_generated", label: "Semua Generated", dot: "bg-[#09a374]" },
                                 { key: "generated", label: "Sebagian", dot: "bg-[#e67e22]" },
                                 { key: "pending", label: "Belum", dot: "bg-[#e74c3c]" },
-                                { key: "inactive", label: "Nonaktif", dot: "bg-slate-400" },
                             ].map(({ key, label, dot }) => (
                                 <button
                                     key={key}
@@ -229,11 +228,7 @@ export default function Index({ variantRecipes, filters, stats }) {
                                                     {group.intensities.map((it, i) => (
                                                         <span
                                                             key={i}
-                                                            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${
-                                                                it.is_active === false
-                                                                    ? "bg-slate-50 dark:bg-slate-800/40 border-dashed border-slate-300 dark:border-slate-700 text-slate-400 line-through"
-                                                                    : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
-                                                            }`}
+                                                            className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
                                                         >
                                                             {it.intensity?.code ?? "—"}
                                                         </span>
