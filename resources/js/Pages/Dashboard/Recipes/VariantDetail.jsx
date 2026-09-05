@@ -4,25 +4,24 @@ import { Head, Link, router } from "@inertiajs/react";
 import {
     IconArrowLeft, IconEye, IconEdit, IconTrash, IconFlask,
     IconAlertTriangle, IconCircleCheck, IconLock, IconSparkles,
-    IconAdjustments, IconPlus, IconCirclePlus,
+    IconPlus, IconCirclePlus,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 
 // ─── Badge ────────────────────────────────────────────────────────────────────
 const Badge = ({ color = "slate", children, size = "md" }) => {
     const colors = {
-        teal: "bg-slate-100 text-slate-700 ring-teal-200",
-        green: "bg-slate-100 text-slate-700 ring-emerald-200",
-        amber: "bg-slate-100 text-slate-700 ring-amber-200",
-        slate: "bg-slate-100 text-slate-600 ring-slate-200",
-        red: "bg-slate-100 text-slate-700 ring-red-200",
+        teal: "bg-teal-50 dark:bg-teal-950/30 text-teal-700 dark:text-teal-400 ring-teal-200 dark:ring-teal-900",
+        green: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 ring-emerald-200 dark:ring-emerald-900",
+        amber: "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 ring-amber-200 dark:ring-amber-900",
+        slate: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 ring-slate-200 dark:ring-slate-700",
     };
     const sizes = {
         sm: "px-1.5 py-0.5 text-[10px]",
         md: "px-2 py-0.5 text-[11px]",
     };
     return (
-        <span className={`inline-flex items-center gap-1 rounded-full font-semibold ring-1 ${colors[color] ?? colors.slate} ${sizes[size] ?? sizes.md}`}>
+        <span className={`inline-flex items-center gap-1 rounded-full font-bold ring-1 ${colors[color] ?? colors.slate} ${sizes[size] ?? sizes.md}`}>
             {children}
         </span>
     );
@@ -51,6 +50,16 @@ const GenderIcon = ({ gender }) => {
         </span>
     );
 };
+
+// ─── Stat Pill ────────────────────────────────────────────────────────────────
+function StatPill({ label, value, accent = "#0f172a" }) {
+    return (
+        <div className="flex items-center gap-2 px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+            <span className="text-base font-bold tabular-nums" style={{ color: accent }}>{value}</span>
+            <span className="text-[11px] text-slate-400 font-medium leading-tight">{label}</span>
+        </div>
+    );
+}
 
 // ─── Delete Modal ─────────────────────────────────────────────────────────────
 function DeleteModal({ show, title, message, onConfirm, onClose, loading }) {
@@ -89,7 +98,7 @@ function DeleteModal({ show, title, message, onConfirm, onClose, loading }) {
     );
 }
 
-// ─── Intensity Detail Row ─────────────────────────────────────────────────────
+// ─── Intensity Detail Card ─────────────────────────────────────────────────────
 function IntensityDetailRow({ intensity, variantId, onDelete }) {
     const [generating, setGenerating] = useState(false);
     const [addingSizeId, setAddingSizeId] = useState(null);
@@ -135,38 +144,35 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
     };
 
     return (
-        <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
 
             {/* ── Header ── */}
-            <div className="px-4 py-3 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex flex-col gap-2">
-
-                {/* Row 1: badge + name + actions */}
+            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-col gap-2.5">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2 flex-wrap min-w-0">
                         <Badge color="teal">{intensity.intensity.code}</Badge>
-                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate">
+                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">
                             {intensity.intensity.name}
                         </span>
                     </div>
-                    {/* Action icons + generate button */}
                     <div className="flex items-center gap-1 flex-shrink-0">
                         <Link
                             href={route("recipes.show", [variantId, intensity.intensity_id])}
-                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-teal-900/30 rounded-lg transition"
+                            className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition"
                             title="Detail"
                         >
                             <IconEye size={14} />
                         </Link>
                         <Link
                             href={route("recipes.edit", [variantId, intensity.intensity_id])}
-                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-amber-900/30 rounded-lg transition"
+                            className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition"
                             title="Edit"
                         >
                             <IconEdit size={14} />
                         </Link>
                         <button
                             onClick={() => onDelete(intensity, variantId)}
-                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-red-900/30 rounded-lg transition"
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
                             title="Hapus"
                         >
                             <IconTrash size={14} />
@@ -196,9 +202,8 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
                     </div>
                 </div>
 
-                {/* Row 2: meta badges */}
                 <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[11px] text-slate-400">
+                    <span className="text-[11px] text-slate-400 font-medium">
                         {intensity.ingredient_count} bahan · {parseFloat(intensity.total_volume).toFixed(0)}ml
                     </span>
                     {isGenerated && (
@@ -210,48 +215,55 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
                 </div>
             </div>
 
-            {/* ── Body: ingredients + scaling stacked vertically ── */}
-            <div className="p-4 flex flex-col gap-5">
+            {/* ── Body ── */}
+            <div className="p-5 flex flex-col gap-5">
 
-                {/* Ingredients */}
-                <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                        Komposisi Bahan (Base 30ml)
-                    </p>
-                    <div className="space-y-1.5">
-                        {intensity.recipes.map((recipe, idx) => {
-                            const type = recipe.ingredient?.category?.ingredient_type;
-                            return (
-                                <div key={recipe.id ?? idx} className="flex items-center justify-between gap-2 text-xs">
+                {/* Ingredients — with proportion bars */}
+                <div className="space-y-2.5">
+                    {intensity.recipes.map((recipe, idx) => {
+                        const type = recipe.ingredient?.category?.ingredient_type;
+                        const totalVolume = parseFloat(intensity.total_volume) || 0;
+                        const pct = totalVolume > 0 ? (parseFloat(recipe.base_quantity) / totalVolume) * 100 : 0;
+                        return (
+                            <div key={recipe.id ?? idx}>
+                                <div className="flex items-center justify-between gap-2 mb-1">
                                     <div className="flex items-center gap-1.5 min-w-0 flex-1">
                                         <TypeDot type={type} />
-                                        <span className="text-slate-600 dark:text-slate-400 truncate">
+                                        <span className="text-xs text-slate-600 dark:text-slate-400 truncate">
                                             {recipe.ingredient?.name ?? "—"}
                                         </span>
                                     </div>
-                                    <span className="font-bold text-slate-700 dark:text-slate-300 flex-shrink-0 tabular-nums">
+                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex-shrink-0 tabular-nums">
                                         {parseFloat(recipe.base_quantity).toFixed(2)}
                                         <span className="text-slate-400 font-normal ml-0.5">{recipe.unit}</span>
                                     </span>
                                 </div>
-                            );
-                        })}
-                        <div className="border-t border-slate-200 dark:border-slate-700 pt-1.5 flex justify-between text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                            <span>Total:</span>
-                            <span>{parseFloat(intensity.total_volume).toFixed(2)} ml</span>
-                        </div>
+                                <div className="h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                    <div
+                                        className={`h-full rounded-full ${
+                                            type === "oil" ? "bg-teal-400" : type === "alcohol" ? "bg-blue-400" : "bg-slate-400"
+                                        }`}
+                                        style={{ width: `${pct}%` }}
+                                    />
+                                </div>
+                            </div>
+                        );
+                    })}
+                    <div className="border-t border-slate-100 dark:border-slate-800 pt-2 flex justify-between text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        <span>Total</span>
+                        <span>{parseFloat(intensity.total_volume).toFixed(2)} ml</span>
                     </div>
                 </div>
 
                 {/* Size Scaling */}
                 <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                        Scaling per Ukuran
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">
+                        Ukuran & Ketersediaan POS
                     </p>
                     {!hasScaling ? (
-                        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-100 border border-slate-300">
-                            <IconAlertTriangle size={12} className="text-slate-700 flex-shrink-0" />
-                            <span className="text-[11px] text-slate-700">IntensitySizeQuantity belum dikonfigurasi</span>
+                        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900">
+                            <IconAlertTriangle size={12} className="text-amber-600 flex-shrink-0" />
+                            <span className="text-[11px] text-amber-700 dark:text-amber-400">IntensitySizeQuantity belum dikonfigurasi</span>
                         </div>
                     ) : (
                         <div className="space-y-1.5">
@@ -261,56 +273,59 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
                                 return (
                                     <div
                                         key={si}
-                                        className="flex items-center gap-3 text-xs bg-white dark:bg-slate-900 rounded-lg px-3 py-2 border border-slate-100 dark:border-slate-800"
+                                        className={`flex items-center gap-3 text-xs rounded-lg px-3 py-2.5 border transition-colors ${
+                                            isSizeGenerated
+                                                ? "bg-emerald-50/60 dark:bg-emerald-950/10 border-emerald-100 dark:border-emerald-900/40"
+                                                : "bg-slate-50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-800"
+                                        }`}
                                     >
-                                        {/* Volume label */}
-                                        <span className="font-bold text-slate-700 tabular-nums w-12 flex-shrink-0">
+                                        <span className={`font-bold tabular-nums flex-shrink-0 px-2 py-1 rounded-md text-center min-w-[52px] ${
+                                            isSizeGenerated
+                                                ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                                                : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+                                        }`}>
                                             {s.volume_ml}ml
                                         </span>
 
-                                        {/* Tags */}
                                         <div className="flex gap-1 flex-wrap flex-1">
                                             {s.oil_quantity > 0 && (
-                                                <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-teal-100 whitespace-nowrap">
+                                                <span className="text-[10px] bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-400 px-1.5 py-0.5 rounded border border-teal-100 dark:border-teal-900 whitespace-nowrap">
                                                     Oil {s.oil_quantity}
                                                 </span>
                                             )}
                                             {s.alcohol_quantity > 0 && (
-                                                <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-blue-100 whitespace-nowrap">
+                                                <span className="text-[10px] bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-900 whitespace-nowrap">
                                                     Alc {s.alcohol_quantity}
                                                 </span>
                                             )}
                                             {s.other_quantity > 0 && (
-                                                <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200 whitespace-nowrap">
+                                                <span className="text-[10px] bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 whitespace-nowrap">
                                                     Other {s.other_quantity}
                                                 </span>
                                             )}
                                         </div>
 
-                                        {/* Add to POS / status */}
-                                        {!isSizeGenerated && (
-                                            <button
-                                                onClick={() => handleAddSizeToPos(s.size_id)}
-                                                disabled={isAdding}
-                                                title="Tambahkan ukuran ini ke POS"
-                                                className="flex items-center gap-1 px-2 py-1 bg-teal-50 dark:bg-teal-950/30 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-900 rounded-md text-[10px] font-bold hover:bg-teal-100 dark:hover:bg-teal-900/40 transition flex-shrink-0 disabled:opacity-50"
-                                            >
-                                                {isAdding
-                                                    ? <div className="w-2.5 h-2.5 border border-teal-600 border-t-transparent rounded-full animate-spin" />
-                                                    : <IconCirclePlus size={12} />
-                                                }
-                                                Tambah ke POS
-                                            </button>
-                                        )}
-
-                                        {/* Total + check */}
-                                        <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
-                                            <span className="font-bold text-slate-700 dark:text-slate-300 tabular-nums">
-                                                {s.total_volume}
+                                        <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+                                            <span className="text-slate-400 text-[10px] tabular-nums hidden sm:inline">
+                                                {s.total_volume}ml
                                             </span>
-                                            <span className="text-slate-400">ml</span>
-                                            {isSizeGenerated && (
-                                                <IconCircleCheck size={11} className="text-slate-700 ml-0.5" />
+                                            {isSizeGenerated ? (
+                                                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] whitespace-nowrap">
+                                                    <IconCircleCheck size={12} /> Di POS
+                                                </span>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleAddSizeToPos(s.size_id)}
+                                                    disabled={isAdding}
+                                                    title="Tambahkan ukuran ini ke POS"
+                                                    className="flex items-center gap-1 px-2 py-1 bg-teal-600 text-white rounded-md text-[10px] font-bold hover:bg-teal-700 transition flex-shrink-0 disabled:opacity-50 whitespace-nowrap"
+                                                >
+                                                    {isAdding
+                                                        ? <div className="w-2.5 h-2.5 border border-white/40 border-t-white rounded-full animate-spin" />
+                                                        : <IconCirclePlus size={12} />
+                                                    }
+                                                    Tambah ke POS
+                                                </button>
                                             )}
                                         </div>
                                     </div>
@@ -349,36 +364,41 @@ export default function VariantDetail({ variant, intensities, total_ingredients 
             <Head title={`Formula — ${variant.name}`} />
 
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-4">
                     <Link href={route("recipes.index")}
-                        className="flex items-center gap-1.5 text-slate-500 hover:text-teal-600 text-sm font-medium transition">
+                        className="flex items-center gap-1.5 text-slate-500 hover:text-teal-600 text-sm font-medium transition flex-shrink-0">
                         <IconArrowLeft size={16} /> Kembali
                     </Link>
-                    <div className="w-px h-5 bg-slate-200 dark:bg-slate-700" />
-                    <div>
+                    <div className="w-px h-8 bg-slate-200 dark:bg-slate-700 flex-shrink-0" />
+                    <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <h1 className="text-lg font-bold text-slate-900 dark:text-white">{variant.name}</h1>
+                            <h1 className="text-xl font-bold text-slate-900 dark:text-white truncate">{variant.name}</h1>
                             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{variant.code}</span>
                             <GenderIcon gender={variant.gender} />
                         </div>
-                        <p className="text-slate-500 text-xs mt-0.5">
-                            {intensities.length} intensitas · {total_ingredients} bahan · {generatedCount}/{intensities.length} generated
-                        </p>
                     </div>
                 </div>
                 <Link href={route("recipes.create")}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-sm transition shadow-sm flex-shrink-0">
+                    className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-sm transition shadow-sm shadow-teal-500/20 flex-shrink-0">
                     <IconPlus size={15} /> Tambah Formula
                 </Link>
             </div>
 
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                <IconAdjustments size={11} /> Semua Intensitas & Resep
-            </p>
+            {/* Stats */}
+            <div className="flex flex-wrap gap-3 mb-6">
+                <StatPill label="Intensitas" value={intensities.length} />
+                <StatPill label="Total Bahan" value={total_ingredients} />
+                <StatPill label="Sudah Generated" value={`${generatedCount}/${intensities.length}`} accent="#09a374" />
+            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {intensities.map((intensity) => (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                {intensities.length === 0 ? (
+                    <div className="xl:col-span-2 bg-white dark:bg-slate-900 p-16 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-center">
+                        <IconFlask size={32} className="mx-auto text-teal-400 mb-3" />
+                        <p className="text-slate-500 font-semibold">Belum ada formula untuk variant ini</p>
+                    </div>
+                ) : intensities.map((intensity) => (
                     <IntensityDetailRow
                         key={`${intensity.variant_id}-${intensity.intensity_id}`}
                         intensity={intensity}
