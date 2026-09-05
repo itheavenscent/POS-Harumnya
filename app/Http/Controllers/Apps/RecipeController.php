@@ -975,10 +975,10 @@ class RecipeController extends Controller
             ->get()
             ->sortBy('size.volume_ml');
 
-        $generatedSizes = Product::where('variant_id', $variantId)
+        $products = Product::where('variant_id', $variantId)
             ->where('intensity_id', $intensityId)
-            ->pluck('size_id')
-            ->toArray();
+            ->get(['id', 'size_id', 'is_active'])
+            ->keyBy('size_id');
 
         return [
             'variant_id'       => $variantId,
@@ -987,8 +987,12 @@ class RecipeController extends Controller
             'ingredient_count' => $recipes->count(),
             'total_volume'     => $recipes->sum('base_quantity'),
             'recipes'          => $recipes,
-            'generated_sizes'  => $generatedSizes,
-            'is_generated'     => count($generatedSizes) > 0,
+            'generated_sizes'  => $products->keys()->all(),
+            'is_generated'     => $products->isNotEmpty(),
+            'products_by_size' => $products->map(fn ($p) => [
+                'id'        => $p->id,
+                'is_active' => (bool) $p->is_active,
+            ])->all(),
             'size_scaling'     => $sizeQuantities->map(fn($q) => [
                 'size_id'          => $q->size->id,
                 'size_name'        => $q->size->name,

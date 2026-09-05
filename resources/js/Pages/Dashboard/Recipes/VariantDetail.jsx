@@ -4,7 +4,7 @@ import { Head, Link, router } from "@inertiajs/react";
 import {
     IconArrowLeft, IconEye, IconEdit, IconTrash, IconFlask,
     IconAlertTriangle, IconCircleCheck, IconLock, IconSparkles,
-    IconPlus, IconCirclePlus,
+    IconPlus,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 
@@ -125,19 +125,39 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
         );
     };
 
-    const handleAddSizeToPos = (sizeId) => {
-        setAddingSizeId(sizeId);
-        router.post(
-            route("recipes.generate-size", [variantId, intensity.intensity_id, sizeId]),
+    // Toggle ketersediaan 1 ukuran di POS. Belum pernah di-generate → buat
+    // product baru (aktif). Sudah ada → tinggal nyala/matikan is_active-nya.
+    const handleToggleSize = (size, product) => {
+        setAddingSizeId(size.size_id);
+
+        if (!product) {
+            router.post(
+                route("recipes.generate-size", [variantId, intensity.intensity_id, size.size_id]),
+                {},
+                {
+                    preserveScroll: true,
+                    onSuccess: (page) => {
+                        const flash = page.props?.flash ?? {};
+                        if (flash.success) toast.success(flash.success);
+                        else if (flash.warning) toast(flash.warning, { icon: "⚠️" });
+                    },
+                    onError: () => toast.error("Gagal menambahkan ukuran ke POS"),
+                    onFinish: () => setAddingSizeId(null),
+                }
+            );
+            return;
+        }
+
+        router.patch(
+            route("products.toggle-active", product.id),
             {},
             {
                 preserveScroll: true,
                 onSuccess: (page) => {
                     const flash = page.props?.flash ?? {};
                     if (flash.success) toast.success(flash.success);
-                    else if (flash.warning) toast(flash.warning, { icon: "⚠️" });
                 },
-                onError: () => toast.error("Gagal menambahkan ukuran ke POS"),
+                onError: () => toast.error("Gagal mengubah status ukuran"),
                 onFinish: () => setAddingSizeId(null),
             }
         );
@@ -253,6 +273,9 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
                         <span>Total</span>
                         <span>{parseFloat(intensity.total_volume).toFixed(2)} ml</span>
                     </div>
+                    <p className="text-[10px] text-slate-400 italic">
+                        Basis resep 30ml — otomatis diskalakan mengikuti ukuran botol di bawah.
+                    </p>
                 </div>
 
                 {/* Size Scaling */}
@@ -268,19 +291,20 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
                     ) : (
                         <div className="space-y-1.5">
                             {intensity.size_scaling.map((s, si) => {
-                                const isSizeGenerated = intensity.generated_sizes?.includes(s.size_id);
-                                const isAdding = addingSizeId === s.size_id;
+                                const product = intensity.products_by_size?.[s.size_id];
+                                const isActive = product?.is_active === true;
+                                const isBusy = addingSizeId === s.size_id;
                                 return (
                                     <div
                                         key={si}
                                         className={`flex items-center gap-3 text-xs rounded-lg px-3 py-2.5 border transition-colors ${
-                                            isSizeGenerated
+                                            isActive
                                                 ? "bg-emerald-50/60 dark:bg-emerald-950/10 border-emerald-100 dark:border-emerald-900/40"
                                                 : "bg-slate-50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-800"
                                         }`}
                                     >
                                         <span className={`font-bold tabular-nums flex-shrink-0 px-2 py-1 rounded-md text-center min-w-[52px] ${
-                                            isSizeGenerated
+                                            isActive
                                                 ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
                                                 : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
                                         }`}>
@@ -305,28 +329,25 @@ function IntensityDetailRow({ intensity, variantId, onDelete }) {
                                             )}
                                         </div>
 
-                                        <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+                                        <div className="flex items-center gap-2.5 flex-shrink-0 ml-auto">
                                             <span className="text-slate-400 text-[10px] tabular-nums hidden sm:inline">
                                                 {s.total_volume}ml
                                             </span>
-                                            {isSizeGenerated ? (
-                                                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] whitespace-nowrap">
-                                                    <IconCircleCheck size={12} /> Di POS
-                                                </span>
-                                            ) : (
-                                                <button
-                                                    onClick={() => handleAddSizeToPos(s.size_id)}
-                                                    disabled={isAdding}
-                                                    title="Tambahkan ukuran ini ke POS"
-                                                    className="flex items-center gap-1 px-2 py-1 bg-teal-600 text-white rounded-md text-[10px] font-bold hover:bg-teal-700 transition flex-shrink-0 disabled:opacity-50 whitespace-nowrap"
-                                                >
-                                                    {isAdding
-                                                        ? <div className="w-2.5 h-2.5 border border-white/40 border-t-white rounded-full animate-spin" />
-                                                        : <IconCirclePlus size={12} />
-                                                    }
-                                                    Tambah ke POS
-                                                </button>
-                                            )}
+                                            <span className={`text-[10px] font-bold whitespace-nowrap ${isActive ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400"}`}>
+                                                {isActive ? "Di POS" : "Nonaktif"}
+                                            </span>
+                                            <button
+                                                onClick={() => handleToggleSize(s, product)}
+                                                disabled={isBusy}
+                                                title={isActive ? "Nonaktifkan dari POS" : "Aktifkan / tambahkan ke POS"}
+                                                className={`relative w-8 h-[18px] rounded-full transition-colors flex-shrink-0 disabled:opacity-50 ${
+                                                    isActive ? "bg-teal-500" : "bg-slate-300 dark:bg-slate-700"
+                                                }`}
+                                            >
+                                                <div className={`absolute top-[2px] left-[2px] w-[14px] h-[14px] rounded-full bg-white shadow transition-transform ${
+                                                    isActive ? "translate-x-[14px]" : ""
+                                                }`} />
+                                            </button>
                                         </div>
                                     </div>
                                 );
