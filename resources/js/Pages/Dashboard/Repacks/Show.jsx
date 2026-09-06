@@ -31,11 +31,11 @@ export default function Show({ repack, movements = [] }) {
     // qty stok — bigInteger SIGNED → parseInt
     const fmtQty = (n) => parseInt(n || 0).toLocaleString("id-ID");
 
-    // avg_cost — decimal(15,4) → 4 desimal
+    // avg_cost — decimal(15,4) di DB, tampil 2 desimal
     const fmtAvg = (n) =>
         parseFloat(n || 0).toLocaleString("id-ID", {
-            minimumFractionDigits: 4,
-            maximumFractionDigits: 4,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
         });
 
     const fmtDate = (d) =>

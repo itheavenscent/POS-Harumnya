@@ -83,16 +83,16 @@ export default function Index({
     // Rupiah — unit_cost adalah decimal(15,4) → parseFloat
     const fmt = (n) =>
         new Intl.NumberFormat("id-ID", {
-            style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2,
+            style: "currency", currency: "IDR", minimumFractionDigits: 2, maximumFractionDigits: 2,
         }).format(parseFloat(n) || 0);
 
     // Qty — bigInteger SIGNED → parseInt
     const fmtQty = (n) => parseInt(n || 0).toLocaleString("id-ID");
 
-    // avg_cost — decimal(15,4) → 2-4 desimal
+    // avg_cost — decimal(15,4) di DB, tampil 2 desimal (mis. "3.075,97")
     const fmtDec = (n) =>
         parseFloat(n || 0).toLocaleString("id-ID", {
-            minimumFractionDigits: 2, maximumFractionDigits: 4,
+            minimumFractionDigits: 2, maximumFractionDigits: 2,
         });
 
     const fmtDate = (d) =>
