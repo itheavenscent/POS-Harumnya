@@ -9,7 +9,7 @@ import {
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 
-const fmt    = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(parseFloat(n) || 0);
+const fmt    = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(parseFloat(n) || 0);
 const fmtQty = (n) => parseInt(n || 0).toLocaleString("id-ID");
 
 // ─── SearchSelect ─────────────────────────────────────────────────────────────
@@ -248,7 +248,7 @@ export default function Edit({ adjustment, warehouses, stores, ingredients, pack
                         <div className="space-y-3">
                             {data.items.map((item, idx) => {
                                 const diff      = getDifference(item);
-                                const valDiff   = Math.round(Math.abs(diff) * (parseFloat(item.unit_cost) || 0));
+                                const valDiff   = Math.abs(diff) * (parseFloat(item.unit_cost) || 0);
                                 const ing       = allItems.find((i) => i._type === item.item_type && i.id === item.item_id);
                                 const itemOptions = allItems.filter(
                                     (i) => i._type === item.item_type && (!usedItemIds.includes(i.id) || i.id === item.item_id)

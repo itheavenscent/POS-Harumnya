@@ -162,6 +162,62 @@ class TransactionController extends Controller
     }
 
     // =========================================================================
+    // SEARCH CUSTOMERS (AJAX live search)
+    // GET /dashboard/transactions/search-customers?q=xxx
+    //
+    // Cari ke SELURUH pelanggan aktif (bukan hanya 100 yang dimuat awal di POS).
+    // Cocokkan nama, no. telepon, kode, dan email. Case-insensitive & cross-DB
+    // (LOWER LIKE), no. telepon dinormalisasi agar spasi/tanda hubung diabaikan.
+    // =========================================================================
+    public function searchCustomers(Request $request): JsonResponse
+    {
+        $q = trim((string) $request->input('q', ''));
+
+        $customers = Customer::select(
+            'id',
+            'name',
+            'phone',
+            'code',
+            'email',
+            'tier',
+            'points',
+            'total_transactions',
+            'lifetime_spending'
+        )
+            ->where('is_active', true)
+            ->when($q !== '', function ($query) use ($q) {
+                $like = '%' . mb_strtolower($q) . '%';
+                // Digit-only, untuk cocokkan nomor telepon apa pun formatnya.
+                $digits = preg_replace('/\D+/', '', $q);
+
+                $query->where(function ($inner) use ($like, $digits) {
+                    $inner->whereRaw('LOWER(name) LIKE ?', [$like])
+                        ->orWhereRaw('LOWER(code) LIKE ?', [$like])
+                        ->orWhereRaw('LOWER(email) LIKE ?', [$like])
+                        ->orWhereRaw('LOWER(phone) LIKE ?', [$like]);
+
+                    if ($digits !== '') {
+                        // Buang non-digit dari kolom phone lalu cocokkan (Postgres).
+                        // Fallback: LIKE biasa untuk driver lain.
+                        if (DB::connection()->getDriverName() === 'pgsql') {
+                            $inner->orWhereRaw(
+                                "REGEXP_REPLACE(COALESCE(phone, ''), '[^0-9]', '', 'g') LIKE ?",
+                                ['%' . $digits . '%']
+                            );
+                        } else {
+                            $inner->orWhere('phone', 'like', '%' . $digits . '%');
+                        }
+                    }
+                });
+            })
+            ->orderBy('name')
+            ->limit(30)
+            ->get();
+
+        return response()->json(['success' => true, 'data' => $customers]);
+    }
+
+    // =========================================================================
     // GET CUSTOM ORDER PRICE (AJAX)
     // GET /dashboard/transactions/custom-price
     //

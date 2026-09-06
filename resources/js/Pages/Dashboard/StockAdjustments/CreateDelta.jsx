@@ -10,7 +10,7 @@ import {
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 
-const fmt    = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(parseFloat(n) || 0);
+const fmt    = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(parseFloat(n) || 0);
 const fmtQty = (n) => parseInt(n || 0).toLocaleString("id-ID");
 
 // ─── SearchSelect ─────────────────────────────────────────────────────────────
@@ -105,7 +105,7 @@ function SearchSelect({ options, value, onChange, placeholder = "Cari...", rende
 function ItemRow({ item, idx, allItems, usedItemIds, items, setData, errors, onFetchQty, removeItem, updateItem, loadingIdx }) {
     const diff    = parseInt(item.delta_quantity) || 0;
     const finalQty = (parseInt(item.system_quantity) || 0) + diff;
-    const valDiff = Math.round(Math.abs(diff) * (parseFloat(item.unit_cost) || 0));
+    const valDiff = Math.abs(diff) * (parseFloat(item.unit_cost) || 0);
     const ing     = allItems.find((i) => i._type === item.item_type && i.id === item.item_id);
     const itemOptions = allItems.filter(
         (i) => i._type === item.item_type && (!usedItemIds.includes(i.id) || i.id === item.item_id)

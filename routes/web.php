@@ -560,6 +560,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::post('/get-perfume-price', [TransactionController::class, 'getPerfumePrice'])->name('get-perfume-price')->middleware('permission:transactions-access');
         Route::get('/get-variants-custom', [TransactionController::class, 'getVariantsForCustom'])->name('get-variants-custom')->middleware('permission:transactions-access');
         Route::get('/get-custom-price', [TransactionController::class, 'getCustomPrice'])->name('get-custom-price')->middleware('permission:transactions-access');
+        Route::get('/search-customers', [TransactionController::class, 'searchCustomers'])->name('search-customers')->middleware('permission:transactions-access');
 
         // 2b. Eligible Discounts & Reward
         Route::get('/check-eligible-discounts', [TransactionController::class, 'checkEligibleDiscounts'])->name('check-eligible-discounts')->middleware('permission:transactions-access');

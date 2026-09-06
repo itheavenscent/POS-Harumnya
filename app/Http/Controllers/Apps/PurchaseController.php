@@ -82,16 +82,20 @@ class PurchaseController extends Controller
             $p->item_count       = $p->items->count();
         });
 
-        // ★ FIX [3]: FILTER() adalah PostgreSQL syntax — pakai CASE WHEN untuk MySQL
-        $summary = Purchase::query()->selectRaw("
-            COUNT(*)                                                   AS total,
-            SUM(CASE WHEN status = 'draft'     THEN 1 ELSE 0 END)    AS draft,
-            SUM(CASE WHEN status = 'pending'   THEN 1 ELSE 0 END)    AS pending,
-            SUM(CASE WHEN status = 'approved'  THEN 1 ELSE 0 END)    AS approved,
-            SUM(CASE WHEN status = 'received'  THEN 1 ELSE 0 END)    AS received,
-            SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END)    AS completed,
-            SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END)    AS cancelled
-        ")->first();
+        // ★ FIX [3]: FILTER() adalah PostgreSQL syntax — pakai CASE WHEN untuk MySQL.
+        // Pakai DB::table (bukan Eloquent) supaya alias "total" TIDAK kena cast decimal:2
+        // milik model Purchase (yang bikin count tampil "1.00"). Soft-delete difilter manual.
+        $summary = DB::table('purchases')
+            ->whereNull('deleted_at')
+            ->selectRaw("
+                COUNT(*)                                                AS total,
+                SUM(CASE WHEN status = 'draft'     THEN 1 ELSE 0 END)    AS draft,
+                SUM(CASE WHEN status = 'pending'   THEN 1 ELSE 0 END)    AS pending,
+                SUM(CASE WHEN status = 'approved'  THEN 1 ELSE 0 END)    AS approved,
+                SUM(CASE WHEN status = 'received'  THEN 1 ELSE 0 END)    AS received,
+                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END)    AS completed,
+                SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END)    AS cancelled
+            ")->first();
 
         return Inertia::render('Dashboard/Purchases/Index', [
             'purchases' => $purchases,

@@ -7,7 +7,7 @@ import {
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 
-const fmt = (v = 0) => Number(v || 0).toLocaleString("id-ID");
+const fmt = (v = 0) => Number(v || 0).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function Components({ material, components, candidates }) {
     const { data, setData, put, processing } = useForm({
@@ -115,7 +115,7 @@ export default function Components({ material, components, candidates }) {
                                     <option value="">{available.length ? "Pilih komponen…" : "Semua kandidat sudah dipakai"}</option>
                                     {available.map(c => (
                                         <option key={c.id} value={c.id}>
-                                            {c.name} ({c.code}) · HPP {fmt(Math.round(c.average_cost))}
+                                            {c.name} ({c.code}) · HPP {fmt(c.average_cost)}
                                         </option>
                                     ))}
                                 </select>
@@ -136,7 +136,7 @@ export default function Components({ material, components, candidates }) {
                                     <div key={c.component_packaging_id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-semibold text-slate-800 dark:text-white truncate">{c.name}</p>
-                                            <p className="text-[11px] text-slate-400 font-mono">{c.code} · HPP {fmt(Math.round(c.average_cost))}/{c.unit}</p>
+                                            <p className="text-[11px] text-slate-400 font-mono">{c.code} · HPP {fmt(c.average_cost)}/{c.unit}</p>
                                         </div>
                                         <div className="flex items-center gap-1.5">
                                             <input
@@ -150,7 +150,7 @@ export default function Components({ material, components, candidates }) {
                                         </div>
                                         <div className="text-right w-24 hidden sm:block">
                                             <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                                Rp {fmt(Math.round((Number(c.average_cost) || 0) * (Number(c.quantity) || 0)))}
+                                                Rp {fmt((Number(c.average_cost) || 0) * (Number(c.quantity) || 0))}
                                             </p>
                                             <p className="text-[10px] text-slate-400">subtotal HPP</p>
                                         </div>
@@ -170,7 +170,7 @@ export default function Components({ material, components, candidates }) {
                         {data.components.length > 0 && (
                             <div className="mt-4 p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-900 flex items-center justify-between text-sm">
                                 <span className="text-indigo-700 dark:text-indigo-400 font-medium">HPP Rakitan (total komponen)</span>
-                                <span className="font-bold text-lg text-indigo-700 dark:text-indigo-400">Rp {fmt(Math.round(assembledCost))}</span>
+                                <span className="font-bold text-lg text-indigo-700 dark:text-indigo-400">Rp {fmt(assembledCost)}</span>
                             </div>
                         )}
                     </div>

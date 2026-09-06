@@ -19,7 +19,7 @@ const STATUS_CFG = {
 };
 const STEPS = ["Draft", "Menunggu", "Disetujui", "Diterima", "Selesai"];
 
-const fmtRp   = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(parseFloat(n) || 0);
+const fmtRp   = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(parseFloat(n) || 0);
 const fmtQty  = (n) => parseInt(n || 0).toLocaleString("id-ID");
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" }) : "-";
 const fmtTs   = (d) => d ? new Date(d).toLocaleString("id-ID") : "-";

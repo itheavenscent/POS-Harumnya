@@ -41,6 +41,17 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
 
+        // Local dev → skip OTP (mempermudah testing lokal). Staging/prod tetap OTP.
+        if (app()->environment('local')) {
+            $request->session()->regenerate();
+
+            if ($user->hasRole('cashier')) {
+                return redirect()->intended(route('transactions.index', absolute: false));
+            }
+
+            return redirect()->intended(route('dashboard', absolute: false));
+        }
+
         // Perangkat sudah dipercaya → langsung login penuh, tanpa OTP.
         if ($this->trustedDevices->isTrusted($user, $request)) {
             $request->session()->regenerate();

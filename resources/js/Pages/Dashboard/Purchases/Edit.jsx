@@ -12,7 +12,7 @@ import toast from "react-hot-toast";
 // ─── Money helpers (decimal 15,2) ─────────────────────────────────────────────
 const fmtRp = (n) =>
     new Intl.NumberFormat("id-ID", {
-        style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2,
+        style: "currency", currency: "IDR", minimumFractionDigits: 2, maximumFractionDigits: 2,
     }).format(parseFloat(n) || 0);
 
 const parseDecimal = (str) => {
@@ -25,7 +25,7 @@ const displayDecimal = (val) => {
     if (val === "" || val === null || val === undefined) return "";
     const num = parseFloat(val);
     if (isNaN(num) || num === 0) return "";
-    return num.toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    return num.toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
 // ─── Searchable dropdown ──────────────────────────────────────────────────────
@@ -106,7 +106,7 @@ function MoneyInput({ value, onChange, placeholder = "0", className = "" }) {
     const handleBlur = () => {
         const parsed = parseDecimal(display);
         const num = parseFloat(parsed);
-        setDisplay(num === 0 ? "" : num.toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 2 }));
+        setDisplay(num === 0 ? "" : num.toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
         onChange(parsed);
     };
 

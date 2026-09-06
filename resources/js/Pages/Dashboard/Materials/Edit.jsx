@@ -9,7 +9,7 @@ import {
 import toast from "react-hot-toast";
 import { displayDecimal, parseDecimal } from "@/Utils/currency";
 
-const fmt = (v = 0) => Number(v || 0).toLocaleString("id-ID");
+const fmt = (v = 0) => Number(v || 0).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const TYPE_CFG = {
     oil:     { label: "Fragrance Oil" },

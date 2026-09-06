@@ -30,7 +30,7 @@ const TYPE_CFG = {
 // total_surplus / total_shortage adalah decimal(15,2) dari server → parseFloat
 const fmt     = (n) =>
     new Intl.NumberFormat("id-ID", {
-        style: "currency", currency: "IDR", minimumFractionDigits: 0,
+        style: "currency", currency: "IDR", minimumFractionDigits: 2, maximumFractionDigits: 2,
     }).format(parseFloat(n) || 0);
 
 const fmtDate = (d) =>

@@ -20,7 +20,7 @@ export default function MoneyInput({ value, onChange, placeholder = "0", classNa
     const handleBlur = () => {
         const parsed = parseDecimal(display);
         const num = parseFloat(parsed);
-        setDisplay(num === 0 ? "" : num.toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 2 }));
+        setDisplay(num === 0 ? "" : num.toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
         onChange(parsed);
     };
 

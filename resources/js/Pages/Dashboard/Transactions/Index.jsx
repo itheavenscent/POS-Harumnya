@@ -1417,6 +1417,8 @@ export default function Index({
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [customerSearch, setCustomerSearch] = useState("");
     const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+    const [customerResults, setCustomerResults] = useState(null); // null = pakai preload
+    const [customerLoading, setCustomerLoading] = useState(false);
     const [showAddCustomer, setShowAddCustomer] = useState(false);
     const [selectedSalesPerson, setSelectedSalesPerson] = useState(null);
     const [salesSearch, setSalesSearch] = useState("");
@@ -1973,10 +1975,44 @@ export default function Index({
         return (Number(item.unit_price || 0) + pkgTotal / (item.qty || 1)) * Number(item.qty || 1);
     };
 
+    // Server-side search: cari ke SELURUH pelanggan (bukan cuma preload 100).
+    // Debounce 300ms + batalkan request lama biar hasil akurat & tak balapan.
+    useEffect(() => {
+        const term = customerSearch.trim();
+        if (!term) {
+            setCustomerResults(null);
+            setCustomerLoading(false);
+            return;
+        }
+        setCustomerLoading(true);
+        const controller = new AbortController();
+        const timer = setTimeout(() => {
+            axios
+                .get(route("transactions.search-customers"), {
+                    params: { q: term },
+                    signal: controller.signal,
+                })
+                .then(res => {
+                    setCustomerResults(res.data?.data ?? []);
+                    setCustomerLoading(false);
+                })
+                .catch(err => {
+                    if (!axios.isCancel(err) && err.code !== "ERR_CANCELED") {
+                        console.error("Search customer error:", err);
+                        setCustomerResults([]);
+                        setCustomerLoading(false);
+                    }
+                });
+        }, 300);
+        return () => { clearTimeout(timer); controller.abort(); };
+    }, [customerSearch]);
+
     const filteredCustomers = useMemo(() => {
-        const list = customerSearch ? localCustomers.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || (c.phone ?? "").includes(customerSearch)) : localCustomers;
-        return list.slice(0, 8);
-    }, [customers, customerSearch]);
+        // Ada query → pakai hasil server (cakup semua pelanggan).
+        // Tanpa query → tampilkan preload (dibatasi 8 biar ringkas).
+        if (customerSearch.trim()) return customerResults ?? [];
+        return localCustomers.slice(0, 8);
+    }, [customerSearch, customerResults, localCustomers]);
 
     // ═══════════════════════════════════════════════════════════════════════════
     return (
@@ -2596,7 +2632,7 @@ export default function Index({
                                     <IconSearch size={14} className="text-[#64748b] dark:text-slate-400 shrink-0" />
                                     <input
                                         type="text"
-                                        placeholder="Cari / Pilih pelanggan (No. Telepon)"
+                                        placeholder="Cari pelanggan (nama / no. telepon / kode)"
                                         value={selectedCustomer ? (selectedCustomer.phone || selectedCustomer.name) : customerSearch}
                                         onClick={() => { if (selectedCustomer) { setSelectedCustomer(null); setCustomerSearch(""); } setShowCustomerDropdown(true); }}
                                         onChange={e => { setCustomerSearch(e.target.value); setShowCustomerDropdown(true); if (selectedCustomer) setSelectedCustomer(null); }}
@@ -2667,11 +2703,24 @@ export default function Index({
                                                 onClick={() => { setSelectedCustomer(c); setShowCustomerDropdown(false); setCustomerSearch(""); }}
                                                 className="flex flex-col gap-[2px] items-start w-full text-left p-[6px] rounded-[4px] hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group"
                                             >
-                                                <p className="font-semibold text-[#0f172a] dark:text-white text-[12px] leading-[1.4]">
-                                                    {c.phone || "-"}
-                                                </p>
+                                                <div className="flex items-center gap-[6px] w-full">
+                                                    <p className="font-semibold text-[#0f172a] dark:text-white text-[12px] leading-[1.4]">
+                                                        {c.phone || "-"}
+                                                    </p>
+                                                    {c.code && (
+                                                        <span className="text-[9px] font-medium text-[#64748b] dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-[4px] py-[1px] rounded">
+                                                            {c.code}
+                                                        </span>
+                                                    )}
+                                                    {c.points != null && (
+                                                        <span className="ml-auto text-[9px] font-semibold text-amber-600 dark:text-amber-400 shrink-0">
+                                                            {Number(c.points).toLocaleString("id-ID")} Poin
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <p className="font-medium text-[#64748b] dark:text-slate-400 text-[10px] leading-[1.4]">
                                                     {c.name}
+                                                    {c.email ? ` · ${c.email}` : ""}
                                                 </p>
                                             </button>
                                             {idx < filteredCustomers.length - 1 && (
@@ -2679,6 +2728,27 @@ export default function Index({
                                             )}
                                         </React.Fragment>
                                     ))}
+
+                                    {/* Loading / Empty states saat pencarian server */}
+                                    {customerSearch.trim() && customerLoading && (
+                                        <div className="w-full py-[10px] text-center text-[10px] text-[#64748b] dark:text-slate-400">
+                                            Mencari...
+                                        </div>
+                                    )}
+                                    {customerSearch.trim() && !customerLoading && filteredCustomers.length === 0 && (
+                                        <div className="w-full py-[10px] flex flex-col items-center gap-[6px]">
+                                            <p className="text-[10px] text-[#64748b] dark:text-slate-400 text-center">
+                                                Pelanggan "{customerSearch.trim()}" tidak ditemukan
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => { setShowCustomerDropdown(false); setShowAddCustomer(true); }}
+                                                className="text-[10px] font-semibold text-[#36adba] hover:underline cursor-pointer"
+                                            >
+                                                + Tambah pelanggan baru
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

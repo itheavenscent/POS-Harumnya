@@ -11,7 +11,7 @@ import Pagination from "@/Components/Dashboard/Pagination";
 import Input from "@/Components/Dashboard/Input";
 import toast from "react-hot-toast";
 
-const fmt = (v = 0) => Number(v || 0).toLocaleString("id-ID");
+const fmt = (v = 0) => Number(v || 0).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const TYPE_CFG = {
     oil:     { label: "Fragrance Oil", color: "bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700" },
@@ -291,7 +291,7 @@ function MarginBadge({ item }) {
                     <IconGift size={13} /> subsidi
                 </span>
                 <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                    −{fmt(Math.round(avgCost))}/unit
+                    −{fmt(avgCost)}/unit
                 </span>
             </div>
         );
@@ -300,7 +300,7 @@ function MarginBadge({ item }) {
     if (!item.selling_price || !avgCost) return <span className="text-slate-300 dark:text-slate-600 text-xs">—</span>;
 
     const margin = ((item.selling_price - avgCost) / item.selling_price) * 100;
-    const profit = item.selling_price - Math.round(avgCost);
+    const profit = item.selling_price - avgCost;
     const isGood = margin >= 0;
 
     return (
@@ -575,7 +575,7 @@ export default function Index({ materials, categories, material_type, filters })
                                             <td className="px-5 py-3.5 text-right">
                                                 {parseFloat(item.average_cost) > 0 ? (
                                                     <span className="text-sm text-slate-500 dark:text-slate-400 font-mono">
-                                                        Rp {fmt(Math.round(item.average_cost))}
+                                                        Rp {fmt(item.average_cost)}
                                                     </span>
                                                 ) : item.total_qty === 0 ? (
                                                     <span className="text-sm text-slate-400 dark:text-slate-600 font-mono">
