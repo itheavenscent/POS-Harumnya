@@ -99,8 +99,10 @@ class TransactionController extends Controller
             'is_free',
             'free_condition_note',
             'average_cost',
-            'sort_order'
+            'sort_order',
+            'size_id'
         )
+            ->with('size:id,volume_ml')
             ->where('material_type', 'bahan_kemasan')
             ->where('is_active', true)
             ->where('is_available_as_addon', true)
