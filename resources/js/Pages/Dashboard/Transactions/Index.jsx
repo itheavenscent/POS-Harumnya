@@ -26,6 +26,17 @@ const fmt = (v = 0) =>
         style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 2,
     });
 
+// Kemasan yang MEMANG tak terikat volume (kresek/spunbond/tas, dll — nama
+// kategori botolnya sendiri bisa macam-macam: Botol, Ringspray, dst, jadi
+// tidak bisa dideteksi dari kata "botol"). Dipakai untuk filter ukuran di POS:
+// kemasan tanpa size_id HANYA boleh tampil di semua ukuran kalau memang masuk
+// daftar ini — selain itu (kemungkinan datanya belum diisi admin) disembunyikan
+// dulu, bukan dianggap "cocok untuk semua ukuran".
+const isSizelessPackaging = (name) => {
+    const n = (name || "").toLowerCase();
+    return n.includes("kresek") || n.includes("spunbond") || n.includes("plastik") || n.includes("bag") || n.includes("tas");
+};
+
 const toRupiahDisplay = (val) => {
     if (val === "" || val === null || val === undefined) return "";
     const num = parseFloat(val);
@@ -790,10 +801,14 @@ function PackagingModal({ show, onClose, packagingMaterials = [], minVolumeMl = 
     const [search, setSearch] = useState("");
     const filtered = useMemo(() => {
         // Botol harus berukuran >= volume parfum yang baru dipilih (misal parfum
-        // 30ml → hanya tampil botol 30ml ke atas). Kemasan tanpa ukuran (kresek,
-        // box, dll — bukan botol) selalu ikut tampil karena tidak terikat volume.
+        // 30ml → hanya tampil botol 30ml ke atas). Kemasan yang belum punya
+        // size_id hanya ikut tampil kalau memang jenis tanpa volume (kresek,
+        // spunbond, dll — lihat isSizelessPackaging); selain itu disembunyikan
+        // dulu supaya data yang belum lengkap tidak lolos filter.
         const bySize = minVolumeMl
-            ? packagingMaterials.filter(p => !p.size?.volume_ml || p.size.volume_ml >= minVolumeMl)
+            ? packagingMaterials.filter(p => p.size?.volume_ml
+                ? p.size.volume_ml >= minVolumeMl
+                : isSizelessPackaging(p.name))
             : packagingMaterials;
 
         if (!search) return bySize;
@@ -2541,8 +2556,16 @@ export default function Index({
                                                 const categoryMatch = selectedCategory === 'spunbond' ? isSpunbond : !isSpunbond;
                                                 if (!categoryMatch) return false;
                                                 // Botol harus >= volume parfum yang baru dipilih (misal parfum 50ml →
-                                                // hanya botol 50ml ke atas). Kemasan tanpa ukuran (kresek, dll) selalu tampil.
-                                                if (pendingPerfumeVolumeMl && pkg.size?.volume_ml && pkg.size.volume_ml < pendingPerfumeVolumeMl) return false;
+                                                // hanya botol 50ml ke atas). Kemasan tanpa ukuran (kresek, dll) selalu
+                                                // tampil; botol yang size_id-nya belum diisi admin disembunyikan dulu
+                                                // (bukan dianggap "cocok untuk semua ukuran").
+                                                if (pendingPerfumeVolumeMl) {
+                                                    if (pkg.size?.volume_ml) {
+                                                        if (pkg.size.volume_ml < pendingPerfumeVolumeMl) return false;
+                                                    } else if (!isSizelessPackaging(pkg.name)) {
+                                                        return false;
+                                                    }
+                                                }
                                                 return true;
                                             });
 
