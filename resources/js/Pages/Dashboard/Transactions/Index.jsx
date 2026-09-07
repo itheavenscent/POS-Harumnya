@@ -1871,7 +1871,9 @@ export default function Index({
     };
 
     // Modal botol bersifat opsional — parfum sudah lebih dulu masuk keranjang.
-    const handleClosePackagingModal = () => { setShowPackagingModal(false); setPendingPerfumeVolumeMl(null); };
+    // pendingPerfumeVolumeMl SENGAJA tidak direset di sini agar filter ukuran tetap
+    // berlaku saat user menutup modal lalu browsing manual ke tab "Kemasan".
+    const handleClosePackagingModal = () => setShowPackagingModal(false);
 
     const togglePkg = (pkgId) => setSelectedPkgs(prev => prev.includes(pkgId) ? prev.filter(id => id !== pkgId) : [...prev, pkgId]);
 
@@ -2536,7 +2538,12 @@ export default function Index({
                                         {(() => {
                                             const items = packagingMaterials.filter(pkg => {
                                                 const isSpunbond = pkg.name.toLowerCase().includes('kresek') || pkg.name.toLowerCase().includes('spunbond');
-                                                return selectedCategory === 'spunbond' ? isSpunbond : !isSpunbond;
+                                                const categoryMatch = selectedCategory === 'spunbond' ? isSpunbond : !isSpunbond;
+                                                if (!categoryMatch) return false;
+                                                // Botol harus >= volume parfum yang baru dipilih (misal parfum 50ml →
+                                                // hanya botol 50ml ke atas). Kemasan tanpa ukuran (kresek, dll) selalu tampil.
+                                                if (pendingPerfumeVolumeMl && pkg.size?.volume_ml && pkg.size.volume_ml < pendingPerfumeVolumeMl) return false;
+                                                return true;
                                             });
 
                                             return items.length === 0 ? (

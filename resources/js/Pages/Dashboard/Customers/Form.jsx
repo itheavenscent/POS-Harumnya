@@ -86,6 +86,7 @@ export default function Form({ customer = null }) {
                                 errors={errors.phone}
                                 onChange={(e) => setData("phone", e.target.value)}
                                 placeholder="0812xxxxxxxx"
+                                required
                             />
                             <Input
                                 label="Email"

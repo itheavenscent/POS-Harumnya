@@ -18,7 +18,7 @@ class StockAdjustment extends Model
     ];
 
     protected $casts = [
-        'adjustment_date' => 'date',
+        'adjustment_date' => 'date:Y-m-d',
         'approved_at'     => 'datetime',
         'created_by'      => 'integer',
         'approved_by'     => 'integer',

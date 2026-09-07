@@ -18,7 +18,7 @@ class CustomerRequest extends FormRequest
 
         return [
             'name'       => ['required', 'string', 'max:255'],
-            'phone'      => ['nullable', 'string', 'max:20', Rule::unique('customers', 'phone')->ignore($customerId)],
+            'phone'      => ['required', 'string', 'max:20', Rule::unique('customers', 'phone')->ignore($customerId)],
             'email'      => ['nullable', 'email', 'max:100'],
             'address'    => ['nullable', 'string'],
             'birth_date' => ['nullable', 'date', 'before:today'],
@@ -32,6 +32,7 @@ class CustomerRequest extends FormRequest
     {
         return [
             'name.required'   => 'Nama pelanggan wajib diisi.',
+            'phone.required'  => 'Nomor telepon wajib diisi.',
             'phone.unique'    => 'Nomor telepon sudah terdaftar.',
             'email.email'     => 'Format email tidak valid.',
             'birth_date.before' => 'Tanggal lahir harus sebelum hari ini.',
