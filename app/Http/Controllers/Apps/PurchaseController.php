@@ -514,7 +514,7 @@ class PurchaseController extends Controller
                 ]);
 
                 // HPP global: recompute WAC gabungan semua lokasi, mirror ke master + semua baris per-lokasi
-                $this->syncGlobalAverageCost($item->item_type, $item->item_id, $newAvgCost);
+                $globalAvgCost = $this->syncGlobalAverageCost($item->item_type, $item->item_id, $newAvgCost);
 
                 // ★ FIX [1]: field sesuai migration — semua field wajib ada
                 StockMovement::create([
@@ -534,7 +534,7 @@ class PurchaseController extends Controller
                     'unit_cost'        => $landedCost,                      // decimal(15,4)
                     'total_cost'       => round(abs($qty) * $landedCost, 2), // decimal(15,2)
                     'avg_cost_before'  => $avgBefore,                       // decimal(15,4)
-                    'avg_cost_after'   => $newAvgCost,                      // decimal(15,4)
+                    'avg_cost_after'   => $globalAvgCost,                   // decimal(15,4) — WAC global (sinkron dgn Material.average_cost)
                     // Referensi dokumen
                     'reference_type'   => Purchase::class,                  // FQCN — wajib ada
                     'reference_id'     => $purchase->id,

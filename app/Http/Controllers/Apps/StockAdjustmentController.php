@@ -430,7 +430,7 @@ class StockAdjustmentController extends Controller
 
             $stock->update($stockUpdate);
 
-            $this->syncGlobalAverageCost($item->item_type, $item->item_id, $newAvgCost);
+            $globalAvgCost = $this->syncGlobalAverageCost($item->item_type, $item->item_id, $newAvgCost);
 
             StockMovement::create([
                 'location_type'    => $adj->location_type,
@@ -444,7 +444,7 @@ class StockAdjustmentController extends Controller
                 'unit_cost'        => $unitCost,
                 'total_cost'       => round(abs($diff) * $unitCost, 2),
                 'avg_cost_before'  => $avgCost,
-                'avg_cost_after'   => $newAvgCost,
+                'avg_cost_after'   => $globalAvgCost,
                 'reference_type'   => StockAdjustment::class,
                 'reference_id'     => $adj->id,
                 'reference_number' => $adj->adjustment_number,

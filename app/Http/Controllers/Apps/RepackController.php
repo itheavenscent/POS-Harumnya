@@ -18,6 +18,8 @@ use Illuminate\Validation\Rule;
 
 class RepackController extends Controller
 {
+    use \App\Traits\SyncsGlobalAverageCost;
+
     // =========================================================================
     // INDEX
     // =========================================================================
@@ -363,7 +365,7 @@ class RepackController extends Controller
             // Sync HPP master tiap ingredient input — WAC global bisa bergeser
             // karena bobot qty antar-lokasi berubah setelah konsumsi.
             foreach ($repack->items as $item) {
-                $this->syncMasterHpp($item->ingredient_id);
+                $this->syncGlobalAverageCost('ingredient', $item->ingredient_id);
             }
 
             // ── 2. Tambah stok output ingredient ─────────────────────────────
@@ -394,6 +396,11 @@ class RepackController extends Controller
                 'last_in_qty'  => $addQty,
             ]);
 
+            // Sync HPP master output ingredient ke menu Bahan Baku — dijalankan
+            // SEBELUM StockMovement::create agar snapshot avg_cost_after konsisten
+            // dengan WAC global yang benar-benar tersimpan (bukan WAC per-lokasi).
+            $globalAvgCost = $this->syncGlobalAverageCost('ingredient', $repack->output_ingredient_id, $newAvgCost);
+
             // ★ FIX: production_in (bukan repack_in — tidak ada di enum migration)
             StockMovement::create([
                 'location_type'    => $locType,
@@ -407,7 +414,7 @@ class RepackController extends Controller
                 'unit_cost'        => $addCost,
                 'total_cost'       => round($addQty * $addCost, 2),
                 'avg_cost_before'  => $outAvgBefore,
-                'avg_cost_after'   => $newAvgCost,
+                'avg_cost_after'   => $globalAvgCost,
                 'reference_type'   => RepackTransaction::class,
                 'reference_id'     => $repack->id,
                 'reference_number' => $repack->repack_number,
@@ -415,9 +422,6 @@ class RepackController extends Controller
                 'notes'            => "Repack {$repack->repack_number} — hasil output",
                 'created_by'       => $userId,
             ]);
-
-            // Sync HPP master output ingredient ke menu Bahan Baku.
-            $this->syncMasterHpp($repack->output_ingredient_id);
 
             // ── 3. Tandai completed ───────────────────────────────────────────
             $repack->update([
@@ -486,33 +490,6 @@ class RepackController extends Controller
         return $locType === 'warehouse'
             ? WarehouseIngredientStock::create(array_merge($base, ['warehouse_id' => $locId, 'ingredient_id' => $ingredientId]))
             : StoreIngredientStock::create(array_merge($base, ['store_id' => $locId, 'ingredient_id' => $ingredientId]));
-    }
-
-    /**
-     * Recompute WAC global (gudang + toko) lalu simpan ke master Ingredient,
-     * agar HPP di menu Bahan Baku konsisten setelah repack — selaras dengan
-     * pipeline pembelian, transfer, dan penyesuaian stok.
-     */
-    private function syncMasterHpp(string $ingredientId): void
-    {
-        $rows = WarehouseIngredientStock::where('ingredient_id', $ingredientId)
-            ->get(['quantity', 'average_cost'])
-            ->concat(StoreIngredientStock::where('ingredient_id', $ingredientId)->get(['quantity', 'average_cost']));
-
-        $totalQty   = 0;
-        $totalValue = 0.0;
-        foreach ($rows as $r) {
-            $qty = (int) $r->quantity;
-            if ($qty > 0) {
-                $totalQty   += $qty;
-                $totalValue += $qty * (float) $r->average_cost;
-            }
-        }
-
-        if ($totalQty > 0) {
-            Material::where('id', $ingredientId)
-                ->update(['average_cost' => round($totalValue / $totalQty, 4)]);
-        }
     }
 
     private function resolveLocationName(string $type, string $id): string

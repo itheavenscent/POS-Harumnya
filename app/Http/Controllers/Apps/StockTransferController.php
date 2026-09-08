@@ -447,7 +447,7 @@ class StockTransferController extends Controller
                     'last_in_qty'  => $rcvQty,
                 ]);
 
-                $this->syncGlobalAverageCost($item->item_type, $item->item_id, $newAvgCost);
+                $globalAvgCost = $this->syncGlobalAverageCost($item->item_type, $item->item_id, $newAvgCost);
 
                 StockMovement::create([
                     'location_type'    => $transfer->to_location_type,
@@ -461,7 +461,7 @@ class StockTransferController extends Controller
                     'unit_cost'        => $unitCost,                            // decimal(15,4)
                     'total_cost'       => round($rcvQty * $unitCost, 2),        // decimal(15,2)
                     'avg_cost_before'  => $avgBefore,                           // decimal(15,4)
-                    'avg_cost_after'   => $newAvgCost,                          // decimal(15,4)
+                    'avg_cost_after'   => $globalAvgCost,                       // decimal(15,4) — WAC global
                     'reference_type'   => StockTransfer::class,                 // FQCN ✓
                     'reference_id'     => $transfer->id,
                     'reference_number' => $transfer->transfer_number,

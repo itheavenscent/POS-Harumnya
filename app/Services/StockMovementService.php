@@ -83,7 +83,7 @@ class StockMovementService
 
             // HPP global: recompute WAC gabungan semua lokasi, mirror ke master +
             // SEMUA baris per-lokasi. Transfer/repack/produksi/penyesuaian ikut konsisten.
-            $this->syncGlobalAverageCost($data['item_type'], $data['item_id']);
+            $avgCostAfter = $this->syncGlobalAverageCost($data['item_type'], $data['item_id']);
 
             // Get stockable type and ID
             $stockableType = $this->getStockableType($data['location_type'], $data['item_type']);
