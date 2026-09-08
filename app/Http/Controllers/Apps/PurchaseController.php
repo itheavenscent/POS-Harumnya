@@ -199,6 +199,14 @@ class PurchaseController extends Controller
             $item->item_unit = $unit;
         });
 
+        // Landed cost per item (baru bisa dihitung begitu received_quantity terisi,
+        // yaitu saat status received/completed) — ditampilkan agar HPP hasil PO ini
+        // transparan, karena unit_price di atas TIDAK termasuk alokasi pajak/ongkir/
+        // diskon/adjustment yang justru menentukan average_cost (HPP) material.
+        if (in_array($purchase->status, ['received', 'completed'], true)) {
+            $this->attachLandedCost($purchase);
+        }
+
         // ★ FIX [2]: tambah filter reference_type agar tidak collision dengan modul lain
         // (StockTransfer, RepackTransaction, dll bisa punya UUID yang sama)
         $movements = StockMovement::where('reference_type', Purchase::class)
@@ -440,10 +448,7 @@ class PurchaseController extends Controller
             // Pool biaya tambahan dialokasi proporsional terhadap NILAI subtotal tiap item:
             //   alokasi_item = (subtotal_item / subtotal_total) × pool
             // PPN + ongkir + adjustment MENAIKKAN HPP, diskon MENURUNKAN HPP.
-            $poolToDistribute = (float) $purchase->tax
-                              + (float) $purchase->shipping_cost
-                              + (float) $purchase->adjustment
-                              - (float) $purchase->discount;
+            $poolToDistribute = $this->landedCostPool($purchase);
             $totalSubtotal = (float) $purchase->subtotal;
             $totalReceivedQty = $purchase->items->sum('received_quantity');
 
@@ -451,32 +456,8 @@ class PurchaseController extends Controller
                 // quantity: updated to use received_quantity for stock addition
                 $qty        = (int)   $item->received_quantity;
                 $orderedQty = (int)   $item->quantity;
-                $unitPrice  = (float) $item->unit_price;
-                $itemSubtotal = (float) $item->subtotal;
 
-                // Landed Cost calculation
-                if ($qty > 0) {
-                    // Menyerap biaya barang yang hilang (selisih = ordered - received)
-                    // Sehingga nilai HPP yang baru adalah total biaya (subtotal) / jumlah diterima
-                    $baseCost = $itemSubtotal / $qty;
-
-                    // Alokasi pool proporsional nilai subtotal.
-                    // Fallback ke basis qty bila semua item gratis (subtotal = 0).
-                    if ($totalSubtotal > 0) {
-                        $allocatedPool = $poolToDistribute * ($itemSubtotal / $totalSubtotal);
-                    } else if ($totalReceivedQty > 0) {
-                        $allocatedPool = $poolToDistribute * ($qty / $totalReceivedQty);
-                    } else {
-                        $allocatedPool = 0.0;
-                    }
-
-                    $landedCost = $baseCost + ($allocatedPool / $qty);
-                } else {
-                    $landedCost = $unitPrice;
-                }
-                
-                // Ensure landedCost is not less than 0 (e.g. if adjustment is highly negative)
-                $landedCost = max(0, round($landedCost, 4));
+                $landedCost = $this->calculateLandedCost($item, $poolToDistribute, $totalSubtotal, $totalReceivedQty);
 
                 $stock = $this->findOrCreateStock(
                     $purchase->destination_type,
@@ -768,6 +749,69 @@ class PurchaseController extends Controller
         }
 
         return [$subtotal];
+    }
+
+    /**
+     * Pool biaya tambahan yang dialokasikan ke landed cost tiap item:
+     * PPN + ongkir + adjustment MENAIKKAN HPP, diskon MENURUNKAN HPP.
+     */
+    private function landedCostPool(Purchase $purchase): float
+    {
+        return (float) $purchase->tax
+             + (float) $purchase->shipping_cost
+             + (float) $purchase->adjustment
+             - (float) $purchase->discount;
+    }
+
+    /**
+     * Landed cost satu item PO = harga beli efektif (subtotal/qty diterima)
+     * + alokasi proporsional pool biaya tambahan. Inilah nilai yang dipakai
+     * untuk update average_cost (HPP) — BUKAN unit_price mentah — sehingga
+     * HPP material bisa berbeda dari harga yang tertulis di PO.
+     */
+    private function calculateLandedCost($item, float $poolToDistribute, float $totalSubtotal, int $totalReceivedQty): float
+    {
+        $qty          = (int)   $item->received_quantity;
+        $unitPrice    = (float) $item->unit_price;
+        $itemSubtotal = (float) $item->subtotal;
+
+        if ($qty <= 0) {
+            return max(0, round($unitPrice, 4));
+        }
+
+        // Menyerap biaya barang yang hilang (selisih = ordered - received)
+        // Sehingga nilai HPP yang baru adalah total biaya (subtotal) / jumlah diterima
+        $baseCost = $itemSubtotal / $qty;
+
+        // Alokasi pool proporsional nilai subtotal.
+        // Fallback ke basis qty bila semua item gratis (subtotal = 0).
+        if ($totalSubtotal > 0) {
+            $allocatedPool = $poolToDistribute * ($itemSubtotal / $totalSubtotal);
+        } else if ($totalReceivedQty > 0) {
+            $allocatedPool = $poolToDistribute * ($qty / $totalReceivedQty);
+        } else {
+            $allocatedPool = 0.0;
+        }
+
+        $landedCost = $baseCost + ($allocatedPool / $qty);
+
+        // Ensure landedCost is not less than 0 (e.g. if adjustment is highly negative)
+        return max(0, round($landedCost, 4));
+    }
+
+    /**
+     * Tempel landed_cost (preview HPP) ke tiap item untuk ditampilkan di halaman show().
+     * Dipanggil hanya saat received_quantity sudah terisi (status received/completed).
+     */
+    private function attachLandedCost(Purchase $purchase): void
+    {
+        $poolToDistribute = $this->landedCostPool($purchase);
+        $totalSubtotal    = (float) $purchase->subtotal;
+        $totalReceivedQty = $purchase->items->sum('received_quantity');
+
+        $purchase->items->each(function ($item) use ($poolToDistribute, $totalSubtotal, $totalReceivedQty) {
+            $item->landed_cost = $this->calculateLandedCost($item, $poolToDistribute, $totalSubtotal, $totalReceivedQty);
+        });
     }
 
     private function findOrCreateStock(

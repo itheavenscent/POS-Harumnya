@@ -113,7 +113,7 @@ class StockAdjustmentController extends Controller
         $v = $request->validate([
             'location_type'             => 'required|in:warehouse,store',
             'location_id'               => 'required|uuid',
-            'adjustment_date'           => 'required|date|before_or_equal:today',
+            'adjustment_date'           => 'required|date|before_or_equal:today|after_or_equal:' . now()->subDays(14)->toDateString(),
             'type'                      => 'required|in:stock_opname,damage,loss,found,expired,daily_mutation,other',
             'notes'                     => 'nullable|string|max:2000',
             'is_delta'                  => 'nullable|boolean',
@@ -125,6 +125,7 @@ class StockAdjustmentController extends Controller
             'items.*.notes'             => 'nullable|string|max:500',
         ], [
             'adjustment_date.before_or_equal' => 'Tanggal adjustment tidak boleh melebihi hari ini.',
+            'adjustment_date.after_or_equal'  => 'Tanggal adjustment maksimal 2 minggu sebelum hari ini.',
         ]);
 
         DB::transaction(function () use ($v) {
@@ -177,7 +178,6 @@ class StockAdjustmentController extends Controller
         ])->findOrFail($id);
 
         $adj->location_name = $this->locationName($adj->location_type, $adj->location_id);
-        $adj->can_edit      = $adj->canEdit();
         $adj->type_label    = collect($this->typeOptions())->firstWhere('value', $adj->type)['label'] ?? $adj->type;
 
         $adj->items->each(function ($item) {
@@ -200,111 +200,6 @@ class StockAdjustmentController extends Controller
             'adjustment' => $adj,
             'movements'  => $movements,
         ]);
-    }
-
-    // =========================================================================
-    // EDIT
-    // =========================================================================
-
-    public function edit(string $id)
-    {
-        $adj = StockAdjustment::with('items')->findOrFail($id);
-
-        if (! $adj->canEdit()) {
-            return back()->withErrors(['edit' => 'Adjustment yang sudah diproses tidak dapat diedit.']);
-        }
-
-        $adj->location_name = $this->locationName($adj->location_type, $adj->location_id);
-
-        return Inertia::render('Dashboard/StockAdjustments/Edit', [
-            'adjustment'         => $adj,
-            'warehouses'         => Warehouse::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
-            'stores'             => Store::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
-            'ingredients'        => Material::bahanBaku()->active()
-                ->with('category:id,name')
-                ->orderBy('name')
-                ->get(['id', 'name', 'code', 'unit', 'material_category_id'])
-                ->map(fn ($m) => $m->setAttribute('ingredient_category_id', $m->material_category_id)),
-            'packagingMaterials' => Material::bahanKemasan()->active()
-                ->with(['category:id,name', 'size:id,name'])
-                ->orderBy('name')
-                ->get(['id', 'name', 'code', 'material_category_id', 'size_id'])
-                ->map(fn ($m) => $m->setAttribute('packaging_category_id', $m->material_category_id)),
-            'typeOptions'        => $this->typeOptions(),
-        ]);
-    }
-
-    // =========================================================================
-    // UPDATE
-    // =========================================================================
-
-    public function update(Request $request, string $id)
-    {
-        $adj = StockAdjustment::findOrFail($id);
-
-        if (! $adj->canEdit()) {
-            return back()->withErrors(['edit' => 'Adjustment yang sudah diproses tidak dapat diedit.']);
-        }
-
-        $v = $request->validate([
-            'adjustment_date'           => 'required|date|before_or_equal:today',
-            'type'                      => 'required|in:stock_opname,damage,loss,found,expired,daily_mutation,other',
-            'notes'                     => 'nullable|string|max:2000',
-            'items'                     => 'required|array|min:1',
-            'items.*.item_type'         => 'required|in:ingredient,packaging_material',
-            'items.*.item_id'           => 'required|uuid',
-            'items.*.physical_quantity' => 'required|integer|min:0',
-            'items.*.notes'             => 'nullable|string|max:500',
-        ], [
-            'adjustment_date.before_or_equal' => 'Tanggal adjustment tidak boleh melebihi hari ini.',
-        ]);
-
-        DB::transaction(function () use ($adj, $v) {
-            // Hanya status 'completed' yang sudah mengubah stok. Reverse dulu
-            // supaya findStock() di bawah membaca qty baseline sebelum adjustment,
-            // sehinnga difference item baru dihitung terhadap stok yang benar.
-            $wasCompleted = $adj->status === 'completed';
-            if ($wasCompleted) {
-                $this->reverseAdjustmentStock($adj);
-            }
-
-            $adj->update([
-                'adjustment_date' => $v['adjustment_date'],
-                'type'            => $v['type'],
-                'notes'           => $v['notes'] ?? null,
-            ]);
-
-            $adj->items()->delete();
-
-            foreach ($v['items'] as $item) {
-                $stock       = $this->findStock($adj->location_type, $adj->location_id, $item['item_type'], $item['item_id']);
-                $systemQty   = $stock ? (int)   $stock->quantity     : 0;
-                $unitCost    = $stock ? (float) $stock->average_cost : 0.0;
-                $physicalQty = (int) $item['physical_quantity'];
-                $difference  = $physicalQty - $systemQty;
-                $valueDiff   = round(abs($difference) * $unitCost, 2);
-
-                $adj->items()->create([
-                    'item_type'         => $item['item_type'],
-                    'item_id'           => $item['item_id'],
-                    'system_quantity'   => $systemQty,
-                    'physical_quantity' => $physicalQty,
-                    'difference'        => $difference,
-                    'unit_cost'         => $unitCost,
-                    'value_difference'  => $valueDiff,
-                    'notes'             => $item['notes'] ?? null,
-                ]);
-            }
-
-            // Terapkan ulang efek stok + StockMovement baru bila sebelumnya completed.
-            if ($wasCompleted) {
-                $adj->load('items');
-                $this->applyAdjustmentStock($adj);
-            }
-        });
-
-        return to_route('stock-adjustments.show', $id)
-            ->with('success', 'Adjustment berhasil diperbarui!');
     }
 
     // =========================================================================
@@ -368,9 +263,8 @@ class StockAdjustmentController extends Controller
     }
 
     // =========================================================================
-    // STOCK EFFECT — apply & reverse
-    // Dipakai complete() dan update() (edit adjustment yang sudah completed).
-    // Harus dipanggil di dalam DB::transaction.
+    // STOCK EFFECT — apply
+    // Dipakai complete(). Harus dipanggil di dalam DB::transaction.
     // =========================================================================
 
     /**
@@ -454,42 +348,6 @@ class StockAdjustmentController extends Controller
                 'created_by'       => $userId,
             ]);
         }
-    }
-
-    /**
-     * Balikkan efek stok yang pernah diterapkan adjustment ini, memakai
-     * StockMovement sebagai sumber kebenaran (qty_change + avg_cost_before),
-     * lalu hapus movement lama. Qty dikembalikan persis; average_cost
-     * direstore ke nilai sebelum adjustment (persis bila ini mutasi terakhir
-     * atas item tsb; pendekatan bila ada mutasi lain sesudahnya).
-     */
-    private function reverseAdjustmentStock(StockAdjustment $adj): void
-    {
-        $movements = StockMovement::where('reference_type', StockAdjustment::class)
-            ->where('reference_id', $adj->id)
-            ->get();
-
-        foreach ($movements as $mv) {
-            $stock = $this->findStock(
-                $adj->location_type, $adj->location_id,
-                $mv->item_type,      $mv->item_id
-            );
-
-            if (! $stock) continue;
-
-            $qtyAfter = max(0, (int) $stock->quantity - (int) $mv->qty_change);
-            $restoredAvg = (float) $mv->avg_cost_before;
-
-            $stock->update([
-                'quantity'     => $qtyAfter,
-                'average_cost' => $restoredAvg,
-                'total_value'  => round($qtyAfter * $restoredAvg, 2),
-            ]);
-
-            $this->syncGlobalAverageCost($mv->item_type, $mv->item_id, $restoredAvg);
-        }
-
-        $movements->each->delete();
     }
 
     // =========================================================================

@@ -24,9 +24,8 @@ class StockAdjustment extends Model
         'approved_by'     => 'integer',
     ];
 
-    protected $appends = ['can_edit', 'can_approve', 'can_complete', 'can_cancel', 'type_label'];
+    protected $appends = ['can_approve', 'can_complete', 'can_cancel', 'type_label'];
 
-    public function getCanEditAttribute():    bool { return $this->canEdit(); }
     public function getCanApproveAttribute(): bool { return $this->canApprove(); }
     public function getCanCompleteAttribute(): bool { return $this->canComplete(); }
     public function getCanCancelAttribute():  bool { return $this->canCancel(); }
@@ -81,9 +80,6 @@ class StockAdjustment extends Model
 
     // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-    // Semua status boleh diedit. Untuk status 'completed', controller akan
-    // me-reverse efek stok lama lalu menerapkan ulang item baru agar konsisten.
-    public function canEdit():    bool { return true; }
     public function canApprove(): bool { return $this->status === 'pending'; }
     public function canComplete(): bool { return $this->status === 'approved'; }
     public function canCancel():  bool { return in_array($this->status, ['draft', 'pending', 'approved']); }

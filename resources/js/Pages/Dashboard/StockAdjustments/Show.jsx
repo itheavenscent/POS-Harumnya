@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
-import { Head, Link, router, usePage } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 import Table from "@/Components/Dashboard/Table";
 import {
     IconArrowLeft, IconAdjustments, IconCheck, IconX, IconSend,
-    IconPencilCog, IconHistory, IconTrendingUp, IconTrendingDown,
+    IconHistory, IconTrendingUp, IconTrendingDown,
     IconInfoCircle,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
@@ -39,9 +39,6 @@ const fmtDate = (d) =>
     }) : "-";
 
 export default function Show({ adjustment, movements = [] }) {
-    const { auth } = usePage().props;
-    const canManage = auth?.super || (auth?.roles || []).includes("admin");
-
     const [showCancelModal,   setShowCancelModal]   = useState(false);
     const [showCompleteModal, setShowCompleteModal] = useState(false);
     const [cancelReason,      setCancelReason]      = useState("");
@@ -141,12 +138,6 @@ export default function Show({ adjustment, movements = [] }) {
                         <IconArrowLeft size={18} /> Kembali
                     </Link>
                     <div className="flex gap-2">
-                        {canManage && adjustment.can_edit && (
-                            <Link href={route("stock-adjustments.edit", adjustment.id)}
-                                className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-sm font-bold hover:bg-amber-100">
-                                <IconPencilCog size={16} /> Edit
-                            </Link>
-                        )}
                         {adjustment.status === "draft" && (
                             <button
                                 onClick={() => doAction(route("stock-adjustments.submit", adjustment.id), {}, "Diajukan untuk approval.")}

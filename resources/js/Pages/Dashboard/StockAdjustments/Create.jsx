@@ -13,6 +13,13 @@ import toast from "react-hot-toast";
 const fmt    = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(parseFloat(n) || 0);
 const fmtQty = (n) => parseInt(n || 0).toLocaleString("id-ID");
 
+const TODAY_STR = new Date().toISOString().split("T")[0];
+const MIN_ADJUSTMENT_DATE = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 14);
+    return d.toISOString().split("T")[0];
+})();
+
 // ─── SearchSelect ─────────────────────────────────────────────────────────────
 function SearchSelect({ options, value, onChange, placeholder = "Cari...", renderOption, disabled = false }) {
     const [open,  setOpen]  = useState(false);
@@ -414,7 +421,8 @@ export default function Create({ warehouses, stores, ingredients, packagingMater
                             <Input
                                 label="Tanggal *"
                                 type="date"
-                                max={new Date().toISOString().split("T")[0]}
+                                min={MIN_ADJUSTMENT_DATE}
+                                max={TODAY_STR}
                                 value={data.adjustment_date}
                                 onChange={(e) => setData("adjustment_date", e.target.value)}
                                 errors={errors.adjustment_date}
