@@ -805,11 +805,18 @@ function PackagingModal({ show, onClose, packagingMaterials = [], minVolumeMl = 
         // size_id hanya ikut tampil kalau memang jenis tanpa volume (kresek,
         // spunbond, dll — lihat isSizelessPackaging); selain itu disembunyikan
         // dulu supaya data yang belum lengkap tidak lolos filter.
+        // Kresek bukan wadah parfum → jangan tampil di modal Kemasan Parfum.
+        const source = packagingMaterials.filter(p => !(p.name || "").toLowerCase().includes("kresek"));
+
         const bySize = minVolumeMl
-            ? packagingMaterials.filter(p => p.size?.volume_ml
-                ? p.size.volume_ml >= minVolumeMl
-                : isSizelessPackaging(p.name))
-            : packagingMaterials;
+            ? source.filter(p => {
+                // Rakitan (botol set) selalu tampil — ukuran ditentukan komponen botolnya.
+                if (p.is_assembly) return true;
+                return p.size?.volume_ml
+                    ? p.size.volume_ml >= minVolumeMl
+                    : isSizelessPackaging(p.name);
+            })
+            : source;
 
         if (!search) return bySize;
         return bySize.filter(p =>

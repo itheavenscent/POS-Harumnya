@@ -78,27 +78,28 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         ->middleware('permission:permissions-access')
         ->name('permissions.index');
 
-    Route::resource('roles', RoleController::class)
-        ->except(['show'])
-        ->middleware([
-            'index' => 'permission:roles-access',
-            'create' => 'permission:roles-create',
-            'store' => 'permission:roles-create',
-            'edit' => 'permission:roles-update',
-            'update' => 'permission:roles-update',
-            'destroy' => 'permission:roles-delete',
-        ]);
+    // Helper: daftarkan resource dengan permission per-AKSI yang benar.
+    // Route::resource(...)->middleware([assoc]) TIDAK didukung Laravel —
+    // seluruh nilai array ikut diterapkan ke SETIAP route, sehingga read (index)
+    // pun menuntut create+edit+delete → user read-only kena 403. Helper ini
+    // memisahkan: access (index+show), create (create+store), edit/update, delete.
+    $crud = function (string $uri, string $controller, string $base, string $editSuffix = 'edit', array $except = []) {
+        $groups = [
+            'access'    => ['index', 'show'],
+            'create'    => ['create', 'store'],
+            $editSuffix => ['edit', 'update'],
+            'delete'    => ['destroy'],
+        ];
+        foreach ($groups as $suffix => $methods) {
+            $methods = array_values(array_diff($methods, $except));
+            if (! $methods) continue;
+            Route::resource($uri, $controller)->only($methods)
+                ->middleware("permission:{$base}-{$suffix}");
+        }
+    };
 
-    Route::resource('users', UserController::class)
-        ->except('show')
-        ->middleware([
-            'index' => 'permission:users-access',
-            'create' => 'permission:users-create',
-            'store' => 'permission:users-create',
-            'edit' => 'permission:users-update',
-            'update' => 'permission:users-update',
-            'destroy' => 'permission:users-delete',
-        ]);
+    $crud('roles', RoleController::class, 'roles', 'update', ['show']);
+    $crud('users', UserController::class, 'users', 'update', ['show']);
 
     // ─────────────────────────────────────────────────────────────────────────
     // Master Data
@@ -111,15 +112,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     // dinonaktifkan di sini. CategoryController & model Category masih ada di
     // app/, silakan hapus juga jika sudah dikonfirmasi tidak dipakai.
 
-    Route::resource('sizes', SizeController::class)
-        ->middleware([
-            'index' => 'permission:sizes-access',
-            'create' => 'permission:sizes-create',
-            'store' => 'permission:sizes-create',
-            'edit' => 'permission:sizes-edit',
-            'update' => 'permission:sizes-edit',
-            'destroy' => 'permission:sizes-delete',
-        ]);
+    $crud('sizes', SizeController::class, 'sizes');
 
     // Matrix (statis) HARUS sebelum resource agar tidak ketangkap wildcard {intensity_size_price}
     Route::get('intensity-size-prices/matrix', [IntensitySizePriceController::class, 'matrix'])
@@ -130,16 +123,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     Route::resource('intensity-size-prices', IntensitySizePriceController::class)
         ->middleware('permission:intensity-size-prices-access');
 
-    Route::resource('suppliers', SupplierController::class)
-        ->except('show')
-        ->middleware([
-            'index' => 'permission:suppliers-access',
-            'create' => 'permission:suppliers-create',
-            'store' => 'permission:suppliers-create',
-            'edit' => 'permission:suppliers-edit',
-            'update' => 'permission:suppliers-edit',
-            'destroy' => 'permission:suppliers-delete',
-        ]);
+    $crud('suppliers', SupplierController::class, 'suppliers', 'edit', ['show']);
 
     // ── Variants ──────────────────────────────────────────────────────────────
 
@@ -173,16 +157,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         ->middleware('permission:warehouses-delete')
         ->name('warehouses.bulk-delete');
 
-    Route::resource('warehouses', WarehouseController::class)
-        ->middleware([
-            'index' => 'permission:warehouses-access',
-            'show' => 'permission:warehouses-access',
-            'create' => 'permission:warehouses-create',
-            'store' => 'permission:warehouses-create',
-            'edit' => 'permission:warehouses-edit',
-            'update' => 'permission:warehouses-edit',
-            'destroy' => 'permission:warehouses-delete',
-        ]);
+    $crud('warehouses', WarehouseController::class, 'warehouses');
 
     // ── Stores ────────────────────────────────────────────────────────────────
 
@@ -190,16 +165,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         ->middleware('permission:stores-delete')
         ->name('stores.bulk-delete');
 
-    Route::resource('stores', StoreController::class)
-        ->middleware([
-            'index' => 'permission:stores-access',
-            'show' => 'permission:stores-access',
-            'create' => 'permission:stores-create',
-            'store' => 'permission:stores-create',
-            'edit' => 'permission:stores-edit',
-            'update' => 'permission:stores-edit',
-            'destroy' => 'permission:stores-delete',
-        ]);
+    $crud('stores', StoreController::class, 'stores');
 
     // ── Store Categories ──────────────────────────────────────────────────────
 
@@ -456,16 +422,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         ->middleware('permission:customers-delete')
         ->name('customers.restore');
 
-    Route::resource('customers', CustomerController::class)
-        ->middleware([
-            'index' => 'permission:customers-access',
-            'show' => 'permission:customers-access',
-            'create' => 'permission:customers-create',
-            'store' => 'permission:customers-create',
-            'edit' => 'permission:customers-edit',
-            'update' => 'permission:customers-edit',
-            'destroy' => 'permission:customers-delete',
-        ]);
+    $crud('customers', CustomerController::class, 'customers');
 
     // ── Sales People ──────────────────────────────────────────────────────────
     //
@@ -484,29 +441,11 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         ->middleware('permission:sales-people-productivity-access')
         ->name('sales-people.productivity');
 
-    Route::resource('sales-people', SalesPersonController::class)
-        ->middleware([
-            'index' => 'permission:sales-people-access',
-            'show' => 'permission:sales-people-access',
-            'create' => 'permission:sales-people-create',
-            'store' => 'permission:sales-people-create',
-            'edit' => 'permission:sales-people-edit',
-            'update' => 'permission:sales-people-edit',
-            'destroy' => 'permission:sales-people-delete',
-        ]);
+    $crud('sales-people', SalesPersonController::class, 'sales-people');
 
     // ── Discounts (Promo) ─────────────────────────────────────────────────────
 
-    Route::resource('discounts', DiscountController::class)
-        ->middleware([
-            'index' => 'permission:discounts-access',
-            'show' => 'permission:discounts-access',
-            'create' => 'permission:discounts-create',
-            'store' => 'permission:discounts-create',
-            'edit' => 'permission:discounts-edit',
-            'update' => 'permission:discounts-edit',
-            'destroy' => 'permission:discounts-delete',
-        ]);
+    $crud('discounts', DiscountController::class, 'discounts');
 
     // ── Reward Items (Master Hadiah) ────────────────────────────────────
     // ! ATURAN URUTAN: /toggle & /api-list SEBELUM resource()
@@ -605,16 +544,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         ->middleware('permission:payment-methods-edit')
         ->name('payment-methods.toggle');
 
-    Route::resource('payment-methods', PaymentMethodController::class)
-        ->middleware([
-            'index' => 'permission:payment-methods-access',
-            'show' => 'permission:payment-methods-access',
-            'create' => 'permission:payment-methods-create',
-            'store' => 'permission:payment-methods-create',
-            'edit' => 'permission:payment-methods-edit',
-            'update' => 'permission:payment-methods-edit',
-            'destroy' => 'permission:payment-methods-delete',
-        ]);
+    $crud('payment-methods', PaymentMethodController::class, 'payment-methods');
 
     // ─────────────────────────────────────────────────────────────────────────
     // Laporan

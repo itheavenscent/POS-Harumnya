@@ -89,6 +89,8 @@ function buildReceipt(sale, saleItems, payments, change) {
         .row2("Kasir", sale.cashier?.name ?? sale.cashier_name ?? "-", W).lf();
     if (sale.customer?.name || sale.customer_name)
         ep.row2("Pelanggan", sale.customer?.name ?? sale.customer_name, W).lf();
+    if (sale.customer?.phone)
+        ep.row2("No. Telp", sale.customer.phone, W).lf();
 
     // Sales
     const salesNameEsc = sale.sales_person?.name ?? sale.salesperson?.name
@@ -242,6 +244,9 @@ function ReceiptPreview({ sale, saleItems, payments, change, is58 }) {
             <Row2 left="Kasir" right={sale.cashier?.name ?? sale.cashier_name ?? "-"} />
             {(sale.customer?.name || sale.customer_name) && (
                 <Row2 left="Pelanggan" right={sale.customer?.name ?? sale.customer_name} />
+            )}
+            {sale.customer?.phone && (
+                <Row2 left="No. Telp" right={sale.customer.phone} />
             )}
 
             {/* Sales */}

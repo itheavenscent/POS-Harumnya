@@ -40,6 +40,8 @@ use App\Models\StorePackagingStock;
  */
 class StockTransferController extends Controller
 {
+    use \App\Traits\SyncsGlobalAverageCost;
+
     // =========================================================================
     // INDEX
     // =========================================================================
@@ -445,7 +447,7 @@ class StockTransferController extends Controller
                     'last_in_qty'  => $rcvQty,
                 ]);
 
-                $this->syncMasterAverageCost($item->item_type, $item->item_id, $newAvgCost);
+                $this->syncGlobalAverageCost($item->item_type, $item->item_id, $newAvgCost);
 
                 StockMovement::create([
                     'location_type'    => $transfer->to_location_type,
@@ -659,44 +661,6 @@ class StockTransferController extends Controller
         $m = Material::with('size')->find($id);
         $defaultUnit = $type === 'ingredient' ? 'unit' : 'pcs';
         return [$m?->name ?? '-', $m?->code ?? '-', $m?->unit ?? $m?->size?->name ?? $defaultUnit];
-    }
-
-    private function syncMasterAverageCost(string $itemType, string $itemId, float $fallbackCost): void
-    {
-        $globalWac = $this->computeGlobalWac($itemType, $itemId) ?? $fallbackCost;
-
-        Material::with('size')->find($itemId)?->update(['average_cost' => $globalWac]);
-    }
-
-    private function computeGlobalWac(string $itemType, string $itemId): ?float
-    {
-        $rows = collect();
-
-        if ($itemType === 'ingredient') {
-            $rows = $rows->merge(
-                DB::table('warehouse_ingredient_stocks')->where('ingredient_id', $itemId)->select('quantity', 'average_cost')->get()
-            )->merge(
-                DB::table('store_ingredient_stocks')->where('ingredient_id', $itemId)->select('quantity', 'average_cost')->get()
-            );
-        } else {
-            $rows = $rows->merge(
-                DB::table('warehouse_packaging_stocks')->where('packaging_material_id', $itemId)->select('quantity', 'average_cost')->get()
-            )->merge(
-                DB::table('store_packaging_stocks')->where('packaging_material_id', $itemId)->select('quantity', 'average_cost')->get()
-            );
-        }
-
-        $totalQty   = 0;
-        $totalValue = 0.0;
-        foreach ($rows as $r) {
-            $qty = (int) $r->quantity;
-            if ($qty > 0) {
-                $totalQty   += $qty;
-                $totalValue += $qty * (float) $r->average_cost;
-            }
-        }
-
-        return $totalQty > 0 ? round($totalValue / $totalQty, 4) : null;
     }
 
     private function resolveItemName(string $type, string $id): string

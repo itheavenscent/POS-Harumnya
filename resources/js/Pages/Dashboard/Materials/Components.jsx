@@ -1,9 +1,9 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import { Head, useForm, Link } from "@inertiajs/react";
 import {
     IconArrowLeft, IconDeviceFloppy, IconPackage,
-    IconPlus, IconTrash, IconInfoCircle, IconStack2,
+    IconPlus, IconTrash, IconInfoCircle, IconStack2, IconSearch,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 
@@ -26,6 +26,28 @@ export default function Components({ material, components, candidates }) {
     const usedIds = new Set(data.components.map(c => c.component_packaging_id));
     const available = candidates.filter(c => !usedIds.has(c.id));
 
+    // Searchable combobox untuk tambah komponen
+    const [open, setOpen] = useState(false);
+    const [query, setQuery] = useState("");
+    const boxRef = useRef(null);
+
+    const filtered = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        if (!q) return available;
+        return available.filter(c =>
+            (c.name || "").toLowerCase().includes(q) ||
+            (c.code || "").toLowerCase().includes(q)
+        );
+    }, [available, query]);
+
+    useEffect(() => {
+        const onDown = (e) => {
+            if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false);
+        };
+        document.addEventListener("mousedown", onDown);
+        return () => document.removeEventListener("mousedown", onDown);
+    }, []);
+
     const assembledCost = useMemo(
         () => data.components.reduce((s, c) => s + (Number(c.average_cost) || 0) * (Number(c.quantity) || 0), 0),
         [data.components]
@@ -45,6 +67,8 @@ export default function Components({ material, components, candidates }) {
                 average_cost: Number(cand.average_cost) || 0,
             },
         ]);
+        setQuery("");
+        setOpen(false);
     };
 
     const setQty = (idx, qty) => {
@@ -102,26 +126,47 @@ export default function Components({ material, components, candidates }) {
                             <IconPackage size={18} className="text-indigo-500" /> Daftar Komponen
                         </h2>
 
-                        {/* Tambah komponen */}
+                        {/* Tambah komponen (searchable) */}
                         <div className="mb-4">
                             <label className="block text-sm font-medium mb-1 dark:text-slate-300">Tambah Komponen</label>
-                            <div className="relative">
-                                <select
-                                    value=""
-                                    onChange={e => { if (e.target.value) addComponent(e.target.value); }}
-                                    disabled={available.length === 0}
-                                    className="appearance-none w-full h-10 pl-3 pr-8 rounded-xl border bg-white dark:bg-slate-950 dark:text-white text-sm border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50 transition-all"
-                                >
-                                    <option value="">{available.length ? "Pilih komponen…" : "Semua kandidat sudah dipakai"}</option>
-                                    {available.map(c => (
-                                        <option key={c.id} value={c.id}>
-                                            {c.name} ({c.code}) · HPP {fmt(c.average_cost)}
-                                        </option>
-                                    ))}
-                                </select>
-                                <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
-                                    <IconPlus size={16} className="text-slate-400" />
+                            <div ref={boxRef} className="relative">
+                                <div className="relative">
+                                    <div className="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center">
+                                        <IconSearch size={16} className="text-slate-400" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={query}
+                                        onChange={e => { setQuery(e.target.value); setOpen(true); }}
+                                        onFocus={() => setOpen(true)}
+                                        disabled={available.length === 0}
+                                        placeholder={available.length ? "Cari komponen (nama / kode)…" : "Semua kandidat sudah dipakai"}
+                                        className="w-full h-10 pl-9 pr-8 rounded-xl border bg-white dark:bg-slate-950 dark:text-white text-sm border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50 transition-all"
+                                    />
+                                    <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+                                        <IconPlus size={16} className="text-slate-400" />
+                                    </div>
                                 </div>
+
+                                {open && available.length > 0 && (
+                                    <div className="absolute z-20 mt-1 w-full max-h-72 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
+                                        {filtered.length === 0 ? (
+                                            <div className="px-3 py-3 text-sm text-slate-400">Tidak ada hasil untuk “{query}”</div>
+                                        ) : (
+                                            filtered.map(c => (
+                                                <button
+                                                    key={c.id}
+                                                    type="button"
+                                                    onClick={() => addComponent(c.id)}
+                                                    className="w-full text-left px-3 py-2 text-sm hover:bg-teal-50 dark:hover:bg-teal-950/30 text-slate-700 dark:text-slate-200 transition-colors"
+                                                >
+                                                    <span className="font-medium">{c.name}</span>
+                                                    <span className="text-slate-400"> ({c.code}) · HPP {fmt(c.average_cost)}</span>
+                                                </button>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
 

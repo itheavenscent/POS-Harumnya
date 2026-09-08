@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Log;
 
 class RepackService
 {
+    use \App\Traits\SyncsGlobalAverageCost;
+
     /**
      * Process repack batch and update stocks
      * 
@@ -40,7 +42,7 @@ class RepackService
                 ->push($batch->output_ingredient_id)
                 ->unique();
             foreach ($affected as $ingredientId) {
-                $this->syncMasterAverageCost($ingredientId);
+                $this->syncGlobalAverageCost('ingredient', $ingredientId);
             }
 
             // 4. Update batch status
@@ -150,33 +152,6 @@ class RepackService
         ]);
     }
     
-    /**
-     * Recompute WAC global (semua lokasi) → simpan ke master Ingredient.
-     * Menjaga HPP di menu Bahan Baku konsisten dengan average_cost Stok Global.
-     */
-    protected function syncMasterAverageCost(string $ingredientId): void
-    {
-        $master = Ingredient::find($ingredientId);
-        if (! $master) return;
-
-        $rows = WarehouseIngredientStock::where('ingredient_id', $ingredientId)
-            ->get(['quantity', 'average_cost'])
-            ->concat(StoreIngredientStock::where('ingredient_id', $ingredientId)->get(['quantity', 'average_cost']));
-
-        $totalQty   = 0;
-        $totalValue = 0.0;
-        foreach ($rows as $r) {
-            $qty = (int) $r->quantity;
-            if ($qty > 0) {
-                $totalQty   += $qty;
-                $totalValue += $qty * (float) $r->average_cost;
-            }
-        }
-
-        if ($totalQty > 0) {
-            $master->update(['average_cost' => round($totalValue / $totalQty, 4)]);
-        }
-    }
 
     /**
      * Add output (compound) ingredient to warehouse stock
@@ -323,7 +298,7 @@ class RepackService
             ->push($batch->output_ingredient_id)
             ->unique();
         foreach ($affected as $ingredientId) {
-            $this->syncMasterAverageCost($ingredientId);
+            $this->syncGlobalAverageCost('ingredient', $ingredientId);
         }
     }
 }

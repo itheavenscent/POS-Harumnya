@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 
 class StockMovementService
 {
+    use \App\Traits\SyncsGlobalAverageCost;
+
     /**
      * Record stock movement dan update stock dengan weighted average costing
      */
@@ -79,10 +81,9 @@ class StockMovementService
                 ]);
             }
 
-            // Sinkronkan WAC global ke master (Ingredient/PackagingMaterial) agar HPP
-            // di menu Bahan Baku selalu konsisten dengan Stok Global — bukan hanya saat
-            // pembelian. Transfer/repack/produksi/penyesuaian juga ikut memperbarui.
-            $this->syncMasterAverageCost($data['item_type'], $data['item_id']);
+            // HPP global: recompute WAC gabungan semua lokasi, mirror ke master +
+            // SEMUA baris per-lokasi. Transfer/repack/produksi/penyesuaian ikut konsisten.
+            $this->syncGlobalAverageCost($data['item_type'], $data['item_id']);
 
             // Get stockable type and ID
             $stockableType = $this->getStockableType($data['location_type'], $data['item_type']);
@@ -131,44 +132,6 @@ class StockMovementService
                 'total_value' => 0,
             ]
         );
-    }
-
-    /**
-     * Recompute Weighted Average Cost global (semua lokasi) lalu simpan ke tabel
-     * master (Ingredient / PackagingMaterial). Menjaga HPP di menu Bahan Baku
-     * konsisten dengan average_cost per-lokasi di Stok Global.
-     */
-    private function syncMasterAverageCost(string $itemType, string $itemId): void
-    {
-        if ($itemType === 'App\\Models\\Ingredient') {
-            $rows = WarehouseIngredientStock::where('ingredient_id', $itemId)
-                ->get(['quantity', 'average_cost'])
-                ->concat(StoreIngredientStock::where('ingredient_id', $itemId)->get(['quantity', 'average_cost']));
-            $master = Material::find($itemId);
-        } elseif ($itemType === 'App\\Models\\PackagingMaterial') {
-            $rows = WarehousePackagingStock::where('packaging_material_id', $itemId)
-                ->get(['quantity', 'average_cost'])
-                ->concat(StorePackagingStock::where('packaging_material_id', $itemId)->get(['quantity', 'average_cost']));
-            $master = Material::find($itemId);
-        } else {
-            return;
-        }
-
-        if (! $master) return;
-
-        $totalQty   = 0;
-        $totalValue = 0.0;
-        foreach ($rows as $r) {
-            $qty = (int) $r->quantity;
-            if ($qty > 0) {
-                $totalQty   += $qty;
-                $totalValue += $qty * (float) $r->average_cost;
-            }
-        }
-
-        if ($totalQty > 0) {
-            $master->update(['average_cost' => round($totalValue / $totalQty, 4)]);
-        }
     }
 
     /**

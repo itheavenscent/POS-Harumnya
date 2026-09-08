@@ -87,12 +87,17 @@ class POSController extends Controller
             ->orderBy('name')
             ->get();
 
-        $packagingMaterials = Material::select('id', 'name', 'code', 'image', 'selling_price', 'size_id')
-            ->with('size:id,volume_ml')
+        $packagingMaterials = Material::select('id', 'name', 'code', 'image', 'selling_price', 'size_id', 'is_assembly')
+            ->with(['size:id,volume_ml', 'components.component'])
             ->where('material_type', 'bahan_kemasan')
             ->where('is_active', true)
             ->orderBy('sort_order')
-            ->get();
+            ->get()
+            ->map(function ($m) {
+                // Rakitan (botol set) perlu HPP gabungan komponen agar bisa dipilih di modal parfum.
+                $m->assembled_cost = $m->is_assembly ? (float) $m->assembled_cost : null;
+                return $m;
+            });
 
         $paymentMethods = PaymentMethod::select(
             'id',
