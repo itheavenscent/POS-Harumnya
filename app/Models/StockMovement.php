@@ -21,6 +21,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int         $qty_change       SIGNED (negatif=keluar, positif=masuk)
  * @property int         $qty_before
  * @property int         $qty_after
+ * @property int|null    $global_qty_before  snapshot stok global (semua lokasi) sebelum gerakan
+ * @property int|null    $global_qty_after   snapshot stok global (semua lokasi) setelah gerakan
  * @property float       $unit_cost        decimal(15,4)
  * @property float       $total_cost       decimal(15,2)
  * @property float       $avg_cost_before  decimal(15,4)
@@ -44,6 +46,8 @@ class StockMovement extends Model
         'qty_change',
         'qty_before',
         'qty_after',
+        'global_qty_before',
+        'global_qty_after',
         'unit_cost',
         'total_cost',
         'avg_cost_before',
@@ -57,9 +61,11 @@ class StockMovement extends Model
     ];
 
     protected $casts = [
-        'qty_change'      => 'integer',
-        'qty_before'      => 'integer',
-        'qty_after'       => 'integer',
+        'qty_change'        => 'integer',
+        'qty_before'        => 'integer',
+        'qty_after'         => 'integer',
+        'global_qty_before' => 'integer',
+        'global_qty_after'  => 'integer',
         'unit_cost'       => 'float',
         'total_cost'      => 'float',
         'avg_cost_before' => 'float',

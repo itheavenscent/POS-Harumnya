@@ -468,6 +468,11 @@ class PurchaseController extends Controller
                 $avgBefore = (float) $stock->average_cost;  // decimal(15,4)
                 $qtyAfter  = $qtyBefore + $qty;
 
+                // Snapshot stok GLOBAL (semua lokasi) — diambil sebelum stok lokasi ini
+                // di-update, supaya baris lokasi ini masih terhitung di posisi "sebelum".
+                $globalQtyBefore = $this->globalQuantity($item->item_type, $item->item_id);
+                $globalQtyAfter  = $globalQtyBefore + $qty;
+
                 // Hitung WAC baru — decimal(15,4)
                 // WAC = (stok_lama × avg_lama + qty_baru × harga_beli) / stok_baru
                 if ($qtyAfter > 0) {
@@ -508,6 +513,8 @@ class PurchaseController extends Controller
                     'qty_change'       => $qty,                             // positif=masuk, negatif=retur
                     'qty_before'       => $qtyBefore,
                     'qty_after'        => $qtyAfter,
+                    'global_qty_before' => $globalQtyBefore,
+                    'global_qty_after'  => $globalQtyAfter,
                     // Nilai — presisi sesuai migration
                     'unit_cost'        => $landedCost,                      // decimal(15,4)
                     'total_cost'       => round(abs($qty) * $landedCost, 2), // decimal(15,2)

@@ -87,6 +87,26 @@ trait SyncsGlobalAverageCost
     }
 
     /**
+     * Total stok GLOBAL (gabungan semua lokasi gudang + toko) untuk satu item.
+     * Dipakai untuk snapshot "stok sebelum/sesudah" lintas lokasi di StockMovement,
+     * berdampingan dengan qty_before/qty_after yang per-lokasi.
+     *
+     * @param  string  $itemType  'ingredient' | 'packaging_material'
+     * @param  string  $itemId    id material
+     */
+    protected function globalQuantity(string $itemType, string $itemId): int
+    {
+        $isIngredient = in_array($itemType, ['ingredient', 'App\\Models\\Ingredient'], true);
+
+        [$whTable, $stTable, $fk] = $isIngredient
+            ? ['warehouse_ingredient_stocks', 'store_ingredient_stocks', 'ingredient_id']
+            : ['warehouse_packaging_stocks', 'store_packaging_stocks', 'packaging_material_id'];
+
+        return (int) DB::table($whTable)->where($fk, $itemId)->sum('quantity')
+             + (int) DB::table($stTable)->where($fk, $itemId)->sum('quantity');
+    }
+
+    /**
      * Recompute production_cost semua produk yang resepnya memakai bahan ini.
      */
     protected function recostProductsUsingIngredient(string $ingredientId): void

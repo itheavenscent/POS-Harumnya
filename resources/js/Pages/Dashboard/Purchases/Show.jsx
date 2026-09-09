@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import { Head, Link, router } from "@inertiajs/react";
 import Table from "@/Components/Dashboard/Table";
@@ -45,6 +45,37 @@ function ConfirmModal({ open, onConfirm, onClose, title, description, confirmLab
                 </div>
             </div>
         </div>
+    );
+}
+
+// ─── Input angka dengan pemisah ribuan (format Indonesia: titik) ──────────────
+// Simpan angka mentah di state, format ulang saat blur — sama seperti pola
+// MoneyInput di Purchases/Create.jsx.
+function ThousandsInput({ value, onChange, className = "", placeholder = "0", allowNegative = false }) {
+    const format = (v) => {
+        const num = parseInt(v, 10) || 0;
+        return num === 0 ? "" : num.toLocaleString("id-ID");
+    };
+    const [display, setDisplay] = useState(format(value));
+
+    useEffect(() => { setDisplay(format(value)); }, [value]);
+
+    const handleChange = (e) => {
+        let raw = e.target.value.replace(allowNegative ? /[^\d-]/g : /\D/g, "");
+        if (allowNegative) {
+            const negative = raw.startsWith("-");
+            raw = (negative ? "-" : "") + raw.replace(/-/g, "");
+        }
+        setDisplay(raw);
+        onChange(raw);
+    };
+
+    const handleBlur = () => setDisplay(format(display));
+
+    return (
+        <input type="text" inputMode={allowNegative ? "text" : "numeric"} value={display}
+            placeholder={placeholder} onChange={handleChange} onBlur={handleBlur}
+            className={className} />
     );
 }
 
@@ -266,9 +297,9 @@ export default function Show({ purchase, movements = [] }) {
                                                 <td className="px-4 py-2">{i.item_name}</td>
                                                 <td className="px-4 py-2 text-right font-medium">{fmtQty(i.quantity)} {i.item_unit}</td>
                                                 <td className="px-4 py-2 text-right w-32">
-                                                    <input type="number" step="1" min="0"
+                                                    <ThousandsInput
                                                         value={receivedQuantities[i.id] ?? ""}
-                                                        onChange={e => setReceivedQuantities(prev => ({ ...prev, [i.id]: e.target.value }))}
+                                                        onChange={v => setReceivedQuantities(prev => ({ ...prev, [i.id]: v }))}
                                                         className="w-full text-right p-1.5 text-sm border-slate-200 rounded-lg focus:ring-violet-500" />
                                                 </td>
                                             </tr>
@@ -296,9 +327,10 @@ export default function Show({ purchase, movements = [] }) {
                                     ].map(({ key, label }) => (
                                         <div key={key}>
                                             <label className="block text-[11px] font-bold text-slate-500 mb-1">{label}</label>
-                                            <input type="number" step="1" min={key === "adjustment" ? undefined : "0"}
+                                            <ThousandsInput
                                                 value={extraCosts[key]}
-                                                onChange={(e) => setExtraCosts(prev => ({ ...prev, [key]: e.target.value }))}
+                                                allowNegative={key === "adjustment"}
+                                                onChange={(v) => setExtraCosts(prev => ({ ...prev, [key]: v }))}
                                                 className="w-full text-right p-2 text-sm border-slate-200 rounded-lg focus:ring-violet-500" />
                                         </div>
                                     ))}
@@ -574,7 +606,8 @@ export default function Show({ purchase, movements = [] }) {
                                     <Table.Th>Item</Table.Th>
                                     <Table.Th>Lokasi</Table.Th>
                                     <Table.Th className="text-right">Qty Masuk</Table.Th>
-                                    <Table.Th className="text-right">Stok Sebelum → Sesudah</Table.Th>
+                                    <Table.Th className="text-right">Stok Lokasi (Sebelum → Sesudah)</Table.Th>
+                                    <Table.Th className="text-right">Stok Global (Sebelum → Sesudah)</Table.Th>
                                     <Table.Th className="text-right">Avg Cost</Table.Th>
                                     <Table.Th>Waktu</Table.Th>
                                 </tr>
@@ -591,6 +624,11 @@ export default function Show({ purchase, movements = [] }) {
                                         </Table.Td>
                                         <Table.Td className="text-right text-xs">
                                             {fmtQty(mv.qty_before)} → <span className="font-bold">{fmtQty(mv.qty_after)}</span>
+                                        </Table.Td>
+                                        <Table.Td className="text-right text-xs">
+                                            {mv.global_qty_before == null || mv.global_qty_after == null
+                                                ? "-"
+                                                : <>{fmtQty(mv.global_qty_before)} → <span className="font-bold">{fmtQty(mv.global_qty_after)}</span></>}
                                         </Table.Td>
                                         <Table.Td className="text-right text-xs">
                                             {fmtRp(mv.avg_cost_before)} → <span className="font-bold">{fmtRp(mv.avg_cost_after)}</span>
