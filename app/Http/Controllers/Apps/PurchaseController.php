@@ -199,13 +199,10 @@ class PurchaseController extends Controller
             $item->item_unit = $unit;
         });
 
-        // Landed cost per item (baru bisa dihitung begitu received_quantity terisi,
-        // yaitu saat status received/completed) — ditampilkan agar HPP hasil PO ini
-        // transparan, karena unit_price di atas TIDAK termasuk alokasi pajak/ongkir/
-        // diskon/adjustment yang justru menentukan average_cost (HPP) material.
-        if (in_array($purchase->status, ['received', 'completed'], true)) {
-            $this->attachLandedCost($purchase);
-        }
+        // Landed cost per item (preview HPP).
+        // Ditampilkan agar HPP hasil PO ini transparan sejak awal, karena unit_price di atas 
+        // TIDAK termasuk alokasi pajak/ongkir/diskon/adjustment yang justru menentukan average_cost (HPP).
+        $this->attachLandedCost($purchase);
 
         // ★ FIX [2]: tambah filter reference_type agar tidak collision dengan modul lain
         // (StockTransfer, RepackTransaction, dll bisa punya UUID yang sama)
@@ -801,16 +798,38 @@ class PurchaseController extends Controller
 
     /**
      * Tempel landed_cost (preview HPP) ke tiap item untuk ditampilkan di halaman show().
-     * Dipanggil hanya saat received_quantity sudah terisi (status received/completed).
+     * Jika belum di-receive, akan menggunakan quantity pemesanan sebagai proyeksi/estimasi.
      */
     private function attachLandedCost(Purchase $purchase): void
     {
         $poolToDistribute = $this->landedCostPool($purchase);
         $totalSubtotal    = (float) $purchase->subtotal;
-        $totalReceivedQty = $purchase->items->sum('received_quantity');
+        
+        $isReceived = in_array($purchase->status, ['received', 'completed'], true);
+        $totalQty = $isReceived ? $purchase->items->sum('received_quantity') : $purchase->items->sum('quantity');
 
-        $purchase->items->each(function ($item) use ($poolToDistribute, $totalSubtotal, $totalReceivedQty) {
-            $item->landed_cost = $this->calculateLandedCost($item, $poolToDistribute, $totalSubtotal, $totalReceivedQty);
+        $purchase->items->each(function ($item) use ($poolToDistribute, $totalSubtotal, $totalQty, $isReceived) {
+            $qty = $isReceived ? (int) $item->received_quantity : (int) $item->quantity;
+            $unitPrice    = (float) $item->unit_price;
+            $itemSubtotal = (float) $item->subtotal;
+
+            if ($qty <= 0) {
+                $item->landed_cost = max(0, round($unitPrice, 4));
+                return;
+            }
+
+            $baseCost = $itemSubtotal / $qty;
+
+            if ($totalSubtotal > 0) {
+                $allocatedPool = $poolToDistribute * ($itemSubtotal / $totalSubtotal);
+            } else if ($totalQty > 0) {
+                $allocatedPool = $poolToDistribute * ($qty / $totalQty);
+            } else {
+                $allocatedPool = 0.0;
+            }
+
+            $landedCost = $baseCost + ($allocatedPool / $qty);
+            $item->landed_cost = max(0, round($landedCost, 4));
         });
     }
 

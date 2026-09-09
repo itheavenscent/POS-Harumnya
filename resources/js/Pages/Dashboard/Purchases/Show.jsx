@@ -479,19 +479,17 @@ export default function Show({ purchase, movements = [] }) {
                                 {(step >= 3) && <Table.Th className="text-right">Diterima</Table.Th>}
                                 <Table.Th className="text-right">Harga/Unit</Table.Th>
                                 <Table.Th className="text-right">Subtotal</Table.Th>
-                                {(step >= 3) && (
-                                    <Table.Th className="text-right">
-                                        <span title="Harga/unit + alokasi proporsional pajak/ongkir/diskon/adjustment PO ini — nilai inilah yang dipakai untuk update HPP (average_cost) material, bukan Harga/Unit.">
-                                            Landed Cost (HPP)
-                                        </span>
-                                    </Table.Th>
-                                )}
+                                <Table.Th className="text-right">
+                                    <span title={step >= 3 ? "Harga/unit + alokasi proporsional pajak/ongkir/diskon/adjustment PO ini — nilai inilah yang dipakai untuk update HPP (average_cost) material, bukan Harga/Unit." : "Estimasi Harga/unit + alokasi proporsional berdasarkan kuantitas pesanan (karena barang belum diterima)."}>
+                                        Landed Cost (HPP)
+                                    </span>
+                                </Table.Th>
                             </tr>
                         </Table.Thead>
                         <Table.Tbody>
                             {purchase.items?.map((item) => {
                                 const isMissing = step >= 3 && item.received_quantity < item.quantity;
-                                const landedDiffers = step >= 3 && !item.is_free
+                                const landedDiffers = !item.is_free 
                                     && Math.round(parseFloat(item.landed_cost || 0) * 100) !== Math.round(parseFloat(item.unit_price || 0) * 100);
                                 return (
                                     <tr key={item.id} className="border-b border-slate-100 dark:border-slate-800">
@@ -521,20 +519,18 @@ export default function Show({ purchase, movements = [] }) {
                                             {item.is_free ? <span className="text-xs text-slate-400 italic">Gratis</span> : fmtRp(item.unit_price)}
                                         </Table.Td>
                                         <Table.Td className="text-right font-bold text-slate-700">{item.is_free ? "Rp 0" : fmtRp(item.subtotal)}</Table.Td>
-                                        {(step >= 3) && (
-                                            <Table.Td className="text-right">
-                                                {item.is_free ? (
-                                                    <span className="text-xs text-slate-400 italic">Gratis</span>
-                                                ) : (
-                                                    <>
-                                                        <div className="font-bold text-indigo-700">{fmtRp(item.landed_cost)}</div>
-                                                        {landedDiffers && (
-                                                            <div className="text-[10px] text-slate-400">beda dari harga/unit</div>
-                                                        )}
-                                                    </>
-                                                )}
-                                            </Table.Td>
-                                        )}
+                                        <Table.Td className="text-right">
+                                            {item.is_free ? (
+                                                <span className="text-xs text-slate-400 italic">Gratis</span>
+                                            ) : (
+                                                <>
+                                                    <div className="font-bold text-indigo-700">{fmtRp(item.landed_cost)}</div>
+                                                    {landedDiffers && (
+                                                        <div className="text-[10px] text-slate-400">beda dari harga/unit</div>
+                                                    )}
+                                                </>
+                                            )}
+                                        </Table.Td>
                                     </tr>
                                 );
                             })}
