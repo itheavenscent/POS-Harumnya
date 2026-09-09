@@ -24,7 +24,8 @@ class VariantService
             ->when(!empty($filters['search']), fn($q) => $q->search($filters['search']))
             ->when(!empty($filters['gender']), fn($q) => $q->gender($filters['gender']))
             ->when(isset($filters['is_active']) && $filters['is_active'] !== '', fn($q) => $q->active((bool) $filters['is_active']))
-            ->latest('created_at')
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->paginate($perPage)
             ->withQueryString();
     }
